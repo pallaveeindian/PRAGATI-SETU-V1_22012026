@@ -1,7 +1,7 @@
 // src/pages/LDMS/DMMU/dmmu_dashboard_blk_map.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { LDMS_API } from "../../../api/axios";
+import api, { LDMS_API, LOOKUP_API } from "../../../api/axios";
 
 /**
  * DMMU – District Block Map + Analytics Table
@@ -62,66 +62,103 @@ export default function DmmuBlockMap({
     setBlocks([]);
     setAnalyticsCache({});
 
-    api
-      .get(`/lookups/districts/${districtId}`, {
-        params: { fields: "district_name_en" },
-      })
+    LOOKUP_API.districts
+      .retrieve(districtId, { fields: "district_name_en" })
       .then((res) => {
         const name = res?.data?.district_name_en;
         if (name) setDistrictName(name.toUpperCase());
-      });
+      })
+      .catch((e) => console.error("Failed to load district name", e));
   }, [districtId]);
 
   /* ---------------------------
-     STEP 3: Get ALL blocks
+    STEP 3+4: Get ALL blocks + analytics (SINGLE CALL)
   --------------------------- */
+  async function enrichBlocksWithAspirational(apiBlocks) {
+    const enriched = await Promise.all(
+      apiBlocks.map(async (b) => {
+        try {
+          const res = await api.get(
+            "/lookups/blocks/is-aspirational/" + encodeURIComponent(b.block_id),
+          );
+
+          return {
+            block_id: b.block_id,
+            block_name_en: b.block_name,
+            is_aspirational: Number(res?.data?.is_aspirational) === 1,
+          };
+        } catch (e) {
+          console.error(
+            "Failed to resolve aspirational flag for block",
+            b.block_id,
+            e,
+          );
+
+          return {
+            block_id: b.block_id,
+            block_name_en: b.block_name,
+            is_aspirational: false,
+          };
+        }
+      }),
+    );
+
+    return enriched;
+  }
+
   useEffect(() => {
     if (!districtId) return;
-
-    api
-      .get(`/lookups/blocks/${districtId}`, {
-        params: { page_size: 100 },
-      })
-      .then((res) => {
-        setBlocks(res?.data?.results || []);
-      });
-  }, [districtId]);
-
-  /* ---------------------------
-     STEP 4: Fetch analytics (INCREMENTAL)
-  --------------------------- */
-  useEffect(() => {
-    if (!blocks.length) return;
 
     let cancelled = false;
     setLoading(true);
 
-    const fetchAll = async () => {
-      for (const b of blocks) {
-        try {
-          const res = await LDMS_API.upsrlmAnalytics({
-            block_id: b.block_id,
-          });
+    // reset state (same behavior as before)
+    setBlocks([]);
+    setAnalyticsCache({});
 
-          if (!cancelled) {
-            setAnalyticsCache((prev) => ({
-              ...prev,
-              [b.block_id]: res.data,
-            }));
-          }
-        } catch (e) {
-          console.error("Analytics failed for", b.block_id);
-        }
-      }
+    LDMS_API.upsrlmAnalytics({
+      district_id: districtId,
+      detail: 1,
+    })
+      .then((res) => {
+        if (cancelled) return;
 
-      if (!cancelled) setLoading(false);
-    };
+        const apiBlocks = res?.data?.blocks || [];
 
-    fetchAll();
+        // ✅ NEW: resolve aspirational per block
+        enrichBlocksWithAspirational(apiBlocks).then((finalBlocks) => {
+          if (!cancelled) setBlocks(finalBlocks);
+        });
+
+        // analytics cache stays untouched
+        const cache = {};
+        apiBlocks.forEach((b) => {
+          cache[b.block_id] = {
+            block_name: b.block_name,
+            totals: {
+              total_vos: b.total_vos,
+              total_clfs: b.total_clfs,
+              total_shgs: b.total_shgs,
+              total_rural_hh: b.total_rural_hh,
+              total_hh_under_shgs: b.total_hh_under_shgs,
+            },
+            updated_at: b.updated_at,
+          };
+        });
+
+        setAnalyticsCache(cache);
+      })
+      .catch((e) => {
+        console.error("District block analytics failed", e);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+
     return () => {
       cancelled = true;
     };
-  }, [blocks]);
+  }, [districtId]);
 
   /* ---------------------------
      STEP 5: Load JSX District Map
@@ -213,6 +250,13 @@ export default function DmmuBlockMap({
             <div>VOs: {tooltipData.totals?.total_vos ?? "—"}</div>
             <div>CLFs: {tooltipData.totals?.total_clfs ?? "—"}</div>
             <div>SHGs: {tooltipData.totals?.total_shgs ?? "—"}</div>
+            <div>
+              Rural Households: {tooltipData.totals?.total_rural_hh ?? "—"}
+            </div>
+            <div>
+              Households under SHGs:{" "}
+              {tooltipData.totals?.total_hh_under_shgs ?? "—"}
+            </div>
           </div>
         )}
       </div>
@@ -227,22 +271,37 @@ export default function DmmuBlockMap({
               <th>VOs</th>
               <th>CLFs</th>
               <th>SHGs</th>
+              <th>Rural HouseHolds</th>
+              <th>Households under SHGs</th>
             </tr>
           </thead>
           <tbody>
             {tableData.map((b, i) => (
               <tr
                 key={b.block_id}
-                className="clickable-row"
+                className={
+                  "clickable-row " +
+                  (b.is_aspirational ? "aspirational-row" : "")
+                }
                 onClick={() => {
                   if (onBlockSelect) onBlockSelect(b.block_id);
                 }}
               >
                 <td>{i + 1}</td>
-                <td>{b.block_name_en}</td>
+                <td>
+                  <div className="block-name-cell">
+                    {b.block_name_en}
+
+                    {b.is_aspirational && (
+                      <span className="aspirational-badge">Aspirational</span>
+                    )}
+                  </div>
+                </td>
                 <td>{b.analytics?.totals?.total_vos ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_clfs ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_shgs ?? "—"}</td>
+                <td>{b.analytics?.totals?.total_rural_hh ?? "—"}</td>
+                <td>{b.analytics?.totals?.total_hh_under_shgs ?? "—"}</td>
               </tr>
             ))}
           </tbody>
@@ -267,6 +326,7 @@ export default function DmmuBlockMap({
           display: flex;
           align-items: center;
           justify-content: center;
+          overflow: hidden;
         }
 
         .map-tooltip {
@@ -312,6 +372,33 @@ export default function DmmuBlockMap({
           padding: 8px;
           border-bottom: 1px solid #e5e7eb;
         }
+
+        /* --- Aspirational Highlight (Yellow Theme) --- */
+
+        .aspirational-row {
+          background: #fffbea; /* soft govt yellow */
+        }
+
+        .aspirational-row:hover {
+          background: #fff3c4;
+        }
+
+        .block-name-cell {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+        }
+
+        .aspirational-badge {
+          background: #fde68a;          /* yellow-300 */
+          color: #92400e;               /* amber-800 */
+          font-size: 11px;
+          font-weight: 700;
+          padding: 3px 8px;
+          border-radius: 999px;
+          border: 1px solid #f59e0b;
+          white-space: nowrap;
+        }        
 
         @media (max-width: 1024px) {
           .dmmu-map-layout {

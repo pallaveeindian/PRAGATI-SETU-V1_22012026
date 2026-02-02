@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import LeftNav from "../../../components/layout/LeftNav";
-import TopNav from "../../../components/layout/TopNav";
+import TopNav from "../layout/tms_TopNav";
+import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
 
@@ -32,7 +32,7 @@ function saveCache(payload) {
   try {
     localStorage.setItem(
       CACHE_KEY,
-      JSON.stringify({ ts: Date.now(), payload })
+      JSON.stringify({ ts: Date.now(), payload }),
     );
   } catch {}
 }
@@ -310,6 +310,7 @@ export default function TpCentreList() {
   const [centres, setCentres] = useState(() => loadCache()?.payload || []);
   const [search, setSearch] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
+  const [navCollapsed, setNavCollapsed] = useState(false);
 
   const [viewOpen, setViewOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
@@ -350,14 +351,17 @@ export default function TpCentreList() {
   const filtered = useMemo(
     () =>
       centres.filter((c) =>
-        c.venue_name?.toLowerCase().includes(search.toLowerCase())
+        c.venue_name?.toLowerCase().includes(search.toLowerCase()),
       ),
-    [centres, search]
+    [centres, search],
   );
 
   return (
     <div className="app-shell">
-      <LeftNav />
+      <LeftNav
+        collapsed={navCollapsed}
+        onToggle={() => setNavCollapsed((v) => !v)}
+      />
       <div className="main-area">
         <TopNav
           left={

@@ -245,6 +245,8 @@ export const AUTH_API = {
 export const LOOKUP_API = {
   // Master geo units (via DRF router)
   states: makeCrud("/lookups/states/"),
+  mandals: makeCrud("/lookups/mandals/"),
+  district_categories: makeCrud("/lookups/district-categories/"),
   districts: makeCrud("/lookups/districts/"),
   blocks: makeCrud("/lookups/blocks/"),
   block_detail: makeCrud("/lookups/blocks/detail/"),
@@ -638,6 +640,17 @@ export const LDMS_API = {
 
   schemes: (params) =>
     api.get(`/ldms/schemes/`, {
+      params,
+    }),
+
+  // Support Mapping and Capturing
+  recorPLDS: makeCrud("/ldms/recorded-plds/"),
+  SBTypes: makeCrud("/ldms/sbtypes/"),
+  SupportBuckets: makeCrud("/ldms/support-buckets/"),
+  SBTrainings: makeCrud("/ldms/training-supports/"),
+  BucketApprovals: makeCrud("/ldms/bucket-approvals/"),
+  BenefReport: (params) =>
+    api.get(`/ldms/reports/recorded-beneficiaries/`, {
       params,
     }),
 };

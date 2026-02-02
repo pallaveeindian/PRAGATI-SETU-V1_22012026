@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import LeftNav from "../../../components/layout/LeftNav";
-import TopNav from "../../../components/layout/TopNav";
+import TopNav from "../layout/tms_TopNav";
+import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 
@@ -54,6 +54,7 @@ export default function TpCentreRegistration() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const { centreId } = useParams(); // 👈 EDIT MODE
+  const [navCollapsed, setNavCollapsed] = useState(false);
 
   const isEdit = Boolean(centreId);
 
@@ -132,7 +133,7 @@ export default function TpCentreRegistration() {
           id: x.id,
           room_name: x.room_name,
           room_capacity: x.room_capacity,
-        }))
+        })),
       );
 
       const m = await TMS_API.trainingPartnerSubmissions.list({
@@ -145,7 +146,7 @@ export default function TpCentreRegistration() {
           file: null,
           notes: x.notes || "",
           existing_url: x.file,
-        }))
+        })),
       );
     }
 
@@ -237,7 +238,7 @@ export default function TpCentreRegistration() {
       }
 
       alert(
-        `Training Centre ${isEdit ? "updated" : "registered"} successfully`
+        `Training Centre ${isEdit ? "updated" : "registered"} successfully`,
       );
       navigate("/tms/tp/centre-list");
     } catch (e) {
@@ -278,7 +279,10 @@ export default function TpCentreRegistration() {
 
   return (
     <div className="app-shell">
-      <LeftNav />
+      <LeftNav
+        collapsed={navCollapsed}
+        onToggle={() => setNavCollapsed((v) => !v)}
+      />
       <div className="main-area">
         <TopNav
           left={
@@ -314,7 +318,7 @@ export default function TpCentreRegistration() {
                     onChange={(e) =>
                       setCentre({ ...centre, serial_number: e.target.value })
                     }
-                  />
+                  />,
                 ),
                 row(
                   "name",
@@ -324,7 +328,7 @@ export default function TpCentreRegistration() {
                     onChange={(e) =>
                       setCentre({ ...centre, venue_name: e.target.value })
                     }
-                  />
+                  />,
                 ),
                 row(
                   "type",
@@ -341,10 +345,10 @@ export default function TpCentreRegistration() {
                     <option value="LODGE">Lodge</option>
                     <option value="RENTED">Rented</option>
                     <option value="OTHERS">Others</option>
-                  </select>
+                  </select>,
                 ),
               ],
-              "basic"
+              "basic",
             )}
 
           {/* ===================== ADDRESS ===================== */}
@@ -359,7 +363,7 @@ export default function TpCentreRegistration() {
                     onChange={(e) =>
                       setCentre({ ...centre, venue_address: e.target.value })
                     }
-                  />
+                  />,
                 ),
                 row(
                   "dist",
@@ -376,7 +380,7 @@ export default function TpCentreRegistration() {
                         {d.district_name_en}
                       </option>
                     ))}
-                  </select>
+                  </select>,
                 ),
                 row(
                   "block",
@@ -397,7 +401,7 @@ export default function TpCentreRegistration() {
                         </option>
                       ))}
                     </select>
-                  )
+                  ),
                 ),
                 row(
                   "pan",
@@ -418,7 +422,7 @@ export default function TpCentreRegistration() {
                         </option>
                       ))}
                     </select>
-                  )
+                  ),
                 ),
                 row(
                   "vill",
@@ -439,10 +443,10 @@ export default function TpCentreRegistration() {
                         </option>
                       ))}
                     </select>
-                  )
+                  ),
                 ),
               ],
-              "address"
+              "address",
             )}
 
           {/* ===================== FACILITIES ===================== */}
@@ -460,7 +464,7 @@ export default function TpCentreRegistration() {
                         security_arrangements: e.target.value,
                       })
                     }
-                  />
+                  />,
                 ),
                 row(
                   "toilet",
@@ -475,7 +479,7 @@ export default function TpCentreRegistration() {
                         toilets_bathrooms: e.target.value,
                       })
                     }
-                  />
+                  />,
                 ),
                 row(
                   "power",
@@ -493,7 +497,7 @@ export default function TpCentreRegistration() {
                     <option value="REGULAR">Regular</option>
                     <option value="LIMITED">Limited</option>
                     <option value="SCARCE">Scarce</option>
-                  </select>
+                  </select>,
                 ),
                 ...[
                   ["medical_kit", "Medical Kit Available"],
@@ -522,8 +526,8 @@ export default function TpCentreRegistration() {
                         />{" "}
                         No
                       </label>
-                    </>
-                  )
+                    </>,
+                  ),
                 ),
                 row(
                   "other",
@@ -533,10 +537,10 @@ export default function TpCentreRegistration() {
                     onChange={(e) =>
                       setCentre({ ...centre, other_details: e.target.value })
                     }
-                  />
+                  />,
                 ),
               ],
-              "facilities"
+              "facilities",
             )}
 
           {/* ===================== ROOMS ===================== */}
@@ -557,7 +561,7 @@ export default function TpCentreRegistration() {
                           training_hall_count: e.target.value,
                         })
                       }
-                    />
+                    />,
                   ),
                   row(
                     "cap",
@@ -572,10 +576,10 @@ export default function TpCentreRegistration() {
                           training_hall_capacity: e.target.value,
                         })
                       }
-                    />
+                    />,
                   ),
                 ],
-                "rooms-main"
+                "rooms-main",
               )}
 
               {rooms.map((r, i) =>
@@ -591,7 +595,7 @@ export default function TpCentreRegistration() {
                           c[i].room_name = e.target.value;
                           setRooms(c);
                         }}
-                      />
+                      />,
                     ),
                     row(
                       `rc_${i}`,
@@ -605,7 +609,7 @@ export default function TpCentreRegistration() {
                           c[i].room_capacity = e.target.value;
                           setRooms(c);
                         }}
-                      />
+                      />,
                     ),
                     row(
                       `rd_${i}`,
@@ -617,11 +621,11 @@ export default function TpCentreRegistration() {
                         }
                       >
                         Delete
-                      </button>
+                      </button>,
                     ),
                   ],
-                  `room_${i}`
-                )
+                  `room_${i}`,
+                ),
               )}
 
               <button
@@ -663,7 +667,7 @@ export default function TpCentreRegistration() {
                             {x}
                           </option>
                         ))}
-                      </select>
+                      </select>,
                     ),
                     row(
                       `mf_${i}`,
@@ -675,7 +679,7 @@ export default function TpCentreRegistration() {
                           c[i].file = e.target.files[0];
                           setMedia(c);
                         }}
-                      />
+                      />,
                     ),
                     row(
                       `mn_${i}`,
@@ -687,7 +691,7 @@ export default function TpCentreRegistration() {
                           c[i].notes = e.target.value;
                           setMedia(c);
                         }}
-                      />
+                      />,
                     ),
                     row(
                       `md_${i}`,
@@ -699,11 +703,11 @@ export default function TpCentreRegistration() {
                         }
                       >
                         Delete
-                      </button>
+                      </button>,
                     ),
                   ],
-                  `media_${i}`
-                )
+                  `media_${i}`,
+                ),
               )}
 
               <button

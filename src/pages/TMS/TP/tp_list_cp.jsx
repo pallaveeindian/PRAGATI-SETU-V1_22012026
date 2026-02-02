@@ -1,7 +1,7 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import LeftNav from "../../../components/layout/LeftNav";
-import TopNav from "../../../components/layout/TopNav";
+import TopNav from "../layout/tms_TopNav";
+import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
 
@@ -146,6 +146,7 @@ function CPViewModal({ open, cp, onClose }) {
 export default function TpListCP() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
+  const [navCollapsed, setNavCollapsed] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [cps, setCps] = useState([]);
@@ -174,7 +175,7 @@ export default function TpListCP() {
 
   async function handleDelete(cp) {
     const ok = window.confirm(
-      `Are you sure you want to delete "${cp.name}"?\n\nThis will also DISABLE their login.`
+      `Are you sure you want to delete "${cp.name}"?\n\nThis will also DISABLE their login.`,
     );
     if (!ok) return;
 
@@ -204,7 +205,10 @@ export default function TpListCP() {
 
   return (
     <div className="app-shell">
-      <LeftNav />
+      <LeftNav
+        collapsed={navCollapsed}
+        onToggle={() => setNavCollapsed((v) => !v)}
+      />
       <div className="main-area">
         <TopNav
           left={<div className="app-title">Pragati Setu — Contact Persons</div>}
