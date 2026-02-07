@@ -32,7 +32,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
     aspirational_only: false,
 
     partner: "",
-    theme: "",
+    theme_id: "",
     training_plan: "",
 
     status: "",
@@ -137,17 +137,17 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
   /* ================= TRAINING PLAN BASED ON THEME ================= */
   useEffect(() => {
-    if (!filters.theme) {
+    if (!filters.theme_id) {
       setTrainingPlans([]);
       setFilters(f => ({ ...f, training_plan: "" }));
       return;
     }
 
     TMS_API.trainingPlans
-      .list({ theme: filters.theme })
+      .list({ theme: filters.theme_id })
       .then(r => setTrainingPlans(r?.data?.results || []))
       .catch(() => setTrainingPlans([]));
-  }, [filters.theme]);
+  }, [filters.theme_id]);
 
   /* ================= FETCH ================= */
   function handleFetch() {
@@ -277,11 +277,11 @@ export default function TrainingReqListFilter({ user, onApply }) {
         {/* ===== Theme ===== */}
         <select
           className="input"
-          value={filters.theme}
+          value={filters.theme_id}
           onChange={e =>
             setFilters(f => ({
               ...f,
-              theme: e.target.value,
+              theme_id: e.target.value,
               training_plan: "",
             }))
           }
@@ -349,18 +349,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
           <option value="BLOCK">Block</option>
         </select>
 
-        {/* ===== Batch Type ===== */}
-        <select
-          className="input"
-          value={filters.batch_type}
-          onChange={e =>
-            setFilters(f => ({ ...f, batch_type: e.target.value }))
-          }
-        >
-          <option value="">Batch Type</option>
-          <option value="SEPARATE">Separate</option>
-          <option value="COMBINED">Combined</option>
-        </select>
+     
 
         <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 12 }}>
           <button className="btn btn-primary" onClick={handleFetch}>
