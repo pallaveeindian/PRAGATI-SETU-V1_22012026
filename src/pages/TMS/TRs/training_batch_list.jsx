@@ -10,6 +10,7 @@ import { getCanonicalRole } from "../../../utils/roleUtils";
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
+const TP_SELF_PARTNER_KEY = "tp_self_partner_id";
 
 function getCacheKey(scope) {
   return `${CACHE_KEY}_${scope || "default"}`;
@@ -33,6 +34,32 @@ function loadCache(scope) {
   }
 }
 
+/* ---------------- partner resolver ---------------- */
+
+async function resolveTrainingPartnerIdForUser(userId) {
+  if (!userId) return null;
+
+  try {
+    const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
+    if (cached) return Number(cached);
+  } catch {}
+
+  try {
+    const resp = await TMS_API.trainingPartners.list({
+      search: userId,
+      fields: "id",
+    });
+    const pid = resp?.data?.results?.[0]?.id || null;
+
+    if (pid) {
+      localStorage.setItem(TP_SELF_PARTNER_KEY, String(pid));
+    }
+    return pid;
+  } catch {
+    return null;
+  }
+}
+
 /* ===================================================== */
 
 export default function TrainingBatchList() {
@@ -44,6 +71,10 @@ export default function TrainingBatchList() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState([]);
+
+  const tpInitRef = useRef(false);
+  const [tpPartnerId, setTpPartnerId] = useState(null); 
+  const [tpPartnerName, setTpPartnerName] = useState(null); 
 
   /* ---------------- filters ---------------- */
 
@@ -103,14 +134,14 @@ export default function TrainingBatchList() {
 
     if (role === "bmmu" && blockId) return { block_id: blockId };
     if (role === "dmmu" && districtId) return { district_id: districtId };
-    if (role === "tp") return { created_by: user?.id };
+    if (role === "training_partner") return { created_by: user?.id };
 
     return {};
   }
 
   function getScopeKey() {
     if (requestId) return `req_${requestId}`;
-    if (role === "tp") return `tp_${user?.id}`;
+    if (role === "training_partner") return `tp_${user?.id}`;
     return role || "global";
   }
 
@@ -136,12 +167,12 @@ export default function TrainingBatchList() {
           setDistrictCategories(dcRes?.data?.results || []);
         }
 
-        if (role !== "tp" && role !== "tpcp") {
+        if (role !== "training_partner" && role !== "tpcp") {
           const pRes = await TMS_API.trainingPartners.list({ page_size: 100 });
           setPartners(pRes?.data?.results || []);
         }
 
-        if (role === "tp") {
+        if (role === "training_partner") {
           const cRes = await TMS_API.trainingPartnerCentres.list({
             partner: user?.partner,
           });
@@ -153,17 +184,63 @@ export default function TrainingBatchList() {
     })();
   }, [role, user]);
 
+  useEffect(() => {
+    if (role !== "dmmu") return;
+
+    const geo = getGeoscope() || {};
+    const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
+
+    if (!dmmuDistrictId) return;
+
+    setFilters(f => {
+      // do not override if already set
+      if (f.district_id) return f;
+
+      return {
+        ...f,
+        district_id: dmmuDistrictId,
+        block_id: "",
+        aspirational_only: false,
+      };
+    });
+  }, [role]);
+
+  useEffect(() => {
+    if (role !== "training_partner" || !user?.id || tpInitRef.current) return;
+
+    tpInitRef.current = true;
+
+    (async () => {
+      const pid = await resolveTrainingPartnerIdForUser(user.id);
+      if (!pid) return;
+
+      setTpPartnerId(pid);
+
+      // get name from already-loaded partners list
+      const pname =
+        partners.find(p => String(p.id) === String(pid))?.name ||
+        "Your Organisation";
+
+      setTpPartnerName(pname);
+
+      setFilters(f => ({
+        ...f,
+        partner: String(pid),
+        centre_id: "",
+      }));
+    })();
+  }, [role, user?.id, partners]);
+
   /* ---------------- cascading ---------------- */
 
   useEffect(() => {
+    if (role === "bmmu") return;
     if (!filters.district_id) {
       setBlocks([]);
       return;
     }
 
-    LOOKUP_API.blocks
-      .list(filters.district_id)
-      .then((r) => {
+    LOOKUP_API.blocksByDistrict(filters.district_id).then((r) => {
         let data = r?.data?.results || [];
         if (filters.aspirational_only) {
           data = data.filter((b) => b.is_aspirational === 1);
@@ -194,10 +271,21 @@ export default function TrainingBatchList() {
     setLoading(true);
     try {
       const baseParams = getDefaultScopeParams();
+      let effectiveFilters = filters;
+
+      // 🚨 BMMU: ignore ALL geo filters from UI
+      if (role === "bmmu") {
+        effectiveFilters = Object.fromEntries(
+          Object.entries(filters).filter(
+            ([k]) =>
+              !["district_id", "block_id", "mandal_id", "district_category_id"].includes(k)
+          )
+        );
+      }
       const finalParams = {
         ...baseParams,
         ...Object.fromEntries(
-          Object.entries(filters).filter(
+          Object.entries(effectiveFilters).filter(
             ([, v]) => v !== "" && v !== false,
           ),
         ),
@@ -219,10 +307,27 @@ export default function TrainingBatchList() {
     }
   }
 
+  // 🚀 Auto-fetch for BMMU (no geographical filters, block-scoped only)
+  useEffect(() => {
+    if (role === "bmmu") {
+      fetchBatches();
+    }
+  }, [role]);  
+
+  useEffect(() => {
+    if (role === "training_partner" && tpPartnerId) {
+      fetchBatches();
+    }
+  }, [role, tpPartnerId]);  
+
   /* ---------------- initial load ---------------- */
 
   useEffect(() => {
     if (!user?.id || didInitRef.current) return;
+
+    // 🚫 BMMU & TP are auto-fetched elsewhere
+    if (role === "bmmu" || role === "training_partner") return;
+
     didInitRef.current = true;
 
     const cached = loadCache(getScopeKey());
@@ -267,36 +372,81 @@ export default function TrainingBatchList() {
                   </>
                 )}
 
-                <select className="input" onChange={e => setFilters(f => ({ ...f, district_id: e.target.value, block_id: "" }))}>
-                  <option value="">District</option>
-                  {districts.map(d => <option key={d.district_id} value={d.district_id}>{d.district_name_en}</option>)}
-                </select>
+                {role !== "bmmu" && (
+                  <select
+                    className="input"
+                    value={filters.district_id}
+                    disabled={role === "dmmu"}
+                    onChange={e => {
+                      if (role === "dmmu") return;
 
-                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="checkbox"
-                    checked={filters.aspirational_only}
-                    onChange={e => setFilters(f => ({ ...f, aspirational_only: e.target.checked }))} />
-                  Aspirational
-                </label>
-
-                {blocks.length > 0 && (
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, block_id: e.target.value }))}>
-                    <option value="">Block</option>
-                    {blocks.map(b => <option key={b.block_id} value={b.block_id}>{b.block_name_en}</option>)}
+                      setBlocks([]);
+                      setFilters(f => ({
+                        ...f,
+                        district_id: e.target.value,
+                        block_id: "",
+                        aspirational_only: false,
+                      }));
+                    }}
+                  >
+                    <option value="">District</option>
+                    {districts.map(d => (
+                      <option key={d.district_id} value={d.district_id}>
+                        {d.district_name_en}
+                      </option>
+                    ))}
                   </select>
                 )}
 
-                {role === "tp" && (
+                {role !== "bmmu" && (
+                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="checkbox"
+                    checked={filters.aspirational_only}
+                    onChange={e => setFilters(f => ({ ...f, aspirational_only: e.target.checked, block_id: "", }))} />
+                  Aspirational
+                </label>
+                )}
+
+                {role !== "bmmu" && filters.district_id && (
+                  <select
+                    key={filters.district_id}
+                    className="input"
+                    value={filters.block_id}
+                    onChange={e =>
+                      setFilters(f => ({ ...f, block_id: e.target.value }))
+                    }
+                  >
+                    <option value="">Block</option>
+                    {blocks.map(b => (
+                      <option key={b.block_id} value={b.block_id}>
+                        {b.block_name_en}
+                      </option>
+                    ))}
+                  </select>
+                )}
+
+                {role === "training_partner" && (
                   <select className="input" onChange={e => setFilters(f => ({ ...f, centre_id: e.target.value }))}>
                     <option value="">Centre</option>
                     {centres.map(c => <option key={c.id} value={c.id}>{c.venue_name}</option>)}
                   </select>
                 )}
 
-                {role !== "tp" && role !== "tpcp" && (
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, partner: e.target.value }))}>
+                {/* Training Partner filter */}
+                {role !== "training_partner" && role !== "tpcp" && (
+                  <select
+                    className="input"
+                    value={filters.partner}
+                    onChange={e =>
+                      setFilters(f => ({ ...f, partner: e.target.value }))
+                    }
+                  >
                     <option value="">Training Partner</option>
-                    {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                    {partners.map(p => (
+                      <option key={p.id} value={p.id}>
+                        {p.name}
+                      </option>
+                    ))}
                   </select>
                 )}
 
@@ -331,9 +481,11 @@ export default function TrainingBatchList() {
                   <option value="COMBINED">Combined</option>
                 </select>
 
-                <button className="btn btn-primary" onClick={fetchBatches}>
-                  Fetch Batches
-                </button>
+                <div style={{ flexBasis: "100%", display: "flex", justifyContent: "center" }}>
+                  <button className="btn btn-primary" onClick={fetchBatches}>
+                    Fetch Batches
+                  </button>
+                </div>
               </div>
             </div>
 

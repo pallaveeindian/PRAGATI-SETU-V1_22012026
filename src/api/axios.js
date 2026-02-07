@@ -249,6 +249,7 @@ export const LOOKUP_API = {
   district_categories: makeCrud("/lookups/district-categories/"),
   districts: makeCrud("/lookups/districts/"),
   blocks: makeCrud("/lookups/blocks/"),
+  blocksByDistrict: (districtId) => api.get(`/lookups/blocks/${encodeURIComponent(districtId)}/`),
   block_detail: makeCrud("/lookups/blocks/detail/"),
   panchayats: makeCrud("/lookups/panchayats/"),
   panchayat_detail: makeCrud("/lookups/panchayats/detail/"),
