@@ -4,7 +4,7 @@ import { Outlet } from "react-router-dom";
 import LdmsLeftNav from "./ldms_leftnav";
 import LdmsHeader from "./ldms_header";
 import LdmsFooter from "./ldms_footer";
-import bgImage from "../../../assets/ldms/background_vector.jpg";
+// import bgImage from "../../../assets/LDMS/background_vector.jpg";
 
 export default function LdmsLayout() {
   const [navCollapsed, setNavCollapsed] = useState(false);

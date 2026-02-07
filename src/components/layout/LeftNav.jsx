@@ -4,7 +4,7 @@ import { NavLink, useLocation, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { getCanonicalRole } from "../../utils/roleUtils";
 import logo from "../../assets/PS_LOGO.jpg";
-import bms_logo from "../../assets/bms_Logo.png";
+import bms_logo from "../../assets/bms_logo.png";
 import tms_logo from "../../assets/tms_logo.png";
 import ldms_logo from "../../assets/ldms_logo.png";
 import ems_logo from "../../assets/ems_logo.png";

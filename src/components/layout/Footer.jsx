@@ -1,6 +1,6 @@
 import React from "react";
 import ps_logo from "../../assets/PS_TRANS.png";
-import bdoLogo from "../../assets/BDO_Logo.png";
+import bdoLogo from "../../assets/BDO_logo.png";
 /**
  * Footer
  * LokOS-style footer adapted for Pragati Setu

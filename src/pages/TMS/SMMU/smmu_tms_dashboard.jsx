@@ -499,21 +499,7 @@ export default function SmmuTmsDashboard() {
                     Create Partner Targets
                   </button>
                   <button
-                    onClick={() => navigate("/tms/training-plans")}
-                    className="btn"
-                    style={{ padding: "8px 12px", borderRadius: 6 }}
-                  >
-                    Training Plans
-                  </button>
-                  <button
-                    onClick={() => navigate("/tms/training-themes")}
-                    className="btn"
-                    style={{ padding: "8px 12px", borderRadius: 6 }}
-                  >
-                    Training Themes
-                  </button>
-                  <button
-                    onClick={() => navigate("/tms/smmu/batches")}
+                    onClick={() => navigate("/tms/batches-list/")}
                     className="btn"
                     style={{ padding: "8px 12px", borderRadius: 6 }}
                   >

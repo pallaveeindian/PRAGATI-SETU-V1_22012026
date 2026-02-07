@@ -50,7 +50,7 @@ export default function BatchCertificate() {
   const [financialYear, setFinancialYear] = useState("2025-26");
   const [certificateData, setCertificateData] = useState(null);
   const [generating, setGenerating] = useState(false);
-
+  const printRef = useRef(null);
   const didRunRef = useRef(false);
 
   const requestLevel = batchDetail?.request?.level || null;
@@ -574,10 +574,32 @@ export default function BatchCertificate() {
     if (!reportRow) return <div>No report available.</div>;
 
     const status = reportRow.status || "DRAFT";
-    const fileUrl = reportRow.report_file;
+    const fileUrl = (() => {
+      if (!reportRow?.report_file) return null;
+
+      try {
+        const raw = reportRow.report_file.trim();
+
+        // Extract protocol + host + port from API baseURL
+        const apiBase = new URL(api.defaults.baseURL);
+        const mediaOrigin = `${apiBase.protocol}//${apiBase.host}`;
+
+        // If backend returned relative path (/media/...)
+        if (raw.startsWith("/")) {
+          return `${mediaOrigin}${raw}`;
+        }
+
+        // If backend returned absolute URL → keep only pathname
+        const parsed = new URL(raw);
+        return `${mediaOrigin}${parsed.pathname}`;
+      } catch (e) {
+        console.error("Invalid report_file:", reportRow.report_file);
+        return null;
+      }
+    })();
     const canUpload =
-      isBMMU ||
-      (isDMMU && status !== "DRAFT") ||
+      (isBMMU && !["DMM_SIGNED", "SMM_SIGNED"].includes(status)) ||
+      (isDMMU && status !== "SMM_SIGNED") ||
       (isSMMU && status === "DMM_SIGNED");
 
     return (
@@ -1219,10 +1241,10 @@ export default function BatchCertificate() {
 
                   {/* Certificate Content */}
                   <div
+                    ref={printRef}
+                    className="print-certificate"
                     style={{
                       padding: 0,
-                      maxHeight: "calc(100vh - 120px)",
-                      overflow: "auto",
                     }}
                   >
                     {renderCertificatePreview()}
@@ -1233,6 +1255,53 @@ export default function BatchCertificate() {
           </div>
         </main>
       </div>
+      <style>
+      {`
+        @media print {
+
+          @page {
+            size: A4;
+            margin: 20mm;
+          }
+
+          /* Hide everything by visibility (NOT display) */
+          body * {
+            visibility: hidden !important;
+          }
+
+          /* Show certificate */
+          .print-certificate,
+          .print-certificate * {
+            visibility: visible !important;
+          }
+
+          /* Reposition certificate at top of page */
+          .print-certificate {
+            position: absolute !important;
+            left: 0;
+            top: 0;
+            width: 100% !important;
+            background: #fff !important;
+          }
+
+          /* Remove modal overlays */
+          div[style*="rgba(0,0,0"] {
+            background: transparent !important;
+          }
+
+          /* Neutralize fixed positioning */
+          div[style*="position: fixed"] {
+            position: static !important;
+          }
+
+          /* Preserve watermark & colors */
+          * {
+            -webkit-print-color-adjust: exact !important;
+            print-color-adjust: exact !important;
+          }
+        }
+      `}
+      </style>
     </div>
   );
 }

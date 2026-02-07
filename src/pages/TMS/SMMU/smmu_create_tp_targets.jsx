@@ -313,7 +313,7 @@ export default function SmmuCreatePartnerTargets() {
   async function fetchDistricts() {
     setLoading((s) => ({ ...s, districts: true }));
     try {
-      const res = await LOOKUP_API.districts.list({ limit: 500 });
+      const res = await LOOKUP_API.districts.list({ page_size: 500 });
       const data = res?.data ?? res;
       setDistricts(data?.results || []);
     } catch (err) {

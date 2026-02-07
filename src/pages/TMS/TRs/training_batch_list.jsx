@@ -1,312 +1,392 @@
-// src/pages/TMS/TRs/training_batch_list.jsx
-import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
+import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 
-const CACHE_KEY = "tms_training_batches_cache_v1";
+/* ===================================================== */
 
-function getCacheKey(requestIdOrScopeKey) {
-  return `${CACHE_KEY}_${requestIdOrScopeKey || "no_req"}`;
+const CACHE_KEY = "tms_training_batches_cache_v1";
+const GEOSCOPE_KEY = "ps_user_geoscope";
+
+function getCacheKey(scope) {
+  return `${CACHE_KEY}_${scope || "default"}`;
 }
 
-/* ---------------- cache helpers ---------------- */
-
-function saveCache(requestIdOrScopeKey, payload, meta = {}) {
+function saveCache(scope, payload) {
   try {
     localStorage.setItem(
-      getCacheKey(requestIdOrScopeKey),
-      JSON.stringify({ ts: Date.now(), payload, meta }),
+      getCacheKey(scope),
+      JSON.stringify({ ts: Date.now(), payload }),
     );
   } catch {}
 }
 
-function loadCache(requestIdOrScopeKey) {
+function loadCache(scope) {
   try {
-    const raw = localStorage.getItem(getCacheKey(requestIdOrScopeKey));
+    const raw = localStorage.getItem(getCacheKey(scope));
     return raw ? JSON.parse(raw) : null;
   } catch {
     return null;
   }
 }
 
-/* ========================================================= */
+/* ===================================================== */
 
 export default function TrainingBatchList() {
   const { user } = useContext(AuthContext) || {};
+  const role = getCanonicalRole(user || {});
   const { id: requestId } = useParams();
   const navigate = useNavigate();
-  const role = getCanonicalRole(user || {});
+
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [batches, setBatches] = useState(() => {
-    const scopeKey = requestId || getScopeKey();
-    return loadCache(scopeKey)?.payload || [];
+  const [batches, setBatches] = useState([]);
+
+  /* ---------------- filters ---------------- */
+
+  const [filters, setFilters] = useState({
+    mandal_id: "",
+    district_category_id: "",
+    district_id: "",
+    block_id: "",
+    aspirational_only: false,
+
+    centre_id: "",
+    partner: "",
+
+    status: "",
+    training_type: "",
+    batch_type: "",
+
+    theme: "",
+    training_plan: "",
   });
-  const [refreshToken, setRefreshToken] = useState(0);
-  const didRunRef = useRef(false);
 
-  /* ---------------- scope helpers ---------------- */
+  /* ---------------- lookups ---------------- */
 
-  function getUserGeoscope() {
+  const [mandals, setMandals] = useState([]);
+  const [districtCategories, setDistrictCategories] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [blocks, setBlocks] = useState([]);
+  const [centres, setCentres] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [plans, setPlans] = useState([]);
+
+  const didInitRef = useRef(false);
+
+  /* ===================================================== */
+  /* ---------------- geoscope helpers ---------------- */
+
+  function getGeoscope() {
     try {
-      const raw = localStorage.getItem("ps_user_geoscope");
+      const raw = localStorage.getItem(GEOSCOPE_KEY);
       return raw ? JSON.parse(raw) : null;
     } catch {
       return null;
     }
   }
+
   function safeFirst(arr) {
-    return Array.isArray(arr) && arr.length > 0 ? arr[0] : null;
+    return Array.isArray(arr) && arr.length ? arr[0] : null;
+  }
+
+  function getDefaultScopeParams() {
+    if (requestId) return { request: requestId };
+
+    const geo = getGeoscope() || {};
+    const blockId = geo.block_id || safeFirst(geo.blocks);
+    const districtId = geo.district_id || safeFirst(geo.districts);
+
+    if (role === "bmmu" && blockId) return { block_id: blockId };
+    if (role === "dmmu" && districtId) return { district_id: districtId };
+    if (role === "tp") return { created_by: user?.id };
+
+    return {};
   }
 
   function getScopeKey() {
-    if (requestId) return requestId;
-
-    const geoscope = getUserGeoscope() || {};
-    const blockId =
-      geoscope.block_id ||
-      geoscope.blockId ||
-      geoscope.block ||
-      safeFirst(geoscope.blocks);
-    const districtId =
-      geoscope.district_id ||
-      geoscope.districtId ||
-      geoscope.district ||
-      safeFirst(geoscope.districts);
-
-    if (role === "bmmu" && blockId) return `bmmu_block_${blockId}`;
-    if (role === "dmmu" && districtId) return `dmmu_district_${districtId}`;
-    return "smmu_scope";
+    if (requestId) return `req_${requestId}`;
+    if (role === "tp") return `tp_${user?.id}`;
+    return role || "global";
   }
 
-  function getScopeParams() {
-    if (requestId) {
-      return {
-        params: { request: requestId, page_size: 500 },
-        titleSuffix: ` (Request #${requestId})`,
-      };
+  /* ===================================================== */
+  /* ---------------- load lookups ---------------- */
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const [dRes, tRes] = await Promise.all([
+          LOOKUP_API.districts.list({ page_size: 100 }),
+          TMS_API.trainingThemes.list({ page_size: 100 }),
+        ]);
+        setDistricts(dRes?.data?.results || []);
+        setThemes(tRes?.data?.results || []);
+
+        if (role === "smmu") {
+          const [mRes, dcRes] = await Promise.all([
+            LOOKUP_API.mandals.list({ page_size: 100 }),
+            LOOKUP_API.district_categories.list(),
+          ]);
+          setMandals(mRes?.data?.results || []);
+          setDistrictCategories(dcRes?.data?.results || []);
+        }
+
+        if (role !== "tp" && role !== "tpcp") {
+          const pRes = await TMS_API.trainingPartners.list({ page_size: 100 });
+          setPartners(pRes?.data?.results || []);
+        }
+
+        if (role === "tp") {
+          const cRes = await TMS_API.trainingPartnerCentres.list({
+            partner: user?.partner,
+          });
+          setCentres(cRes?.data?.results || []);
+        }
+      } catch (e) {
+        console.error("Lookup load failed", e);
+      }
+    })();
+  }, [role, user]);
+
+  /* ---------------- cascading ---------------- */
+
+  useEffect(() => {
+    if (!filters.district_id) {
+      setBlocks([]);
+      return;
     }
 
-    const geoscope = getUserGeoscope() || {};
-    const blockId =
-      geoscope.block_id ||
-      geoscope.blockId ||
-      geoscope.block ||
-      safeFirst(geoscope.blocks);
-    const districtId =
-      geoscope.district_id ||
-      geoscope.districtId ||
-      geoscope.district ||
-      safeFirst(geoscope.districts);
+    LOOKUP_API.blocks
+      .list(filters.district_id)
+      .then((r) => {
+        let data = r?.data?.results || [];
+        if (filters.aspirational_only) {
+          data = data.filter((b) => b.is_aspirational === 1);
+        }
+        setBlocks(data);
+      })
+      .catch(() => setBlocks([]));
+  }, [filters.district_id, filters.aspirational_only]);
 
-    if (role === "bmmu" && blockId) {
-      return {
-        params: { block_id: blockId, page_size: 500 },
-        titleSuffix: ` (Block Batches)`,
-      };
+  useEffect(() => {
+    if (!filters.theme) {
+      setPlans([]);
+      return;
     }
 
-    if (role === "dmmu" && districtId) {
-      return {
-        params: { district_id: districtId, page_size: 500 },
-        titleSuffix: ` (District Batches)`,
-      };
-    }
+    TMS_API.trainingPlans
+      .list({ theme: filters.theme })
+      .then((r) => setPlans(r?.data?.results || []))
+      .catch(() => setPlans([]));
+  }, [filters.theme]);
 
-    return {
-      params: { page_size: 500 },
-      titleSuffix: " (State Scope)",
-    };
-  }
-
-  async function fetchThemeIdForSMMU() {
-    if (!user?.id) return null;
-    try {
-      const resp = await TMS_API.trainingThemes.list({
-        expert: user.id,
-        page_size: 1,
-      });
-      return resp?.data?.results?.[0]?.id || null;
-    } catch {
-      return null;
-    }
-  }
-
-  /* ---------------- main fetch ---------------- */
+  /* ===================================================== */
+  /* ---------------- fetch batches ---------------- */
 
   async function fetchBatches() {
     if (!user?.id) return;
 
     setLoading(true);
     try {
-      let params = getScopeParams().params;
+      const baseParams = getDefaultScopeParams();
+      const finalParams = {
+        ...baseParams,
+        ...Object.fromEntries(
+          Object.entries(filters).filter(
+            ([, v]) => v !== "" && v !== false,
+          ),
+        ),
+        page_size: 500,
+      };
 
-      // SMMU: use theme_id when no specific request
-      if (!requestId && role === "smmu") {
-        const themeId = await fetchThemeIdForSMMU();
-        if (themeId) {
-          params = { theme_id: themeId, page_size: 500 };
-        }
-      }
-
-      const queryString = new URLSearchParams(params).toString();
-      const resp = await api.get(`/tms/batches-list/?${queryString}`);
+      const qs = new URLSearchParams(finalParams).toString();
+      const resp = await api.get(`/tms/batches-list/?${qs}`);
       const items = resp?.data?.results || [];
 
       const scopeKey = getScopeKey();
       setBatches(items);
-      saveCache(scopeKey, items, { userId: user.id, role, params });
+      saveCache(scopeKey, items);
     } catch (e) {
-      console.error("fetch batches failed", e);
+      console.error("Batch fetch failed", e);
       setBatches([]);
     } finally {
       setLoading(false);
     }
   }
 
+  /* ---------------- initial load ---------------- */
+
   useEffect(() => {
-    if (!user?.id) return;
+    if (!user?.id || didInitRef.current) return;
+    didInitRef.current = true;
 
-    const scopeKey = getScopeKey();
-    const cached = loadCache(scopeKey);
-    if (cached && !refreshToken) {
-      setBatches(cached.payload || []);
-    }
+    const cached = loadCache(getScopeKey());
+    if (cached?.payload) setBatches(cached.payload);
+    else fetchBatches();
+  }, [user?.id, role, requestId]);
 
-    if (didRunRef.current && refreshToken === 0) return;
-    didRunRef.current = true;
-
-    fetchBatches();
-  }, [requestId, refreshToken, user?.id, role]);
-
+  /* ===================================================== */
   /* ---------------- render helpers ---------------- */
 
-  const renderCentreName = (centre) => {
-    if (!centre) return "-";
-    return centre.venue_name || centre.partner?.name || centre.id || "-";
-  };
+  const renderCentreName = (c) =>
+    c?.venue_name || c?.partner?.name || "-";
 
-  const { titleSuffix } = getScopeParams();
-
-  /* ---------------- UI ---------------- */
-
-  const handleRefresh = () => {
-    const scopeKey = getScopeKey();
-    localStorage.removeItem(getCacheKey(scopeKey));
-    setRefreshToken((t) => t + 1);
-    setBatches([]);
-  };
+  /* ===================================================== */
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
+      <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed(v => !v)} />
+
       <div className="main-area">
-        <TopNav
-          left={
-            <div className="app-title">Pragati Setu — Training Batches</div>
-          }
-        />
+        <TopNav left={<div className="app-title">Pragati Setu — Training Batches</div>} />
+
         <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1200, margin: "20px auto" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>Training Batches{titleSuffix}</h2>
-              <div style={{ marginLeft: "auto" }}>
-                <button className="btn" onClick={handleRefresh}>
-                  Refresh
+          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+
+            {/* ================= FILTERS ================= */}
+
+            <div style={{ background: "#fff", padding: 12, borderRadius: 8, marginBottom: 12 }}>
+              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+
+                {role === "smmu" && (
+                  <>
+                    <select className="input" onChange={e => setFilters(f => ({ ...f, mandal_id: e.target.value }))}>
+                      <option value="">Mandal</option>
+                      {mandals.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                    </select>
+
+                    <select className="input" onChange={e => setFilters(f => ({ ...f, district_category_id: e.target.value }))}>
+                      <option value="">District Category</option>
+                      {districtCategories.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                    </select>
+                  </>
+                )}
+
+                <select className="input" onChange={e => setFilters(f => ({ ...f, district_id: e.target.value, block_id: "" }))}>
+                  <option value="">District</option>
+                  {districts.map(d => <option key={d.district_id} value={d.district_id}>{d.district_name_en}</option>)}
+                </select>
+
+                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  <input type="checkbox"
+                    checked={filters.aspirational_only}
+                    onChange={e => setFilters(f => ({ ...f, aspirational_only: e.target.checked }))} />
+                  Aspirational
+                </label>
+
+                {blocks.length > 0 && (
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, block_id: e.target.value }))}>
+                    <option value="">Block</option>
+                    {blocks.map(b => <option key={b.block_id} value={b.block_id}>{b.block_name_en}</option>)}
+                  </select>
+                )}
+
+                {role === "tp" && (
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, centre_id: e.target.value }))}>
+                    <option value="">Centre</option>
+                    {centres.map(c => <option key={c.id} value={c.id}>{c.venue_name}</option>)}
+                  </select>
+                )}
+
+                {role !== "tp" && role !== "tpcp" && (
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, partner: e.target.value }))}>
+                    <option value="">Training Partner</option>
+                    {partners.map(p => <option key={p.id} value={p.id}>{p.name}</option>)}
+                  </select>
+                )}
+
+                <select className="input" onChange={e => setFilters(f => ({ ...f, theme: e.target.value, training_plan: "" }))}>
+                  <option value="">Training Theme</option>
+                  {themes.map(t => <option key={t.id} value={t.id}>{t.theme_name}</option>)}
+                </select>
+
+                {plans.length > 0 && (
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, training_plan: e.target.value }))}>
+                    <option value="">Training Plan</option>
+                    {plans.map(p => <option key={p.id} value={p.id}>{p.training_name}</option>)}
+                  </select>
+                )}
+
+                <select className="input" onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+                  <option value="">Status</option>
+                  {["DRAFT","PENDING","ONGOING","SCHEDULED","COMPLETED","REJECTED"].map(s =>
+                    <option key={s} value={s}>{s}</option>
+                  )}
+                </select>
+
+                <select className="input" onChange={e => setFilters(f => ({ ...f, training_type: e.target.value }))}>
+                  <option value="">Participant</option>
+                  <option value="BENEFICIARY">Beneficiary</option>
+                  <option value="TRAINER">Trainer</option>
+                </select>
+
+                <select className="input" onChange={e => setFilters(f => ({ ...f, batch_type: e.target.value }))}>
+                  <option value="">Batch Type</option>
+                  <option value="SEPARATE">Separate</option>
+                  <option value="COMBINED">Combined</option>
+                </select>
+
+                <button className="btn btn-primary" onClick={fetchBatches}>
+                  Fetch Batches
                 </button>
               </div>
             </div>
 
+            {/* ================= TABLE ================= */}
+
             <div style={{ background: "#fff", padding: 12, borderRadius: 8 }}>
-              <div style={{ maxHeight: 520, overflow: "auto" }}>
-                <table className="table table-compact">
-                  <thead>
-                    <tr>
-                      <th>S.No.</th>
-                      <th>Batch Code</th>
-                      <th>Status</th>
-                      <th>Participant Type</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
-                      <th>Batch Type</th>
-                      <th>Centre</th>
-                      <th>Training Partner</th>
-                      <th>Block</th>
-                      <th>District</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td
-                          colSpan={12}
-                          style={{ textAlign: "center", padding: "40px" }}
-                        >
-                          <div>Loading batches...</div>
+              <table className="table table-compact">
+                <thead>
+                  <tr>
+                    <th>#</th>
+                    <th>Batch Code</th>
+                    <th>Status</th>
+                    <th>Participant</th>
+                    <th>Start</th>
+                    <th>End</th>
+                    <th>Type</th>
+                    <th>Centre</th>
+                    <th>Partner</th>
+                    <th>Block</th>
+                    <th>District</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr><td colSpan={12}>Loading…</td></tr>
+                  ) : batches.length === 0 ? (
+                    <tr><td colSpan={12}>No batches found</td></tr>
+                  ) : (
+                    batches.map((b, i) => (
+                      <tr key={b.id}>
+                        <td>{i + 1}</td>
+                        <td>{b.code}</td>
+                        <td>{b.status}</td>
+                        <td>{b.request?.training_type}</td>
+                        <td>{b.start_date}</td>
+                        <td>{b.end_date}</td>
+                        <td>{b.batch_type}</td>
+                        <td>{renderCentreName(b.centre)}</td>
+                        <td>{b.centre?.partner?.name || "-"}</td>
+                        <td>{b.request?.block?.block_name_en || "-"}</td>
+                        <td>{b.request?.district?.district_name_en || "-"}</td>
+                        <td>
+                          <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/batch-detail/${b.id}`)}>View</button>
+                          <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/batch-certificate/${b.id}`)}>Closure</button>
                         </td>
                       </tr>
-                    ) : batches.length === 0 ? (
-                      <tr>
-                        <td colSpan={12}>
-                          No batches found
-                          {requestId ? " for this training request" : ""}
-                        </td>
-                      </tr>
-                    ) : (
-                      batches.map((batch, index) => (
-                        <tr key={batch.id}>
-                          <td>{index + 1}</td>
-                          <td>{batch.code}</td>
-                          <td>{batch.status}</td>
-                          <td>{batch.request?.training_type || "-"}</td>
-                          <td>{batch.start_date}</td>
-                          <td>{batch.end_date}</td>
-                          <td>{batch.batch_type}</td>
-                          <td>{renderCentreName(batch.centre)}</td>
-                          <td>{batch.centre?.partner?.name || "-"}</td>
-                          <td>{batch.request?.block?.block_name_en || "-"}</td>
-                          <td>
-                            {batch.request?.district?.district_name_en || "-"}
-                          </td>
-                          <td>
-                            <button
-                              className="btn-sm btn-flat"
-                              onClick={() =>
-                                navigate(`/tms/batch-detail/${batch.id}`)
-                              }
-                            >
-                              View
-                            </button>
-                            <button
-                              className="btn-sm btn-flat"
-                              onClick={() =>
-                                navigate(`/tms/batch-certificate/${batch.id}`)
-                              }
-                            >
-                              Closure
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                    ))
+                  )}
+                </tbody>
+              </table>
             </div>
+
           </div>
         </main>
       </div>

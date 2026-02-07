@@ -14,8 +14,8 @@ const TP_SELF_PARTNER_KEY = "tms_self_partner_id_v1";
 
 function normalizeMediaUrl(url) {
   if (!url) return "";
-  if (url.startsWith("http://66.116.207.88/")) {
-    return url.replace("http://66.116.207.88/", "http://66.116.207.88:8088/");
+  if (url.startsWith("http://72.61.255.170/")) {
+    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8088/");
   }
   return url;
 }
@@ -336,9 +336,10 @@ export default function TpCentreList() {
   }
 
   useEffect(() => {
-    fetchCentres(refreshToken > 0);
-    // eslint-disable-next-line
-  }, [refreshToken]);
+    if (user?.id) {
+      fetchCentres(refreshToken > 0);
+    }
+  }, [user?.id, refreshToken]);
 
   async function handleViewCentre(id) {
     setViewLoadingId(id);

@@ -399,20 +399,20 @@ export default function BmmuTmsDashboard() {
                     </button>
 
                     <button
-                      onClick={() => navigate("/tms/bmmu/training-requests")}
+                      onClick={() => navigate("/tms/training-requests")}
                       className="btn"
                       style={{ padding: "8px 12px", borderRadius: 6 }}
                     >
                       View All Training Requests
                     </button>
 
-                    <button
+                    {/* <button
                       onClick={() => navigate("/tms/bmmu/create-training-plan")}
                       className="btn"
                       style={{ padding: "8px 12px", borderRadius: 6 }}
                     >
                       Propose Training Plan
-                    </button>
+                    </button> */}
                   </div>
 
                   <div style={{ marginTop: 16 }}>
