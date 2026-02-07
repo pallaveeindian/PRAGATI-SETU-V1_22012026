@@ -6,6 +6,7 @@ import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
+import TrainingReqListFilter from "./training_req_list_filters";
 
 const CACHE_KEY = "tms_training_requests_cache_v1";
 const USER_MAP_KEY = "tms_user_map_v1";
@@ -239,6 +240,52 @@ export default function TrainingRequestList() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshToken]);
 
+  /* training req list */
+  async function fetchRequestsWithFilters(appliedFilters = {}) {
+    if (!user?.id) return;
+
+    setLoading(true);
+    try {
+      const params = {
+        page_size: 500,
+        ...Object.fromEntries(
+          Object.entries(appliedFilters).filter(
+            ([, v]) => v !== "" && v !== false
+          )
+        ),
+      };
+
+      const geoscope = await ensureUserGeoscope();
+
+      if (role === "bmmu" && geoscope?.blocks?.[0])
+        params.block = geoscope.blocks[0];
+
+      if (role === "dmmu" && geoscope?.districts?.[0])
+        params.district = geoscope.districts[0];
+
+      if (role === "training_partner") {
+        const partnerId = await resolveTrainingPartnerIdForUser(user.id);
+        if (!partnerId) {
+          setRequests([]);
+          setLoading(false);
+          return;
+        }
+        params.partner = partnerId;
+      }
+
+      const resp = await TMS_API.trainingRequests.list(params);
+      const items = resp?.data?.results || [];
+
+      setRequests(items);
+      await fetchAndStoreLookupMaps(items);
+    } catch (e) {
+      console.error("Filtered fetch failed", e);
+      setRequests([]);
+    } finally {
+      setLoading(false);
+    }
+  }
+
   /* ---------------- filtered view ---------------- */
 
   const filtered = useMemo(() => {
@@ -273,6 +320,10 @@ export default function TrainingRequestList() {
         />
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1200, margin: "20px auto" }}>
+            <div><TrainingReqListFilter
+            user={user}
+            onApply={fetchRequestsWithFilters}
+            /></div>            
             <div
               style={{
                 display: "flex",

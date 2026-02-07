@@ -537,6 +537,9 @@ export const TMS_API = {
 
   // Training Request workflow
   trainingRequests: makeCrud("/tms/training-requests/"),
+  // Training Request list with Filters
+  trainingRequestsList: makeCrud("/tms/training-requests-list/"),
+
   trBeneficiaries: makeCrud("/tms/training-request-beneficiaries/"),
   trTrainers: makeCrud("/tms/training-request-trainers/"),
 
