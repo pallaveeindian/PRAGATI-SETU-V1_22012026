@@ -41,11 +41,11 @@ const MENU = {
       to: "/tms/training-requests",
       icon: FaChartBar,
     },
-    {
-      label: "Propose Training Plan",
-      to: "/tms/tms/bmmu/create-training-plan",
-      icon: FaBook,
-    },
+    // {
+    //   label: "Propose Training Plan",
+    //   to: "/tms/tms/bmmu/create-training-plan",
+    //   icon: FaBook,
+    // },
     {
       label: "Training Batches",
       to: "/tms/batches-list/",

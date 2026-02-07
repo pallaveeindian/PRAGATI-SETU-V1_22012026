@@ -348,9 +348,6 @@ export default function DmmuTmsDashboard() {
                   boxShadow: "0 4px 12px rgba(10,20,40,0.06)",
                 }}
               >
-                <h3 style={{ marginTop: 0, color: "#1a1a1a" }}>
-                  Quick Actions
-                </h3>
                 <div
                   style={{
                     display: "flex",
@@ -359,33 +356,6 @@ export default function DmmuTmsDashboard() {
                     marginTop: 16,
                   }}
                 >
-                  <button
-                    onClick={() => navigate("/tms/training-requests")}
-                    className="btn"
-                    style={{
-                      background: "#0b2540",
-                      color: "#fff",
-                      padding: "12px 20px",
-                      borderRadius: 8,
-                      fontWeight: 600,
-                    }}
-                  >
-                    View All Training Requests
-                  </button>
-                  <button
-                    onClick={() => navigate("/tms/batches-list")}
-                    className="btn"
-                    style={{ padding: "12px 20px", borderRadius: 8 }}
-                  >
-                    District Batches
-                  </button>
-                  <button
-                    onClick={() => navigate("/tms/dmmu/requests")}
-                    className="btn"
-                    style={{ padding: "12px 20px", borderRadius: 8 }}
-                  >
-                    Pending Approvals
-                  </button>
                 </div>
 
                 <div
@@ -491,18 +461,7 @@ export default function DmmuTmsDashboard() {
                       }}
                       onClick={() => navigate("/tms/training-requests")}
                     >
-                      → Pending Requests ({kpis.totalTrainings})
-                    </button>
-                    <button
-                      className="btn btn-outline"
-                      style={{
-                        padding: "10px",
-                        textAlign: "left",
-                        borderRadius: 6,
-                      }}
-                      onClick={() => navigate("/tms/training-requests")}
-                    >
-                      → All Requests
+                      → All Training Requests
                     </button>
                   </div>
                 </div>

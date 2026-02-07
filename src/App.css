@@ -40,3 +40,17 @@
 .read-the-docs {
   color: #888;
 }
+
+.stat-value {
+  font-size: 32px;
+  font-weight: 600;
+  margin-top: 8px;
+}
+
+.stat-value.success {
+  color: #2e7d32;
+}
+
+.stat-value.warning {
+  color: #ed6c02;
+}
