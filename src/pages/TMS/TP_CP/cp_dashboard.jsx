@@ -17,7 +17,7 @@ const CP_BATCHES_CACHE_KEY = "tms_cp_batches_cache_v1";
 function normalizeMediaUrl(url) {
   if (!url) return "";
   if (url.startsWith("http://72.61.255.170/")) {
-    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8088/");
+    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8080/");
   }
   return url;
 }

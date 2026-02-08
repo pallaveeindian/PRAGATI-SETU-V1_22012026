@@ -40,7 +40,7 @@ function fmtDate(iso) {
 function normalizeMediaUrl(url) {
   if (!url) return "";
   if (url.startsWith("http://72.61.255.170/")) {
-    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8088/");
+    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8080/");
   }
   return url;
 }
@@ -48,12 +48,10 @@ function normalizeMediaUrl(url) {
 export default function TrainingBatchDetail() {
   const { id: batchId } = useParams();
   const navigate = useNavigate();
-  const { user } = useContext(AuthContext) || {};
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loadingAll, setLoadingAll] = useState(false);
   const [batchData, setBatchData] = useState(null);
   const [trainingRequestDetail, setTrainingRequestDetail] = useState(null);
-  const [participants, setParticipants] = useState([]);
   const [masterTrainers, setMasterTrainers] = useState([]);
   const [centreDetail, setCentreDetail] = useState(null);
 
@@ -87,6 +85,16 @@ export default function TrainingBatchDetail() {
     return grouped;
   }, [batchMedia]);
 
+  const effectiveTrainingType =
+    trainingRequestDetail?.training_type ||
+    batchData?.request?.training_type;
+
+  const isTrainerTraining = effectiveTrainingType === "TRAINER";  
+
+  const displayedParticipants = isTrainerTraining
+    ? batchData?.trainer || []
+    : batchData?.beneficiary || [];
+
   /* ----------------- main fetch orchestration ----------------- */
   async function fetchAll(force = false) {
     if (!batchId) return;
@@ -111,7 +119,6 @@ export default function TrainingBatchDetail() {
           setTrainingRequestDetail(
             cached.payload.trainingRequestDetail || null,
           );
-          setParticipants(cached.payload.participants || []);
           setMasterTrainers(cached.payload.masterTrainers || []);
           setCentreDetail(cached.payload.centreDetail || null);
           setAttendanceList(cached.payload.attendanceList || []);
@@ -131,7 +138,6 @@ export default function TrainingBatchDetail() {
 
       // Extract immediate data
       const requestId = batchResponse?.request?.id;
-      setParticipants(batchResponse?.beneficiary || []);
       setMasterTrainers(batchResponse?.master_trainers || []);
 
       // 2. Fetch FULL Training Request → /tms/training-requests/1/detail/
@@ -184,12 +190,10 @@ export default function TrainingBatchDetail() {
       saveCache(batchId, {
         batchData: batchResponse,
         trainingRequestDetail: trDetail,
-        participants: batchResponse?.beneficiary || [],
         masterTrainers: batchResponse?.master_trainers || [],
         centreDetail: fullCentreData,
         attendanceList: attendances,
       });
-
       console.log("✅ All data loaded and cached successfully!");
     } catch (e) {
       console.error("❌ fetchAll failed:", e);
@@ -981,13 +985,9 @@ export default function TrainingBatchDetail() {
 
                   {/* 5. PARTICIPANT DETAILS */}
                   <div>
-                    <h3
-                      style={{
-                        margin: "0 0 16px 0",
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      👥 Participants ({participants.length})
+                    <h3>
+                      👥 {isTrainerTraining ? "Batch Trainers" : "Participants"} (
+                      {displayedParticipants.length})
                     </h3>
 
                     {hasMasterTrainers && firstMasterTrainer && (
@@ -1026,60 +1026,76 @@ export default function TrainingBatchDetail() {
                         </div>
                       </div>
                     )}
-
                     <div style={{ maxHeight: 400, overflow: "auto" }}>
                       <table className="table table-compact">
                         <thead>
                           <tr>
                             <th>S.No.</th>
-                            <th>Member Name</th>
-                            <th>Age</th>
-                            <th>Gender</th>
-                            <th>PLD Status</th>
-                            <th>Social Category</th>
-                            <th>Religion</th>
+                            <th>Name</th>
                             <th>Mobile</th>
-                            <th>Education</th>
-                            <th>Address</th>
+
+                            {isTrainerTraining ? (
+                              <>
+                                <th>Remarks</th>
+                                <th>Registered On</th>
+                                <th>Replaced</th>
+                              </>
+                            ) : (
+                              <>
+                                <th>Age</th>
+                                <th>Gender</th>
+                                <th>PLD</th>
+                                <th>Social Category</th>
+                                <th>Religion</th>
+                                <th>Education</th>
+                                <th>Address</th>
+                              </>
+                            )}
                           </tr>
                         </thead>
+
                         <tbody>
-                          {participants.length === 0 ? (
-                            <tr key="empty">
-                              <td
-                                colSpan={10}
-                                style={{
-                                  textAlign: "center",
-                                  padding: 20,
-                                }}
-                              >
+                          {displayedParticipants.length === 0 ? (
+                            <tr>
+                              <td colSpan={isTrainerTraining ? 6 : 10} style={{ textAlign: "center", padding: 20 }}>
                                 No participants assigned
                               </td>
                             </tr>
                           ) : (
-                            participants.map((p, index) => (
-                              <tr key={p.id || `p-${index}`}>
+                            displayedParticipants.map((p, index) => (
+                              <tr key={p.id || index}>
                                 <td>{index + 1}</td>
                                 <td style={{ fontWeight: 500 }}>
-                                  {p.member_name || "-"}
+                                  {p.full_name || p.member_name || "-"}
                                 </td>
-                                <td>{p.age || "-"}</td>
-                                <td>{p.gender || "-"}</td>
-                                <td>{p.pld_status || "-"}</td>
-                                <td>{p.social_category || "-"}</td>
-                                <td>{p.religion || "-"}</td>
-                                <td>{p.mobile || "-"}</td>
-                                <td>{p.education || "-"}</td>
-                                <td
-                                  style={{
-                                    maxWidth: 200,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                  }}
-                                >
-                                  {p.address || "-"}
-                                </td>
+                                <td>{p.mobile_no || p.mobile || "-"}</td>
+
+                                {isTrainerTraining ? (
+                                  <>
+                                    <td>{p.remarks || "-"}</td>
+                                    <td>{fmtDate(p.registered_on)}</td>
+                                    <td>{p.is_replaced ? "Yes" : "No"}</td>
+                                  </>
+                                ) : (
+                                  <>
+                                    <td>{p.age || "-"}</td>
+                                    <td>{p.gender || "-"}</td>
+                                    <td>{p.pld_status || "-"}</td>
+                                    <td>{p.social_category || "-"}</td>
+                                    <td>{p.religion || "-"}</td>
+                                    <td>{p.education || "-"}</td>
+                                    <td
+                                      style={{
+                                        maxWidth: 200,
+                                        whiteSpace: "nowrap",
+                                        overflow: "hidden",
+                                        textOverflow: "ellipsis",
+                                      }}
+                                    >
+                                      {p.address || "-"}
+                                    </td>
+                                  </>
+                                )}
                               </tr>
                             ))
                           )}

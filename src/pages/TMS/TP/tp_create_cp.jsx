@@ -181,6 +181,7 @@ setPartnerId(cp.partner);
         //update selected master user
         await api.put(`/lookups/users/${masterUserId}/`, {
           ...userForm,
+          TH_urid: generateThUrid(),
           updated_by: user.id,
           pass_updated_by: user.id,
         });

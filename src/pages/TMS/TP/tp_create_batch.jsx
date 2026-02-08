@@ -20,9 +20,17 @@ const MAX_BATCH_PARTICIPANTS = 50;
 function normalizeMediaUrl(url) {
   if (!url) return "";
   if (url.startsWith("http://72.61.255.170/")) {
-    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8088/");
+    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8080/");
   }
   return url;
+}
+
+function todayISO() {
+  return new Date().toISOString().split("T")[0];
+}
+
+function isSunday(dateStr) {
+  return new Date(dateStr).getDay() === 0;
 }
 
 /* ================= IMAGE LIGHTBOX ================= */
@@ -786,6 +794,18 @@ function BatchSubmitSection({
         className="btn btn-primary"
         disabled={disabled}
         onClick={() => {
+          // 🔒 HARD VALIDATION: each batch must have ≥ 1 participant
+          for (let i = 0; i < batches.length; i++) {
+            const b = batches[i];
+            const perBatchSel = participantSelections[b.key] || {};
+            const count = Object.values(perBatchSel).flat().length;
+
+            if (count < 1) {
+              alert(`"${b.title}" must have at least 1 participant`);
+              return;
+            }
+          }
+
           const p = buildPayload();
           setPayload(p);
           setPreviewOpen(true);
@@ -998,6 +1018,25 @@ export default function TpCreateBatch() {
     });
   }
 
+  function removeParticipantFromBatch(batchKey, trId, participantId) {
+    setParticipantSelections((prev) => {
+      const perBatch = prev[batchKey] || {};
+      const list = perBatch[trId] || [];
+
+      const updatedList = list.filter((p) => p.id !== participantId);
+
+      return {
+        ...prev,
+        [batchKey]: {
+          ...perBatch,
+          [trId]: updatedList,
+        },
+      };
+    });
+
+    markBatchTouched(batchKey);
+  }
+
   async function handleViewCentre(id) {
     setViewLoadingId(id);
     try {
@@ -1131,20 +1170,37 @@ export default function TpCreateBatch() {
                         {selectedList.length > 0 && (
                           <div className="card" style={{ marginTop: 12 }}>
                             <h4>Selected Participants for this Batch</h4>
+
                             <table className="table table-compact">
                               <thead>
                                 <tr>
                                   <th>Name</th>
                                   <th>Mobile</th>
                                   <th>TR ID</th>
+                                  <th />
                                 </tr>
                               </thead>
+
                               <tbody>
                                 {selectedList.map((p) => (
                                   <tr key={`${p.training}-${p.id}`}>
                                     <td>{p.full_name || p.member_name}</td>
                                     <td>{p.mobile_no || p.mobile}</td>
                                     <td>{p.training}</td>
+                                    <td>
+                                      <button
+                                        className="btn-sm btn-outline"
+                                        onClick={() =>
+                                          removeParticipantFromBatch(
+                                            batch.key,
+                                            p.training,
+                                            p.id,
+                                          )
+                                        }
+                                      >
+                                        Remove
+                                      </button>
+                                    </td>
                                   </tr>
                                 ))}
                               </tbody>
@@ -1236,15 +1292,26 @@ export default function TpCreateBatch() {
                           <input
                             type="date"
                             className="input"
+                            min={todayISO()}  
                             value={batch.startDate}
                             onChange={(e) => {
                               const sd = e.target.value;
+                              const today = todayISO();
+
+                              if (sd < today) {
+                                alert("Start date cannot be before today");
+                                return;
+                              }
+
+                              if (isSunday(sd)) {
+                                alert("Start date cannot be a Sunday");
+                                return;
+                              }
+
                               const ed = trainingReq?.training_plan?.no_of_days
-                                ? calcEndDate(
-                                    sd,
-                                    trainingReq.training_plan.no_of_days,
-                                  )
+                                ? calcEndDate(sd, trainingReq.training_plan.no_of_days)
                                 : "";
+
                               updateBatch(
                                 batch.key,
                                 {

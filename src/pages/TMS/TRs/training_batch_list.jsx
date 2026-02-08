@@ -66,6 +66,7 @@ export default function TrainingBatchList() {
   const { user } = useContext(AuthContext) || {};
   const role = getCanonicalRole(user || {});
   const { id: requestId } = useParams();
+  const isRequestScoped = Boolean(requestId);
   const navigate = useNavigate();
 
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -285,55 +286,61 @@ export default function TrainingBatchList() {
 
     setLoading(true);
     try {
-      const baseParams = getDefaultScopeParams();
-      let effectiveFilters = filters;
+      let finalParams = {};
 
-      // 🚨 HARD SCOPE ENFORCEMENT
-      if (role === "bmmu") {
-        // BMMU can NEVER control geo
-        effectiveFilters = Object.fromEntries(
-          Object.entries(filters).filter(
-            ([k]) =>
-              !["district_id", "block_id", "mandal_id", "district_category_id"].includes(k)
-          )
-        );
-      }
+      // ✅ REQUEST-SCOPED MODE (NO FILTERS, NO ROLE LOGIC)
+      if (isRequestScoped) {
+        finalParams = {
+          request_id: requestId,
+          page_size: 500,
+        };
+      } else {
+        const baseParams = getDefaultScopeParams();
+        let effectiveFilters = filters;
 
-      if (role === "dmmu") {
-        // DMMU can NEVER change district
-        effectiveFilters = Object.fromEntries(
-          Object.entries(filters).filter(
-            ([k]) => k !== "district_id"
-          )
-        );
-      }
+        // 🔒 HARD ROLE LOCKS (unchanged)
+        if (role === "bmmu") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(
+              ([k]) =>
+                !["district_id", "block_id", "mandal_id", "district_category_id"].includes(k)
+            )
+          );
+        }
 
-      if (role === "training_partner") {
-        // TP can NEVER change partner or created_by
-        effectiveFilters = Object.fromEntries(
-          Object.entries(filters).filter(
-            ([k]) => !["partner"].includes(k)
-          )
-        );
-      }
-      
-      const finalParams = {
-        ...baseParams,
-        ...Object.fromEntries(
-          Object.entries(effectiveFilters).filter(
-            ([, v]) => v !== "" && v !== false,
+        if (role === "dmmu") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(([k]) => k !== "district_id")
+          );
+        }
+
+        if (role === "training_partner") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(([k]) => k !== "partner")
+          );
+        }
+
+        finalParams = {
+          ...baseParams,
+          ...Object.fromEntries(
+            Object.entries(effectiveFilters).filter(
+              ([, v]) => v !== "" && v !== false
+            )
           ),
-        ),
-        page_size: 500,
-      };
+          page_size: 500,
+        };
+      }
 
       const qs = new URLSearchParams(finalParams).toString();
       const resp = await api.get(`/tms/batches-list/?${qs}`);
       const items = resp?.data?.results || [];
 
-      const scopeKey = getScopeKey();
       setBatches(items);
-      saveCache(scopeKey, items);
+
+      // ❌ DO NOT CACHE request-scoped results
+      if (!isRequestScoped) {
+        saveCache(getScopeKey(), items);
+      }
     } catch (e) {
       console.error("Batch fetch failed", e);
       setBatches([]);
@@ -358,7 +365,7 @@ export default function TrainingBatchList() {
   /* ---------------- initial load ---------------- */
 
   useEffect(() => {
-    if (!user?.id || didInitRef.current) return;
+    if (!user?.id || didInitRef.current || isRequestScoped) return;
 
     // 🚫 BMMU & TP are auto-fetched elsewhere
     if (role === "bmmu" || role === "training_partner") return;
@@ -369,6 +376,11 @@ export default function TrainingBatchList() {
     if (cached?.payload) setBatches(cached.payload);
     else fetchBatches();
   }, [user?.id, role, requestId]);
+
+  useEffect(() => {
+    if (!requestId || !user?.id) return;
+    fetchBatches();
+  }, [requestId, user?.id]);
 
   /* ===================================================== */
   /* ---------------- render helpers ---------------- */
@@ -389,140 +401,141 @@ export default function TrainingBatchList() {
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
 
             {/* ================= FILTERS ================= */}
+            {!isRequestScoped && (
+              <div style={{ background: "#fff", padding: 12, borderRadius: 8, marginBottom: 12 }}>
+                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
 
-            <div style={{ background: "#fff", padding: 12, borderRadius: 8, marginBottom: 12 }}>
-              <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+                  {role === "smmu" && (
+                    <>
+                      <select className="input" onChange={e => setFilters(f => ({ ...f, mandal_id: e.target.value }))}>
+                        <option value="">Mandal</option>
+                        {mandals.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                      </select>
 
-                {role === "smmu" && (
-                  <>
-                    <select className="input" onChange={e => setFilters(f => ({ ...f, mandal_id: e.target.value }))}>
-                      <option value="">Mandal</option>
-                      {mandals.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
-                    </select>
-
-                    <select className="input" onChange={e => setFilters(f => ({ ...f, district_category_id: e.target.value }))}>
-                      <option value="">District Category</option>
-                      {districtCategories.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
-                    </select>
-                  </>
-                )}
-
-                {role !== "bmmu" && (
-                  <select
-                    className="input"
-                    value={filters.district_id}
-                    disabled={role === "dmmu"}
-                    onChange={e => {
-                      if (role === "dmmu") return;
-
-                      setBlocks([]);
-                      setFilters(f => ({
-                        ...f,
-                        district_id: e.target.value,
-                        block_id: "",
-                        aspirational_only: false,
-                      }));
-                    }}
-                  >
-                    <option value="">District</option>
-                    {districts.map(d => (
-                      <option key={d.district_id} value={d.district_id}>
-                        {d.district_name_en}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {role !== "bmmu" && (
-                <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  <input type="checkbox"
-                    checked={filters.aspirational_only}
-                    onChange={e => setFilters(f => ({ ...f, aspirational_only: e.target.checked, block_id: "", }))} />
-                  Aspirational
-                </label>
-                )}
-
-                {role !== "bmmu" && filters.district_id && (
-                  <select
-                    key={filters.district_id}
-                    className="input"
-                    value={filters.block_id}
-                    onChange={e =>
-                      setFilters(f => ({ ...f, block_id: e.target.value }))
-                    }
-                  >
-                    <option value="">Block</option>
-                    {blocks.map(b => (
-                      <option key={b.block_id} value={b.block_id}>
-                        {b.block_name_en}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                {role === "training_partner" && (
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, centre_id: e.target.value }))}>
-                    <option value="">Centre</option>
-                    {centres.map(c => <option key={c.id} value={c.id}>{c.venue_name}</option>)}
-                  </select>
-                )}
-
-                {/* Training Partner filter */}
-                {role !== "training_partner" && role !== "tpcp" && (
-                  <select
-                    className="input"
-                    value={filters.partner}
-                    onChange={e =>
-                      setFilters(f => ({ ...f, partner: e.target.value }))
-                    }
-                  >
-                    <option value="">Training Partner</option>
-                    {partners.map(p => (
-                      <option key={p.id} value={p.id}>
-                        {p.name}
-                      </option>
-                    ))}
-                  </select>
-                )}
-
-                <select className="input" onChange={e => setFilters(f => ({ ...f, theme: e.target.value, training_plan: "" }))}>
-                  <option value="">Training Theme</option>
-                  {themes.map(t => <option key={t.id} value={t.id}>{t.theme_name}</option>)}
-                </select>
-
-                {plans.length > 0 && (
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, training_plan: e.target.value }))}>
-                    <option value="">Training Plan</option>
-                    {plans.map(p => <option key={p.id} value={p.id}>{p.training_name}</option>)}
-                  </select>
-                )}
-
-                <select className="input" onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
-                  <option value="">Status</option>
-                  {["DRAFT","PENDING","ONGOING","SCHEDULED","COMPLETED","REJECTED"].map(s =>
-                    <option key={s} value={s}>{s}</option>
+                      <select className="input" onChange={e => setFilters(f => ({ ...f, district_category_id: e.target.value }))}>
+                        <option value="">District Category</option>
+                        {districtCategories.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                      </select>
+                    </>
                   )}
-                </select>
 
-                <select className="input" onChange={e => setFilters(f => ({ ...f, training_type: e.target.value }))}>
-                  <option value="">Participant</option>
-                  <option value="BENEFICIARY">Beneficiary</option>
-                  <option value="TRAINER">Trainer</option>
-                </select>
+                  {role !== "bmmu" && (
+                    <select
+                      className="input"
+                      value={filters.district_id}
+                      disabled={role === "dmmu"}
+                      onChange={e => {
+                        if (role === "dmmu") return;
 
-                <select className="input" onChange={e => setFilters(f => ({ ...f, batch_type: e.target.value }))}>
-                  <option value="">Batch Type</option>
-                  <option value="SEPARATE">Separate</option>
-                  <option value="COMBINED">Combined</option>
-                </select>
+                        setBlocks([]);
+                        setFilters(f => ({
+                          ...f,
+                          district_id: e.target.value,
+                          block_id: "",
+                          aspirational_only: false,
+                        }));
+                      }}
+                    >
+                      <option value="">District</option>
+                      {districts.map(d => (
+                        <option key={d.district_id} value={d.district_id}>
+                          {d.district_name_en}
+                        </option>
+                      ))}
+                    </select>
+                  )}
 
-                <div style={{ flexBasis: "100%", display: "flex", justifyContent: "center" }}>
-                  <button className="btn btn-primary" onClick={fetchBatches}>
-                    Fetch Batches
-                  </button>
+                  {role !== "bmmu" && (
+                  <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    <input type="checkbox"
+                      checked={filters.aspirational_only}
+                      onChange={e => setFilters(f => ({ ...f, aspirational_only: e.target.checked, block_id: "", }))} />
+                    Aspirational
+                  </label>
+                  )}
+
+                  {role !== "bmmu" && filters.district_id && (
+                    <select
+                      key={filters.district_id}
+                      className="input"
+                      value={filters.block_id}
+                      onChange={e =>
+                        setFilters(f => ({ ...f, block_id: e.target.value }))
+                      }
+                    >
+                      <option value="">Block</option>
+                      {blocks.map(b => (
+                        <option key={b.block_id} value={b.block_id}>
+                          {b.block_name_en}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  {role === "training_partner" && (
+                    <select className="input" onChange={e => setFilters(f => ({ ...f, centre_id: e.target.value }))}>
+                      <option value="">Centre</option>
+                      {centres.map(c => <option key={c.id} value={c.id}>{c.venue_name}</option>)}
+                    </select>
+                  )}
+
+                  {/* Training Partner filter */}
+                  {role !== "training_partner" && role !== "tpcp" && (
+                    <select
+                      className="input"
+                      value={filters.partner}
+                      onChange={e =>
+                        setFilters(f => ({ ...f, partner: e.target.value }))
+                      }
+                    >
+                      <option value="">Training Partner</option>
+                      {partners.map(p => (
+                        <option key={p.id} value={p.id}>
+                          {p.name}
+                        </option>
+                      ))}
+                    </select>
+                  )}
+
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, theme: e.target.value, training_plan: "" }))}>
+                    <option value="">Training Theme</option>
+                    {themes.map(t => <option key={t.id} value={t.id}>{t.theme_name}</option>)}
+                  </select>
+
+                  {plans.length > 0 && (
+                    <select className="input" onChange={e => setFilters(f => ({ ...f, training_plan: e.target.value }))}>
+                      <option value="">Training Plan</option>
+                      {plans.map(p => <option key={p.id} value={p.id}>{p.training_name}</option>)}
+                    </select>
+                  )}
+
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+                    <option value="">Status</option>
+                    {["DRAFT","PENDING","ONGOING","SCHEDULED","COMPLETED","REJECTED"].map(s =>
+                      <option key={s} value={s}>{s}</option>
+                    )}
+                  </select>
+
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, training_type: e.target.value }))}>
+                    <option value="">Participant</option>
+                    <option value="BENEFICIARY">Beneficiary</option>
+                    <option value="TRAINER">Trainer</option>
+                  </select>
+
+                  <select className="input" onChange={e => setFilters(f => ({ ...f, batch_type: e.target.value }))}>
+                    <option value="">Batch Type</option>
+                    <option value="SEPARATE">Separate</option>
+                    <option value="COMBINED">Combined</option>
+                  </select>
+
+                  <div style={{ flexBasis: "100%", display: "flex", justifyContent: "center" }}>
+                    <button className="btn btn-primary" onClick={fetchBatches}>
+                      Fetch Batches
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
+            )}
 
             {/* ================= TABLE ================= */}
 
@@ -564,8 +577,21 @@ export default function TrainingBatchList() {
                         <td>{b.request?.block?.block_name_en || "-"}</td>
                         <td>{b.request?.district?.district_name_en || "-"}</td>
                         <td>
-                          <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/batch-detail/${b.id}`)}>View</button>
-                          <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/batch-certificate/${b.id}`)}>Closure</button>
+                          <button
+                            className="btn-sm btn-flat"
+                            onClick={() => navigate(`/tms/batch-detail/${b.id}`)}
+                          >
+                            View
+                          </button>
+
+                          {String(b.status).toUpperCase() === "COMPLETED" && (
+                            <button
+                              className="btn-sm btn-flat"
+                              onClick={() => navigate(`/tms/batch-certificate/${b.id}`)}
+                            >
+                              Closure
+                            </button>
+                          )}
                         </td>
                       </tr>
                     ))
