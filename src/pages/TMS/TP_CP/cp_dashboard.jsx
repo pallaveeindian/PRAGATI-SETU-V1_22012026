@@ -293,38 +293,27 @@ export default function CpDashboard() {
   const [loadingCentreChain, setLoadingCentreChain] = useState(false);
   const [cpRecord, setCpRecord] = useState(null);
   const [centreLink, setCentreLink] = useState(null);
-  const [centre, setCentre] = useState(
-    () => loadJson(CP_CENTRE_CACHE_KEY)?.payload || null,
-  );
+  const [centre, setCentre] = useState(null);
 
   const [viewOpen, setViewOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
   const [viewLoading, setViewLoading] = useState(false);
 
   const [batchesLoading, setBatchesLoading] = useState(false);
-  const [batches, setBatches] = useState(
-    () => loadJson(CP_BATCHES_CACHE_KEY)?.payload || [],
-  );
+  const [batches, setBatches] = useState([]);
 
   // load root cache (CP + link + centreId)
   useEffect(() => {
     if (!user?.id) return;
-    const cached = loadJson(CP_ROOT_CACHE_KEY);
-    if (cached?.payload?.cpRecord) {
-      setCpRecord(cached.payload.cpRecord);
-      setCentreLink(cached.payload.centreLink || null);
-    } else {
-      fetchCentreChain(false);
-    }
+    fetchCentreChain();
   }, [user?.id]);
 
-  async function fetchCentreChain(force = false) {
+  async function fetchCentreChain() {
     if (!user?.id) return;
-    if (!force && cpRecord && centreLink) return;
 
     setLoadingCentreChain(true);
     try {
-      // 1) contact person
+      // 1) Contact Person
       const cpResp = await api.get(
         `/tms/training-partner-contact-persons/?master_user=${user.id}`,
       );
@@ -332,50 +321,44 @@ export default function CpDashboard() {
       setCpRecord(cp);
 
       if (!cp) {
-        saveJson(CP_ROOT_CACHE_KEY, { cpRecord: null, centreLink: null });
+        setCentreLink(null);
         setCentre(null);
         setBatches([]);
         return;
       }
 
-      // 2) centre link
-      const linkResp = await api.get(
-        `/tms/tpcp-centre-links/?contact_person=${cp.id}`,
-      );
+      // 2) Centre Link
+      const linkResp = await TMS_API.tpcpCentreLinks.list({
+        contact_person: cp.id,
+      });
       const link = linkResp?.data?.results?.[0] || null;
       setCentreLink(link);
 
-      // 3) centre detail
+      // 3) Centre Details
       if (link?.allocated_centre) {
         const centreResp = await api.get(
           `/tms/training-partner-centres/${link.allocated_centre}/detail/`,
         );
-        const centreData = centreResp?.data || null;
-        setCentre(centreData);
-        saveJson(CP_CENTRE_CACHE_KEY, centreData);
+        setCentre(centreResp?.data || null);
       } else {
         setCentre(null);
+        setBatches([]);
       }
-
-      // cache root
-      saveJson(CP_ROOT_CACHE_KEY, { cpRecord: cp, centreLink: link });
     } catch (e) {
       console.error("CP centre chain load failed", e);
+      setCentre(null);
+      setCentreLink(null);
     } finally {
       setLoadingCentreChain(false);
     }
   }
 
   async function handleRefreshCentre() {
-    // clear caches related to centre chain
-    try {
-      localStorage.removeItem(CP_ROOT_CACHE_KEY);
-      localStorage.removeItem(CP_CENTRE_CACHE_KEY);
-    } catch {}
     setCpRecord(null);
     setCentreLink(null);
     setCentre(null);
-    fetchCentreChain(true);
+    setBatches([]);
+    fetchCentreChain();
   }
 
   async function handleViewCentre() {
@@ -394,24 +377,16 @@ export default function CpDashboard() {
     }
   }
 
-  async function fetchBatches(force = false) {
+  async function fetchBatches() {
     if (!centre?.id) return;
-    if (!force) {
-      const cached = loadJson(CP_BATCHES_CACHE_KEY);
-      if (cached?.payload) {
-        setBatches(cached.payload || []);
-        return;
-      }
-    }
+
     setBatchesLoading(true);
     try {
       const resp = await TMS_API.batches.list({
         centre: centre.id,
         page_size: 500,
       });
-      const items = resp?.data?.results || [];
-      setBatches(items);
-      saveJson(CP_BATCHES_CACHE_KEY, items);
+      setBatches(resp?.data?.results || []);
     } catch (e) {
       console.error("cp batches fetch failed", e);
       setBatches([]);

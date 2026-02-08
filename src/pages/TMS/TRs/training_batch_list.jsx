@@ -132,9 +132,22 @@ export default function TrainingBatchList() {
     const blockId = geo.block_id || safeFirst(geo.blocks);
     const districtId = geo.district_id || safeFirst(geo.districts);
 
-    if (role === "bmmu" && blockId) return { block_id: blockId };
-    if (role === "dmmu" && districtId) return { district_id: districtId };
-    if (role === "training_partner") return { created_by: user?.id };
+    // 🔒 BMMU → BLOCK-LOCKED
+    if (role === "bmmu" && blockId) {
+      return { block_id: blockId };
+    }
+
+    // 🔒 DMMU → DISTRICT-LOCKED
+    if (role === "dmmu" && districtId) {
+      return { district_id: districtId };
+    }
+
+    // 🔒 TRAINING PARTNER → SELF-CREATED ONLY
+    if (role === "training_partner") {
+      return {
+        created_by: user?.id,
+      };
+    }
 
     return {};
   }
@@ -142,6 +155,8 @@ export default function TrainingBatchList() {
   function getScopeKey() {
     if (requestId) return `req_${requestId}`;
     if (role === "training_partner") return `tp_${user?.id}`;
+    if (role === "bmmu") return "bmmu";
+    if (role === "dmmu") return "dmmu";
     return role || "global";
   }
 
@@ -273,8 +288,9 @@ export default function TrainingBatchList() {
       const baseParams = getDefaultScopeParams();
       let effectiveFilters = filters;
 
-      // 🚨 BMMU: ignore ALL geo filters from UI
+      // 🚨 HARD SCOPE ENFORCEMENT
       if (role === "bmmu") {
+        // BMMU can NEVER control geo
         effectiveFilters = Object.fromEntries(
           Object.entries(filters).filter(
             ([k]) =>
@@ -282,6 +298,25 @@ export default function TrainingBatchList() {
           )
         );
       }
+
+      if (role === "dmmu") {
+        // DMMU can NEVER change district
+        effectiveFilters = Object.fromEntries(
+          Object.entries(filters).filter(
+            ([k]) => k !== "district_id"
+          )
+        );
+      }
+
+      if (role === "training_partner") {
+        // TP can NEVER change partner or created_by
+        effectiveFilters = Object.fromEntries(
+          Object.entries(filters).filter(
+            ([k]) => !["partner"].includes(k)
+          )
+        );
+      }
+      
       const finalParams = {
         ...baseParams,
         ...Object.fromEntries(

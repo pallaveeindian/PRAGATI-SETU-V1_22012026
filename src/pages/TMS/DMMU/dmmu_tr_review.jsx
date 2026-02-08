@@ -45,6 +45,13 @@ function fmtDate(iso) {
   }
 }
 
+function invalidateCaches(requestId) {
+  try {
+    localStorage.removeItem(TR_DETAIL_CACHE_KEY + requestId);
+    localStorage.removeItem(getBatchesCacheKey(requestId));
+  } catch {}
+}
+
 /* ---------------- simple modal ---------------- */
 
 function Modal({ open, title, onClose, children, width = 800 }) {
@@ -309,47 +316,51 @@ export default function DmmuTrReview() {
   }
 
   /* ---------------- availability check + selection ---------------- */
-
   async function handleToggleMasterTrainer(batchId, trainer) {
-    const trainerId = trainer.id;
-    const currentSet = new Set(mtSelections[batchId] || []);
-    const isSelected = currentSet.has(trainerId);
+    const currentArr = mtSelections[batchId] || [];
+    const exists = currentArr.some(t => t.id === trainer.id);
 
-    // If deselecting, just remove
-    if (isSelected) {
-      currentSet.delete(trainerId);
-      setMtSelections((prev) => ({
+    // 🔁 Deselect
+    if (exists) {
+      setMtSelections(prev => ({
         ...prev,
-        [batchId]: Array.from(currentSet),
+        [batchId]: currentArr.filter(t => t.id !== trainer.id),
       }));
       return;
     }
 
-    // Selecting → check availability
-    setMtCheckingId(trainerId);
+    // ➕ Select → check availability
+    setMtCheckingId(trainer.id);
     try {
-      // show small logical message: Checking availability…
       const resp = await TMS_API.batchMasterTrainers.list({
-        master_trainer: trainerId,
+        master_trainer: trainer.id,
         status: "UNAVAILABLE",
       });
-      const tr_resp = await TMS_API.trTrainers.list({
-        trainer: trainerId,
+      const trResp = await TMS_API.trTrainers.list({
+        trainer: trainer.id,
       });
-      const tr_results = tr_resp?.data?.results || tr_resp?.data || [];
-      const results = resp?.data?.results || resp?.data || [];
-      if (results.length > 0 || tr_results.length > 0) {
-        // not available → do not select, maybe toast or alert
+
+      const busy =
+        (resp?.data?.results || []).length > 0 ||
+        (trResp?.data?.results || []).length > 0;
+
+      if (busy) {
         alert("This Master Trainer is not available at the moment.");
-      } else {
-        // available → allow select
-        currentSet.add(trainerId);
-        setMtSelections((prev) => ({
-          ...prev,
-          [batchId]: Array.from(currentSet),
-        }));
+        return;
       }
-    } catch (e) {
+
+      // ✅ Add trainer
+      setMtSelections(prev => ({
+        ...prev,
+        [batchId]: [
+          ...currentArr,
+          {
+            id: trainer.id,
+            name: trainer.full_name || `Trainer #${trainer.id}`,
+          },
+        ],
+      }));
+    } catch {
       alert("Unable to verify trainer availability. Please try again.");
     } finally {
       setMtCheckingId(null);
@@ -379,6 +390,22 @@ export default function DmmuTrReview() {
 
   async function handleApprove() {
     if (!requestId || !tr) return;
+    // 🚫 NEW: every batch must have at least one master trainer
+    const unassignedBatches = batches.filter(
+      b => !(mtSelections[b.id] && mtSelections[b.id].length > 0)
+    );
+
+    if (unassignedBatches.length > 0) {
+      const batchCodes = unassignedBatches
+        .map(b => b.code)
+        .join(", ");
+
+      alert(
+        `Please assign at least one Master Trainer for all batches.\n\nMissing assignment for batch(es): ${batchCodes}`
+      );
+      return;
+    }  
+    
     if (!batches || batches.length === 0) {
       alert("No batches found for this training request.");
       return;
@@ -390,11 +417,11 @@ export default function DmmuTrReview() {
       // 1) For each batch, create BatchMasterTrainer rows for selected trainers
       for (const batch of batches) {
         const selectedTrainerIds = mtSelections[batch.id] || [];
-        for (const mtId of selectedTrainerIds) {
+        for (const t of selectedTrainerIds) {
           try {
             await TMS_API.batchMasterTrainers.create({
               batch: batch.id,
-              master_trainer: mtId,
+              master_trainer: t.id,
               participated: false,
               status: "UNAVAILABLE",
               remarks: "",
@@ -432,6 +459,15 @@ export default function DmmuTrReview() {
       }
 
       alert("Training Request approved and batches updated successfully.");
+
+      // 🔥 invalidate caches
+      invalidateCaches(requestId);
+
+      // 🔄 refresh current data (important if user stays)
+      await fetchTrDetail(true);
+      await fetchBatches(true);
+
+      // ⏪ go back (list page will now refetch fresh data)
       navigate(-1);
     } catch (e) {
       console.error("Approve failed", e);
@@ -467,6 +503,15 @@ export default function DmmuTrReview() {
       }
 
       alert("Training Request reverted and all batches marked REJECTED.");
+
+      // 🔥 invalidate caches
+      invalidateCaches(requestId);
+
+      // 🔄 refresh
+      await fetchTrDetail(true);
+      await fetchBatches(true);
+
+      // ⏪ go back
       navigate(-1);
     } catch (e) {
       console.error("Revert failed", e);
@@ -527,6 +572,10 @@ export default function DmmuTrReview() {
     }
   }
 
+  function getSelectedTrainerNames(batchId) {
+    return (mtSelections[batchId] || []).map(t => t.name);
+  } 
+
   function renderTrSummary() {
     if (loadingTR) {
       return (
@@ -585,7 +634,7 @@ export default function DmmuTrReview() {
   function renderMtModal() {
     if (!mtModalBatch) return null;
     const batchId = mtModalBatch.id;
-    const selectedForBatch = new Set(mtSelections[batchId] || []);
+    const selectedForBatch = mtSelections[batchId] || [];
 
     return (
       <Modal
@@ -634,7 +683,7 @@ export default function DmmuTrReview() {
               </thead>
               <tbody>
                 {mtList.map((mt) => {
-                  const isSelected = selectedForBatch.has(mt.id);
+                  const isSelected = selectedForBatch.some(t => t.id === mt.id);
                   const isChecking = mtCheckingId === mt.id;
                   return (
                     <tr key={mt.id}>
@@ -810,6 +859,7 @@ export default function DmmuTrReview() {
                           <th>Start Date</th>
                           <th>End Date</th>
                           <th>Batch Type</th>
+                          <th>Master Trainer(s)</th>                          
                           <th>Action</th>
                         </tr>
                       </thead>
@@ -822,6 +872,21 @@ export default function DmmuTrReview() {
                             <td>{fmtDate(b.start_date)}</td>
                             <td>{fmtDate(b.end_date)}</td>
                             <td>{b.batch_type}</td>
+                            <td>
+                              {(() => {
+                                const names = getSelectedTrainerNames(b.id);
+                                if (!names.length) {
+                                  return <span className="muted">Not assigned</span>;
+                                }
+                                return (
+                                  <ul style={{ margin: 0, paddingLeft: 16 }}>
+                                    {names.map((n, i) => (
+                                      <li key={i}>{n}</li>
+                                    ))}
+                                  </ul>
+                                );
+                              })()}
+                            </td>                            
                             <td>
                               <button
                                 className="btn-sm btn-flat"
@@ -882,7 +947,7 @@ export default function DmmuTrReview() {
                       fontWeight: 600,
                     }}
                     onClick={handleApprove}
-                    disabled={savingApprove || savingRevert}
+                    disabled={savingApprove || savingRevert || !Object.values(mtSelections).some(arr => arr?.length)}
                   >
                     {savingApprove ? "Approving…" : "Approve Request"}
                   </button>

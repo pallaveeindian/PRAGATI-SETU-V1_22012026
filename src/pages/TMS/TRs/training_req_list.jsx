@@ -204,10 +204,10 @@ export default function TrainingRequestList() {
       const geoscope = await ensureUserGeoscope();
 
       if (role === "bmmu" && geoscope?.blocks?.[0])
-        params.block = geoscope.blocks[0];
+        params.block_id = geoscope.blocks[0];
 
       if (role === "dmmu" && geoscope?.districts?.[0])
-        params.district = geoscope.districts[0];
+        params.district_id = geoscope.districts[0];
 
       if (role === "training_partner") {
         const partnerId = await resolveTrainingPartnerIdForUser(user.id);
@@ -216,10 +216,10 @@ export default function TrainingRequestList() {
           setLoading(false);
           return;
         }
-        params.partner = partnerId;
+        params.partner_id = partnerId;
       }
 
-      const resp = await TMS_API.trainingRequests.list(params);
+      const resp = await TMS_API.trainingRequestsList.list(params);
       const items = resp?.data?.results || [];
 
       setRequests(items);
@@ -234,8 +234,6 @@ export default function TrainingRequestList() {
   }
 
   useEffect(() => {
-    if (didRunRef.current) return;
-    didRunRef.current = true;
     fetchRequests(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [refreshToken]);
@@ -246,7 +244,7 @@ export default function TrainingRequestList() {
 
     setLoading(true);
     try {
-      const params = {
+      let params = {
         page_size: 500,
         ...Object.fromEntries(
           Object.entries(appliedFilters).filter(
@@ -258,10 +256,10 @@ export default function TrainingRequestList() {
       const geoscope = await ensureUserGeoscope();
 
       if (role === "bmmu" && geoscope?.blocks?.[0])
-        params.block = geoscope.blocks[0];
+        params.block_id = geoscope.blocks[0];
 
       if (role === "dmmu" && geoscope?.districts?.[0])
-        params.district = geoscope.districts[0];
+        params.district_id = geoscope.districts[0];
 
       if (role === "training_partner") {
         const partnerId = await resolveTrainingPartnerIdForUser(user.id);
@@ -270,10 +268,11 @@ export default function TrainingRequestList() {
           setLoading(false);
           return;
         }
-        params.partner = partnerId;
+        params.partner_id = partnerId;
       }
 
-      const resp = await TMS_API.trainingRequests.list(params);
+      // ✅ theme_id now passes straight through
+      const resp = await TMS_API.trainingRequestsList.list(params);
       const items = resp?.data?.results || [];
 
       setRequests(items);
@@ -352,12 +351,14 @@ export default function TrainingRequestList() {
                   <thead>
                     <tr>
                       <th>ID</th>
+                      <th>Theme</th>
                       <th>Plan</th>
                       <th>Type</th>
                       <th>Level</th>
                       <th>Status</th>
                       <th>Partner</th>
-                      <th>Created By</th>
+                      <th>District</th>
+                      <th>Block</th>
                       <th />
                     </tr>
                   </thead>
@@ -374,12 +375,14 @@ export default function TrainingRequestList() {
                       filtered.map((r) => (
                         <tr key={r.id}>
                           <td>{r.id}</td>
-                          <td>{renderTrainingName(r.training_plan)}</td>
+                          <td>{r.theme_name}</td>
+                          <td>{r.training_plan_name}</td>
                           <td>{r.training_type}</td>
                           <td>{r.level}</td>
                           <td>{r.status}</td>
-                          <td>{renderPartnerName(r.partner)}</td>
-                          <td>{renderUsername(r.created_by)}</td>
+                          <td>{r.partner_name}</td>
+                          <td>{r.district_name}</td>
+                          <td>{r.block_name}</td>
                           <td>
                             <button
                               className="btn-sm btn-flat"

@@ -31,9 +31,9 @@ export default function TrainingReqListFilter({ user, onApply }) {
     block_id: "",
     aspirational_only: false,
 
-    partner: "",
+    partner_id: "",
     theme_id: "",
-    training_plan: "",
+    training_plan_id: "",
 
     status: "",
     training_type: "",
@@ -139,7 +139,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
   useEffect(() => {
     if (!filters.theme_id) {
       setTrainingPlans([]);
-      setFilters(f => ({ ...f, training_plan: "" }));
+      setFilters(f => ({ ...f, training_plan_id: "" }));
       return;
     }
 
@@ -262,9 +262,9 @@ export default function TrainingReqListFilter({ user, onApply }) {
         {role !== "training_partner" && role !== "tpcp" && (
           <select
             className="input"
-            value={filters.partner}
+            value={filters.partner_id}
             onChange={e =>
-              setFilters(f => ({ ...f, partner: e.target.value }))
+              setFilters(f => ({ ...f, partner_id: e.target.value }))
             }
           >
             <option value="">Training Partner</option>
@@ -282,7 +282,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             setFilters(f => ({
               ...f,
               theme_id: e.target.value,
-              training_plan: "",
+              training_plan_id: "",
             }))
           }
         >
@@ -296,9 +296,9 @@ export default function TrainingReqListFilter({ user, onApply }) {
         {trainingPlans.length > 0 && (
           <select
             className="input"
-            value={filters.training_plan}
+            value={filters.training_plan_id}
             onChange={e =>
-              setFilters(f => ({ ...f, training_plan: e.target.value }))
+              setFilters(f => ({ ...f, training_plan_id: e.target.value }))
             }
           >
             <option value="">Training Plan</option>

@@ -1233,6 +1233,7 @@ export default function CreateTrainingRequest() {
       districtId ??
       geoscopeCached?.districts?.[0] ??
       geoscopeCached?.district_id ??
+      user?.district_id ??
       null;
 
     const payload = {
