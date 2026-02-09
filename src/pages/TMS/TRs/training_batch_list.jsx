@@ -10,7 +10,10 @@ import { getCanonicalRole } from "../../../utils/roleUtils";
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
-const TP_SELF_PARTNER_KEY = "tp_self_partner_id";
+
+function getTpPartnerCacheKey(userId) {
+  return `tp_self_partner_id_${userId}`;
+}
 
 function getCacheKey(scope) {
   return `${CACHE_KEY}_${scope || "default"}`;
@@ -39,8 +42,10 @@ function loadCache(scope) {
 async function resolveTrainingPartnerIdForUser(userId) {
   if (!userId) return null;
 
+  const cacheKey = `tp_self_partner_id_${userId}`;
+
   try {
-    const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
+    const cached = localStorage.getItem(cacheKey);
     if (cached) return Number(cached);
   } catch {}
 
@@ -49,10 +54,11 @@ async function resolveTrainingPartnerIdForUser(userId) {
       search: userId,
       fields: "id",
     });
+
     const pid = resp?.data?.results?.[0]?.id || null;
 
     if (pid) {
-      localStorage.setItem(TP_SELF_PARTNER_KEY, String(pid));
+      localStorage.setItem(cacheKey, String(pid));
     }
     return pid;
   } catch {
@@ -73,9 +79,8 @@ export default function TrainingBatchList() {
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState([]);
 
-  const tpInitRef = useRef(false);
-  const [tpPartnerId, setTpPartnerId] = useState(null); 
-  const [tpPartnerName, setTpPartnerName] = useState(null); 
+  const [tpPartnerId, setTpPartnerId] = useState(null);
+  const [tpPartnerName, setTpPartnerName] = useState(null);
 
   /* ---------------- filters ---------------- */
 
@@ -189,10 +194,30 @@ export default function TrainingBatchList() {
         }
 
         if (role === "training_partner") {
-          const cRes = await TMS_API.trainingPartnerCentres.list({
-            partner: user?.partner,
-          });
-          setCentres(cRes?.data?.results || []);
+          const pid = await resolveTrainingPartnerIdForUser(user.id);
+
+          if (pid) {
+            setTpPartnerId(pid);
+
+            // OPTIONAL: fetch partner name explicitly
+            try {
+              const pRes = await TMS_API.trainingPartners.retrieve(pid);
+              setTpPartnerName(pRes?.data?.name || "Your Organisation");
+            } catch {
+              setTpPartnerName("Your Organisation");
+            }
+
+            const cRes = await TMS_API.trainingPartnerCentres.list({
+              partner: pid,
+            });
+            setCentres(cRes?.data?.results || []);
+
+            setFilters((f) => ({
+              ...f,
+              partner: String(pid),
+              centre_id: "",
+            }));
+          }
         }
       } catch (e) {
         console.error("Lookup load failed", e);
@@ -208,7 +233,7 @@ export default function TrainingBatchList() {
 
     if (!dmmuDistrictId) return;
 
-    setFilters(f => {
+    setFilters((f) => {
       // do not override if already set
       if (f.district_id) return f;
 
@@ -221,32 +246,6 @@ export default function TrainingBatchList() {
     });
   }, [role]);
 
-  useEffect(() => {
-    if (role !== "training_partner" || !user?.id || tpInitRef.current) return;
-
-    tpInitRef.current = true;
-
-    (async () => {
-      const pid = await resolveTrainingPartnerIdForUser(user.id);
-      if (!pid) return;
-
-      setTpPartnerId(pid);
-
-      // get name from already-loaded partners list
-      const pname =
-        partners.find(p => String(p.id) === String(pid))?.name ||
-        "Your Organisation";
-
-      setTpPartnerName(pname);
-
-      setFilters(f => ({
-        ...f,
-        partner: String(pid),
-        centre_id: "",
-      }));
-    })();
-  }, [role, user?.id, partners]);
-
   /* ---------------- cascading ---------------- */
 
   useEffect(() => {
@@ -256,7 +255,8 @@ export default function TrainingBatchList() {
       return;
     }
 
-    LOOKUP_API.blocksByDistrict(filters.district_id).then((r) => {
+    LOOKUP_API.blocksByDistrict(filters.district_id)
+      .then((r) => {
         let data = r?.data?.results || [];
         if (filters.aspirational_only) {
           data = data.filter((b) => b.is_aspirational === 1);
@@ -303,20 +303,25 @@ export default function TrainingBatchList() {
           effectiveFilters = Object.fromEntries(
             Object.entries(filters).filter(
               ([k]) =>
-                !["district_id", "block_id", "mandal_id", "district_category_id"].includes(k)
-            )
+                ![
+                  "district_id",
+                  "block_id",
+                  "mandal_id",
+                  "district_category_id",
+                ].includes(k),
+            ),
           );
         }
 
         if (role === "dmmu") {
           effectiveFilters = Object.fromEntries(
-            Object.entries(filters).filter(([k]) => k !== "district_id")
+            Object.entries(filters).filter(([k]) => k !== "district_id"),
           );
         }
 
         if (role === "training_partner") {
           effectiveFilters = Object.fromEntries(
-            Object.entries(filters).filter(([k]) => k !== "partner")
+            Object.entries(filters).filter(([k]) => k !== "partner"),
           );
         }
 
@@ -324,8 +329,8 @@ export default function TrainingBatchList() {
           ...baseParams,
           ...Object.fromEntries(
             Object.entries(effectiveFilters).filter(
-              ([, v]) => v !== "" && v !== false
-            )
+              ([, v]) => v !== "" && v !== false,
+            ),
           ),
           page_size: 500,
         };
@@ -354,13 +359,13 @@ export default function TrainingBatchList() {
     if (role === "bmmu") {
       fetchBatches();
     }
-  }, [role]);  
+  }, [role]);
 
   useEffect(() => {
     if (role === "training_partner" && tpPartnerId) {
       fetchBatches();
     }
-  }, [role, tpPartnerId]);  
+  }, [role, tpPartnerId]);
 
   /* ---------------- initial load ---------------- */
 
@@ -385,36 +390,71 @@ export default function TrainingBatchList() {
   /* ===================================================== */
   /* ---------------- render helpers ---------------- */
 
-  const renderCentreName = (c) =>
-    c?.venue_name || c?.partner?.name || "-";
+  const renderCentreName = (c) => c?.venue_name || c?.partner?.name || "-";
 
   /* ===================================================== */
 
   return (
     <div className="app-shell">
-      <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed(v => !v)} />
+      <LeftNav
+        collapsed={navCollapsed}
+        onToggle={() => setNavCollapsed((v) => !v)}
+      />
 
       <div className="main-area">
-        <TopNav left={<div className="app-title">Pragati Setu — Training Batches</div>} />
+        <TopNav
+          left={
+            <div className="app-title">Pragati Setu — Training Batches</div>
+          }
+        />
 
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-
             {/* ================= FILTERS ================= */}
             {!isRequestScoped && (
-              <div style={{ background: "#fff", padding: 12, borderRadius: 8, marginBottom: 12 }}>
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 12,
+                  borderRadius: 8,
+                  marginBottom: 12,
+                }}
+              >
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-
                   {role === "smmu" && (
                     <>
-                      <select className="input" onChange={e => setFilters(f => ({ ...f, mandal_id: e.target.value }))}>
+                      <select
+                        className="input"
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            mandal_id: e.target.value,
+                          }))
+                        }
+                      >
                         <option value="">Mandal</option>
-                        {mandals.map(m => <option key={m.id} value={m.id}>{m.name}</option>)}
+                        {mandals.map((m) => (
+                          <option key={m.id} value={m.id}>
+                            {m.name}
+                          </option>
+                        ))}
                       </select>
 
-                      <select className="input" onChange={e => setFilters(f => ({ ...f, district_category_id: e.target.value }))}>
+                      <select
+                        className="input"
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            district_category_id: e.target.value,
+                          }))
+                        }
+                      >
                         <option value="">District Category</option>
-                        {districtCategories.map(d => <option key={d.id} value={d.id}>{d.name}</option>)}
+                        {districtCategories.map((d) => (
+                          <option key={d.id} value={d.id}>
+                            {d.name}
+                          </option>
+                        ))}
                       </select>
                     </>
                   )}
@@ -424,11 +464,11 @@ export default function TrainingBatchList() {
                       className="input"
                       value={filters.district_id}
                       disabled={role === "dmmu"}
-                      onChange={e => {
+                      onChange={(e) => {
                         if (role === "dmmu") return;
 
                         setBlocks([]);
-                        setFilters(f => ({
+                        setFilters((f) => ({
                           ...f,
                           district_id: e.target.value,
                           block_id: "",
@@ -437,7 +477,7 @@ export default function TrainingBatchList() {
                       }}
                     >
                       <option value="">District</option>
-                      {districts.map(d => (
+                      {districts.map((d) => (
                         <option key={d.district_id} value={d.district_id}>
                           {d.district_name_en}
                         </option>
@@ -446,12 +486,22 @@ export default function TrainingBatchList() {
                   )}
 
                   {role !== "bmmu" && (
-                  <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                    <input type="checkbox"
-                      checked={filters.aspirational_only}
-                      onChange={e => setFilters(f => ({ ...f, aspirational_only: e.target.checked, block_id: "", }))} />
-                    Aspirational
-                  </label>
+                    <label
+                      style={{ display: "flex", alignItems: "center", gap: 6 }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={filters.aspirational_only}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            aspirational_only: e.target.checked,
+                            block_id: "",
+                          }))
+                        }
+                      />
+                      Aspirational
+                    </label>
                   )}
 
                   {role !== "bmmu" && filters.district_id && (
@@ -459,12 +509,12 @@ export default function TrainingBatchList() {
                       key={filters.district_id}
                       className="input"
                       value={filters.block_id}
-                      onChange={e =>
-                        setFilters(f => ({ ...f, block_id: e.target.value }))
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, block_id: e.target.value }))
                       }
                     >
                       <option value="">Block</option>
-                      {blocks.map(b => (
+                      {blocks.map((b) => (
                         <option key={b.block_id} value={b.block_id}>
                           {b.block_name_en}
                         </option>
@@ -473,9 +523,19 @@ export default function TrainingBatchList() {
                   )}
 
                   {role === "training_partner" && (
-                    <select className="input" onChange={e => setFilters(f => ({ ...f, centre_id: e.target.value }))}>
+                    <select
+                      className="input"
+                      value={filters.centre_id}
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, centre_id: e.target.value }))
+                      }
+                    >
                       <option value="">Centre</option>
-                      {centres.map(c => <option key={c.id} value={c.id}>{c.venue_name}</option>)}
+                      {centres.map((c) => (
+                        <option key={c.id} value={c.id}>
+                          {c.venue_name}
+                        </option>
+                      ))}
                     </select>
                   )}
 
@@ -484,12 +544,12 @@ export default function TrainingBatchList() {
                     <select
                       className="input"
                       value={filters.partner}
-                      onChange={e =>
-                        setFilters(f => ({ ...f, partner: e.target.value }))
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, partner: e.target.value }))
                       }
                     >
                       <option value="">Training Partner</option>
-                      {partners.map(p => (
+                      {partners.map((p) => (
                         <option key={p.id} value={p.id}>
                           {p.name}
                         </option>
@@ -497,38 +557,96 @@ export default function TrainingBatchList() {
                     </select>
                   )}
 
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, theme: e.target.value, training_plan: "" }))}>
+                  <select
+                    className="input"
+                    onChange={(e) =>
+                      setFilters((f) => ({
+                        ...f,
+                        theme: e.target.value,
+                        training_plan: "",
+                      }))
+                    }
+                  >
                     <option value="">Training Theme</option>
-                    {themes.map(t => <option key={t.id} value={t.id}>{t.theme_name}</option>)}
+                    {themes.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.theme_name}
+                      </option>
+                    ))}
                   </select>
 
                   {plans.length > 0 && (
-                    <select className="input" onChange={e => setFilters(f => ({ ...f, training_plan: e.target.value }))}>
+                    <select
+                      className="input"
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          training_plan: e.target.value,
+                        }))
+                      }
+                    >
                       <option value="">Training Plan</option>
-                      {plans.map(p => <option key={p.id} value={p.id}>{p.training_name}</option>)}
+                      {plans.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.training_name}
+                        </option>
+                      ))}
                     </select>
                   )}
 
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, status: e.target.value }))}>
+                  <select
+                    className="input"
+                    onChange={(e) =>
+                      setFilters((f) => ({ ...f, status: e.target.value }))
+                    }
+                  >
                     <option value="">Status</option>
-                    {["DRAFT","PENDING","ONGOING","SCHEDULED","COMPLETED","REJECTED"].map(s =>
-                      <option key={s} value={s}>{s}</option>
-                    )}
+                    {[
+                      "DRAFT",
+                      "PENDING",
+                      "ONGOING",
+                      "SCHEDULED",
+                      "COMPLETED",
+                      "REJECTED",
+                    ].map((s) => (
+                      <option key={s} value={s}>
+                        {s}
+                      </option>
+                    ))}
                   </select>
 
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, training_type: e.target.value }))}>
+                  <select
+                    className="input"
+                    onChange={(e) =>
+                      setFilters((f) => ({
+                        ...f,
+                        training_type: e.target.value,
+                      }))
+                    }
+                  >
                     <option value="">Participant</option>
                     <option value="BENEFICIARY">Beneficiary</option>
                     <option value="TRAINER">Trainer</option>
                   </select>
 
-                  <select className="input" onChange={e => setFilters(f => ({ ...f, batch_type: e.target.value }))}>
+                  <select
+                    className="input"
+                    onChange={(e) =>
+                      setFilters((f) => ({ ...f, batch_type: e.target.value }))
+                    }
+                  >
                     <option value="">Batch Type</option>
                     <option value="SEPARATE">Separate</option>
                     <option value="COMBINED">Combined</option>
                   </select>
 
-                  <div style={{ flexBasis: "100%", display: "flex", justifyContent: "center" }}>
+                  <div
+                    style={{
+                      flexBasis: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                    }}
+                  >
                     <button className="btn btn-primary" onClick={fetchBatches}>
                       Fetch Batches
                     </button>
@@ -559,9 +677,13 @@ export default function TrainingBatchList() {
                 </thead>
                 <tbody>
                   {loading ? (
-                    <tr><td colSpan={12}>Loading…</td></tr>
+                    <tr>
+                      <td colSpan={12}>Loading…</td>
+                    </tr>
                   ) : batches.length === 0 ? (
-                    <tr><td colSpan={12}>No batches found</td></tr>
+                    <tr>
+                      <td colSpan={12}>No batches found</td>
+                    </tr>
                   ) : (
                     batches.map((b, i) => (
                       <tr key={b.id}>
@@ -579,7 +701,9 @@ export default function TrainingBatchList() {
                         <td>
                           <button
                             className="btn-sm btn-flat"
-                            onClick={() => navigate(`/tms/batch-detail/${b.id}`)}
+                            onClick={() =>
+                              navigate(`/tms/batch-detail/${b.id}`)
+                            }
                           >
                             View
                           </button>
@@ -587,7 +711,9 @@ export default function TrainingBatchList() {
                           {String(b.status).toUpperCase() === "COMPLETED" && (
                             <button
                               className="btn-sm btn-flat"
-                              onClick={() => navigate(`/tms/batch-certificate/${b.id}`)}
+                              onClick={() =>
+                                navigate(`/tms/batch-certificate/${b.id}`)
+                              }
                             >
                               Closure
                             </button>
@@ -599,7 +725,6 @@ export default function TrainingBatchList() {
                 </tbody>
               </table>
             </div>
-
           </div>
         </main>
       </div>

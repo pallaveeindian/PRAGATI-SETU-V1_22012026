@@ -1,31 +1,29 @@
 // src/utils/useIdleSession.js
 import { useEffect, useRef } from "react";
 
-/**
- * Reusable idle session manager
- *
- * @param {Object} options
- * @param {boolean} options.enabled - enable / disable idle logic
- * @param {Function} options.refreshAccess - token refresh function
- * @param {Function} options.logout - logout function
- * @param {number} options.idleMaxMs - max idle time before logout
- * @param {number} options.refreshIntervalMs - refresh interval
- */
 export default function useIdleSession({
   enabled = true,
   refreshAccess,
   logout,
-  idleMaxMs = 30 * 60 * 1000, // 30 minutes
-  refreshIntervalMs = 5 * 60 * 1000, // 5 minutes
+  idleMaxMs = 2 * 60 * 1000, // 2 min
+  refreshIntervalMs = 1 * 60 * 1000, // 1 min
 }) {
   const lastActivityRef = useRef(Date.now());
+  const refreshTimerRef = useRef(null);
+  const ACTIVE_WINDOW_MS = 60 * 1000; // 1 min
 
   // Track user activity
   useEffect(() => {
     if (!enabled) return;
 
     const bumpActivity = () => {
-      lastActivityRef.current = Date.now();
+      const now = Date.now();
+      const wasIdle = now - lastActivityRef.current > refreshIntervalMs;
+      lastActivityRef.current = now;
+
+      if (wasIdle && refreshAccess) {
+        refreshAccess().catch(() => logout());
+      }
     };
 
     window.addEventListener("click", bumpActivity);
@@ -39,31 +37,34 @@ export default function useIdleSession({
       window.removeEventListener("mousemove", bumpActivity);
       window.removeEventListener("scroll", bumpActivity);
     };
-  }, [enabled]);
+  }, [enabled, refreshAccess, logout, refreshIntervalMs]);
 
-  // Idle check + token refresh
+  // Idle + refresh logic
   useEffect(() => {
-    if (!enabled || !logout) return;
+    if (!enabled || !refreshAccess || !logout) return;
 
-    const timer = setInterval(async () => {
+    refreshTimerRef.current = setInterval(async () => {
       const idleFor = Date.now() - lastActivityRef.current;
 
-      if (idleFor > idleMaxMs) {
+      // 🔴 HARD LOGOUT on inactivity
+      if (idleFor >= idleMaxMs) {
+        clearInterval(refreshTimerRef.current);
         logout();
-        clearInterval(timer);
         return;
       }
 
-      try {
-        if (refreshAccess) {
+      // ✅ Refresh ONLY if user is active
+      if (idleFor <= ACTIVE_WINDOW_MS) {
+        try {
           await refreshAccess();
+        } catch (err) {
+          console.error("Idle refresh failed", err);
+          clearInterval(refreshTimerRef.current);
+          logout();
         }
-      } catch (err) {
-        console.error("Idle refresh failed", err);
-        logout();
       }
     }, refreshIntervalMs);
 
-    return () => clearInterval(timer);
+    return () => clearInterval(refreshTimerRef.current);
   }, [enabled, refreshAccess, logout, idleMaxMs, refreshIntervalMs]);
 }

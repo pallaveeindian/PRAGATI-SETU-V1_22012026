@@ -3,6 +3,7 @@ import React, { createContext, useState, useEffect, useContext } from "react";
 import api from "../api/axios";
 import { getUser, setAuth, clearAuth, getAccessToken } from "../utils/storage";
 import { getCanonicalRole } from "../utils/roleUtils";
+import useIdleSession from "../utils/useIdleSession";
 
 export const AuthContext = createContext(null);
 
@@ -76,37 +77,44 @@ export const AuthProvider = ({ children }) => {
     try {
       // Clear ALL app caches and TMS-specific storage
       const tmsKeys = [
-        'tms_training_requests_cache_v1',
-        'tms_user_map_v1',
-        'tms_partner_map_v1',
-        'tms_plan_map_v1',
-        'tms_self_partner_id_v1',
-        'tms_training_batches_cache_v1',
-        'tms_batch_user_map_v1',
-        'tms_centre_map_v1'
+        "tms_training_requests_cache_v1",
+        "tms_user_map_v1",
+        "tms_partner_map_v1",
+        "tms_plan_map_v1",
+        "tms_self_partner_id_v1",
+        "tms_training_batches_cache_v1",
+        "tms_batch_user_map_v1",
+        "tms_centre_map_v1",
       ];
-      
+
       // Clear per-request batch caches (pattern: tms_training_batches_cache_v1_{requestId})
       const allKeys = Object.keys(localStorage);
-      const batchCacheKeys = allKeys.filter(key => key.startsWith('tms_training_batches_cache_v1_'));
-      
-      [...tmsKeys, ...batchCacheKeys].forEach(key => {
-        try { localStorage.removeItem(key); } catch(e) {}
+      const batchCacheKeys = allKeys.filter((key) =>
+        key.startsWith("tms_training_batches_cache_v1_"),
+      );
+
+      [...tmsKeys, ...batchCacheKeys].forEach((key) => {
+        try {
+          localStorage.removeItem(key);
+        } catch (e) {}
       });
 
       // Clear geoscope and other app caches
-      localStorage.removeItem('ps_user_geoscope');
-      
+      localStorage.removeItem("ps_user_geoscope");
+
+      // TP specific cache
+      localStorage.removeItem("tp_self_partner_id");
+      localStorage.removeItem("tms_training_batches_cache_v1");
+
       // Clear auth storage
       clearAuth();
-      
     } catch (e) {
-      console.error('Logout cleanup error:', e);
+      console.error("Logout cleanup error:", e);
     }
-    
+
     // Server logout (fire and forget)
     api.post("/auth/logout/").catch(console.error);
-    
+
     // Reset state
     setUser(null);
     setIsAuthenticated(false);
@@ -142,6 +150,15 @@ export const AuthProvider = ({ children }) => {
       return null;
     }
   };
+
+  // GLOBAL idle session management
+  useIdleSession({
+    enabled: isAuthenticated, // only when logged in
+    refreshAccess,
+    logout,
+    idleMaxMs: 2 * 60 * 1000, // 2 minutes
+    refreshIntervalMs: 1 * 60 * 1000, // 1 minute
+  });
 
   return (
     <AuthContext.Provider

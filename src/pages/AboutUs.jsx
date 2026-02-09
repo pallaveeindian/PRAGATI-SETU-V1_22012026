@@ -1,5 +1,4 @@
-// src/pages/Home.jsx
-// APP RECEIEVED 04-02-2026
+// src/pages/AboutUs.jsx
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import ps_logo from "../assets/PS_TRANS.png";
@@ -7,8 +6,9 @@ import up_logo from "../assets/upgov_logo.jpg";
 import nav_logo from "../assets/top_nav_banner.png";
 import HeroLayout from "./HeroComponents/HeroLayout.jsx";
 import Footer from "../components/layout/Footer.jsx";
+import aboutImg from "../assets/Hero/About/ps_diag.png";
 
-export default function Home() {
+export default function AboutUs() {
   /* ================= FONT SIZE CONTROLS ================= */
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
@@ -98,11 +98,13 @@ export default function Home() {
                 <li>
                   <Link to="/Lakhpati-Didi">Lakhpati Didi (LDMS)</Link>
                 </li>
+
                 <li>
                   <Link to="/Enterprise-Tracking">
                     Enterprise Tracking (SU-Sakhi)
                   </Link>
                 </li>
+
                 <li>
                   <Link to="/Monitoring-and-Anlytics">
                     Monitoring and Anlytics
@@ -117,9 +119,7 @@ export default function Home() {
                 Dashboards <span className="arrow">▾</span>
               </span>
               <ul className="dropdown-menu">
-                <li>
-                  <Link to="/">Pragati Setu</Link>
-                </li>
+                <Link to="/">Pragati Setu</Link>
                 <li>
                   <Link to="/Power-BI-Analytics">Power BI Analytics</Link>
                 </li>
@@ -187,8 +187,40 @@ export default function Home() {
 
       {/* ================= HERO SECTION ================= */}
       <main className="home-hero">
-        <div className="hero-inner">
-          <HeroLayout />
+        <div className="about-section">
+          {/* LEFT TEXT */}
+          <div className="about-left">
+            <h1>Our Mission</h1>
+            <h3>A Bridge from Skill to Enterprise, Towards Prosperity</h3>
+
+            <p>
+              Pragati Setu is a comprehensive digital governance platform
+              designed to strengthen rural development initiatives under the
+              State Rural Livelihood Mission. The platform connects government
+              departments, field officials, and beneficiaries through a single
+              integrated system to ensure transparency, efficiency, and
+              accountability in service delivery.
+            </p>
+
+            <p>
+              It enables real-time data collection, monitoring, and analytics
+              for various welfare schemes and livelihood programs. By digitizing
+              manual processes, Pragati Setu reduces delays, improves accuracy,
+              and helps decision-makers track progress effectively across
+              districts and villages.
+            </p>
+
+            <p>
+              Key features of Pragati Setu include Beneficiary Profiling,
+              Lakhpati Didi Management, Training Management System (TMS),
+              Enterprise Tracking, User Management, and Performance Dashboards.
+            </p>
+          </div>
+
+          {/* RIGHT IMAGE */}
+          <div className="about-right">
+            <img src={aboutImg} alt="Pragati Setu Diagram" />
+          </div>
         </div>
       </main>
 
@@ -199,6 +231,42 @@ export default function Home() {
 
       {/* ================= STYLES ================= */}
       <style>{`
+      /* ===== ABOUT LAYOUT ===== */
+.about-section {
+  max-width: 1400px;
+  margin: 60px auto;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  align-items: center;
+}
+
+.about-left h1 {
+  font-size: 38px;
+  font-weight: 800;
+  margin-bottom: 18px;
+  color: #0f172a;
+}
+
+.about-left p {
+  font-size: 17px;
+  line-height: 1.8;
+  color: #334155;
+  margin-bottom: 14px;
+}
+
+/* IMAGE SIZE FIX */
+.about-right {
+  display: flex;
+  justify-content: center;
+}
+
+.about-right img {
+  width: 100%;
+  max-width: 780px;
+  height: auto;
+  object-fit: contain;
+}
         /* ===== Root shell ===== */
         .home-shell {
           display: flex;

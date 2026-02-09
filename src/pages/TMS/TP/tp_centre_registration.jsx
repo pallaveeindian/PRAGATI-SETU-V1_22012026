@@ -337,9 +337,12 @@ export default function TpCentreRegistration() {
                   "Serial Number",
                   <>
                     <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
                       value={centre.serial_number}
                       onChange={(e) => {
-                        const value = e.target.value.toUpperCase();
+                        const value = e.target.value.replace(/\D/g, "");
 
                         setCentre({ ...centre, serial_number: value });
 
@@ -364,6 +367,7 @@ export default function TpCentreRegistration() {
                   "Centre Name",
                   <>
                     <input
+                      type="text"
                       value={centre.venue_name}
                       onChange={(e) => {
                         const value = e.target.value.toUpperCase();

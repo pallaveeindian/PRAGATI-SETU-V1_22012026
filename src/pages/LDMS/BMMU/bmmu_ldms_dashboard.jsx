@@ -1,7 +1,6 @@
 // bmmu_ldms_dashboard.jsx
 import React, { useContext } from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
-import useIdleSession from "../../../utils/useIdleSession";
 import BlockMap from "./bmmu_dashboard_blk_map";
 import Meetings from "./bmmu_dashboard_meetings";
 import DemandAnalytics from "./bmmu_dashboard_demand_analytics";
@@ -9,14 +8,6 @@ import SupportBenefitExt from "./bmmu_dashboard_support_benefit_ext";
 
 export default function BmmuLdmsDashboard() {
   const { user, refreshAccess, logout } = useContext(AuthContext);
-
-  useIdleSession({
-    enabled: !!user,
-    refreshAccess,
-    logout,
-    idleMaxMs: 30 * 60 * 1000,        // 30 minutes
-    refreshIntervalMs: 5 * 60 * 1000, // 5 minutes
-  });
   return (
     <div className="bmmu-ldms-dashboard">
       {/* Row 1 */}

@@ -6,6 +6,19 @@ import Login from "./pages/Login";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ProtectedRoute from "./routes/ProtectedRoute";
 
+// Homepage
+import AboutUs from "./pages/AboutUs";
+import BeneficiaryProfiling from "./pages/BeneficiaryProfiling";
+import UserManagement from "./pages/UserManagement";
+import TrainingManagement from "./pages/TrainingManagement";
+import LakhpatiDidi from "./pages/LakhpatiDidi";
+import EnterpriseTracking from "./pages/EnterpriseTracking";
+import MonitoringandAnlytics from "./pages/MonitoringandAnlytics";
+import PowerBIAnalytics from "./pages/PowerBiAnalytics";
+import UserManual from "./pages/UserManual";
+import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
+import WhatsNew from "./pages/WhatsNew";
+
 // TMS dashboards
 import BmmuTmsDashboard from "./pages/TMS/BMMU/bmmu_tms_dashboard";
 import DmmuTmsDashboard from "./pages/TMS/DMMU/dmmu_tms_dashboard";
@@ -81,8 +94,24 @@ export default function App() {
   return (
     <Routes>
       <Route path="/" element={<Home />} />
+      <Route path="/about-us" element={<AboutUs />} />
+      <Route path="/beneficiary-profiling" element={<BeneficiaryProfiling />} />
+      <Route path="/user-management" element={<UserManagement />} />
+      <Route path="/training-management" element={<TrainingManagement />} />
+      <Route path="/lakhpati-didi" element={<LakhpatiDidi />} />
+      <Route path="/enterprise-tracking" element={<EnterpriseTracking />} />
+      <Route
+        path="/monitoring-and-anlytics"
+        element={<MonitoringandAnlytics />}
+      />
+      <Route path="/power-bi-analytics" element={<PowerBIAnalytics />} />
+      <Route path="/user-manual" element={<UserManual />} />
+      <Route
+        path="/frequently-asked-questions"
+        element={<FrequentlyAskedQuestions />}
+      />
+      <Route path="/what's-new" element={<WhatsNew />} />
       <Route path="/login" element={<Login />} />
-
       {/* Protected routes */}
       <Route element={<ProtectedRoute />}>
         {/* Main Dashboard */}
@@ -134,49 +163,34 @@ export default function App() {
         {/* Catch-all for unknown TMS paths */}
         <Route path="/tms/*" element={<TmsLanding />} />
       </Route>
-
       {/* Training Partner paths */}
       <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
-
       <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
-
       <Route
         path="/tms/tp/centre/:centreId"
         element={<TpCentreRegistration />}
       />
-
       <Route
         path="/tms/tp/tr-closure/:id"
         element={<TpTrainingRequestClosure />}
       />
-
       <Route path="/tms/tp/batches/create/:id" element={<TpCreateBatch />} />
-
       <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
       <Route path="/tms/batches-list/:id/" element={<TrainingBatchList />} />
       <Route path="/tms/batch-detail/:id" element={<TrainingBatchDetail />} />
-
       <Route path="/tms/tp/cp-list" element={<TpListCP />} />
-
       <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
       <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
       <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
-
       <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
-
       <Route
         path="/tms/cp/batch-attendance-ekyc/:id"
         element={<CpAdPerBatchEkyc />}
       />
-
       <Route path="/tms/cp/batch-attendance/:id" element={<CpAdPerBatch />} />
-
       <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
-
       <Route path="/tms/cp/batch-closure/:id" element={<CpBatchClosure />} />
-
       <Route path="/tms/batch-certificate/:id" element={<BatchCertificate />} />
-
       {/* ----- LDMS Routes (GLOBAL LAYOUT APPLIED) ----- */}
       <Route element={<ProtectedRoute />}>
         <Route path="/ldms" element={<LdmsLayout />}>
@@ -210,19 +224,17 @@ export default function App() {
             element={<SupPLDDetail />}
           />
           <Route path="reports" element={<LdmsReports />} />
-          
+
           {/* future LDMS pages */}
           {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
           {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
         </Route>
       </Route>
-
       <Route path="/ldms/dash-block/:blockId" element={<BlockMap />} />
       <Route
         path="/ldms/dash-district/:districtId"
         element={<DmmuBlockMap />}
       />
-
       {/* 404 */}
       <Route path="*" element={<div>404</div>} />
     </Routes>
