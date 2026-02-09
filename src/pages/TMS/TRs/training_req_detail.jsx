@@ -244,7 +244,7 @@ export default function TrainingRequestDetail() {
   async function fetchAll(force = false) {
     if (!id) return;
     // avoid concurrent fetches unless forced
-    if (inFlightRef.current && !force) return;
+    if (inFlightRef.current) return;
     inFlightRef.current = true;
     setLoadingAll(true);
 
@@ -346,7 +346,7 @@ export default function TrainingRequestDetail() {
   }
 
   useEffect(() => {
-    fetchAll(false);
+    fetchAll(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, refreshToken]);
 
@@ -360,6 +360,17 @@ export default function TrainingRequestDetail() {
       );
     });
   }, [participants, pldFilter]);
+
+  useEffect(() => {
+    function onVisibilityChange() {
+      if (document.visibilityState === "visible" && !inFlightRef.current) {
+        fetchAll(true);
+      }
+    }
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () =>
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+  }, [id]);
 
   /* ----------------- status message with highlighted status & partner ----------------- */
   function statusMessage(trObj, partnerObj) {

@@ -211,6 +211,14 @@ export function makeCrud(basePath) {
     // Create: POST /resource/
     create: (data) => api.post(path, data),
 
+    // MULTIPART (for file upload)
+    createMultipart: (formData) =>
+      api.post(path, formData, {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      }),
+
     // Update (full): PUT /resource/:id/
     update: (id, data) => api.put(`${path}${encodeURIComponent(id)}/`, data),
 
@@ -249,7 +257,8 @@ export const LOOKUP_API = {
   district_categories: makeCrud("/lookups/district-categories/"),
   districts: makeCrud("/lookups/districts/"),
   blocks: makeCrud("/lookups/blocks/"),
-  blocksByDistrict: (districtId) => api.get(`/lookups/blocks/${encodeURIComponent(districtId)}/`),
+  blocksByDistrict: (districtId) =>
+    api.get(`/lookups/blocks/${encodeURIComponent(districtId)}/`),
   block_detail: makeCrud("/lookups/blocks/detail/"),
   panchayats: makeCrud("/lookups/panchayats/"),
   panchayat_detail: makeCrud("/lookups/panchayats/detail/"),

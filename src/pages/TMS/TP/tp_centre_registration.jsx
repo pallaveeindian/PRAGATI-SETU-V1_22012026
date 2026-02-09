@@ -9,7 +9,13 @@ import { TMS_API, LOOKUP_API } from "../../../api/axios";
 
 const STEPS = ["Basic", "Address", "Facilities", "Rooms", "Media"];
 const EMPTY_ROOM = { room_name: "", room_capacity: 20 };
-const EMPTY_MEDIA = { category: "OTHER", file: null, notes: "", id: null };
+const EMPTY_MEDIA = {
+  category: "OTHER",
+  file: null,
+  notes: "",
+  id: null,
+  existing_url: null,
+};
 
 /* ===================== CONFIRM MODAL ===================== */
 
@@ -48,6 +54,14 @@ function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
   );
 }
 
+function normalizeMediaUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("http://72.61.255.170/")) {
+    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8080/");
+  }
+  return url;
+}
+
 /* ===================== MAIN ===================== */
 
 export default function TpCentreRegistration() {
@@ -72,6 +86,7 @@ export default function TpCentreRegistration() {
   const [loadingBlocks, setLoadingBlocks] = useState(false);
   const [loadingPanchayats, setLoadingPanchayats] = useState(false);
   const [loadingVillages, setLoadingVillages] = useState(false);
+  const [errors, setErrors] = useState({});
 
   /* ===================== FORM STATE ===================== */
 
@@ -95,6 +110,8 @@ export default function TpCentreRegistration() {
     other_details: "",
     training_hall_count: 1,
     training_hall_capacity: 20,
+    // centre_type: "",
+    centre_type_other: "",
   });
 
   const [rooms, setRooms] = useState([{ ...EMPTY_ROOM }]);
@@ -211,9 +228,11 @@ export default function TpCentreRegistration() {
 
       for (const r of rooms) {
         if (!r.room_name) continue;
-
         if (r.id) {
-          await TMS_API.trainingPartnerCentreRooms.update(r.id, r);
+          await TMS_API.trainingPartnerCentreRooms.update(r.id, {
+            ...r,
+            centre: finalCentreId,
+          });
         } else {
           await TMS_API.trainingPartnerCentreRooms.create({
             ...r,
@@ -224,17 +243,20 @@ export default function TpCentreRegistration() {
       }
 
       for (const m of media) {
-        if (m.id || !m.file) continue;
+        if (m.id && !m.file) continue;
 
-        const fd = new FormData();
-        fd.append("partner", partnerId);
-        fd.append("centre", finalCentreId);
-        fd.append("category", m.category);
-        fd.append("file", m.file);
-        fd.append("created_by", user.id);
-        if (m.notes) fd.append("notes", m.notes);
+        if (m.file) {
+          const fd = new FormData();
+          fd.append("partner", partnerId);
+          fd.append("centre", finalCentreId);
+          fd.append("category", m.category);
+          fd.append("file", m.file);
+          fd.append("created_by", user.id);
+          fd.append("is_active", "1");
+          if (m.notes) fd.append("notes", m.notes);
 
-        await TMS_API.trainingPartnerSubmissions.create(fd);
+          await TMS_API.trainingPartnerSubmissions.createMultipart(fd);
+        }
       }
 
       alert(
@@ -313,39 +335,98 @@ export default function TpCentreRegistration() {
                 row(
                   "sn",
                   "Serial Number",
-                  <input
-                    value={centre.serial_number}
-                    onChange={(e) =>
-                      setCentre({ ...centre, serial_number: e.target.value })
-                    }
-                  />,
+                  <>
+                    <input
+                      value={centre.serial_number}
+                      onChange={(e) => {
+                        const value = e.target.value.toUpperCase();
+
+                        setCentre({ ...centre, serial_number: value });
+
+                        setErrors({
+                          ...errors,
+                          serial_number: value
+                            ? ""
+                            : "Serial Number is required",
+                        });
+                      }}
+                    />
+
+                    {errors.serial_number && (
+                      <small style={{ color: "red" }}>
+                        {errors.serial_number}
+                      </small>
+                    )}
+                  </>,
                 ),
                 row(
                   "name",
                   "Centre Name",
-                  <input
-                    value={centre.venue_name}
-                    onChange={(e) =>
-                      setCentre({ ...centre, venue_name: e.target.value })
-                    }
-                  />,
+                  <>
+                    <input
+                      value={centre.venue_name}
+                      onChange={(e) => {
+                        const value = e.target.value.toUpperCase();
+
+                        setCentre({ ...centre, venue_name: value });
+
+                        setErrors({
+                          ...errors,
+                          venue_name: value ? "" : "Centre Name is required",
+                        });
+                      }}
+                    />
+
+                    {errors.venue_name && (
+                      <small style={{ color: "red" }}>
+                        {errors.venue_name}
+                      </small>
+                    )}
+                  </>,
                 ),
                 row(
                   "type",
                   "Centre Type",
-                  <select
-                    value={centre.centre_type}
-                    onChange={(e) =>
-                      setCentre({ ...centre, centre_type: e.target.value })
-                    }
-                  >
-                    <option value="">Select</option>
-                    <option value="PRIVATE">Private</option>
-                    <option value="GOVERNMENT">Government</option>
-                    <option value="LODGE">Lodge</option>
-                    <option value="RENTED">Rented</option>
-                    <option value="OTHERS">Others</option>
-                  </select>,
+                  <>
+                    <select
+                      value={centre.centre_type}
+                      onChange={(e) =>
+                        setCentre({ ...centre, centre_type: e.target.value })
+                      }
+                    >
+                      <option value="">Select</option>
+                      <option value="PRIVATE">Private</option>
+                      <option value="GOVERNMENT">Government</option>
+                      <option value="LODGE">Lodge</option>
+                      <option value="RENTED">Rented</option>
+                      <option value="OTHERS">Others</option>
+                    </select>
+                    {centre.centre_type === "OTHERS" && (
+                      <>
+                        <input
+                          placeholder="Specify other centre type"
+                          value={centre.centre_type_other || ""}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            setCentre({ ...centre, centre_type_other: value });
+
+                            setErrors({
+                              ...errors,
+                              centre_type_other: value
+                                ? ""
+                                : "Please specify centre type",
+                            });
+                          }}
+                        />
+
+                        {errors.centre_type_other && (
+                          <small style={{ color: "red" }}>
+                            {errors.centre_type_other}
+                          </small>
+                        )}
+                      </>
+                    )}
+                  </>,
                 ),
               ],
               "basic",
@@ -358,13 +439,18 @@ export default function TpCentreRegistration() {
                 row(
                   "addr",
                   "Centre Address",
-                  <input
-                    value={centre.venue_address}
-                    onChange={(e) =>
-                      setCentre({ ...centre, venue_address: e.target.value })
-                    }
-                  />,
+                  <>
+                    <input
+                      maxLength={150}
+                      value={centre.venue_address}
+                      onChange={(e) =>
+                        setCentre({ ...centre, venue_address: e.target.value })
+                      }
+                    />
+                    <small>{centre.venue_address.length}/150</small>
+                  </>,
                 ),
+
                 row(
                   "dist",
                   "District",
@@ -456,16 +542,21 @@ export default function TpCentreRegistration() {
                 row(
                   "sec",
                   "Security Arrangements",
-                  <input
-                    value={centre.security_arrangements}
-                    onChange={(e) =>
-                      setCentre({
-                        ...centre,
-                        security_arrangements: e.target.value,
-                      })
-                    }
-                  />,
+                  <>
+                    <input
+                      maxLength={150}
+                      value={centre.security_arrangements}
+                      onChange={(e) =>
+                        setCentre({
+                          ...centre,
+                          security_arrangements: e.target.value,
+                        })
+                      }
+                    />
+                    <small>{centre.security_arrangements.length}/150</small>
+                  </>,
                 ),
+
                 row(
                   "toilet",
                   "Total Toilets / Bathrooms",
@@ -532,12 +623,16 @@ export default function TpCentreRegistration() {
                 row(
                   "other",
                   "Other Details",
-                  <textarea
-                    value={centre.other_details}
-                    onChange={(e) =>
-                      setCentre({ ...centre, other_details: e.target.value })
-                    }
-                  />,
+                  <>
+                    <textarea
+                      maxLength={300}
+                      value={centre.other_details}
+                      onChange={(e) =>
+                        setCentre({ ...centre, other_details: e.target.value })
+                      }
+                    />
+                    <small>{centre.other_details.length}/300</small>
+                  </>,
                 ),
               ],
               "facilities",
@@ -669,38 +764,82 @@ export default function TpCentreRegistration() {
                         ))}
                       </select>,
                     ),
+
                     row(
                       `mf_${i}`,
                       "Upload File",
-                      <input
-                        type="file"
-                        onChange={(e) => {
-                          const c = [...media];
-                          c[i].file = e.target.files[0];
-                          setMedia(c);
-                        }}
-                      />,
+                      <>
+                        {/* Existing file preview (ONLY when no new file selected) */}
+                        {m.existing_url && !m.file && (
+                          <div style={{ marginBottom: 6 }}>
+                            <a
+                              href={normalizeMediaUrl(m.existing_url)}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              View existing file
+                            </a>
+                          </div>
+                        )}
+
+                        {/* New file upload */}
+                        <input
+                          type="file"
+                          accept=".jpg,.jpeg,.pdf"
+                          onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (!file) return;
+
+                            const allowed = [
+                              "image/jpeg",
+                              "image/jpg",
+                              "application/pdf",
+                            ];
+
+                            if (!allowed.includes(file.type)) {
+                              alert("Only JPG or PDF files are allowed");
+                              e.target.value = "";
+                              return;
+                            }
+
+                            const c = [...media];
+                            c[i].file = file; //  new file set
+                            c[i].existing_url = null; //  hide old file
+                            setMedia(c);
+                          }}
+                        />
+                      </>,
                     ),
                     row(
                       `mn_${i}`,
                       "Notes",
-                      <input
-                        value={m.notes}
-                        onChange={(e) => {
-                          const c = [...media];
-                          c[i].notes = e.target.value;
-                          setMedia(c);
-                        }}
-                      />,
+                      <>
+                        <input
+                          maxLength={300}
+                          value={m.notes}
+                          onChange={(e) => {
+                            const c = [...media];
+                            c[i].notes = e.target.value;
+                            setMedia(c);
+                          }}
+                        />
+                        <small>{m.notes.length}/300</small>
+                      </>,
                     ),
                     row(
                       `md_${i}`,
                       "Action",
                       <button
                         className="btn-danger"
-                        onClick={() =>
-                          setMedia(media.filter((_, idx) => idx !== i))
-                        }
+                        onClick={async () => {
+                          if (m.id) {
+                            await TMS_API.trainingPartnerSubmissions.destroy(
+                              m.id,
+                            );
+                          }
+
+                          setMedia(media.filter((_, idx) => idx !== i));
+                        }}
                       >
                         Delete
                       </button>,

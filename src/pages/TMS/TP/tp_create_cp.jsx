@@ -16,12 +16,59 @@ function generateThUrid() {
   return `TH_${body}`;
 }
 
+/* ================= VALIDATIONS ================= */
+
+const passwordRegex =
+  /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,12}$/;
+
+const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+const mobileRegex = /^\d{10}$/;
+
+function validateUserForm({ username, password }) {
+  const errors = {};
+
+  if (!username || username.length < 10 || username.length > 20) {
+    errors.username = "Username must be 10–20 characters";
+  }
+
+  if (!passwordRegex.test(password)) {
+    errors.password =
+      "Password must be 8–12 chars, include uppercase, lowercase, number & special character. No spaces allowed.";
+  }
+
+  return errors;
+}
+
+function validateCPForm({ name, mobile_number, email, address }) {
+  const errors = {};
+
+  if (!name || name.length > 50) {
+    errors.name = "Name must be max 50 characters";
+  }
+
+  if (!mobileRegex.test(mobile_number)) {
+    errors.mobile_number = "Mobile number must be exactly 10 digits";
+  }
+
+  if (!emailRegex.test(email)) {
+    errors.email = "Invalid email format (example@domain.com)";
+  }
+
+  if (address && address.length > 150) {
+    errors.address = "Address must be max 150 characters";
+  }
+
+  return errors;
+}
+
 export default function TpCreateCP() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const { cpId } = useParams();
   const isEditMode = Boolean(cpId);
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [userErrors, setUserErrors] = useState({});
+  const [cpErrors, setCpErrors] = useState({});
 
   /* ---------------- STATES ---------------- */
 
@@ -40,14 +87,14 @@ export default function TpCreateCP() {
   const [masterUserId, setMasterUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-const [cpExists, setCpExists] = useState(false);
-const [cpIdState, setCpIdState] = useState(null);
-const [partnerId, setPartnerId] = useState(null);
+  const [cpExists, setCpExists] = useState(false);
+  const [cpIdState, setCpIdState] = useState(null);
+  const [partnerId, setPartnerId] = useState(null);
 
   /* ================= NEW STATES ================= */
 
-  const [masterUsers, setMasterUsers] = useState([]); 
-  const [loadingMasters, setLoadingMasters] = useState(false); 
+  const [masterUsers, setMasterUsers] = useState([]);
+  const [loadingMasters, setLoadingMasters] = useState(false);
 
   /* ---------------- PREFILL (EDIT MODE) ---------------- */
 
@@ -93,98 +140,106 @@ const [partnerId, setPartnerId] = useState(null);
   /* created_by = logged-in user */
 
   async function fetchMasterUsers() {
-  if (!user?.id) return;
+    if (!user?.id) return;
 
-  setLoadingMasters(true);
-  try {
-    const resp = await api.get("/lookups/master-users/", {
-      params: {
-        created_by: user.id, 
-      },
-    });
+    setLoadingMasters(true);
+    try {
+      const resp = await api.get("/lookups/master-users/", {
+        params: {
+          created_by: user.id,
+        },
+      });
 
-    setMasterUsers(resp.data?.results || []);
-  } catch (e) {
-    console.error("Failed to fetch master users", e);
-  } finally {
-    setLoadingMasters(false);
+      setMasterUsers(resp.data?.results || []);
+    } catch (e) {
+      console.error("Failed to fetch master users", e);
+    } finally {
+      setLoadingMasters(false);
+    }
   }
-}
 
   /* Fetch master users on create mode */
 
   useEffect(() => {
     if (!isEditMode) {
-      fetchMasterUsers(); 
+      fetchMasterUsers();
     }
   }, [user.id, isEditMode]);
 
-
-
   async function fetchContactPersonByMaster(masterUserId) {
-  try {
-    const resp = await TMS_API.trainingPartnerContactPersons.list({
-      master_user: masterUserId,
-      page_size: 1,
-    });
-
-    const cp = resp?.data?.results?.[0];
-
-    if (cp) {
-      
-      setCpExists(true);
-      setCpIdState(cp.id);
-setPartnerId(cp.partner); 
-      setCpForm({
-        name: cp.name || "",
-        mobile_number: cp.mobile_number || "",
-        email: cp.email || "",
-        address: cp.address || "",
+    try {
+      const resp = await TMS_API.trainingPartnerContactPersons.list({
+        master_user: masterUserId,
+        page_size: 1,
       });
-    } else {
-      
-      setCpExists(false);
-      setCpIdState(null);
 
-      setCpForm({
-        name: "",
-        mobile_number: "",
-        email: "",
-        address: "",
-      });
+      const cp = resp?.data?.results?.[0];
+
+      if (cp) {
+        setCpExists(true);
+        setCpIdState(cp.id);
+        setPartnerId(cp.partner);
+        setCpForm({
+          name: cp.name || "",
+          mobile_number: cp.mobile_number || "",
+          email: cp.email || "",
+          address: cp.address || "",
+        });
+      } else {
+        setCpExists(false);
+        setCpIdState(null);
+
+        setCpForm({
+          name: "",
+          mobile_number: "",
+          email: "",
+          address: "",
+        });
+      }
+    } catch (e) {
+      console.error("Failed to fetch contact person", e);
     }
-  } catch (e) {
-    console.error("Failed to fetch contact person", e);
   }
-}
 
   /* ================= MASTER USER SELECT ================= */
 
   function handleMasterSelect(u) {
-   
     setMasterUserId(u.id);
 
     setUserForm({
       username: u.username || "",
       password: u.password || "",
     });
-      fetchContactPersonByMaster(u.id);
+    fetchContactPersonByMaster(u.id);
   }
 
   /* ---------------- CREATE / UPDATE USER ---------------- */
 
   async function handleUserSubmit() {
+    const errors = validateUserForm(userForm);
+    setUserErrors(errors);
+
+    if (Object.keys(errors).length > 0) {
+      setStatus("Please fix validation errors");
+      return;
+    }
+
     setStatus(isEditMode ? "Updating user…" : "Creating user…");
 
     try {
       if (masterUserId) {
-        //update selected master user
-        await api.put(`/lookups/users/${masterUserId}/`, {
-          ...userForm,
+        const payload = {
+          username: userForm.username,
           TH_urid: generateThUrid(),
           updated_by: user.id,
-          pass_updated_by: user.id,
-        });
+        };
+
+        if (userForm.password) {
+          payload.password = userForm.password;
+          payload.pass_updated_by = user.id;
+        }
+
+        await api.put(`/lookups/users/${masterUserId}/`, payload);
       } else {
         const resp = await api.post("/lookups/users/create/", {
           username: userForm.username,
@@ -194,15 +249,13 @@ setPartnerId(cp.partner);
           is_active: 1,
           is_suspended: 0,
           is_locked: 0,
-          created_by: user.id, // RECORDED IN DB
-        } 
-      );
-    
-        setMasterUserId(resp.data.id);
+          created_by: user.id,
+        });
 
-        //  refresh master list immediately
+        setMasterUserId(resp.data.id);
         await fetchMasterUsers();
       }
+
       setStatus("User saved successfully ✓");
     } catch (e) {
       console.error(e);
@@ -210,47 +263,56 @@ setPartnerId(cp.partner);
     }
   }
 
-
-
-
   /* ---------------- CREATE / UPDATE CP ---------------- */
 
-async function handleCPSubmit() {
-  setStatus(cpExists ? "Updating contact person…" : "Creating contact person…");
+  async function handleCPSubmit() {
+    const errors = validateCPForm(cpForm);
+    setCpErrors(errors);
 
-  try {
-    if (cpExists && cpIdState) {
-      await TMS_API.trainingPartnerContactPersons.update(cpIdState, {
-        ...cpForm,
-        partner: partnerId,     
-    master_user: masterUserId,
-        updated_by: user.id,
-      });
-    } 
-    else {
-      const tpResp = await TMS_API.trainingPartners.list({
-        search: user.id,
-        fields: "id",
-      });
-
-      const tpId = tpResp?.data?.results?.[0]?.id;
-
-      await TMS_API.trainingPartnerContactPersons.create({
-        ...cpForm,
-        partner: tpId,
-        master_user: masterUserId,
-        created_by: user.id,
-      });
-      await fetchContactPersonByMaster(masterUserId);
+    if (Object.keys(errors).length > 0) {
+      setStatus("Please fix validation errors");
+      return;
     }
 
-    setStatus("Contact Person saved successfully ✓");
-  } catch (e) {
-    console.error(e);
-    alert("Contact Person operation failed");
-  }
-}
+    setStatus(
+      cpExists ? "Updating contact person…" : "Creating contact person…",
+    );
 
+    try {
+      if (cpExists && cpIdState) {
+        await TMS_API.trainingPartnerContactPersons.update(cpIdState, {
+          ...cpForm,
+          partner: partnerId,
+          master_user: masterUserId,
+          updated_by: user.id,
+        });
+      } else {
+        const tpResp = await TMS_API.trainingPartners.list({
+          search: user.id,
+          fields: "id",
+        });
+
+        const tpId = tpResp?.data?.results?.[0]?.id;
+
+        await TMS_API.trainingPartnerContactPersons.create({
+          ...cpForm,
+          partner: tpId,
+          master_user: masterUserId,
+          created_by: user.id,
+        });
+
+        await fetchContactPersonByMaster(masterUserId);
+      }
+
+      setStatus("Contact Person saved successfully ✓");
+    } catch (e) {
+      console.error(e);
+      alert("Contact Person operation failed");
+    }
+  }
+
+  const isUserInvalid = Object.keys(validateUserForm(userForm)).length > 0;
+  const isCPInvalid = Object.keys(validateCPForm(cpForm)).length > 0;
 
   /* ---------------- RENDER ---------------- */
 
@@ -275,19 +337,18 @@ async function handleCPSubmit() {
               <p>Loading contact person…</p>
             ) : (
               <>
-              <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-  <h3 style={{ margin: 0 }}>Master Users</h3>
-  <button
-    type="button"
-    className="btn"
-    style={{ padding: "4px 10px", fontSize: 12 }}
-    onClick={fetchMasterUsers}
-    disabled={loadingMasters}
-  >
-    {loadingMasters ? "Refreshing…" : "Refresh"}
-  </button>
- 
-</div>
+                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+                  <h3 style={{ margin: 0 }}>Master Users</h3>
+                  <button
+                    type="button"
+                    className="btn"
+                    style={{ padding: "4px 10px", fontSize: 12 }}
+                    onClick={fetchMasterUsers}
+                    disabled={loadingMasters}
+                  >
+                    {loadingMasters ? "Refreshing…" : "Refresh"}
+                  </button>
+                </div>
 
                 {/* ================= MASTER USER LIST ================= */}
                 {!isEditMode && (
@@ -313,8 +374,8 @@ async function handleCPSubmit() {
                           >
                             <input
                               // type="checkbox"
-                                type="radio"
-                                name="masterUser"
+                              type="radio"
+                              name="masterUser"
                               checked={masterUserId === u.id}
                               onChange={() => handleMasterSelect(u)}
                             />
@@ -334,23 +395,37 @@ async function handleCPSubmit() {
                   className="input"
                   placeholder="Username"
                   value={userForm.username}
-                  onChange={(e) =>
-                    setUserForm({ ...userForm, username: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const updated = { ...userForm, username: e.target.value };
+                    setUserForm(updated);
+                    setUserErrors(validateUserForm(updated));
+                  }}
                 />
+                {userErrors.username && (
+                  <div className="error-text">{userErrors.username}</div>
+                )}
 
                 <input
                   type="text"
                   className="input"
                   placeholder="Password"
                   value={userForm.password}
-                  onChange={(e) =>
-                    setUserForm({ ...userForm, password: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const updated = { ...userForm, password: e.target.value };
+                    setUserForm(updated);
+                    setUserErrors(validateUserForm(updated));
+                  }}
                   style={{ marginTop: 8 }}
                 />
+                {userErrors.password && (
+                  <div className="error-text">{userErrors.password}</div>
+                )}
 
-                <button className="btn" onClick={handleUserSubmit}>
+                <button
+                  className="btn"
+                  disabled={isUserInvalid}
+                  onClick={handleUserSubmit}
+                >
                   {masterUserId ? "Update User" : "Create User"}
                 </button>
 
@@ -362,41 +437,70 @@ async function handleCPSubmit() {
                   className="input"
                   placeholder="Name"
                   value={cpForm.name}
-                  onChange={(e) =>
-                    setCpForm({ ...cpForm, name: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const updated = { ...cpForm, name: e.target.value };
+                    setCpForm(updated);
+                    setCpErrors(validateCPForm(updated));
+                  }}
                 />
+                {cpErrors.name && (
+                  <div className="error-text">{cpErrors.name}</div>
+                )}
 
                 <input
                   className="input"
                   placeholder="Mobile"
+                  inputMode="numeric"
+                  pattern="\d*"
                   value={cpForm.mobile_number}
-                  onChange={(e) =>
-                    setCpForm({ ...cpForm, mobile_number: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const updated = {
+                      ...cpForm,
+                      mobile_number: e.target.value,
+                    };
+                    setCpForm(updated);
+                    setCpErrors(validateCPForm(updated));
+                  }}
                 />
+                {cpErrors.mobile_number && (
+                  <div className="error-text">{cpErrors.mobile_number}</div>
+                )}
 
                 <input
                   className="input"
                   placeholder="Email"
                   value={cpForm.email}
-                  onChange={(e) =>
-                    setCpForm({ ...cpForm, email: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const updated = { ...cpForm, email: e.target.value };
+                    setCpForm(updated);
+                    setCpErrors(validateCPForm(updated));
+                  }}
                 />
+                {cpErrors.email && (
+                  <div className="error-text">{cpErrors.email}</div>
+                )}
 
                 <textarea
                   className="input"
                   placeholder="Address"
                   value={cpForm.address}
-                  onChange={(e) =>
-                    setCpForm({ ...cpForm, address: e.target.value })
-                  }
+                  onChange={(e) => {
+                    const updated = { ...cpForm, address: e.target.value };
+                    setCpForm(updated);
+                    setCpErrors(validateCPForm(updated));
+                  }}
                 />
+                {cpErrors.address && (
+                  <div className="error-text">{cpErrors.address}</div>
+                )}
 
-<button className="btn" onClick={handleCPSubmit}>
-  {cpExists ? "Update Contact Person" : "Create Contact Person"}
-</button>
+                <button
+                  className="btn"
+                  disabled={isCPInvalid}
+                  onClick={handleCPSubmit}
+                >
+                  {cpExists ? "Update Contact Person" : "Create Contact Person"}
+                </button>
                 {status && (
                   <div style={{ marginTop: 10, fontSize: 13 }}>{status}</div>
                 )}
