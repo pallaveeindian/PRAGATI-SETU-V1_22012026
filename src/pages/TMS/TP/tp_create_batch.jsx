@@ -301,7 +301,8 @@ function calcEndDate(startDate, days) {
   return d.toISOString().split("T")[0];
 }
 
-function isParticipantFree(p) {
+function isParticipantFree(p, isReviewMode = false) {
+  if (isReviewMode) return true;
   return !p.remarks || p.remarks.trim() === "";
 }
 
@@ -318,39 +319,95 @@ function ParticipantTable({
   setSelected,
   trainingType,
   batchKey,
-  usedIdsAcrossBatches,
   blockNamesCache,
   setBlockNamesCache,
   markBatchTouched,
+  isReviewMode,
 }) {
-  const pageData = cache[trId];
+  const cacheKey = `tr-${trId}`;
+  const pageData = cache[cacheKey];
   if (!pageData) return null;
 
   const { list, page } = pageData;
-  const availableList = list.filter((p) => !usedIdsAcrossBatches.has(p.id));
-
+  const availableList = list;
   const start = (page - 1) * PARTICIPANT_PAGE_SIZE;
   const slice = availableList.slice(start, start + PARTICIPANT_PAGE_SIZE);
 
-  function toggle(p) {
-    if (!isParticipantFree(p)) return;
-    setSelected((prev) => {
-      const perBatch = prev[batchKey] || {};
-      const curr = perBatch[trId] || [];
-      const exists = curr.find((x) => x.id === p.id);
-      const nextForTr = exists
-        ? curr.filter((x) => x.id !== p.id)
-        : [...curr, p];
+function toggle(p) {
+  if (!isParticipantFree(p, isReviewMode)) return;
+
+  setSelected((prev) => {
+    const perBatch = prev[batchKey] || {};
+    const curr = perBatch[trId] || [];
+    const exists = curr.some((x) => x._uid === p._uid);
+
+    // REMOVE from batch → ADD back to source table
+    if (exists) {
+      setCache((c) => {
+        const key = `tr-${trId}`;
+        const pageData = c[key];
+        if (!pageData) return c;
+
+        if (pageData.list.some(x => x._uid === p._uid)) return c;
+
+        return {
+          ...c,
+          [key]: {
+            ...pageData,
+            list: [p, ...pageData.list],
+            page: 1,
+          },
+        };
+      });
+
       return {
         ...prev,
         [batchKey]: {
           ...perBatch,
-          [trId]: nextForTr,
+          [trId]: curr.filter((x) => x._uid !== p._uid),
+        },
+      };
+    }
+
+    const existsInOtherBatch = Object.entries(prev).some(
+      ([bk, perBatch]) =>
+        bk !== batchKey &&
+        Object.values(perBatch || {})
+          .flat()
+          .some(x => x._uid === p._uid)
+    );
+
+    if (existsInOtherBatch) return prev;
+
+
+    // ADD to batch → REMOVE from source table
+    setCache((c) => {
+      const key = `tr-${trId}`;
+      const pageData = c[key];
+      if (!pageData) return c;
+
+      return {
+        ...c,
+        [key]: {
+          ...pageData,
+          list: pageData.list.filter(x => x._uid !== p._uid),
+          page: 1,
         },
       };
     });
-    markBatchTouched(batchKey);
-  }
+
+    return {
+      ...prev,
+      [batchKey]: {
+        ...perBatch,
+        [trId]: [...curr, { ...p, training: trId }],
+      },
+    };
+  });
+
+  markBatchTouched(batchKey);
+}
+
 
   const selectedForBatch = selected[batchKey] || {};
 
@@ -383,21 +440,21 @@ function ParticipantTable({
         </thead>
         <tbody>
           {slice.map((p) => {
-            const blockId = trainingType === "BENEFICIARY" ? p.block : p.block;
+            const blockId = p.block;
             if (blockId) {
               ensureBlockName(blockId);
             }
             const blockName = blockId ? blockNamesCache[blockId] || "" : "";
-
+            const selectedUids = new Set(
+              (selectedForBatch[trId] || []).map((x) => x._uid)
+            );
             return (
-              <tr key={p.id}>
+              <tr key={p._uid}>
                 <td>
                   <input
                     type="checkbox"
-                    disabled={!isParticipantFree(p)}
-                    checked={(selectedForBatch[trId] || []).some(
-                      (x) => x.id === p.id,
-                    )}
+                    disabled={!isParticipantFree(p, isReviewMode)}
+                    checked={selectedUids.has(p._uid)}
                     onChange={() => toggle(p)}
                   />
                 </td>
@@ -418,7 +475,7 @@ function ParticipantTable({
           onClick={() =>
             setCache((c) => ({
               ...c,
-              [trId]: { ...pageData, page: page - 1 },
+              [cacheKey]: { ...pageData, page: page - 1 },
             }))
           }
         >
@@ -430,7 +487,7 @@ function ParticipantTable({
           onClick={() =>
             setCache((c) => ({
               ...c,
-              [trId]: { ...pageData, page: page + 1 },
+              [cacheKey]: { ...pageData, page: page + 1 },
             }))
           }
         >
@@ -452,7 +509,6 @@ function CombinedParticipantSelector({
   selectedParticipants,
   setSelectedParticipants,
   batchKey,
-  usedIdsAcrossBatches,
   blockNamesCache,
   setBlockNamesCache,
   markBatchTouched,
@@ -464,7 +520,8 @@ function CombinedParticipantSelector({
   const [blockTRs, setBlockTRs] = useState([]);
   const [loadingTRParticipants, setLoadingTRParticipants] = useState({});
 
-  const districtId = trainingReq?.district?.district_id;
+  const districtId =
+    trainingReq?.district?.district_id ?? trainingReq?.district;
   const baseTrainingPlanId = trainingReq?.training_plan?.id;
   const baseStatus = trainingReq?.status;
   const baseType = trainingReq?.training_type;
@@ -501,18 +558,31 @@ function CombinedParticipantSelector({
   }
 
   async function loadParticipantsForTR(tr) {
-    if (participantCache[tr.id]) return;
+    if (participantCache[`tr-${tr.id}`]) return;
     setLoadingTRParticipants((s) => ({ ...s, [tr.id]: true }));
     try {
       const resp = await api.get(`/tms/training-requests/${tr.id}/detail/`);
       const list =
         baseType === "BENEFICIARY"
-          ? resp.data.beneficiary_registrations
-          : resp.data.trainer_registrations;
+          ? resp.data.beneficiary_registrations.map((x) => ({
+              ...x,
+              id: x.beneficiary,
+              tr_participation_id: x.id,  
+              training: tr.id,
+              _uid: `${tr.id}-${x.beneficiary}`,
+            }))
+          : resp.data.trainer_registrations.map((x) => ({
+              ...x,
+              id: x.trainer,
+              tr_participation_id: x.id,
+              training: tr.id,
+              _uid: `${tr.id}-${x.trainer}`,
+            }));
+
       setParticipantCache((old) => ({
         ...old,
-        [tr.id]: {
-          list: list.filter(isParticipantFree),
+        [`tr-${tr.id}`]: {
+          list: list,
           page: 1,
           total: list.length,
         },
@@ -600,7 +670,7 @@ function CombinedParticipantSelector({
           </table>
 
           {blockTRs.map((tr) =>
-            participantCache[tr.id] ? (
+            participantCache[`tr-${tr.id}`] ? (
               <ParticipantTable
                 key={tr.id}
                 trId={tr.id}
@@ -611,10 +681,10 @@ function CombinedParticipantSelector({
                 setSelected={setSelectedParticipants}
                 trainingType={baseType}
                 batchKey={batchKey}
-                usedIdsAcrossBatches={usedIdsAcrossBatches}
                 blockNamesCache={blockNamesCache}
                 setBlockNamesCache={setBlockNamesCache}
                 markBatchTouched={markBatchTouched}
+                isReviewMode={false}
               />
             ) : null,
           )}
@@ -676,117 +746,164 @@ function BatchSubmitSection({
   batches,
   participantSelections,
   user,
+  isReviewMode,
+  deletedParticipantIds,
+  deletedBatchIds,
 }) {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [payload, setPayload] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
   function buildPayload() {
-    const batchItems = batches.map((b) => {
+    return batches.map((b) => {
       const perBatchSel = participantSelections[b.key] || {};
-      const allParticipants = Object.values(perBatchSel).flat();
-
-      const batchPayload = {
-        request: trainingReq.id,
-        centre: b.centre.id,
-        batch_type: b.batchType,
-        start_date: b.startDate,
-        end_date: b.endDate,
-        status: "PENDING",
-        code: generateBatchCode(
-          trainingReq.block?.block_name_en,
-          trainingReq.district?.district_name_en,
-        ),
-        created_by: user.id,
-      };
-
-      const participantPayload = allParticipants.map((p) => ({
-        id: p.id,
-        tr: p.training,
-      }));
+      const participants = Object.values(perBatchSel).flat();
 
       return {
-        batch: batchPayload,
-        participants: participantPayload,
+        key: b.key,
+        batch: {
+          id: b.id || null,
+          request: trainingReq.id,
+          centre: b.centre.id,
+          batch_type: b.batchType,
+          start_date: b.startDate,
+          end_date: b.endDate,
+        },
+        participants,
       };
     });
-
-    return { batches: batchItems };
   }
 
-  async function execute() {
-    setSubmitting(true);
-    try {
-      for (const item of payload.batches) {
-        const { batch, participants } = item;
+async function safeDelete(fn) {
+  try {
+    await fn();
+  } catch (e) {
+    if (e?.response?.status !== 404) throw e;
+  }
+}
 
-        const b = await TMS_API.batches.create(batch);
+async function execute() {
+  setSubmitting(true);
 
-        for (const p of participants) {
-          if (trainingReq.training_type === "BENEFICIARY") {
-            await TMS_API.batchBeneficiaries.create({
-              batch: b.data.id,
-              beneficiary: p.id,
-              created_by: user.id,
-            });
-          } else {
-            await TMS_API.batchTrainers.create({
-              batch: b.data.id,
-              trainer: p.id,
-              created_by: user.id,
-            });
+  // DELETE REMOVED PARTICIPANTS (ONCE)
+  for (const id of [...new Set(deletedParticipantIds)]) {
+    if (trainingReq.training_type === "BENEFICIARY") {
+      await safeDelete(() => TMS_API.batchBeneficiaries.destroy(id));
+    } else {
+      await safeDelete(() => TMS_API.batchTrainers.destroy(id));
+    }
+  }
+
+
+  try {
+    const payload = buildPayload();
+
+    const uniqueDeletedIds = [...new Set(deletedBatchIds)];
+
+    for (const id of uniqueDeletedIds) {
+      await TMS_API.batches.destroy(id);
+    }
+
+    for (const item of payload) {
+      const { key, batch, participants } = item;
+      let batchId = batch.id;
+
+      // HARD REPLACE participants for edited batches
+      if (batch.id && batches.find(b => b.key === key)?.touched) {
+        const detail = await api.get(`/tms/batches/${batchId}/detail`);
+
+        if (trainingReq.training_type === "BENEFICIARY") {
+          for (const bp of detail.data.beneficiary_participations) {
+            await safeDelete(() => TMS_API.batchBeneficiaries.destroy(bp.id));
           }
-
-          await api.patch(
-            `/tms/${
-              trainingReq.training_type === "BENEFICIARY"
-                ? "training-request-beneficiaries"
-                : "training-request-trainers"
-            }/${p.id}/`,
-            {
-              remarks: `COMBINED WITH TR - ${trainingReq.id}`,
-            },
-          );
+        } else {
+          for (const tp of detail.data.trainer_participations) {
+            await safeDelete(() => TMS_API.batchTrainers.destroy(tp.id));
+          }
         }
       }
 
-      const hasCombined = batches.some((b) => b.batchType === "COMBINED");
-
-      const baseList =
-        trainingReq.training_type === "BENEFICIARY"
-          ? trainingReq.beneficiary_registrations
-          : trainingReq.trainer_registrations;
-      const baseIds = baseList.filter(isParticipantFree).map((x) => x.id);
-
-      const allSelectedFromThisTR = Object.values(participantSelections)
-        .flatMap((perBatch) => Object.values(perBatch).flat())
-        .filter((p) => p.training === trainingReq.id)
-        .map((p) => p.id);
-
-      let shouldUpdateTRStatus = true;
-
-      if (hasCombined) {
-        shouldUpdateTRStatus =
-          baseIds.length > 0 &&
-          baseIds.every((id) => allSelectedFromThisTR.includes(id));
-      }
-
-      if (shouldUpdateTRStatus) {
-        await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
+      // ---------------------------
+      // 1. UPDATE BATCH (NO CREATE)
+      // ---------------------------
+      if (batchId && isReviewMode) {
+        // UPDATE existing batch
+        await TMS_API.batches.partialUpdate(batchId, {
+          centre: batch.centre,
+          batch_type: batch.batch_type ?? batch.batchType,
+          start_date: batch.start_date ?? batch.startDate,
+          end_date: batch.end_date ?? batch.endDate,
           status: "PENDING",
           updated_by: user.id,
         });
+      } else {
+        // CREATE new batch (REVIEW MODE ALLOWED)
+        const created = await TMS_API.batches.create({
+          request: trainingReq.id,
+          centre: batch.centre,
+          batch_type: batch.batch_type ?? batch.batchType,
+          start_date: batch.start_date ?? batch.startDate,
+          end_date: batch.end_date ?? batch.endDate,
+          status: "PENDING",
+          created_by: user.id,
+        });
+        batchId = created.data.id;
       }
 
-      alert("Batches proposed to DMMU successfully");
-      window.location.href = "/tms/training-requests";
-    } catch (e) {
-      console.error(e);
-      alert("Failed to create batches");
-    } finally {
-      setSubmitting(false);
+      // ---------------------------
+      // 2. CREATE NEW PARTICIPANTS
+      // ---------------------------
+      for (const p of participants) {
+        if (trainingReq.training_type === "BENEFICIARY") {
+          await TMS_API.batchBeneficiaries.create({
+            batch: batchId,
+            beneficiary: p.id,
+            created_by: user.id,
+          });
+        } else {
+          await TMS_API.batchTrainers.create({
+            batch: batchId,
+            trainer: p.id,
+            created_by: user.id,
+          });
+        }
+
+        // ---------------------------
+        // 3. UPDATE REMARKS FOR COMBINED
+        // ---------------------------
+        if (
+          p.training !== trainingReq.id && // participant came from another TR
+          p.tr_participation_id             // REQUIRED
+        ) {
+          const endpoint =
+            trainingReq.training_type === "BENEFICIARY"
+              ? "training-request-beneficiaries"
+              : "training-request-trainers";
+
+          await api.patch(
+            `/tms/${endpoint}/${p.tr_participation_id}/`,
+            {
+              remarks: `COMBINED WITH TR - ${trainingReq.id}`,
+            }
+          );
+        }
+      }
     }
+
+    await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
+      status: "PENDING",
+      updated_by: user.id,
+    });
+
+    alert("Revised batches submitted successfully");
+    window.location.href = "/tms/training-requests";
+  } catch (e) {
+    console.error(e);
+    alert("Failed to update batches");
+  } finally {
+    setSubmitting(false);
   }
+}
 
   return (
     <>
@@ -811,7 +928,9 @@ function BatchSubmitSection({
           setPreviewOpen(true);
         }}
       >
-        Preview All Created Batches
+        {isReviewMode
+          ? "Resubmit Revised Batches"
+          : "Preview All Created Batches"}
       </button>
 
       <PreviewModal
@@ -837,9 +956,12 @@ export default function TpCreateBatch() {
   const [loadingTR, setLoadingTR] = useState(true);
   const [trainingReq, setTrainingReq] = useState(null);
   const [themeName, setThemeName] = useState("");
+  const isReviewMode =
+    trainingReq && String(trainingReq.status).toUpperCase() === "REJECTED";
 
   const [participantCache, setParticipantCache] = useState({});
-
+  const [deletedBatchIds, setDeletedBatchIds] = useState([]);
+  const [deletedParticipantIds, setDeletedParticipantIds] = useState([]);
   const [batches, setBatches] = useState([
     {
       key: "batch-1",
@@ -853,6 +975,14 @@ export default function TpCreateBatch() {
       touched: false,
     },
   ]);
+  const activeBatchKeyRef = useRef(null);
+  useEffect(() => {
+    // Ensure there is always an active batch
+    if (!activeBatchKeyRef.current && batches.length > 0) {
+      activeBatchKeyRef.current = batches[0].key;
+    }
+  }, [batches]);
+
 
   const [participantSelections, setParticipantSelections] = useState({});
 
@@ -882,11 +1012,23 @@ export default function TpCreateBatch() {
         const seed = {};
         const list =
           r.data.training_type === "BENEFICIARY"
-            ? r.data.beneficiary_registrations
-            : r.data.trainer_registrations;
+            ? r.data.beneficiary_registrations.map((x) => ({
+                ...x,
+                id: x.beneficiary,              
+                tr_participation_id: x.id,      
+                training: requestId,
+                _uid: `${requestId}-${x.beneficiary}`,
+              }))
+            : r.data.trainer_registrations.map((x) => ({
+                ...x,
+                id: x.trainer,
+                tr_participation_id: x.id,
+                training: requestId,
+                _uid: `${requestId}-${x.trainer}`,
+              }));
 
-        seed[requestId] = {
-          list: list.filter(isParticipantFree),
+        seed[`tr-${requestId}`] = {
+          list,
           page: 1,
           total: list.length,
         };
@@ -898,6 +1040,134 @@ export default function TpCreateBatch() {
 
     loadTR();
   }, [requestId]);
+
+  useEffect(() => {
+    if (!trainingReq || !isReviewMode) return;
+
+  async function loadExistingBatches() {
+    try {
+      const resp = await TMS_API.batches.list({
+        request: trainingReq.id,
+        page_size: 50,
+      });
+
+      const existing = resp?.data?.results || [];
+      if (!existing.length) return;
+
+      const batchState = [];
+      const participantState = {};
+
+      for (let i = 0; i < existing.length; i++) {
+        const b = existing[i];
+
+        // IMPORTANT: use /detail serializer
+        const { data: detail } = await api.get(
+          `/tms/batches/${b.id}/detail`
+        );
+
+        const key = `batch-${i + 1}`;
+
+        batchState.push({
+          key,
+          id: b.id,
+          title: `Batch ${i + 1} (Revised)`,
+          batchType: b.batch_type,
+          centre: b.centre,
+          startDate: b.start_date,
+          endDate: b.end_date,
+          expanded: true,
+          touched: false,
+          errors: [],
+        });
+
+        participantState[key] = {};
+
+        // ---------------------------
+        // BENEFICIARY PARTICIPANTS
+        // ---------------------------
+        if (trainingReq.training_type === "BENEFICIARY") {
+          for (const ben of detail.beneficiary || []) {
+            const trId = ben.training;
+
+            if (!participantState[key][trId]) {
+              participantState[key][trId] = [];
+            }
+
+            participantState[key][trId].push({
+              ...ben,
+              id: ben.id,
+              training: trId,
+              tr_participation_id: ben.tr_participation_id || ben.id,
+              batch_participation_id:
+                detail.beneficiary_participations.find(
+                  (x) => x.beneficiary === ben.id
+                )?.id || null,
+              _uid: `${trId}-${ben.id}`,
+              __selected: true,
+            });
+          }
+        }
+
+        // ---------------------------
+        // TRAINER PARTICIPANTS
+        // ---------------------------
+        if (trainingReq.training_type === "TRAINER") {
+          for (const tr of detail.trainer || []) {
+            const trId = tr.training;
+
+            if (!participantState[key][trId]) {
+              participantState[key][trId] = [];
+            }
+
+            participantState[key][trId].push({
+              ...tr,
+              id: tr.id,
+              training: trId,
+              tr_participation_id: tr.tr_participation_id || tr.id,
+              batch_participation_id:
+                detail.trainer_participations.find(
+                  (x) => x.trainer === tr.id
+                )?.id || null,
+              _uid: `${trId}-${tr.id}`,
+              __selected: true,
+            });
+          }
+        }
+      }
+
+      setBatches(batchState);
+      setParticipantSelections(participantState);
+      setParticipantCache((c) => {
+        const key = `tr-${trainingReq.id}`;
+        const pageData = c[key];
+        if (!pageData) return c;
+
+        const selectedUids = new Set(
+          Object.values(participantState)
+            .flatMap(perBatch =>
+              Object.values(perBatch).flat()
+            )
+            .map(p => p._uid)
+        );
+
+        return {
+          ...c,
+          [key]: {
+            ...pageData,
+            list: pageData.list.filter(p => !selectedUids.has(p._uid)),
+            page: 1,
+          },
+        };
+      });
+
+    } catch (e) {
+      console.error("Failed to load existing batches", e);
+    }
+  }
+
+
+    loadExistingBatches();
+  }, [trainingReq]);
 
   useEffect(() => {
     if (!user?.id) return;
@@ -924,16 +1194,6 @@ export default function TpCreateBatch() {
 
     loadCentres();
   }, [user]);
-
-  const usedIdsAcrossBatches = useMemo(() => {
-    const ids = new Set();
-    Object.values(participantSelections).forEach((perBatch) => {
-      Object.values(perBatch).forEach((arr) => {
-        arr.forEach((p) => ids.add(p.id));
-      });
-    });
-    return ids;
-  }, [participantSelections]);
 
   useEffect(() => {
     // recalc errors for each batch based on current batch fields + selections
@@ -1009,8 +1269,14 @@ export default function TpCreateBatch() {
   }
 
   function removeBatch(key) {
-    if (batches.length === 1) return;
-    setBatches((prev) => prev.filter((b) => b.key !== key));
+    setBatches((prev) => {
+      const b = prev.find((x) => x.key === key);
+      if (b?.id) {
+        setDeletedBatchIds((ids) => [...ids, b.id]);
+      }
+      return prev.filter((x) => x.key !== key);
+    });
+
     setParticipantSelections((prev) => {
       const copy = { ...prev };
       delete copy[key];
@@ -1018,24 +1284,55 @@ export default function TpCreateBatch() {
     });
   }
 
-  function removeParticipantFromBatch(batchKey, trId, participantId) {
-    setParticipantSelections((prev) => {
-      const perBatch = prev[batchKey] || {};
-      const list = perBatch[trId] || [];
 
-      const updatedList = list.filter((p) => p.id !== participantId);
+  function removeParticipantFromBatch(batchKey, trId, participant) {
+    if (participant.batch_participation_id) {
+      setDeletedParticipantIds((prev) =>
+        prev.includes(participant.batch_participation_id)
+          ? prev
+          : [...prev, participant.batch_participation_id]
+      );
+    }
+
+    setParticipantSelections((prev) => {
+      const next = {};
+      for (const bk of Object.keys(prev)) {
+        const perBatch = prev[bk] || {};
+        next[bk] = {
+          ...perBatch,
+          [trId]: (perBatch[trId] || []).filter(
+            (p) => p._uid !== participant._uid
+          ),
+        };
+      }
+      return next;
+    });
+
+    setParticipantCache((c) => {
+      const key = `tr-${trId}`;
+      const pageData = c[key];
+      if (!pageData) return c;
+
+      // prevent duplicates
+      if (pageData.list.some(p => p._uid === participant._uid)) {
+        return c;
+      }
 
       return {
-        ...prev,
-        [batchKey]: {
-          ...perBatch,
-          [trId]: updatedList,
+        ...c,
+        [key]: {
+          ...pageData,
+          list: [participant, ...pageData.list],
+          page: 1,
         },
       };
     });
 
+
     markBatchTouched(batchKey);
   }
+
+
 
   async function handleViewCentre(id) {
     setViewLoadingId(id);
@@ -1054,7 +1351,13 @@ export default function TpCreateBatch() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav left={<div className="app-title">Create Batches</div>} />
+        <TopNav
+          left={
+            <div className="app-title">
+              {isReviewMode ? "Review & Modify Batches" : "Create Batches"}
+            </div>
+          }
+        />
 
         <main style={{ padding: 18 }}>
           {loadingTR ? (
@@ -1090,7 +1393,13 @@ export default function TpCreateBatch() {
 
               {batches.map((batch) => {
                 const perBatchSel = participantSelections[batch.key] || {};
-                const selectedList = Object.values(perBatchSel).flat();
+                const selectedList = Array.from(
+                  new Map(
+                    Object.values(perBatchSel)
+                      .flat()
+                      .map((p) => [`${p.training}-${p.id}`, p]),
+                  ).values(),
+                );
                 const count = selectedList.length;
 
                 return (
@@ -1105,9 +1414,10 @@ export default function TpCreateBatch() {
                         alignItems: "center",
                         cursor: "pointer",
                       }}
-                      onClick={() =>
-                        updateBatch(batch.key, { expanded: !batch.expanded })
-                      }
+                      onClick={() =>{
+                        activeBatchKeyRef.current = batch.key;
+                        updateBatch(batch.key, { expanded: !batch.expanded });
+                      }}
                     >
                       <h4 style={{ margin: 0, flex: 1 }}>
                         {batch.title}{" "}
@@ -1161,10 +1471,10 @@ export default function TpCreateBatch() {
                           setSelected={setParticipantSelections}
                           trainingType={trainingReq.training_type}
                           batchKey={batch.key}
-                          usedIdsAcrossBatches={usedIdsAcrossBatches}
                           blockNamesCache={blockNamesCache}
                           setBlockNamesCache={setBlockNamesCache}
                           markBatchTouched={markBatchTouched}
+                          isReviewMode={isReviewMode}
                         />
 
                         {selectedList.length > 0 && (
@@ -1183,7 +1493,7 @@ export default function TpCreateBatch() {
 
                               <tbody>
                                 {selectedList.map((p) => (
-                                  <tr key={`${p.training}-${p.id}`}>
+                                  <tr key={p._uid}>
                                     <td>{p.full_name || p.member_name}</td>
                                     <td>{p.mobile_no || p.mobile}</td>
                                     <td>{p.training}</td>
@@ -1194,7 +1504,7 @@ export default function TpCreateBatch() {
                                           removeParticipantFromBatch(
                                             batch.key,
                                             p.training,
-                                            p.id,
+                                            p,
                                           )
                                         }
                                       >
@@ -1216,7 +1526,6 @@ export default function TpCreateBatch() {
                             selectedParticipants={participantSelections}
                             setSelectedParticipants={setParticipantSelections}
                             batchKey={batch.key}
-                            usedIdsAcrossBatches={usedIdsAcrossBatches}
                             blockNamesCache={blockNamesCache}
                             setBlockNamesCache={setBlockNamesCache}
                             markBatchTouched={markBatchTouched}
@@ -1292,7 +1601,7 @@ export default function TpCreateBatch() {
                           <input
                             type="date"
                             className="input"
-                            min={todayISO()}  
+                            min={todayISO()}
                             value={batch.startDate}
                             onChange={(e) => {
                               const sd = e.target.value;
@@ -1309,7 +1618,10 @@ export default function TpCreateBatch() {
                               }
 
                               const ed = trainingReq?.training_plan?.no_of_days
-                                ? calcEndDate(sd, trainingReq.training_plan.no_of_days)
+                                ? calcEndDate(
+                                    sd,
+                                    trainingReq.training_plan.no_of_days,
+                                  )
                                 : "";
 
                               updateBatch(
@@ -1363,6 +1675,9 @@ export default function TpCreateBatch() {
                   batches={batches}
                   participantSelections={participantSelections}
                   user={user}
+                  isReviewMode={isReviewMode}
+                  deletedParticipantIds={deletedParticipantIds}
+                  deletedBatchIds={deletedBatchIds}
                 />
               </div>
             </>

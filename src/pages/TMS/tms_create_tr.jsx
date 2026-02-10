@@ -55,6 +55,35 @@ function getRoleKeyFromUser(user) {
   return "";
 }
 
+function resolveFinalDistrict({
+  districtId,
+  geoscopeCached,
+  user,
+  userBlock,
+  fetchDistrictFromBlock,
+  setDistrictId,
+}) {
+  let district =
+    districtId ??
+    geoscopeCached?.districts?.[0] ??
+    geoscopeCached?.district_id ??
+    user?.district_id ??
+    null;
+
+  return (async () => {
+    if (!district && userBlock) {
+      try {
+        const d = await fetchDistrictFromBlock(userBlock);
+        if (d) {
+          district = isNaN(Number(d)) ? d : Number(d);
+          setDistrictId?.(district);
+        }
+      } catch {}
+    }
+    return district;
+  })();
+}
+
 /* ---------- TrainerRow: memoized single row to avoid mass re-renders ---------- */
 const TrainerRow = React.memo(function TrainerRow({
   row,
@@ -1289,19 +1318,23 @@ export default function CreateTrainingRequest() {
           ? null
           : userBlockRaw;
 
-      // Resolve district from block (best-effort)
-      let resolvedDistrict = null;
-      if (userBlock) {
-        try {
-          const d = await fetchDistrictFromBlock(userBlock);
-          if (d) {
-            resolvedDistrict = isNaN(Number(d)) ? d : Number(d);
-            // update local district state so UI and subsequent calls may benefit
-            setDistrictId(resolvedDistrict);
-          }
-        } catch (e) {
-          console.warn("failed to resolve district for TR payload", e);
-        }
+      // ✅ SINGLE SOURCE OF TRUTH
+      const resolvedDistrict = await resolveFinalDistrict({
+        districtId,
+        geoscopeCached,
+        user,
+        userBlock,
+        fetchDistrictFromBlock,
+        setDistrictId,
+      });
+
+      // DEBUG (remove after verification)
+      console.log("FINAL SUBMIT district:", resolvedDistrict);
+
+      if (resolvedDistrict == null) {
+        alert("District could not be resolved.");
+        setSubmitting(false);
+        return;
       }
 
       // create training request (include block & district)
@@ -1317,7 +1350,10 @@ export default function CreateTrainingRequest() {
             ? userBlock
             : Number(userBlock)
           : null,
-        district: resolvedDistrict ?? null,
+        district:
+          resolvedDistrict === undefined || resolvedDistrict === null
+            ? null
+            : Number(resolvedDistrict),
       };
 
       const trResp = await TMS_API.trainingRequests.create(trPayload);

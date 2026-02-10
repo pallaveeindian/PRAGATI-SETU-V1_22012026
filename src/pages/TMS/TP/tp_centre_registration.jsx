@@ -343,6 +343,14 @@ export default function TpCentreRegistration() {
                       value={centre.serial_number}
                       onChange={(e) => {
                         const value = e.target.value.replace(/\D/g, "");
+                        if (value.length > 6) {
+                          setErrors({
+                            ...errors,
+                            serial_number:
+                              "Serial Number cannot be more than 6 digits",
+                          });
+                          return;
+                        }
 
                         setCentre({ ...centre, serial_number: value });
 

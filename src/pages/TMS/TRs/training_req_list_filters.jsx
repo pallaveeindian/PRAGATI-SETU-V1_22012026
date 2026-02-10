@@ -92,7 +92,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
     if (!dmmuDistrictId) return;
 
-    setFilters(f => {
+    setFilters((f) => {
       if (f.district_id) return f;
       return {
         ...f,
@@ -111,7 +111,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
     LOOKUP_API.mandals
       .list({ district: filters.district_id })
-      .then(r => setMandals(r?.data?.results || []))
+      .then((r) => setMandals(r?.data?.results || []))
       .catch(() => {});
   }, [filters.district_id, role]);
 
@@ -119,16 +119,16 @@ export default function TrainingReqListFilter({ user, onApply }) {
   useEffect(() => {
     if (!filters.district_id) {
       setBlocks([]);
-      setFilters(f => ({ ...f, block_id: "" }));
+      setFilters((f) => ({ ...f, block_id: "" }));
       return;
     }
 
     LOOKUP_API.blocks
       .list({ district_id: filters.district_id })
-      .then(r => {
+      .then((r) => {
         let data = r?.data?.results || [];
         if (filters.aspirational_only) {
-          data = data.filter(b => Number(b.is_aspirational) === 1);
+          data = data.filter((b) => Number(b.is_aspirational) === 1);
         }
         setBlocks(data);
       })
@@ -139,56 +139,69 @@ export default function TrainingReqListFilter({ user, onApply }) {
   useEffect(() => {
     if (!filters.theme_id) {
       setTrainingPlans([]);
-      setFilters(f => ({ ...f, training_plan_id: "" }));
+      setFilters((f) => ({ ...f, training_plan_id: "" }));
       return;
     }
 
     TMS_API.trainingPlans
       .list({ theme: filters.theme_id })
-      .then(r => setTrainingPlans(r?.data?.results || []))
+      .then((r) => setTrainingPlans(r?.data?.results || []))
       .catch(() => setTrainingPlans([]));
   }, [filters.theme_id]);
 
   /* ================= FETCH ================= */
   function handleFetch() {
     const cleaned = Object.fromEntries(
-      Object.entries(filters).filter(([, v]) => v !== "" && v !== false)
+      Object.entries(filters).filter(([, v]) => v !== "" && v !== false),
     );
     onApply(cleaned);
   }
 
   /* ================= UI ================= */
   return (
-    <div style={{ background: "#fff", padding: 14, borderRadius: 8, marginBottom: 12 }}>
+    <div
+      style={{
+        background: "#fff",
+        padding: 14,
+        borderRadius: 8,
+        marginBottom: 12,
+      }}
+    >
       <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-
-{/* ===== Mandal (ONLY SMMU) ===== */}
+        {/* ===== Mandal (ONLY SMMU) ===== */}
         {role === "smmu" && (
           <select
             className="input"
             value={filters.mandal_id}
-            onChange={e =>
-              setFilters(f => ({ ...f, mandal_id: e.target.value }))
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, mandal_id: e.target.value }))
             }
           >
             <option value="">Mandal</option>
-            {mandals.map(m => (
-              <option key={m.id} value={m.id}>{m.name}</option>
+            {mandals.map((m) => (
+              <option key={m.id} value={m.id}>
+                {m.name}
+              </option>
             ))}
           </select>
         )}
-         {/* ===== District Category (ONLY SMMU) ===== */}
+        {/* ===== District Category (ONLY SMMU) ===== */}
         {role === "smmu" && (
           <select
             className="input"
             value={filters.district_category_id}
-            onChange={e =>
-              setFilters(f => ({ ...f, district_category_id: e.target.value }))
+            onChange={(e) =>
+              setFilters((f) => ({
+                ...f,
+                district_category_id: e.target.value,
+              }))
             }
           >
             <option value="">District Category</option>
-            {districtCategories.map(d => (
-              <option key={d.id} value={d.id}>{d.name}</option>
+            {districtCategories.map((d) => (
+              <option key={d.id} value={d.id}>
+                {d.name}
+              </option>
             ))}
           </select>
         )}
@@ -198,10 +211,10 @@ export default function TrainingReqListFilter({ user, onApply }) {
             className="input"
             value={filters.district_id}
             disabled={role === "dmmu"}
-            onChange={e =>
+            onChange={(e) =>
               role === "dmmu"
                 ? null
-                : setFilters(f => ({
+                : setFilters((f) => ({
                     ...f,
                     district_id: e.target.value,
                     mandal_id: "",
@@ -210,7 +223,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             }
           >
             <option value="">District</option>
-            {districts.map(d => (
+            {districts.map((d) => (
               <option key={d.district_id} value={d.district_id}>
                 {d.district_name_en}
               </option>
@@ -218,18 +231,14 @@ export default function TrainingReqListFilter({ user, onApply }) {
           </select>
         )}
 
-        
-
-       
-
         {/* ===== Aspirational (NOT BMMU) ===== */}
         {role !== "bmmu" && (
           <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
             <input
               type="checkbox"
               checked={filters.aspirational_only}
-              onChange={e =>
-                setFilters(f => ({
+              onChange={(e) =>
+                setFilters((f) => ({
                   ...f,
                   aspirational_only: e.target.checked,
                   block_id: "",
@@ -245,12 +254,12 @@ export default function TrainingReqListFilter({ user, onApply }) {
           <select
             className="input"
             value={filters.block_id}
-            onChange={e =>
-              setFilters(f => ({ ...f, block_id: e.target.value }))
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, block_id: e.target.value }))
             }
           >
             <option value="">Block</option>
-            {blocks.map(b => (
+            {blocks.map((b) => (
               <option key={b.block_id} value={b.block_id}>
                 {b.block_name_en}
               </option>
@@ -263,13 +272,15 @@ export default function TrainingReqListFilter({ user, onApply }) {
           <select
             className="input"
             value={filters.partner_id}
-            onChange={e =>
-              setFilters(f => ({ ...f, partner_id: e.target.value }))
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, partner_id: e.target.value }))
             }
           >
             <option value="">Training Partner</option>
-            {partners.map(p => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+            {partners.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
         )}
@@ -278,8 +289,8 @@ export default function TrainingReqListFilter({ user, onApply }) {
         <select
           className="input"
           value={filters.theme_id}
-          onChange={e =>
-            setFilters(f => ({
+          onChange={(e) =>
+            setFilters((f) => ({
               ...f,
               theme_id: e.target.value,
               training_plan_id: "",
@@ -287,8 +298,10 @@ export default function TrainingReqListFilter({ user, onApply }) {
           }
         >
           <option value="">Training Theme</option>
-          {themes.map(t => (
-            <option key={t.id} value={t.id}>{t.theme_name}</option>
+          {themes.map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.theme_name}
+            </option>
           ))}
         </select>
 
@@ -297,13 +310,15 @@ export default function TrainingReqListFilter({ user, onApply }) {
           <select
             className="input"
             value={filters.training_plan_id}
-            onChange={e =>
-              setFilters(f => ({ ...f, training_plan_id: e.target.value }))
+            onChange={(e) =>
+              setFilters((f) => ({ ...f, training_plan_id: e.target.value }))
             }
           >
             <option value="">Training Plan</option>
-            {trainingPlans.map(p => (
-              <option key={p.id} value={p.id}>{p.training_name}</option>
+            {trainingPlans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.training_name}
+              </option>
             ))}
           </select>
         )}
@@ -312,13 +327,22 @@ export default function TrainingReqListFilter({ user, onApply }) {
         <select
           className="input"
           value={filters.status}
-          onChange={e =>
-            setFilters(f => ({ ...f, status: e.target.value }))
+          onChange={(e) =>
+            setFilters((f) => ({ ...f, status: e.target.value }))
           }
         >
           <option value="">Status</option>
-          {["DRAFT", "PENDING", "APPROVED", "REJECTED", "COMPLETED"].map(s => (
-            <option key={s} value={s}>{s}</option>
+          {[
+            "BATCHING",
+            "PENDING",
+            "ONGOING",
+            "REVIEW",
+            "COMPLETED",
+            "REJECTED",
+          ].map((s) => (
+            <option key={s} value={s}>
+              {s}
+            </option>
           ))}
         </select>
 
@@ -326,8 +350,8 @@ export default function TrainingReqListFilter({ user, onApply }) {
         <select
           className="input"
           value={filters.training_type}
-          onChange={e =>
-            setFilters(f => ({ ...f, training_type: e.target.value }))
+          onChange={(e) =>
+            setFilters((f) => ({ ...f, training_type: e.target.value }))
           }
         >
           <option value="">Participant</option>
@@ -339,9 +363,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
         <select
           className="input"
           value={filters.level}
-          onChange={e =>
-            setFilters(f => ({ ...f, level: e.target.value }))
-          }
+          onChange={(e) => setFilters((f) => ({ ...f, level: e.target.value }))}
         >
           <option value="">Level</option>
           <option value="STATE">State</option>
@@ -349,9 +371,14 @@ export default function TrainingReqListFilter({ user, onApply }) {
           <option value="BLOCK">Block</option>
         </select>
 
-     
-
-        <div style={{ width: "100%", display: "flex", justifyContent: "center", marginTop: 12 }}>
+        <div
+          style={{
+            width: "100%",
+            display: "flex",
+            justifyContent: "center",
+            marginTop: 12,
+          }}
+        >
           <button className="btn btn-primary" onClick={handleFetch}>
             Fetch Training Requests
           </button>
