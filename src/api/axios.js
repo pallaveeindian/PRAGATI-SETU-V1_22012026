@@ -6,6 +6,7 @@ import {
   setAuth,
   clearAuth,
   getApiHeaders,
+  getUser,
 } from "../utils/storage";
 
 // ------------------------
@@ -117,8 +118,7 @@ async function performRefresh() {
         if (newAccess) {
           setAuth({
             access: newAccess,
-            refresh: existingRefresh || data.refresh || null,
-            user: data.user || null,
+            user: getUser(),
           });
         }
         return newAccess;
@@ -154,7 +154,6 @@ api.interceptors.response.use(
 
     // Avoid infinite loop
     if (originalConfig._retry) {
-      clearAuth();
       return Promise.reject(error);
     }
 
@@ -163,7 +162,6 @@ api.interceptors.response.use(
 
     // Do not auto-refresh for auth or lookup endpoints
     if (auth || lookup) {
-      clearAuth();
       return Promise.reject(error);
     }
 

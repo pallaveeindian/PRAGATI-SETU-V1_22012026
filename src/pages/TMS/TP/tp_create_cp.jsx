@@ -31,7 +31,7 @@ function validateUserForm({ username, password }) {
     errors.username = "Username must be 10–20 characters";
   }
 
-  if (!passwordRegex.test(password)) {
+  if (password && !passwordRegex.test(password)) {
     errors.password =
       "Password must be 8–12 chars, include uppercase, lowercase, number & special character. No spaces allowed.";
   }
@@ -88,7 +88,6 @@ export default function TpCreateCP() {
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
   const [cpExists, setCpExists] = useState(false);
-  const [cpIdState, setCpIdState] = useState(null);
   const [partnerId, setPartnerId] = useState(null);
 
   /* ================= NEW STATES ================= */
@@ -104,9 +103,12 @@ export default function TpCreateCP() {
     async function preload() {
       setLoading(true);
       try {
-        const cpResp =
+        const { data: cp } =
           await TMS_API.trainingPartnerContactPersons.retrieve(cpId);
-        const cp = cpResp.data;
+
+        setCpExists(true);
+        setPartnerId(cp.partner);
+        setMasterUserId(cp.master_user);
 
         setCpForm({
           name: cp.name || "",
@@ -115,19 +117,18 @@ export default function TpCreateCP() {
           address: cp.address || "",
         });
 
-        setMasterUserId(cp.master_user);
-
         if (cp.master_user) {
-          const userResp = await api.get(`/lookups/users/${cp.master_user}/`);
+          const { data: mu } = await api.get(
+            `/lookups/users/${cp.master_user}/`,
+          );
 
           setUserForm({
-            username: userResp.data.username || "",
-            password: userResp.data.password || "",
+            username: mu.username || "",
+            password: "", // NEVER prefill password
           });
         }
       } catch (e) {
-        console.error(e);
-        alert("Failed to load Contact Person");
+        navigate("/tms/tp/dashboard", { replace: true });
       } finally {
         setLoading(false);
       }
@@ -177,7 +178,6 @@ export default function TpCreateCP() {
 
       if (cp) {
         setCpExists(true);
-        setCpIdState(cp.id);
         setPartnerId(cp.partner);
         setCpForm({
           name: cp.name || "",
@@ -187,7 +187,6 @@ export default function TpCreateCP() {
         });
       } else {
         setCpExists(false);
-        setCpIdState(null);
 
         setCpForm({
           name: "",
@@ -208,7 +207,7 @@ export default function TpCreateCP() {
 
     setUserForm({
       username: u.username || "",
-      password: u.password || "",
+      password: "",
     });
     fetchContactPersonByMaster(u.id);
   }
@@ -274,13 +273,18 @@ export default function TpCreateCP() {
       return;
     }
 
+    if (!masterUserId) {
+      setStatus("Please select or create a user before saving Contact Person");
+      return;
+    }
+
     setStatus(
-      cpExists ? "Updating contact person…" : "Creating contact person…",
+      isEditMode ? "Updating contact person…" : "Creating contact person…",
     );
 
     try {
-      if (cpExists && cpIdState) {
-        await TMS_API.trainingPartnerContactPersons.update(cpIdState, {
+      if (isEditMode) {
+        await TMS_API.trainingPartnerContactPersons.update(cpId, {
           ...cpForm,
           partner: partnerId,
           master_user: masterUserId,
@@ -337,18 +341,22 @@ export default function TpCreateCP() {
               <p>Loading contact person…</p>
             ) : (
               <>
-                <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
-                  <h3 style={{ margin: 0 }}>Master Users</h3>
-                  <button
-                    type="button"
-                    className="btn"
-                    style={{ padding: "4px 10px", fontSize: 12 }}
-                    onClick={fetchMasterUsers}
-                    disabled={loadingMasters}
+                {!isEditMode && (
+                  <div
+                    style={{ display: "flex", alignItems: "center", gap: 12 }}
                   >
-                    {loadingMasters ? "Refreshing…" : "Refresh"}
-                  </button>
-                </div>
+                    <h3 style={{ margin: 0 }}>Master Users</h3>
+                    <button
+                      type="button"
+                      className="btn"
+                      style={{ padding: "4px 10px", fontSize: 12 }}
+                      onClick={fetchMasterUsers}
+                      disabled={loadingMasters}
+                    >
+                      {loadingMasters ? "Refreshing…" : "Refresh"}
+                    </button>
+                  </div>
+                )}
 
                 {/* ================= MASTER USER LIST ================= */}
                 {!isEditMode && (
@@ -395,7 +403,9 @@ export default function TpCreateCP() {
                   className="input"
                   placeholder="Username"
                   value={userForm.username}
+                  disabled={isEditMode}
                   onChange={(e) => {
+                    if (isEditMode) return;
                     const updated = { ...userForm, username: e.target.value };
                     setUserForm(updated);
                     setUserErrors(validateUserForm(updated));
@@ -408,7 +418,9 @@ export default function TpCreateCP() {
                 <input
                   type="text"
                   className="input"
-                  placeholder="Password"
+                  placeholder={
+                    isEditMode ? "Reset password (optional)" : "Password"
+                  }
                   value={userForm.password}
                   onChange={(e) => {
                     const updated = { ...userForm, password: e.target.value };
@@ -496,10 +508,12 @@ export default function TpCreateCP() {
 
                 <button
                   className="btn"
-                  disabled={isCPInvalid}
+                  disabled={isCPInvalid || !masterUserId}
                   onClick={handleCPSubmit}
                 >
-                  {cpExists ? "Update Contact Person" : "Create Contact Person"}
+                  {isEditMode
+                    ? "Update Contact Person"
+                    : "Create Contact Person"}
                 </button>
                 {status && (
                   <div style={{ marginTop: 10, fontSize: 13 }}>{status}</div>

@@ -75,30 +75,25 @@ export default function TpDashboard() {
       setPartnerId(pid);
 
       try {
-        const [
-          centresRes,
-          cpRes,
-          batchesRes,
-          pendingReqRes,
-        ] = await Promise.all([
-          TMS_API.trainingPartnerCentres.list({
-            partner: pid,
-            page_size: 1,
-          }),
-          TMS_API.trainingPartnerContactPersons.list({
-            partner: pid,
-            page_size: 1,
-          }),
-          TMS_API.batches.list({
-            partner_id: pid,
-            page_size: 1,
-          }),
-          TMS_API.trainingRequests.list({
-            partner_id: pid,
-            status: "BATCHING",
-            page_size: 1,
-          }),
-        ]);
+        const [centresRes, cpRes, batchesRes, pendingReqRes] =
+          await Promise.all([
+            TMS_API.trainingPartnerCentres.list({
+              partner: pid,
+              page_size: 1,
+            }),
+            TMS_API.trainingPartnerContactPersons.list({
+              page_size: 1,
+            }),
+            TMS_API.batches.list({
+              partner_id: pid,
+              page_size: 1,
+            }),
+            TMS_API.trainingRequests.list({
+              partner_id: pid,
+              status: "BATCHING",
+              page_size: 1,
+            }),
+          ]);
 
         setCounts({
           centres: centresRes?.data?.count || 0,
@@ -120,7 +115,7 @@ export default function TpDashboard() {
     <div className="app-shell">
       <LeftNav
         collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed(v => !v)}
+        onToggle={() => setNavCollapsed((v) => !v)}
       />
 
       <div className="main-area">
@@ -149,18 +144,14 @@ export default function TpDashboard() {
               {/* Contact Persons */}
               <div className="card">
                 <h4>Contact Persons</h4>
-                <p className="muted">
-                  Centre-level contact person accounts.
-                </p>
+                <p className="muted">Centre-level contact person accounts.</p>
                 <div className="stat-value">{counts.contactPersons}</div>
               </div>
 
               {/* Pending Requests */}
               <div className="card">
                 <h4>Pending Training Requests</h4>
-                <p className="muted">
-                  Requests awaiting batch creation.
-                </p>
+                <p className="muted">Requests awaiting batch creation.</p>
                 <div className="stat-value warning">
                   {counts.pendingRequests}
                 </div>
@@ -172,9 +163,7 @@ export default function TpDashboard() {
                 <p className="muted">
                   All batches created under your organisation.
                 </p>
-                <div className="stat-value success">
-                  {counts.batches}
-                </div>
+                <div className="stat-value success">{counts.batches}</div>
               </div>
             </div>
           )}

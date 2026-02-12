@@ -178,7 +178,7 @@ export default function TpCpAssignment() {
 
     const [linksResp, cpResp, centreResp] = await Promise.all([
       TMS_API.tpcpCentreDetails.list({ created_by: user.id }),
-      TMS_API.trainingPartnerContactPersons.list({ partner: tpId }),
+      TMS_API.trainingPartnerContactPersons.list(),
       TMS_API.trainingPartnerCentres.list({ partner: tpId }),
     ]);
 

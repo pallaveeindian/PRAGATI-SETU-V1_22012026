@@ -162,7 +162,6 @@ export default function TpListCP() {
       if (!tpId) return;
 
       const resp = await TMS_API.trainingPartnerContactPersons.list({
-        partner: tpId,
         page_size: 200,
       });
 

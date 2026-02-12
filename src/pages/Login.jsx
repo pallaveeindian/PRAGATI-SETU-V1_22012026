@@ -8,11 +8,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import LoadingModal from "../components/ui/LoadingModal";
 import { getUser } from "../utils/storage";
-import {
-  loadCaptchaEnginge,
-  LoadCanvasTemplate,
-  validateCaptcha,
-} from "react-simple-captcha";
+import { useCaptcha } from "../utils/useCaptcha";
 
 import {
   FaDatabase,
@@ -101,7 +97,7 @@ export default function Login() {
   const MAX_ATTEMPTS = 4;
   const [captchaValue, setCaptchaValue] = useState("");
   const [captchaError, setCaptchaError] = useState("");
-  const [captchaKey, setCaptchaKey] = useState(0);
+  const { canvasRef, value: captcha, generate } = useCaptcha();
 
   const {
     register,
@@ -116,13 +112,15 @@ export default function Login() {
   useEffect(() => setValue("module", module), [module, setValue]);
   useEffect(() => setValue("userType", userType), [userType, setValue]);
   useEffect(() => setValue("role", role), [role, setValue]);
+  useEffect(() => {
+    generate();
+  }, []);
 
   const onSubmit = async (data) => {
-    if (!validateCaptcha(captchaValue)) {
+    if (captchaValue.trim().toUpperCase() !== captcha.toUpperCase()) {
       setCaptchaError("Captcha is incorrect");
-      loadCaptchaEnginge(6);
-      setCaptchaKey((k) => k + 1);
       setCaptchaValue("");
+      generate();
       return;
     }
 
@@ -130,11 +128,8 @@ export default function Login() {
     const result = await login(data);
     if (!result?.success) {
       setFailedAttempts((prev) => prev + 1);
-      // alert("Login failed");
-      loadCaptchaEnginge(6);
-      setCaptchaKey((k) => k + 1);
-      setCaptchaValue("");
       setCaptchaError("Login failed. Please try again.");
+      generate();
       return;
     }
     setFailedAttempts(0);
@@ -158,13 +153,6 @@ export default function Login() {
     });
   };
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      loadCaptchaEnginge(6);
-    }, 300);
-
-    return () => clearTimeout(t);
-  }, []);
   return (
     <div className={`login-page theme-${theme}`}>
       <LoadingModal open={loading} title="Logging in" />
@@ -225,8 +213,13 @@ export default function Login() {
           <label className="block-label">Captcha</label>
 
           <div className="captcha-wrapper">
-            <div className="captcha-image" key={captchaKey}>
-              <LoadCanvasTemplate />
+            <div className="captcha-image">
+              <canvas
+                ref={canvasRef}
+                width={180}
+                height={50}
+                className="captcha-image"
+              />
             </div>
 
             <input

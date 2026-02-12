@@ -5,6 +5,7 @@ import Home from "./pages/Home";
 import Login from "./pages/Login";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ProtectedRoute from "./routes/ProtectedRoute";
+import { useAuth } from "./contexts/AuthContext";
 
 // Homepage
 import AboutUs from "./pages/AboutUs";
@@ -91,6 +92,12 @@ function TmsLanding() {
 }
 
 export default function App() {
+  const { authReady } = useAuth();
+
+  if (!authReady) {
+    return <div>Restoring session…</div>;
+  }
+
   return (
     <Routes>
       <Route path="/" element={<Home />} />
@@ -116,7 +123,7 @@ export default function App() {
       <Route element={<ProtectedRoute />}>
         {/* Main Dashboard */}
         <Route path="/dashboard" element={<DashboardHome />} />
-        <Route path="/dashboard/*" element={<DashboardHome />} />
+        {/* <Route path="/dashboard/*" element={<DashboardHome />} /> */}
 
         {/* ----- TMS Routes ----- */}
         <Route path="/tms" element={<TmsLanding />} />
@@ -159,38 +166,41 @@ export default function App() {
           path="/tms/dmmu/tr-closure/:id"
           element={<DmmuRequestClosure />}
         />
+        {/* Training Partner paths */}
+        <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
+        <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
+        <Route
+          path="/tms/tp/centre/:centreId"
+          element={<TpCentreRegistration />}
+        />
+        <Route
+          path="/tms/tp/tr-closure/:id"
+          element={<TpTrainingRequestClosure />}
+        />
+        <Route path="/tms/tp/batches/create/:id" element={<TpCreateBatch />} />
+        <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
+        <Route path="/tms/batches-list/:id/" element={<TrainingBatchList />} />
+        <Route path="/tms/batch-detail/:id" element={<TrainingBatchDetail />} />
+        <Route path="/tms/tp/cp-list" element={<TpListCP />} />
+        <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
+        <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
+        <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
+        <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
+        <Route
+          path="/tms/cp/batch-attendance-ekyc/:id"
+          element={<CpAdPerBatchEkyc />}
+        />
+        <Route path="/tms/cp/batch-attendance/:id" element={<CpAdPerBatch />} />
+        <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
+        <Route path="/tms/cp/batch-closure/:id" element={<CpBatchClosure />} />
+        <Route
+          path="/tms/batch-certificate/:id"
+          element={<BatchCertificate />}
+        />
 
         {/* Catch-all for unknown TMS paths */}
         <Route path="/tms/*" element={<TmsLanding />} />
       </Route>
-      {/* Training Partner paths */}
-      <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
-      <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
-      <Route
-        path="/tms/tp/centre/:centreId"
-        element={<TpCentreRegistration />}
-      />
-      <Route
-        path="/tms/tp/tr-closure/:id"
-        element={<TpTrainingRequestClosure />}
-      />
-      <Route path="/tms/tp/batches/create/:id" element={<TpCreateBatch />} />
-      <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
-      <Route path="/tms/batches-list/:id/" element={<TrainingBatchList />} />
-      <Route path="/tms/batch-detail/:id" element={<TrainingBatchDetail />} />
-      <Route path="/tms/tp/cp-list" element={<TpListCP />} />
-      <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
-      <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
-      <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
-      <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
-      <Route
-        path="/tms/cp/batch-attendance-ekyc/:id"
-        element={<CpAdPerBatchEkyc />}
-      />
-      <Route path="/tms/cp/batch-attendance/:id" element={<CpAdPerBatch />} />
-      <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
-      <Route path="/tms/cp/batch-closure/:id" element={<CpBatchClosure />} />
-      <Route path="/tms/batch-certificate/:id" element={<BatchCertificate />} />
       {/* ----- LDMS Routes (GLOBAL LAYOUT APPLIED) ----- */}
       <Route element={<ProtectedRoute />}>
         <Route path="/ldms" element={<LdmsLayout />}>
@@ -224,17 +234,13 @@ export default function App() {
             element={<SupPLDDetail />}
           />
           <Route path="reports" element={<LdmsReports />} />
-
+          <Route path="dash-block/:blockId" element={<BlockMap />} />
+          <Route path="dash-district/:districtId" element={<DmmuBlockMap />} />
           {/* future LDMS pages */}
           {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
           {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
         </Route>
       </Route>
-      <Route path="/ldms/dash-block/:blockId" element={<BlockMap />} />
-      <Route
-        path="/ldms/dash-district/:districtId"
-        element={<DmmuBlockMap />}
-      />
       {/* 404 */}
       <Route path="*" element={<div>404</div>} />
     </Routes>

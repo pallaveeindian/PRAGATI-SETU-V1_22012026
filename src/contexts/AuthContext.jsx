@@ -11,22 +11,28 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(getUser());
   const [isAuthenticated, setIsAuthenticated] = useState(!!getAccessToken());
   const [loading, setLoading] = useState(false);
+  const [authReady, setAuthReady] = useState(false);
 
   // On mount, try to re-hydrate user if we already have a token
   useEffect(() => {
     try {
       const token = getAccessToken();
-      if (token && !user) {
+      if (token) {
         const storedUser = getUser();
-        if (storedUser) {
-          setUser(storedUser);
-          setIsAuthenticated(true);
-        }
+        setUser(storedUser || null);
+        setIsAuthenticated(!!storedUser);
+      } else {
+        setUser(null);
+        setIsAuthenticated(false);
       }
     } catch (e) {
       console.error("AuthContext init error", e);
+      setUser(null);
+      setIsAuthenticated(false);
+    } finally {
+      setAuthReady(true);
     }
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+  }, []);
 
   /**
    * login
@@ -127,26 +133,27 @@ export const AuthProvider = ({ children }) => {
    */
   const refreshAccess = async () => {
     try {
-      setLoading(true);
       const res = await api.post("/auth/refresh/");
       const newAccess = res?.data?.access;
-      if (newAccess) {
-        // persist and keep existing user in storage if present
-        const prevUser = getUser();
-        setAuth({ access: newAccess, user: prevUser });
-        setUser(prevUser || null);
-        setIsAuthenticated(true);
-        setLoading(false);
-        return newAccess;
-      } else {
-        setLoading(false);
-        logout();
-        return null;
+
+      if (!newAccess) {
+        throw new Error("No access token returned");
       }
+
+      const prevUser = getUser();
+      setAuth({ access: newAccess, user: prevUser });
+      setUser(prevUser || null);
+      setIsAuthenticated(true);
+
+      return newAccess;
     } catch (e) {
-      setLoading(false);
       console.error("refreshAccess failed", e?.response?.data || e.message);
-      logout();
+
+      // Logout ONLY on explicit auth failure
+      if (e?.response?.status === 401) {
+        logout();
+      }
+
       return null;
     }
   };
@@ -165,6 +172,7 @@ export const AuthProvider = ({ children }) => {
       value={{
         user,
         isAuthenticated,
+        authReady,
         loading,
         login,
         logout,
