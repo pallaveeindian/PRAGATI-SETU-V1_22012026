@@ -8,6 +8,11 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import LoadingModal from "../components/ui/LoadingModal";
 import { getUser } from "../utils/storage";
+import {
+  loadCaptchaEnginge,
+  LoadCanvasTemplate,
+  validateCaptcha,
+} from "react-simple-captcha";
 
 import {
   FaDatabase,
@@ -92,6 +97,11 @@ export default function Login() {
 
   const [userType, setUserType] = useState("Admin");
   const [role, setRole] = useState("");
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const MAX_ATTEMPTS = 4;
+  const [captchaValue, setCaptchaValue] = useState("");
+  const [captchaError, setCaptchaError] = useState("");
+  const [captchaKey, setCaptchaKey] = useState(0);
 
   const {
     register,
@@ -108,12 +118,26 @@ export default function Login() {
   useEffect(() => setValue("role", role), [role, setValue]);
 
   const onSubmit = async (data) => {
-    const result = await login(data);
-    if (!result?.success) {
-      alert("Login failed");
+    if (!validateCaptcha(captchaValue)) {
+      setCaptchaError("Captcha is incorrect");
+      loadCaptchaEnginge(6);
+      setCaptchaKey((k) => k + 1);
+      setCaptchaValue("");
       return;
     }
 
+    setCaptchaError("");
+    const result = await login(data);
+    if (!result?.success) {
+      setFailedAttempts((prev) => prev + 1);
+      // alert("Login failed");
+      loadCaptchaEnginge(6);
+      setCaptchaKey((k) => k + 1);
+      setCaptchaValue("");
+      setCaptchaError("Login failed. Please try again.");
+      return;
+    }
+    setFailedAttempts(0);
     const backendUser = getUser();
     const backendRoleKey = ROLE_ID_TO_KEY[Number(backendUser.role_id)];
 
@@ -134,6 +158,13 @@ export default function Login() {
     });
   };
 
+  useEffect(() => {
+    const t = setTimeout(() => {
+      loadCaptchaEnginge(6);
+    }, 300);
+
+    return () => clearTimeout(t);
+  }, []);
   return (
     <div className={`login-page theme-${theme}`}>
       <LoadingModal open={loading} title="Logging in" />
@@ -186,7 +217,34 @@ export default function Login() {
             type="password"
             {...register("password")}
           />
+          {failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && (
+            <div className="error">
+              Wrong password. Attempts left: {MAX_ATTEMPTS - failedAttempts}
+            </div>
+          )}
+          <label className="block-label">Captcha</label>
 
+          <div className="captcha-wrapper">
+            <div className="captcha-image" key={captchaKey}>
+              <LoadCanvasTemplate />
+            </div>
+
+            <input
+              type="text"
+              className="form-input captcha-input"
+              placeholder="Enter captcha"
+              value={captchaValue}
+              onChange={(e) => setCaptchaValue(e.target.value)}
+            />
+          </div>
+
+          {captchaError && <p className="error">{captchaError}</p>}
+
+          {failedAttempts >= MAX_ATTEMPTS && (
+            <div className="error">
+              Password incorrect. Too many failed attempts.
+            </div>
+          )}
           <button className="log-in" type="submit">
             Log In
           </button>
@@ -363,6 +421,33 @@ export default function Login() {
         box-shadow: 0 8px 20px rgba(0,0,0,0.15);
         text-shadow: 0 2px 4px rgba(0,0,0,0.15);
       }
+        .captcha-wrapper {
+  margin-top: 10px;
+}
+
+.captcha-image {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background: #f8fafc;
+  border: 1px solid #cbd5f5;
+  border-radius: 6px;
+  padding: 8px;
+  margin-bottom: 8px;
+}
+
+.captcha-input {
+  letter-spacing: 3px;
+  font-weight: 600;
+  text-align: center;
+}
+
+.captcha-image canvas {
+  width: 180px !important;
+  height: 50px !important;
+  display: block !important;
+}
+
 
       /* ---- THEME BACKGROUND SWITCH ---- */
       .theme-blue.login-page {

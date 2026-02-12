@@ -86,22 +86,36 @@ export default function TrainingBatchDetail() {
   }, [batchMedia]);
 
   const effectiveTrainingType =
-    trainingRequestDetail?.training_type ||
-    batchData?.request?.training_type;
+    trainingRequestDetail?.training_type || batchData?.request?.training_type;
 
-  const isTrainerTraining = effectiveTrainingType === "TRAINER";  
+  const isTrainerTraining = effectiveTrainingType === "TRAINER";
 
-  const displayedParticipants = isTrainerTraining
-    ? batchData?.trainer || []
-    : batchData?.beneficiary || [];
+  const displayedParticipants = useMemo(() => {
+    if (!batchData) return [];
 
-  /* ----------------- main fetch orchestration ----------------- */
-  async function fetchAll(force = false) {
+    // TRAINER TRAINING
+    if (isTrainerTraining) {
+      const trainerIds = new Set(
+        (batchData.trainer_participations || []).map((tp) => tp.trainer),
+      );
+
+      return (batchData.trainer || []).filter((t) => trainerIds.has(t.id));
+    }
+
+    // BENEFICIARY TRAINING
+    const beneficiaryIds = new Set(
+      (batchData.beneficiary_participations || []).map((bp) => bp.beneficiary),
+    );
+
+    return (batchData.beneficiary || []).filter((b) =>
+      beneficiaryIds.has(b.id),
+    );
+  }, [batchData, isTrainerTraining]);
+
+  async function fetchAll() {
     if (!batchId) return;
 
-    console.log("🔄 Fetching batch detail for ID:", batchId);
-
-    if (inFlightRef.current && !force) return;
+    if (inFlightRef.current) return;
     inFlightRef.current = true;
     setLoadingAll(true);
 
@@ -110,93 +124,49 @@ export default function TrainingBatchDetail() {
     let attendances = [];
 
     try {
-      // Check cache first
-      if (!force) {
-        const cached = loadCache(batchId);
-        if (cached?.payload?.batchData) {
-          console.log("✅ Using cache");
-          setBatchData(cached.payload.batchData);
-          setTrainingRequestDetail(
-            cached.payload.trainingRequestDetail || null,
-          );
-          setMasterTrainers(cached.payload.masterTrainers || []);
-          setCentreDetail(cached.payload.centreDetail || null);
-          setAttendanceList(cached.payload.attendanceList || []);
-          // closure + media not cached yet; they are relatively light
-          setLoadingAll(false);
-          inFlightRef.current = false;
-          return;
-        }
-      }
-
-      // 1. Fetch batch detail → /tms/batches/1/detail/
-      console.log("📦 Fetching /tms/batches/" + batchId + "/detail/");
+      // 1. Batch detail
       const batchResp = await api.get(`/tms/batches/${batchId}/detail/`);
       const batchResponse = batchResp?.data || null;
-      console.log("✅ Batch data loaded:", batchResponse);
       setBatchData(batchResponse);
 
-      // Extract immediate data
       const requestId = batchResponse?.request?.id;
       setMasterTrainers(batchResponse?.master_trainers || []);
 
-      // 2. Fetch FULL Training Request → /tms/training-requests/1/detail/
+      // 2. Training request detail
       if (requestId) {
-        console.log(
-          "📋 Fetching /tms/training-requests/" + requestId + "/detail/",
-        );
         const trResp = await api.get(
           `/tms/training-requests/${requestId}/detail/`,
         );
         trDetail = trResp?.data || null;
-        console.log("✅ Training Request detail:", trDetail);
         setTrainingRequestDetail(trDetail);
       }
 
-      // 3. Fetch FULL Centre Detail → /tms/training-partner-centres/2/detail/
+      // 3. Centre detail
       if (batchResponse?.centre?.id) {
-        const centreId = batchResponse.centre.id;
-        console.log(
-          "🏢 Fetching /tms/training-partner-centres/" + centreId + "/detail/",
-        );
         const centreResp = await api.get(
-          `/tms/training-partner-centres/${centreId}/detail/`,
+          `/tms/training-partner-centres/${batchResponse.centre.id}/detail/`,
         );
         fullCentreData = centreResp?.data || batchResponse.centre;
-        console.log("✅ Full centre detail with media:", fullCentreData);
         setCentreDetail(fullCentreData);
       }
 
-      // 4. Fetch attendance list for this batch
+      // 4. Attendance
       try {
         setLoadingAttendance(true);
-        console.log("📅 Fetching /tms/batch-attendance/?batch=" + batchId);
         const attResp = await api.get(
           `/tms/batch-attendance/?batch=${batchId}`,
         );
-        const attData = attResp?.data ?? attResp ?? {};
+        const attData = attResp?.data ?? {};
         attendances = attData.results || attData || [];
         attendances.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
         setAttendanceList(attendances);
-        console.log("✅ Attendance list loaded:", attendances);
       } catch (e) {
-        console.error("❌ Fetch attendance list failed:", e);
         setAttendanceList([]);
       } finally {
         setLoadingAttendance(false);
       }
-
-      // 5. Cache everything
-      saveCache(batchId, {
-        batchData: batchResponse,
-        trainingRequestDetail: trDetail,
-        masterTrainers: batchResponse?.master_trainers || [],
-        centreDetail: fullCentreData,
-        attendanceList: attendances,
-      });
-      console.log("✅ All data loaded and cached successfully!");
     } catch (e) {
-      console.error("❌ fetchAll failed:", e);
+      console.error("fetchAll failed:", e);
     } finally {
       setLoadingAll(false);
       inFlightRef.current = false;
@@ -986,8 +956,8 @@ export default function TrainingBatchDetail() {
                   {/* 5. PARTICIPANT DETAILS */}
                   <div>
                     <h3>
-                      👥 {isTrainerTraining ? "Batch Trainers" : "Participants"} (
-                      {displayedParticipants.length})
+                      👥 {isTrainerTraining ? "Batch Trainers" : "Participants"}{" "}
+                      ({displayedParticipants.length})
                     </h3>
 
                     {hasMasterTrainers && firstMasterTrainer && (
@@ -1057,7 +1027,10 @@ export default function TrainingBatchDetail() {
                         <tbody>
                           {displayedParticipants.length === 0 ? (
                             <tr>
-                              <td colSpan={isTrainerTraining ? 6 : 10} style={{ textAlign: "center", padding: 20 }}>
+                              <td
+                                colSpan={isTrainerTraining ? 6 : 10}
+                                style={{ textAlign: "center", padding: 20 }}
+                              >
                                 No participants assigned
                               </td>
                             </tr>
