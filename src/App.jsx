@@ -128,75 +128,129 @@ export default function App() {
         {/* ----- TMS Routes ----- */}
         <Route path="/tms" element={<TmsLanding />} />
 
-        {/* Dashboards */}
-        <Route path="/tms/bmmu/dashboard" element={<BmmuTmsDashboard />} />
-        <Route path="/tms/dmmu/dashboard" element={<DmmuTmsDashboard />} />
-        <Route path="/tms/smmu/dashboard" element={<SmmuTmsDashboard />} />
-        <Route path="/tms/tp/dashboard" element={<TpDashboard />}></Route>
-        <Route path="/tms/mt/dashboard" element={<MtDashboard />}></Route>
-        <Route path="/tms/cp/dashboard" element={<CpDashboard />}></Route>
+        {/* SMMU Routes */}
+        <Route element={<ProtectedRoute allowedRoles="smmu" />}>
+          {/* SMMU Partner Target Creation */}
+          <Route path="/tms/smmu/dashboard" element={<SmmuTmsDashboard />} />
+          <Route
+            path="/tms/smmu/partner-targets"
+            element={<SmmuCreatePartnerTargets />}
+          />
+        </Route>
 
-        {/* SMMU Partner Target Creation */}
-        <Route
-          path="/tms/smmu/partner-targets"
-          element={<SmmuCreatePartnerTargets />}
-        />
+        {/* DMMU Routes */}
+        <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
+          <Route path="/tms/dmmu/dashboard" element={<DmmuTmsDashboard />} />
+          <Route path="/tms/dmmu/tr-review/:id" element={<DmmuTrReview />} />
+          <Route
+            path="/tms/dmmu/tr-closure/:id"
+            element={<DmmuRequestClosure />}
+          />
+        </Route>
 
-        {/* NEW: Create Training Request */}
-        <Route
-          path="/tms/create-training-request"
-          element={<CreateTrainingRequest />}
-        />
+        {/* BMMU Routes */}
+        <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
+          <Route path="/tms/bmmu/dashboard" element={<BmmuTmsDashboard />} />
+          {/* Propose training plan */}
+          <Route
+            path="/tms/bmmu/create-training-plan"
+            element={<BmmuCreateTrainingPlan />}
+          />
+        </Route>
 
-        {/* NEW: View Training Requests List */}
-        <Route
-          path="/tms/training-requests"
-          element={<TrainingRequestList />}
-        />
-        <Route path="/tms/tr-detail/:id" element={<TrainingRequestDetail />} />
+        {/* Training Partner Routes */}
+        <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
+          <Route path="/tms/tp/dashboard" element={<TpDashboard />}></Route>
+          <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
+          <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
+          <Route
+            path="/tms/tp/centre/:centreId"
+            element={<TpCentreRegistration />}
+          />
+          <Route
+            path="/tms/tp/tr-closure/:id"
+            element={<TpTrainingRequestClosure />}
+          />
+          <Route
+            path="/tms/tp/batches/create/:id"
+            element={<TpCreateBatch />}
+          />
+          <Route path="/tms/tp/cp-list" element={<TpListCP />} />
+          <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
+          <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
+          <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
+        </Route>
 
-        {/* NEW: BMMU propose training plan */}
-        <Route
-          path="/tms/bmmu/create-training-plan"
-          element={<BmmuCreateTrainingPlan />}
-        />
+        {/* TPCP Routes */}
+        <Route element={<ProtectedRoute allowedRoles="tp_contact_person" />}>
+          <Route path="/tms/cp/dashboard" element={<CpDashboard />}></Route>
+          <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
+          <Route
+            path="/tms/cp/batch-attendance-ekyc/:id"
+            element={<CpAdPerBatchEkyc />}
+          />
+          <Route
+            path="/tms/cp/batch-attendance/:id"
+            element={<CpAdPerBatch />}
+          />
+          <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
+          <Route
+            path="/tms/cp/batch-closure/:id"
+            element={<CpBatchClosure />}
+          />
+          +
+        </Route>
 
-        <Route path="/tms/dmmu/tr-review/:id" element={<DmmuTrReview />} />
+        {/* Master Trainer Routes */}
+        <Route element={<ProtectedRoute allowedRoles="master_trainer" />}>
+          <Route path="/tms/mt/dashboard" element={<MtDashboard />}></Route>
+        </Route>
+
+        {/* Create Training Request */}
         <Route
-          path="/tms/dmmu/tr-closure/:id"
-          element={<DmmuRequestClosure />}
-        />
-        {/* Training Partner paths */}
-        <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
-        <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
+          element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
+        >
+          <Route
+            path="/tms/create-training-request"
+            element={<CreateTrainingRequest />}
+          />
+        </Route>
+
+        {/* View Training Requests List */}
         <Route
-          path="/tms/tp/centre/:centreId"
-          element={<TpCentreRegistration />}
-        />
+          element={
+            <ProtectedRoute
+              allowedRoles={["smmu", "dmmu", "bmmu", "training_partner"]}
+            />
+          }
+        >
+          <Route
+            path="/tms/training-requests"
+            element={<TrainingRequestList />}
+          />
+          <Route
+            path="/tms/tr-detail/:id"
+            element={<TrainingRequestDetail />}
+          />
+          <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
+          <Route
+            path="/tms/batches-list/:id/"
+            element={<TrainingBatchList />}
+          />
+          <Route
+            path="/tms/batch-detail/:id"
+            element={<TrainingBatchDetail />}
+          />
+        </Route>
+
         <Route
-          path="/tms/tp/tr-closure/:id"
-          element={<TpTrainingRequestClosure />}
-        />
-        <Route path="/tms/tp/batches/create/:id" element={<TpCreateBatch />} />
-        <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
-        <Route path="/tms/batches-list/:id/" element={<TrainingBatchList />} />
-        <Route path="/tms/batch-detail/:id" element={<TrainingBatchDetail />} />
-        <Route path="/tms/tp/cp-list" element={<TpListCP />} />
-        <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
-        <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
-        <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
-        <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
-        <Route
-          path="/tms/cp/batch-attendance-ekyc/:id"
-          element={<CpAdPerBatchEkyc />}
-        />
-        <Route path="/tms/cp/batch-attendance/:id" element={<CpAdPerBatch />} />
-        <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
-        <Route path="/tms/cp/batch-closure/:id" element={<CpBatchClosure />} />
-        <Route
-          path="/tms/batch-certificate/:id"
-          element={<BatchCertificate />}
-        />
+          element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
+        >
+          <Route
+            path="/tms/batch-certificate/:id"
+            element={<BatchCertificate />}
+          />
+        </Route>
 
         {/* Catch-all for unknown TMS paths */}
         <Route path="/tms/*" element={<TmsLanding />} />
