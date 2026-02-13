@@ -3,7 +3,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API, LOOKUP_API } from "../../../api/axios";
+import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 
 /* ===================== CONSTANTS ===================== */
 
@@ -53,15 +53,6 @@ function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
     </div>
   );
 }
-
-function normalizeMediaUrl(url) {
-  if (!url) return "";
-  if (url.startsWith("http://72.61.255.170/")) {
-    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8080/");
-  }
-  return url;
-}
-
 /* ===================== MAIN ===================== */
 
 export default function TpCentreRegistration() {
@@ -782,15 +773,46 @@ export default function TpCentreRegistration() {
                       "Upload File",
                       <>
                         {/* Existing file preview (ONLY when no new file selected) */}
-                        {m.existing_url && !m.file && (
+                        {m.id && !m.file && (
                           <div style={{ marginBottom: 6 }}>
-                            <a
-                              href={normalizeMediaUrl(m.existing_url)}
-                              target="_blank"
-                              rel="noopener noreferrer"
+                            <button
+                              onClick={async () => {
+                                try {
+                                  const response = await api.get(
+                                    `/tms/submissions/${m.id}/download/`,
+                                    { responseType: "blob" },
+                                  );
+
+                                  const disposition =
+                                    response.headers["content-disposition"];
+                                  let filename = "download";
+
+                                  if (disposition) {
+                                    const match =
+                                      disposition.match(/filename="(.+)"/);
+                                    if (match?.[1]) {
+                                      filename = match[1];
+                                    }
+                                  }
+
+                                  const blob = new Blob([response.data]);
+                                  const url = window.URL.createObjectURL(blob);
+
+                                  const link = document.createElement("a");
+                                  link.href = url;
+                                  link.download = filename;
+
+                                  document.body.appendChild(link);
+                                  link.click();
+                                  link.remove();
+                                  window.URL.revokeObjectURL(url);
+                                } catch (err) {
+                                  console.error("Download failed", err);
+                                }
+                              }}
                             >
-                              View existing file
-                            </a>
+                              Download existing file
+                            </button>
                           </div>
                         )}
 
