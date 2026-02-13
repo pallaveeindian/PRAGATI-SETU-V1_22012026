@@ -7,8 +7,25 @@
     <link rel="icon" type="image" href="/src/assets/PS_LOGO_SQUARED.jpg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>PRAGATI SETU 1.0</title>
+    <script>
+      try {
+        if (window.top !== window.self) {
+          document.documentElement.innerHTML = "";
+          window.top.location.href = window.location.href;
+        }
+      } catch (e) {
+        document.documentElement.innerHTML = "";
+      }
+    </script>
   </head>
   <body>
+    <noscript>
+      <style>
+        body {
+          display: none !important;
+        }
+      </style>
+    </noscript>
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
