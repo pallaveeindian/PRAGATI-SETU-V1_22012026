@@ -203,6 +203,7 @@ export default function Login() {
           <input
             className="form-input"
             type="password"
+            autoComplete="off"
             {...register("password")}
           />
           {failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && (

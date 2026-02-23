@@ -1,4 +1,5 @@
 // src/utils/storage.js
+import { encrypt, decrypt } from "./secureStorage";
 const ACCESS_KEY = "ps_access";
 const REFRESH_KEY = "ps_refresh";
 const USER_KEY = "ps_user";
@@ -6,11 +7,11 @@ const USER_KEY = "ps_user";
 export function setAuth({ access, refresh, user }) {
   try {
     if (access !== undefined && access !== null)
-      localStorage.setItem(ACCESS_KEY, access);
+      sessionStorage.setItem(ACCESS_KEY, access);
     if (refresh !== undefined && refresh !== null)
-      localStorage.setItem(REFRESH_KEY, refresh);
+      sessionStorage.setItem(REFRESH_KEY, refresh);
     if (user !== undefined && user !== null)
-      localStorage.setItem(USER_KEY, JSON.stringify(user));
+      sessionStorage.setItem(USER_KEY, JSON.stringify(user));
   } catch (e) {
     console.error("storage setAuth failed", e);
   }
@@ -18,7 +19,7 @@ export function setAuth({ access, refresh, user }) {
 
 export function getAccessToken() {
   try {
-    return localStorage.getItem(ACCESS_KEY);
+    return sessionStorage.getItem(ACCESS_KEY);
   } catch (e) {
     console.error(e);
     return null;
@@ -27,7 +28,7 @@ export function getAccessToken() {
 
 export function getRefreshToken() {
   try {
-    return localStorage.getItem(REFRESH_KEY);
+    return sessionStorage.getItem(REFRESH_KEY);
   } catch (e) {
     console.error(e);
     return null;
@@ -36,7 +37,7 @@ export function getRefreshToken() {
 
 export function getUser() {
   try {
-    const s = localStorage.getItem(USER_KEY);
+    const s = sessionStorage.getItem(USER_KEY);
     return s ? JSON.parse(s) : null;
   } catch (e) {
     console.error(e);
@@ -46,9 +47,9 @@ export function getUser() {
 
 export function clearAuth() {
   try {
-    localStorage.removeItem(ACCESS_KEY);
-    localStorage.removeItem(REFRESH_KEY);
-    localStorage.removeItem(USER_KEY);
+    sessionStorage.removeItem(ACCESS_KEY);
+    sessionStorage.removeItem(REFRESH_KEY);
+    sessionStorage.removeItem(USER_KEY);
   } catch (e) {
     console.error(e);
   }
@@ -68,27 +69,43 @@ export function getApiHeaders() {
   }
 }
 
-const CACHE_TTL = 24 * 60 * 60 * 1000; // 24 hours
+const CACHE_TTL = 1 * 60 * 60 * 1000; // 1 hour
 
-export function getCached(key) {
+export async function getCached(key) {
   const raw = localStorage.getItem(key);
   if (!raw) return null;
 
-  const { data, ts } = JSON.parse(raw);
-  if (Date.now() - ts > CACHE_TTL) {
+  try {
+    const { data, ts } = await decrypt(raw);
+    if (Date.now() - ts > CACHE_TTL) {
+      localStorage.removeItem(key);
+      return null;
+    }
+    return data;
+  } catch {
     localStorage.removeItem(key);
     return null;
   }
-  return data;
 }
 
-export function setCached(key, data) {
-  localStorage.setItem(key, JSON.stringify({ data, ts: Date.now() }));
+export async function setCached(key, data) {
+  const payload = await encrypt({ data, ts: Date.now() });
+  localStorage.setItem(key, payload);
 }
 
 export function clearAllCache() {
-  localStorage.clear();
+  Object.keys(localStorage).forEach((key) => {
+    if (
+      key.startsWith("tms_") ||
+      key.startsWith("lookup:") ||
+      key.startsWith("analytics:")
+    ) {
+      localStorage.removeItem(key);
+    }
+  });
 }
+
+window.__PS_CLEAR_CACHE__ = clearAllCache;
 
 const CACHE_PREFIXES = ["lookup:", "analytics:"];
 

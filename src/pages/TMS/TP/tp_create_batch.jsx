@@ -262,9 +262,43 @@ function CentreViewModal({ open, data, onClose }) {
                       onClick={() => setZoomImg(src)}
                     />
                     <div style={{ fontSize: 12 }}>{m.category}</div>
-                    <a href={src} download>
-                      Download
-                    </a>
+                    <button
+                      onClick={async () => {
+                        try {
+                          const response = await api.get(
+                            `/tms/submissions/${m.id}/download/`,
+                            { responseType: "blob" },
+                          );
+
+                          const disposition =
+                            response.headers["content-disposition"];
+                          let filename = "download";
+
+                          if (disposition) {
+                            const match = disposition.match(/filename="(.+)"/);
+                            if (match?.[1]) {
+                              filename = match[1];
+                            }
+                          }
+
+                          const blob = new Blob([response.data]);
+                          const url = window.URL.createObjectURL(blob);
+
+                          const link = document.createElement("a");
+                          link.href = url;
+                          link.download = filename;
+
+                          document.body.appendChild(link);
+                          link.click();
+                          link.remove();
+                          window.URL.revokeObjectURL(url);
+                        } catch (err) {
+                          console.error("Download failed", err);
+                        }
+                      }}
+                    >
+                      Download existing file
+                    </button>
                   </div>
                 );
               })}

@@ -16,6 +16,17 @@
       } catch (e) {
         document.documentElement.innerHTML = "";
       }
+      window.addEventListener("visibilitychange", () => {
+        if (document.hidden && window.__PS_CLEAR_CACHE__) {
+          window.__PS_CLEAR_CACHE__();
+        }
+      });
+
+      window.addEventListener("beforeunload", () => {
+        if (window.__PS_CLEAR_CACHE__) {
+          window.__PS_CLEAR_CACHE__();
+        }
+      });
     </script>
   </head>
   <body>

@@ -42,8 +42,13 @@ function validateUserForm({ username, password }) {
 function validateCPForm({ name, mobile_number, email, address }) {
   const errors = {};
 
-  if (!name || name.length > 50) {
+  // Name: only alphabets and spaces, max 50 chars
+  if (!name || !name.trim()) {
+    errors.name = "Name is required";
+  } else if (name.length > 50) {
     errors.name = "Name must be max 50 characters";
+  } else if (!/^[A-Za-z\s]+$/.test(name)) {
+    errors.name = "Only alphabets (A–Z, a–z) and spaces are allowed";
   }
 
   if (!mobileRegex.test(mobile_number)) {
@@ -450,10 +455,18 @@ export default function TpCreateCP() {
                   placeholder="Name"
                   value={cpForm.name}
                   onChange={(e) => {
+                    const value = e.target.value;
+                    if (!/^[A-Za-z\s]*$/.test(value)) return;                    
                     const updated = { ...cpForm, name: e.target.value };
                     setCpForm(updated);
                     setCpErrors(validateCPForm(updated));
                   }}
+                  onPaste={(e) => {
+                    const pastedText = e.clipboardData.getData("text");
+                    if (!/^[A-Za-z\s]+$/.test(pastedText)) {
+                      e.preventDefault();
+                    }
+                  }}                  
                 />
                 {cpErrors.name && (
                   <div className="error-text">{cpErrors.name}</div>
