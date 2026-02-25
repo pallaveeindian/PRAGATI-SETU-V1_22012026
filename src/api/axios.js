@@ -234,8 +234,21 @@ export function makeCrud(basePath) {
 // ------------------------
 
 export const AUTH_API = {
-  login: (data) => api.post("/auth/login/", data),
-  refresh: () => api.post("/auth/refresh/"), // cookie-based
+  login: (data) =>
+    api.post("/auth/login/", data, {
+      headers: {
+        "X-App-Client": "TMS_WEB",
+      },
+    }),
+
+  captcha: () =>
+    api.get("/auth/captcha/", {
+      headers: {
+        "X-App-Client": "TMS_WEB",
+      },
+    }),
+
+  refresh: () => api.post("/auth/refresh/"),
   logout: () => api.post("/auth/logout/"),
   crpRequestOtp: (data) => api.post("/auth/crp-request-otp/", data),
   crpVerifyOtp: (data) => api.post("/auth/crp-verify-otp/", data),

@@ -8,7 +8,7 @@ import { yupResolver } from "@hookform/resolvers/yup";
 import * as yup from "yup";
 import LoadingModal from "../components/ui/LoadingModal";
 import { getUser } from "../utils/storage";
-import { useCaptcha } from "../utils/useCaptcha";
+import { AUTH_API } from "../api/axios";
 
 import {
   FaDatabase,
@@ -88,6 +88,8 @@ export default function Login() {
   const { login, loading } = useContext(AuthContext);
   const navigate = useNavigate();
 
+  const [captchaImage, setCaptchaImage] = useState("");
+
   const module = "tms";
   const theme = "yellow";
 
@@ -97,7 +99,6 @@ export default function Login() {
   const MAX_ATTEMPTS = 4;
   const [captchaValue, setCaptchaValue] = useState("");
   const [captchaError, setCaptchaError] = useState("");
-  const { canvasRef, value: captcha, generate } = useCaptcha();
 
   const {
     register,
@@ -109,27 +110,38 @@ export default function Login() {
     defaultValues: { userType: "Admin", role: "" },
   });
 
+  // Server side Captcha
+  const loadCaptcha = async () => {
+    try {
+      const res = await AUTH_API.captcha();
+      setCaptchaImage(res.data.image);
+    } catch (err) {
+      console.error("Captcha load failed", err);
+    }
+  };
+
   useEffect(() => setValue("module", module), [module, setValue]);
   useEffect(() => setValue("userType", userType), [userType, setValue]);
   useEffect(() => setValue("role", role), [role, setValue]);
   useEffect(() => {
-    generate();
+    loadCaptcha();
   }, []);
 
   const onSubmit = async (data) => {
-    if (captchaValue.trim().toUpperCase() !== captcha.toUpperCase()) {
-      setCaptchaError("Captcha is incorrect");
-      setCaptchaValue("");
-      generate();
-      return;
-    }
-
     setCaptchaError("");
-    const result = await login(data);
+    const result = await login({
+      ...data,
+      captcha: captchaValue,
+    });
     if (!result?.success) {
       setFailedAttempts((prev) => prev + 1);
-      setCaptchaError("Login failed. Please try again.");
-      generate();
+
+      setCaptchaError(
+        result?.error?.detail || "Login failed. Please try again.",
+      );
+
+      setCaptchaValue("");
+      loadCaptcha();
       return;
     }
     setFailedAttempts(0);
@@ -215,12 +227,19 @@ export default function Login() {
 
           <div className="captcha-wrapper">
             <div className="captcha-image">
-              <canvas
-                ref={canvasRef}
-                width={180}
-                height={50}
-                className="captcha-image"
+              <img
+                src={captchaImage || undefined}
+                alt="captcha"
+                style={{ width: 180, height: 50 }}
               />
+
+              <button
+                type="button"
+                onClick={loadCaptcha}
+                style={{ marginTop: 6 }}
+              >
+                Refresh
+              </button>
             </div>
 
             <input

@@ -40,38 +40,41 @@ export const AuthProvider = ({ children }) => {
    * - POSTs to /auth/login/
    * - backend should set refresh cookie; response contains access token and user info
    */
-  const login = async ({ username, password }) => {
+
+  // Server Side Captcha
+  const login = async (payload) => {
     setLoading(true);
     try {
-      // VERY IMPORTANT: remove any stored/expired access token so axios won't include Authorization on /auth/login/
       clearAuth();
 
-      const res = await api.post("/auth/login/", { username, password });
-      // Expect backend to return { access, user } (refresh cookie set server-side)
+      const res = await api.post("/auth/login/", payload, {
+        headers: {
+          "X-App-Client": "TMS_WEB",
+        },
+      });
+
       const { access, user: resUser } = res.data || {};
 
       if (access) {
-        // persist access & user. setAuth implementation handles storage (and may keep refresh cookie server-side).
         setAuth({ access, user: resUser });
         setUser(resUser || null);
         setIsAuthenticated(true);
         setLoading(false);
         return { success: true };
-      } else {
-        // Unexpected shape
-        setLoading(false);
-        return {
-          success: false,
-          error: { detail: "Login response missing access token" },
-        };
       }
+
+      setLoading(false);
+      return {
+        success: false,
+        error: { detail: "Login response missing access token" },
+      };
     } catch (err) {
       setLoading(false);
-      // Normalise error payload
+
       const errData = err?.response?.data || {
         message: err.message || "Login failed",
       };
-      console.error("Login failed", errData);
+
       return { success: false, error: errData };
     }
   };
