@@ -6,45 +6,44 @@ import React, { useState } from "react";
  */
 
 export default function HeroFAQs() {
-const faqs = [
-  {
-    question: "What is Pragati Setu?",
-    answer:
-      "Pragati Setu is a government-grade digital platform designed to strengthen and manage Self Help Group (SHG)–related activities across the state. It acts as a digital bridge connecting rural women, SHGs, Community-Based Organizations, and government systems through structured data and transparent workflows.",
-    color: "#2563eb"
-  },
-  {
-    question: "What is the purpose of Pragati Setu?",
-    answer:
-      "Pragati Setu aims to enable livelihood-based empowerment of SHG women by capturing beneficiary and enterprise data, supporting skill-based employment, financial inclusion, and continuous livelihood monitoring for informed decision-making and targeted interventions.",
-    color: "#16a34a"
-  },
-  {
-    question: "What kind of data is captured in Pragati Setu?",
-    answer:
-      "The platform captures comprehensive data including beneficiary profiles, SHG and enterprise details, livelihood activities, skill mapping, training interventions, financial inclusion status, and progress indicators to support sustainable livelihood planning.",
-    color: "#0ea5e9"
-  },
-  {
-    question: "Who uses Pragati Setu?",
-    answer:
-      "Pragati Setu is used by field functionaries, Community-Based Organizations, and government officials at block, district, and state levels for monitoring, planning, and implementation of livelihood and empowerment initiatives.",
-    color: "#9333ea"
-  },
-  {
-    question: "How does Pragati Setu empower SHG women?",
-    answer:
-      "By organizing and analyzing livelihood data, Pragati Setu enables targeted skill training, access to financial services, enterprise support, and continuous monitoring, helping SHG women transition towards sustainable income generation and economic self-reliance.",
-    color: "#15803d"
-  },
-  {
-    question: "How do I navigate to dashboard?",
-    answer:
-      "To access the dashboard, click on the Login button available in the top navigation bar. After successful authentication, you will be redirected to your role-based dashboard.",
-    color: "#be123c"
-  }
-];
-
+  const faqs = [
+    {
+      question: "What is Pragati Setu?",
+      answer:
+        "Pragati Setu is a government-grade digital platform designed to strengthen and manage Self Help Group (SHG)–related activities across the state. It acts as a digital bridge connecting rural women, SHGs, Community-Based Organizations, and government systems through structured data and transparent workflows.",
+      color: "#2563eb",
+    },
+    {
+      question: "What is the purpose of Pragati Setu?",
+      answer:
+        "Pragati Setu aims to enable livelihood-based empowerment of SHG women by capturing beneficiary and enterprise data, supporting skill-based employment, financial inclusion, and continuous livelihood monitoring for informed decision-making and targeted interventions.",
+      color: "#16a34a",
+    },
+    {
+      question: "What kind of data is captured in Pragati Setu?",
+      answer:
+        "The platform captures comprehensive data including beneficiary profiles, SHG and enterprise details, livelihood activities, skill mapping, training interventions, financial inclusion status, and progress indicators to support sustainable livelihood planning.",
+      color: "#0ea5e9",
+    },
+    {
+      question: "Who uses Pragati Setu?",
+      answer:
+        "Pragati Setu is used by field functionaries, Community-Based Organizations, and government officials at block, district, and state levels for monitoring, planning, and implementation of livelihood and empowerment initiatives.",
+      color: "#9333ea",
+    },
+    {
+      question: "How does Pragati Setu empower SHG women?",
+      answer:
+        "By organizing and analyzing livelihood data, Pragati Setu enables targeted skill training, access to financial services, enterprise support, and continuous monitoring, helping SHG women transition towards sustainable income generation and economic self-reliance.",
+      color: "#15803d",
+    },
+    {
+      question: "How do I navigate to dashboard?",
+      answer:
+        "To access the dashboard, click on the Login button available in the top navigation bar. After successful authentication, you will be redirected to your role-based dashboard.",
+      color: "#be123c",
+    },
+  ];
 
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -54,7 +53,6 @@ const faqs = [
 
   return (
     <div className="hero-faq-wrapper">
-
       {/* HEADER */}
       <div className="faq-header">
         <h2 className="faq-title">
@@ -70,10 +68,7 @@ const faqs = [
             className={`faq-item ${activeIndex === index ? "active" : ""}`}
             style={{ borderLeftColor: faq.color }}
           >
-            <div
-              className="faq-question"
-              onClick={() => toggleFAQ(index)}
-            >
+            <div className="faq-question" onClick={() => toggleFAQ(index)}>
               <span>{faq.question}</span>
               <span className="faq-icon">
                 {activeIndex === index ? "−" : "+"}
@@ -83,7 +78,7 @@ const faqs = [
             <div
               className="faq-answer"
               style={{
-                maxHeight: activeIndex === index ? "300px" : "0px"
+                maxHeight: activeIndex === index ? "300px" : "0px",
               }}
             >
               <p>{faq.answer}</p>
@@ -195,6 +190,11 @@ const faqs = [
           .faq-title {
             font-size: 28px;
           }
+            .hero-faq-wrapper {
+          
+          margin-left: 10px;
+          margin-right: 10px
+        }
         }
       `}</style>
     </div>

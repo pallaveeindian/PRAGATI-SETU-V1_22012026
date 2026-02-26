@@ -7,6 +7,7 @@ import FAQ from "./HeroFAQs";
 import faqBg from "../../assets/Hero/faq_bg.png";
 import Contact from "./HeroContactUs";
 import conBg from "../../assets/Hero/con_us_bg.png";
+import sectionPotraitMobileScreen from "../../assets/sectionPotraitMobileScreen.png";
 
 /**
  * HeroLayout
@@ -16,7 +17,6 @@ import conBg from "../../assets/Hero/con_us_bg.png";
 export default function HeroLayout() {
   return (
     <div className="hero-layout">
-
       {/* ================= HERO SLIDESHOW (FULL BLEED) ================= */}
       <section className="hero-slideshow-section">
         <SlideShow />
@@ -29,9 +29,18 @@ export default function HeroLayout() {
 
       {/* ================= CRP APPLICATION ================= */}
       <section className="hero-section hero-crp">
-      <div className="hero-crp-image">
-        <img src={app_section} alt="Pragati Setu Overview" />
-      </div>
+        <div className="hero-crp-image">
+          <img
+            src={app_section}
+            alt="Pragati Setu Overview"
+            className="hero-desktop-img"
+          />
+          <img
+            src={sectionPotraitMobileScreen}
+            alt="Pragati Setu Mobile Overview"
+            className="hero-mobile-img"
+          />
+        </div>
       </section>
 
       {/* ================= OUR SERVICES ================= */}
@@ -115,6 +124,32 @@ export default function HeroLayout() {
           background-size: cover;
           background-position: center;
         } 
+          .hero-desktop-img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-mobile-img {
+  display: none;
+  width: 100%;
+  height: auto;
+}
+@media (max-width: 900px) {
+
+  .hero-crp-image {
+    height: auto; /* prevent large empty space */
+  }
+
+  .hero-desktop-img {
+    display: none;
+  }
+
+  .hero-mobile-img {
+    display: block;
+  }
+}
 
       `}</style>
     </div>

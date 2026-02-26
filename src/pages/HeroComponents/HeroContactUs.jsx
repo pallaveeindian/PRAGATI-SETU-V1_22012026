@@ -8,30 +8,27 @@ import React from "react";
 export default function HeroContactUs() {
   return (
     <div className="hero-contact-wrapper">
-
       {/* HEADER */}
       <div className="contact-header">
         <h2 className="contact-title">
           Need Support for Pragati Setu? <span>Contact Us!</span>
         </h2>
         <p className="contact-subtitle">
-          Our technical support team is available over Phone and Email
-          to assist you with any issues.
+          Our technical support team is available over Phone and Email to assist
+          you with any issues.
         </p>
       </div>
 
       {/* CARDS */}
       <div className="contact-cards">
-
         {/* CALL US */}
         <div className="contact-card">
-          <div className="contact-icon orange">
-            📞
-          </div>
+          <div className="contact-icon orange">📞</div>
 
           <h3>Call Us</h3>
           <p className="contact-time">
-            <strong>Monday through Friday</strong><br />
+            <strong>Monday through Friday</strong>
+            <br />
             10:30 AM to 6:30 PM
           </p>
 
@@ -42,20 +39,18 @@ export default function HeroContactUs() {
 
         {/* WRITE TO US */}
         <div className="contact-card">
-          <div className="contact-icon orange">
-            📝
-          </div>
+          <div className="contact-icon orange">📝</div>
 
           <h3>Write to us</h3>
           <p className="contact-desc">
-            Mail us your queries and our support team will get back to you within 24 hours.
+            Mail us your queries and our support team will get back to you
+            within 24 hours.
           </p>
 
           <p className="contact-link">
             <a href="#">support.psetu.gov.in</a>
           </p>
         </div>
-
       </div>
 
       {/* STYLES */}
@@ -170,6 +165,10 @@ export default function HeroContactUs() {
           .contact-cards {
             gap: 24px;
           }
+            .hero-contact-wrapper {
+          margin-left: 10px;
+          margin-right: 10px
+        }
         }
       `}</style>
     </div>
