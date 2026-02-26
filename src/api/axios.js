@@ -52,12 +52,8 @@ api.interceptors.request.use(
       delete config.headers["Authorization"];
 
       const apiHdrs = (getApiHeaders && getApiHeaders()) || {};
-      const apiId =
-        apiHdrs.apiId || apiHdrs["X-API-ID"] || "TH_EPS.BDOuser_test.co.in";
-      const apiKey =
-        apiHdrs.apiKey ||
-        apiHdrs["X-API-KEY"] ||
-        "wFR8IpSeNMawCF4RPLXit1POGuQAJTSmRexBBOwO";
+      const apiId = import.meta.env.VITE_API_ID;
+      const apiKey = import.meta.env.VITE_API_KEY;
 
       config.headers["X-API-ID"] = apiId;
       config.headers["X-API-KEY"] = apiKey;
