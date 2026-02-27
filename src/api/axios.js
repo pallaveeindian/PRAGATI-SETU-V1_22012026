@@ -13,7 +13,7 @@ import {
 // Axios instance
 // ------------------------
 
-const baseURL = import.meta.env.VITE_API_BASE_URL || "/api/v1";
+const baseURL = "/api/v1";
 
 const api = axios.create({
   baseURL,
