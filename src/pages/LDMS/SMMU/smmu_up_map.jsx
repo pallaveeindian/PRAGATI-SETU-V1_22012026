@@ -68,7 +68,8 @@ export default function SmmuUpMap({ onDistrictSelect }) {
 
     LDMS_API.upsrlmAnalytics({ districts_total: 1 })
       .then((res) => {
-        setDistricts(res?.data?.districts || []);
+        const data = res?.data?.districts || res?.data?.data?.districts || [];
+        setDistricts(Array.isArray(data) ? data : []);
       })
       .catch((e) => {
         console.error("District totals failed", e);
@@ -149,7 +150,7 @@ export default function SmmuUpMap({ onDistrictSelect }) {
           <div className="kpi-value">
             <AnimatedNumber value={stateTotals?.total_hh_under_shgs} />
           </div>
-        </div>                
+        </div>
       </div>
 
       {/* ================= MAP + TABLE ================= */}
@@ -186,8 +187,10 @@ export default function SmmuUpMap({ onDistrictSelect }) {
               <div>VOs: {tooltipData.total_vos}</div>
               <div>CLFs: {tooltipData.total_clfs}</div>
               <div>SHGs: {tooltipData.total_shgs}</div>
-              <div>Rural Households: {tooltipData.total_rural_hh ?? "—"}</div>        
-              <div>Households under SHGs: {tooltipData.total_hh_under_shgs ?? "—"}</div> 
+              <div>Rural Households: {tooltipData.total_rural_hh ?? "—"}</div>
+              <div>
+                Households under SHGs: {tooltipData.total_hh_under_shgs ?? "—"}
+              </div>
             </div>
           )}
         </div>
@@ -220,8 +223,8 @@ export default function SmmuUpMap({ onDistrictSelect }) {
                   <td>{d.total_vos}</td>
                   <td>{d.total_clfs}</td>
                   <td>{d.total_shgs}</td>
-                  <td>{d.total_rural_hh ?? "—"}</td>     
-                  <td>{d.total_hh_under_shgs ?? "—"}</td>                  
+                  <td>{d.total_rural_hh ?? "—"}</td>
+                  <td>{d.total_hh_under_shgs ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

@@ -78,6 +78,7 @@ const GENERAL_ROLE_KEYS = new Set([
 ]);
 
 const schema = yup.object({
+  module: yup.string().required(),
   userType: yup.string().required("Select user type"),
   role: yup.string().required("Select role"),
   username: yup.string().required("Enter username"),
@@ -90,8 +91,8 @@ export default function Login() {
 
   const [captchaImage, setCaptchaImage] = useState("");
 
-  const module = "tms";
-  const theme = "yellow";
+  const [module, setModule] = useState("tms");
+  const [theme, setTheme] = useState("yellow");
 
   const [userType, setUserType] = useState("Admin");
   const [role, setRole] = useState("");
@@ -160,9 +161,25 @@ export default function Login() {
       alert("User type mismatch");
       return;
     }
-    navigate(ROLE_TMS_ROUTE[backendRoleKey] || ROLE_TMS_ROUTE.default, {
-      replace: true,
-    });
+    if (module === "bms") {
+      navigate("/dashboard", { replace: true });
+    }
+
+    if (module === "tms") {
+      navigate(ROLE_TMS_ROUTE[backendRoleKey] || ROLE_TMS_ROUTE.default, {
+        replace: true,
+      });
+    }
+
+    if (module === "ldms") {
+      navigate(ROLE_LDMS_ROUTE[backendRoleKey] || ROLE_LDMS_ROUTE.default, {
+        replace: true,
+      });
+    }
+
+    if (module === "esm") {
+      alert("EMS dashboard coming soon");
+    }
   };
 
   return (
@@ -173,6 +190,45 @@ export default function Login() {
         <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
           <div className="logo-header">
             <img src={psLogo} alt="Pragati Setu" />
+          </div>
+
+          {/* MODULE SELECTOR */}
+          <div className="module-row">
+            <div
+              className="module-card blue"
+              onMouseEnter={() => setTheme("blue")}
+              onClick={() => setModule("bms")}
+            >
+              <img src={bmsLogo} />
+              <span>BMS</span>
+            </div>
+
+            <div
+              className="module-card yellow"
+              onMouseEnter={() => setTheme("yellow")}
+              onClick={() => setModule("tms")}
+            >
+              <img src={tmsLogo} />
+              <span>TMS</span>
+            </div>
+
+            <div
+              className="module-card red"
+              onMouseEnter={() => setTheme("red")}
+              onClick={() => setModule("ldms")}
+            >
+              <img src={ldmsLogo} />
+              <span>LDMS</span>
+            </div>
+
+            <div
+              className="module-card green"
+              onMouseEnter={() => setTheme("green")}
+              onClick={() => setModule("esm")}
+            >
+              <img src={esmLogo} />
+              <span>EMS</span>
+            </div>
           </div>
 
           {/* USER TYPE */}
