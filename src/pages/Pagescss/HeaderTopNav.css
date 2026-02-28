@@ -1,0 +1,236 @@
+/* ========================= */
+/* SAFE SCOPED NAVIGATION CSS */
+/* ========================= */
+
+.home-topnav,
+.home-topnav * {
+    box-sizing: border-box;
+}
+
+.home-topnav {
+    background: #ffffff;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15);
+    position: relative;
+    z-index: 50;
+}
+
+.topnav-inner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 2px 24px;
+}
+
+/* LEFT LOGO */
+.desktop-logo {
+    display: block;
+}
+
+.mobile-logo {
+    display: none;
+}
+
+.nav-logo {
+    height: 72px;
+    width: auto;
+}
+
+.nav-logo-img {
+    height: 60px;
+    width: auto;
+    object-fit: contain;
+}
+
+/* MENU */
+.topnav-menu {
+    list-style: none;
+    display: flex;
+    align-items: center;
+    gap: 28px;
+    margin-right: 10px;
+    padding: 0;
+}
+
+/* MENU ITEMS */
+.menu-item {
+    position: relative;
+    font-weight: 600;
+    color: #0f172a;
+    cursor: pointer;
+}
+
+/* TEXT + ARROW */
+.menu-item span {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.arrow {
+    transition: transform 0.3s ease;
+}
+
+/* DROPDOWN */
+.dropdown-menu {
+    position: absolute;
+    top: 130%;
+    left: 0;
+    background: #ffffff;
+    border: 1px solid #e5e7eb;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+    min-width: 240px;
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(10px);
+    transition: all 0.25s ease;
+    z-index: 100;
+    list-style: none;
+    padding-left: 0;
+}
+
+.dropdown-menu li {
+    padding: 10px 14px;
+    font-size: 14px;
+    white-space: nowrap;
+}
+
+.dropdown-menu li:hover {
+    background: #f1f5f9;
+}
+
+.dropdown-menu li::marker {
+    content: none;
+}
+
+/* SHOW DROPDOWN */
+.menu-item:hover .dropdown-menu {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* ARROW ROTATE */
+.menu-item:hover .arrow {
+    transform: rotate(180deg);
+}
+
+/* LINKS */
+.dropdown-menu a {
+    text-decoration: none;
+    color: #0f172a;
+}
+
+/* HAMBURGER */
+.hamburger {
+    display: none;
+    flex-direction: column;
+    gap: 5px;
+    cursor: pointer;
+}
+
+.hamburger span {
+    width: 25px;
+    height: 3px;
+    background: #0f172a;
+}
+
+/* OVERLAY */
+.nav-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transition: 0.3s;
+    z-index: 999;
+}
+
+.nav-overlay.active {
+    opacity: 1;
+    visibility: visible;
+}
+
+/* CLOSE BUTTON */
+.close-btn {
+    display: none;
+}
+
+/* LOGO CONTAINER (if multiple images) */
+.logo-container {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    gap: 15px;
+    text-decoration: none;
+}
+
+/* ================== MOBILE ================== */
+@media (max-width: 992px) {
+
+    .desktop-logo {
+        display: none;
+    }
+
+    .mobile-logo {
+        display: flex;
+        align-items: center;
+    }
+
+    .hamburger {
+        display: flex;
+    }
+
+    .topnav-menu {
+        position: fixed;
+        top: 50px;
+        right: -10px;
+        width: 300px;
+        max-width: 90%;
+        height: 100vh;
+        background: #fff;
+        list-style: none;
+        padding: 70px 10px 20px;
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        transform: translateX(100%);
+        transition: transform 0.35s ease;
+        overflow-y: auto;
+        z-index: 1000;
+    }
+
+    .topnav-menu.open {
+        transform: translateX(0);
+    }
+
+    .menu-item {
+        width: 100%;
+        border-bottom: 1px solid #ddd;
+    }
+
+    .menu-item>span,
+    .menu-item>a {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px;
+        width: 100%;
+    }
+
+    .dropdown-menu {
+        list-style: none;
+        padding-left: 10px;
+        margin: 0;
+        max-height: 0;
+        overflow: hidden;
+        transition: max-height 0.3s ease;
+    }
+
+    .menu-item.active .dropdown-menu {
+        max-height: 600px;
+    }
+
+    .close-btn {
+        display: none;
+    }
+}

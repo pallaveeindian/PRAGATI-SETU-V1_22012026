@@ -9,7 +9,8 @@ import HeroLayout from "./HeroComponents/HeroLayout.jsx";
 import Footer from "../components/layout/Footer.jsx";
 import aboutImg1 from "../assets/Fre-ask.jpeg";
 import aboutImg2 from "../assets/Frequently-Asked.jpeg";
-
+import GovHeader from "./GovHeader.jsx";
+import TopNavigation from "./HeaderTopNav.jsx";
 export default function FrequentlyAskedQuestions() {
   /* ================= FONT SIZE CONTROLS ================= */
   const setFontScale = (scale) => {
@@ -24,292 +25,153 @@ export default function FrequentlyAskedQuestions() {
   return (
     <div className="home-shell">
       {/* ================= ACCESSIBILITY HEADER ================= */}
-      <header className="gov-header">
-        <div className="gov-header-inner">
-          {/* LEFT : LOGO + TEXT */}
-          <div className="gov-header-left">
-            <img src={up_logo} alt="Government Logo" className="gov-logo" />
-            <span className="gov-text">Government Of Uttar Pradesh</span>
-          </div>
 
-          {/* RIGHT : ACCESSIBILITY CONTROLS */}
-          <div className="gov-header-right">
-            <button onClick={() => setFontScale(0.9)}>A-</button>
-            <button onClick={() => setFontScale(1)}>A</button>
-            <button onClick={() => setFontScale(1.1)}>A+</button>
-
-            <span className="divider">|</span>
-
-            <button className="lang-btn">English</button>
-            <span className="divider">|</span>
-            <button className="lang-btn">हिंदी</button>
-          </div>
-        </div>
-      </header>
+      <GovHeader
+        logo={up_logo}
+        title="Government Of Uttar Pradesh"
+        onFontChange={setFontScale}
+      />
 
       {/* ================= TOP NAV ================= */}
-      <nav className="home-topnav">
-        <div className="topnav-inner">
-          {/* LEFT : PRAGATI SETU LOGO */}
-          <div className="topnav-left">
-            <Link to="/">
-              <img src={nav_logo} alt="Pragati Setu" className="nav-logo" />
-            </Link>
-          </div>
-
-          {/* RIGHT : MENUS */}
-          <ul className="topnav-menu">
-            {/* ABOUT US */}
-            <li className="menu-item dropdown">
-              <span>
-                About Us <span className="arrow">▾</span>
-              </span>
-              <ul className="dropdown-menu">
-                <li>
-                  <a
-                    href="https://srlm.up.gov.in/en"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    UPSRLM
-                  </a>
-                </li>
-                <li>
-                  <Link to="/about-us">Our Mission</Link>
-                </li>
-              </ul>
-            </li>
-
-            {/* OUR SERVICES */}
-            <li className="menu-item dropdown">
-              <span>
-                Our Services <span className="arrow">▾</span>
-              </span>
-              <ul className="dropdown-menu">
-                <li>
-                  <Link to="/beneficiary-profiling">Beneficiary Profiling</Link>
-                </li>
-                <li>
-                  <Link to="/user-management">User Management</Link>
-                </li>
-                <li>
-                  <Link to="/training-management">
-                    Training Management (TMS)
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/Lakhpati-Didi">Lakhpati Didi (LDMS)</Link>
-                </li>
-
-                <li>
-                  <Link to="/Enterprise-Tracking">
-                    Enterprise Tracking (SU-Sakhi)
-                  </Link>
-                </li>
-
-                <li>
-                  <Link to="/Monitoring-and-Anlytics">
-                    Monitoring and Anlytics
-                  </Link>
-                </li>
-              </ul>
-            </li>
-
-            {/* DASHBOARDS */}
-            <li className="menu-item dropdown">
-              <span>
-                Dashboards <span className="arrow">▾</span>
-              </span>
-              <ul className="dropdown-menu">
-                <li>
-                  <Link to="/">Pragati Setu</Link>
-                </li>
-                <li>
-                  <Link to="/Power-BI-Analytics">Power BI Analytics</Link>
-                </li>
-              </ul>
-            </li>
-
-            {/* REPORT */}
-            <li className="menu-item">
-              <span>Report</span>
-              <ul className="dropdown-menu single">
-                <li>Coming Soon</li>
-              </ul>
-            </li>
-
-            {/* RESOURCE CENTRE */}
-            <li className="menu-item dropdown">
-              <span>
-                Resource Centre <span className="arrow">▾</span>
-              </span>
-              <ul className="dropdown-menu">
-                <li>
-                  <Link to="/User-Manual">User Manual</Link>
-                </li>
-                <li>
-                  <Link to="/Frequently-Asked-Questions">
-                    Frequently Asked Questions
-                  </Link>
-                </li>
-                <li>
-                  <Link to="/What's-New">What's New</Link>
-                </li>
-              </ul>
-            </li>
-
-            {/* LOGIN BUTTON */}
-            <li className="menu-item">
-              <Link to="/login" className="cta-login">
-                <span>LOGIN</span>
-                <span className="arrow-wrap">
-                  <svg width="52px" height="34px" viewBox="0 0 66 43">
-                    <g fill="none">
-                      <path
-                        className="one"
-                        d="M40.15 3.89L43.97.14 65.69 20.78c.39.39.39 1.02 0 1.41L43.97 42.86 40.15 39.11 56.99 21.86z"
-                        fill="#fff"
-                      />
-                      <path
-                        className="two"
-                        d="M20.15 3.89L23.97.14 45.69 20.78c.39.39.39 1.02 0 1.41L23.97 42.86 20.15 39.11 36.99 21.86z"
-                        fill="#fff"
-                      />
-                      <path
-                        className="three"
-                        d="M.15 3.89L3.97.14 25.69 20.78c.39.39.39 1.02 0 1.41L3.97 42.86.15 39.11 16.99 21.86z"
-                        fill="#fff"
-                      />
-                    </g>
-                  </svg>
-                </span>
-              </Link>
-            </li>
-          </ul>
-        </div>
-      </nav>
+      <TopNavigation />
 
       {/* CONTENT */}
       <main className="home-hero">
-        <div className="about-section">
+        <div className="">
           <div className="about-left">
-            <h1>Frequently Asked Questions</h1>
+            <div>
+              <div className="wrapperHeadding">
+                <div className="textAlignH1">
+                  <h1 ><span className="contrast-color-two">Frequently Asked</span><span className="contrast-color-one"> Questions</span></h1>
+                  <p>
+                    <strong>Frequently Asked Questions (FAQs) – Pragati Setu</strong>
+                  </p>
+                </div>
 
-            <p>
-              <strong>Frequently Asked Questions (FAQs) – Pragati Setu</strong>
-            </p>
+                <div className="about-right">
+                  <img src={aboutImg2} alt="FAQ Image 2" />
+                </div>
+              </div>
+            </div>
 
-            <p>
-              <strong>What is Pragati Setu?</strong>
-              <br />
-              Pragati Setu is a government-grade digital platform designed to
-              strengthen and manage Self Help Group (SHG)–related activities
-              across the state. It acts as a digital bridge connecting rural
-              women, SHGs, Community-Based Organizations, and government systems
-              through structured data and transparent workflows.
-            </p>
+            <div className="wrapper">
+              <div className="pragati-card">
+                <p>
+                  <strong>What is Pragati Setu?</strong>
+                  <br />
+                  Pragati Setu is a government-grade digital platform designed to
+                  strengthen and manage Self Help Group (SHG)–related activities
+                  across the state. It acts as a digital bridge connecting rural
+                  women, SHGs, Community-Based Organizations, and government systems
+                  through structured data and transparent workflows.
+                </p>
+              </div>
+              <div className="pragati-card">
+                <p>
+                  <strong>What is the purpose of Pragati Setu?</strong>
+                  <br />
+                  Pragati Setu aims to enable livelihood-based empowerment of SHG
+                  women by capturing beneficiary and enterprise data, supporting
+                  skill-based employment, financial inclusion, and continuous
+                  livelihood monitoring for informed decision-making and targeted
+                  interventions.
+                </p>
+              </div>
+            </div>
+            <div className="wrapper">
+              <div className="pragati-card">
+                <p>
+                  <strong>What kind of data is captured in Pragati Setu?</strong>
+                  <br />
+                  The platform captures comprehensive data including beneficiary
+                  profiles, SHG and enterprise details, livelihood activities, skill
+                  mapping, training interventions, financial inclusion status, and
+                  progress indicators to support sustainable livelihood planning.
+                </p>
+              </div>
+              <div className="pragati-card">
+                <p>
+                  <strong>Who uses Pragati Setu?</strong>
+                  <br />
+                  Pragati Setu is used by field functionaries, Community-Based
+                  Organizations, and government officials at block, district, and
+                  state levels for monitoring, planning, and implementation of
+                  livelihood and empowerment initiatives.
+                </p>
+              </div>
+            </div>
+            <div className="wrapper">
+              <div className="pragati-card">
+                <p>
+                  <strong>How does Pragati Setu empower SHG women?</strong>
+                  <br />
+                  By organizing and analyzing livelihood data, Pragati Setu enables
+                  targeted skill training, access to financial services, enterprise
+                  support, and continuous monitoring, helping SHG women transition
+                  towards sustainable income generation and economic self-reliance.
+                </p>
+              </div>
+              <div className="pragati-card">
+                <p>
+                  <strong>How do I navigate to the dashboard?</strong>
+                  <br />
+                  To access the dashboard, click on the Login button available in
+                  the top navigation bar. After successful authentication, you will
+                  be redirected to your role-based dashboard.
+                </p>
+              </div>
+            </div>
+            <div className="wrapper">
+              <div className="pragati-card">
+                <p>
+                  <strong>Is Pragati Setu secure and reliable?</strong>
+                  <br />
+                  Pragati Setu follows government-approved security standards and
+                  implements role-based access control, authentication mechanisms,
+                  and audit logs to ensure that only authorized users can access or
+                  modify information.
+                </p>
+              </div>
+              <div className="pragati-card">
+                <p>
+                  <strong>Can Pragati Setu be accessed on mobile phones?</strong>
+                  <br />
+                  Yes. Pragati Setu is a web-based platform accessible through
+                  modern browsers on desktops, laptops, tablets, and smartphones.
+                  For large data entry or administrative tasks, desktop access is
+                  recommended for better usability.
+                </p>
+              </div>
+            </div>
+            <div className="wrapper">
+              <div className="pragati-card">
+                <p>
+                  <strong>How frequently is data updated in Pragati Setu?</strong>
+                  <br />
+                  Data is updated in near real-time whenever authorized users enter
+                  or modify records. Dashboards and analytical reports automatically
+                  reflect the most recent validated information available in the
+                  system.
+                </p>
+              </div>
+              <div className="pragati-card">
+                <p>
+                  <strong>
+                    Can reports be downloaded or exported from Pragati Setu?
+                  </strong>
+                  <br />
+                  Yes. Depending on user roles and permissions, reports and datasets
+                  can be exported in formats such as <strong>CSV</strong> or{" "}
+                  <strong>Excel</strong> for reviews, audits, planning exercises,
+                  and official documentation.
+                </p>
+              </div>
+            </div>
 
-            <p>
-              <strong>What is the purpose of Pragati Setu?</strong>
-              <br />
-              Pragati Setu aims to enable livelihood-based empowerment of SHG
-              women by capturing beneficiary and enterprise data, supporting
-              skill-based employment, financial inclusion, and continuous
-              livelihood monitoring for informed decision-making and targeted
-              interventions.
-            </p>
 
-            <p>
-              <strong>What kind of data is captured in Pragati Setu?</strong>
-              <br />
-              The platform captures comprehensive data including beneficiary
-              profiles, SHG and enterprise details, livelihood activities, skill
-              mapping, training interventions, financial inclusion status, and
-              progress indicators to support sustainable livelihood planning.
-            </p>
-
-            <p>
-              <strong>Who uses Pragati Setu?</strong>
-              <br />
-              Pragati Setu is used by field functionaries, Community-Based
-              Organizations, and government officials at block, district, and
-              state levels for monitoring, planning, and implementation of
-              livelihood and empowerment initiatives.
-            </p>
-
-            <p>
-              <strong>How does Pragati Setu empower SHG women?</strong>
-              <br />
-              By organizing and analyzing livelihood data, Pragati Setu enables
-              targeted skill training, access to financial services, enterprise
-              support, and continuous monitoring, helping SHG women transition
-              towards sustainable income generation and economic self-reliance.
-            </p>
-
-            <p>
-              <strong>How do I navigate to the dashboard?</strong>
-              <br />
-              To access the dashboard, click on the Login button available in
-              the top navigation bar. After successful authentication, you will
-              be redirected to your role-based dashboard.
-            </p>
-
-            <p>
-              <strong>Is Pragati Setu secure and reliable?</strong>
-              <br />
-              Pragati Setu follows government-approved security standards and
-              implements role-based access control, authentication mechanisms,
-              and audit logs to ensure that only authorized users can access or
-              modify information.
-            </p>
-
-            <p>
-              <strong>Can Pragati Setu be accessed on mobile phones?</strong>
-              <br />
-              Yes. Pragati Setu is a web-based platform accessible through
-              modern browsers on desktops, laptops, tablets, and smartphones.
-              For large data entry or administrative tasks, desktop access is
-              recommended for better usability.
-            </p>
-
-            <p>
-              <strong>How frequently is data updated in Pragati Setu?</strong>
-              <br />
-              Data is updated in near real-time whenever authorized users enter
-              or modify records. Dashboards and analytical reports automatically
-              reflect the most recent validated information available in the
-              system.
-            </p>
-
-            <p>
-              <strong>
-                Can reports be downloaded or exported from Pragati Setu?
-              </strong>
-              <br />
-              Yes. Depending on user roles and permissions, reports and datasets
-              can be exported in formats such as <strong>CSV</strong> or{" "}
-              <strong>Excel</strong> for reviews, audits, planning exercises,
-              and official documentation.
-            </p>
-
-            <p>
-              <strong>
-                Who should be contacted for technical support or system issues?
-              </strong>
-              <br />
-              For technical errors, login problems, or data discrepancies, users
-              should reach out to their designated{" "}
-              <strong>IT Administrator</strong>,{" "}
-              <strong>DMMU/SMMU support teams</strong>, or the official Pragati
-              Setu helpdesk as per internal communication guidelines.
-            </p>
           </div>
 
-          {/* RIGHT IMAGE */}
-          <div className="about-right">
-            <img src={aboutImg1} alt="FAQ Image 1" />
-            <img src={aboutImg2} alt="FAQ Image 2" />
-          </div>
+
         </div>
       </main>
 
@@ -324,10 +186,9 @@ export default function FrequentlyAskedQuestions() {
                    .about-section {
                      max-width: 1400px;
                      margin: 60px auto;
-                     display: grid;
-                     grid-template-columns: 1.1fr 0.9fr;
+                    
                      gap: 40px;
-                     align-items: center;
+                     
                    }
                    
                    .about-left h1 {
@@ -335,6 +196,8 @@ export default function FrequentlyAskedQuestions() {
                      font-weight: 800;
                      margin-bottom: 18px;
                      color: #0f172a;
+                     text-align: left
+                     
                    }
                    
                    .about-left p {
@@ -344,20 +207,21 @@ export default function FrequentlyAskedQuestions() {
                      margin-bottom: 14px;
                    }
                    
-                   /* IMAGE SIZE FIX */
-                   .about-right {
-  display: flex;
-  flex-direction: column;   /* vertical */
-  align-items: center;
-  gap: 60px;                /* increase space here */
+.textAlignH1{
+ display: flex;
+  flex-direction: column;
+  justify-content: center;   /* Y-axis center */
 }
+           
 
 
 .about-right img {
   width: 100%;
-  max-width: 500px;
+  max-width: 400px;
   height: auto;
   object-fit: contain;
+  margin-top: 20px;
+  border-radius: 16px;
 }
 
                            /* ===== Root shell ===== */
@@ -365,8 +229,12 @@ export default function FrequentlyAskedQuestions() {
                              display: flex;
                              flex-direction: column;
                              min-height: 100vh;
-                             background: #ffffff;
-                             font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+                              background: linear-gradient(180deg,
+              #ffffff 0%,
+              #fff6f8 35%,
+              #f9e3e6 60%,
+              #f4cfd6 75%,
+              #ebb8c4 100%);
                            }
                    
                            /* ================= GLOBAL FONT SCALING ================= */
@@ -378,257 +246,53 @@ export default function FrequentlyAskedQuestions() {
                              font-size: calc(16px * var(--font-scale));
                            }
                    
-                           /* ================= GOV HEADER ================= */
-                           .gov-header {
-                             background: #0f172a; /* #fd7301 */
-                             color: #fff;
-                             font-size: 14px;
-                           }
-                   
-                           .gov-header-inner {
-                             display: flex;
-                             align-items: center;
-                             justify-content: space-between;
-                             padding: 6px 16px;
-                           }
-                   
-                           /* LEFT */
-                           .gov-header-left {
-                             display: flex;
-                             align-items: center;
-                             gap: 8px;
-                             font-weight: 600;
-                             margin-left: 350px; 
-                           }
-                   
-                           .gov-logo {
-                             height: 35px;
-                             border-radius: 25px;
-                             border: 2px solid #0f172a;
-                             width: auto;
-                           }
-                   
-                           .gov-text {
-                             font-size: 15px;
-                           }
-                   
-                           /* RIGHT */
-                           .gov-header-right {
-                             display: flex;
-                             align-items: center;
-                             gap: 8px;
-                             margin-right: 350px; 
-                           }
-                   
-                           .gov-header-right button {
-                             background: transparent;
-                             border: none;
-                             color: #fff;
-                             font-size: 13px;
-                             font-weight: 600;
-                             cursor: pointer;
-                             padding: 2px 4px;
-                           }
-                   
-                           .gov-header-right button:hover {
-                             text-decoration: underline;
-                           }
-                   
-                           .divider {
-                             opacity: 0.7;
-                             padding: 0 4px;
-                           }
-                   
-                           .lang-btn {
-                             font-weight: 500;
-                           }
-                   
-                           /* ======= TOP NAV ======== */
-                           .home-topnav {
-                             background: #ffffff;
-                             border-bottom: none;                    
-                             box-shadow: 0 4px 12px rgba(15, 23, 42, 0.15); 
-                             position: relative;                     
-                             z-index: 50;                            
-                           }
-                   
-                           .topnav-inner {
-                             display: flex;
-                             align-items: center;
-                             justify-content: space-between;
-                             padding: 2px 24px;
-                           }
-                   
-                           /* LEFT */
-                           .topnav-left {
-                             margin-left: 38px;
-                           }
-                   
-                           .nav-logo {
-                             height: 72px;
-                           }
-                   
-                           /* RIGHT MENU */
-                           .topnav-menu {
-                             list-style: none;
-                             display: flex;
-                             align-items: center;
-                             gap: 28px;
-                             margin-right: 10px;
-                             padding: 0;
-                           }
-                   
-                           /* MENU ITEMS */
-                           .menu-item {
-                             position: relative;
-                             font-weight: 600;
-                             color: #0f172a;
-                             cursor: pointer;
-                           }
-                   
-                           /* TEXT + ARROW */
-                           .menu-item span {
-                             display: flex;
-                             align-items: center;
-                             gap: 6px;
-                           }
-                   
-                           .arrow {
-                             transition: transform 0.3s ease;
-                           }
-                   
-                           /* DROPDOWN */
-                           .dropdown-menu {
-                             position: absolute;
-                             top: 130%;
-                             left: 0;
-                             background: #ffffff;
-                             border: 1px solid #e5e7eb;
-                             box-shadow: 0 10px 30px rgba(0,0,0,0.1);
-                             min-width: 240px;
-                             opacity: 0;
-                             visibility: hidden;
-                             transform: translateY(10px);
-                             transition: all 0.25s ease;
-                             z-index: 100;
-                             list-style: none;     
-                             padding-left: 0;             
-                           }
-                   
-                           .dropdown-menu li {
-                             padding: 10px 14px;
-                             font-size: 14px;
-                             white-space: nowrap;
-                           }
-                   
-                           .dropdown-menu li:hover {
-                             background: #f1f5f9;
-                           }
-                   
-                           .dropdown-menu li::marker {
-                             content: none;
-                           }
-                   
-                           /* SHOW DROPDOWN */
-                           .menu-item:hover .dropdown-menu {
-                             opacity: 1;
-                             visibility: visible;
-                             transform: translateY(0);
-                           }
-                   
-                           /* ARROW ROTATE */
-                           .menu-item:hover .arrow {
-                             transform: rotate(180deg);
-                           }
-                   
-                           /* LINKS */
-                           .dropdown-menu a {
-                             text-decoration: none;
-                             color: #0f172a;
-                           }
-                   
-                           /* LOGIN BUTTON */
-                           .login-btn {
-                             background: #0f172a;
-                             color: #ffffff;
-                             padding: 8px 18px;
-                             border-radius: 4px;
-                             text-decoration: none;
-                             font-weight: 700;
-                           }
-                   
-                           .login-btn:hover {
-                             opacity: 0.9;
-                           }
-                   
-                           /* ===== ANIMATED LOGIN CTA ===== */
-                           .cta-login {
-                             display: flex;
-                             align-items: center;
-                             gap: 12px;
-                             padding: 10px 22px;
-                             background: #0f172a;
-                             color: #fff;
-                             font-weight: 800;
-                             font-size: 14px;
-                             text-decoration: none;
-                             transform: skewX(-15deg);
-                             box-shadow: 5px 5px 0 #000;
-                             transition: all 0.4s ease;
-                           }
-                   
-                           .cta-login span {
-                             transform: skewX(15deg);
-                             display: inline-flex;
-                             alignwrk-items: center;
-                           }
-                   
-                           .cta-login:hover {
-                             box-shadow: 8px 8px 0 #fd7301;
-                           }
-                   
-                           .arrow-wrap {
-                             transition: margin-right 0.4s ease;
-                           }
-                   
-                           .cta-login:hover .arrow-wrap {
-                             margin-right: 18px;
-                           }
-                   
-                           /* SVG ARROWS */
-                           .cta-login path.one {
-                             transform: translateX(-60%);
-                             transition: 0.4s;
-                           }
-                   
-                           .cta-login path.two {
-                             transform: translateX(-30%);
-                             transition: 0.5s;
-                           }
-                   
-                           .cta-login:hover path.one,
-                           .cta-login:hover path.two {
-                             transform: translateX(0);
-                           }
-                   
-                           .cta-login:hover path.one {
-                             animation: arrowPulse 1s infinite 0.4s;
-                           }
-                   
-                           .cta-login:hover path.two {
-                             animation: arrowPulse 1s infinite 0.2s;
-                           }
-                   
-                           .cta-login:hover path.three {
-                             animation: arrowPulse 1s infinite;
-                           }
-                   
-                           /* COLOR PULSE */
-                           @keyframes arrowPulse {
-                             0% { fill: #ffffff; }
-                             50% { fill: #fd7301; }
-                             100% { fill: #ffffff; }
-                           }
+                           .contrast-color-one {
+      color: #ff7a00;
+  }
+
+  .wrapper{
+  display: flex ;
+  justify-content: space-around;
+  flex-wrap: wrap;
+  }
+   .wrapperHeadding {
+  display: flex;
+  justify-content: space-between;  
+   max-width: 2100px;
+  margin: 0 auto;
+  padding: 0 20px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+  .contrast-color-two {
+      color: #0f172a;
+  }
+                      .pragati-card {
+      max-width: 900px;
+      margin: 40px auto;
+      padding: 30px 35px;
+      background: #ffffff;
+      border: 2px solid #ff7a00;
+      /* Orange Border */
+      border-radius: 16px;
+      box-shadow: 0 5px 5px rgba(255, 122, 0, 0.25);
+      /* Orange Shadow */
+      transition: all 0.3s ease;
+  }
+
+  .pragati-card p {
+      font-size: 18px;
+      line-height: 1.7;
+      color: #333;
+      margin: 0;
+  }
+
+  /* Hover Effect */
+  .pragati-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 2px 5px rgba(255, 122, 0, 0.35);
+  }
+
                    
                            /* ===== HERO ===== */
                            .home-hero {
@@ -645,8 +309,47 @@ export default function FrequentlyAskedQuestions() {
                              text-align: center;
                              font-size: 28px;
                              font-weight: 800;
-                             border-top: 2px solid #334155;
                            }
+                              @media (max-width: 992px) {
+      .about-section {
+          
+          gap: 30px;
+          padding-left: 5px;
+          padding-right: 5px
+      }
+
+      .about-left h1 {
+          font-size: 28px;
+          text-align: center;
+      }
+
+      .about-left h3 {
+          font-size: 20px;
+      }
+
+      .about-left p {
+          font-size: 16px;
+      }
+           .pragati-card {
+    margin: 20px;
+    padding: 22px;
+  }
+
+  .pragati-card p {
+    font-size: 16px;
+  }
+}
+
+@media (max-width: 480px) {
+  .pragati-card {
+    padding: 18px;
+    border-radius: 12px;
+  }
+
+  .pragati-card p {
+    font-size: 15px;
+  }
+      }
                          `}</style>
     </div>
   );
