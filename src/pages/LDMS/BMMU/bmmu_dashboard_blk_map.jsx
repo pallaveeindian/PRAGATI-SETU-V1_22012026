@@ -192,7 +192,7 @@ export default function BlockMap({ blockId: propBlockId }) {
           onClick={fetchAnalytics}
           title="Refresh"
         >
-          ⟳
+          Refresh ⟳
         </button>
       </div>
 
@@ -231,7 +231,9 @@ export default function BlockMap({ blockId: propBlockId }) {
                 `}
               >
                 <td>{i + 1}</td>
-                <td className="village-name">{v.village_name}</td>
+                <td className="village-name" style={{ textAlign: "left" }}>
+                  {v.village_name}
+                </td>
                 <td>{v.ruralHH}</td>
                 <td>{v.shgHH}</td>
                 <td>{v.total_vos}</td>
@@ -244,12 +246,14 @@ export default function BlockMap({ blockId: propBlockId }) {
           </tbody>
 
           <tfoot>
-            <tr>
-              <td colSpan="2">Total</td>
-              <td>{totals.ruralHH}</td>
-              <td>{totals.shgHH}</td>
-              <td>{totals.vos}</td>
-              <td>{totals.shgs}</td>
+            <tr className="total-row">
+              <td colSpan="2" className="total-label">
+                Total
+              </td>
+              <td className="total-cell">{totals.ruralHH}</td>
+              <td className="total-cell">{totals.shgHH}</td>
+              <td className="total-cell">{totals.vos}</td>
+              <td className="total-cell">{totals.shgs}</td>
             </tr>
           </tfoot>
         </table>
@@ -260,8 +264,7 @@ export default function BlockMap({ blockId: propBlockId }) {
 
         .table-header {
           display: flex;
-          justify-content: space-between;
-          align-items: center;
+          justify-content: center;
           margin-bottom: 10px;
         }
 
@@ -269,7 +272,7 @@ export default function BlockMap({ blockId: propBlockId }) {
           border: none;
           background: #c62828;
           color: #fff;
-          width: 32px;
+          width: 7%;
           height: 32px;
           border-radius: 50%;
           cursor: pointer;
@@ -288,7 +291,7 @@ export default function BlockMap({ blockId: propBlockId }) {
         thead th {
           background: #c62828;
           color: #ffffff;
-          padding: 10px 8px;
+          text-align: center;
           font-weight: 700;
         }
 
@@ -339,6 +342,44 @@ export default function BlockMap({ blockId: propBlockId }) {
         .rank-3 {
           background: #fdecea;
           border-left: 4px solid #cd7f32;
+        }
+
+        /* ===== FIX TOTAL ALIGNMENT ===== */
+        thead th {
+          padding: 10px 8px;
+          text-align: center;
+        }
+
+        tbody td {
+          text-align: center;
+        }
+
+        tbody td:first-child {
+          text-align: center;
+        }
+
+        tbody td.village-name {
+          text-align: left;
+        }
+
+        tfoot td {
+          text-align: center;
+          padding: 10px 8px;
+        }
+
+        .total-label {
+          text-align: center;
+          font-weight: 800;
+          color: #8b0000;
+        }
+
+        .total-cell {
+          color: #000;
+          background: #fdecea;
+        }       
+          
+        .total-row {
+          border-top: 2px solid #c62828;
         }
       `}</style>
     </div>

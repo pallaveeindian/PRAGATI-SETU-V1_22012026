@@ -65,7 +65,7 @@ import DmmuBlockMap from "./pages/LDMS/DMMU/dmmu_dashboard_blk_map";
 import SmmuLdmsDashboard from "./pages/LDMS/SMMU/smmu_ldms_dashboard";
 import SupportCapture from "./pages/LDMS/Support Map/ldms_support_capture";
 import DemandAnalytics from "./pages/LDMS/Demand Analytics/da_container";
-import BLCCMeetings from "./pages/LDMS/BMMU/bmmu_BLCC_meetings";
+import MeetingsList from "./pages/LDMS/Meetings Map/ldms_meetings_list";
 import SchemeDictionary from "./pages/LDMS/scheme_dict";
 import SupPLDList from "./pages/LDMS/Support Map/SupPLDList";
 import SupPLDDetail from "./pages/LDMS/Support Map/SupPLDDetail";
@@ -260,7 +260,6 @@ export default function App() {
         <Route path="/ldms" element={<LdmsLayout />}>
           {/* BMMU Routes */}
           <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
-          <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
           {/* DMMU Routes */}
           <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
           <Route
@@ -270,6 +269,7 @@ export default function App() {
           {/* SMMU Routes */}
           <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
           {/* Global Routes */}
+          <Route path="meetings-list" element={<MeetingsList />} />
           <Route path="support-capture" element={<SupportCapture />} />
           <Route
             path="support-map/edit/:supportApprovalId"

@@ -5,7 +5,8 @@ import { AUTH_API } from "../../../api/axios";
 import { clearAuth } from "../../../utils/storage";
 import ldmsLogo from "../../../assets/ldms_logo.png";
 
-export default function LdmsHeader() {
+export default function LdmsHeader({ onBurgerClick }) {
+  const [showMobileMenu, setShowMobileMenu] = useState(false);
   const { user } = useContext(AuthContext) || {};
   const [showNotifications, setShowNotifications] = useState(false);
   const [showUserMenu, setShowUserMenu] = useState(false);
@@ -41,8 +42,15 @@ export default function LdmsHeader() {
         </h1>
       </div>
 
+      {/* Mobile Burger */}
+      <button className="ldms-burger" onClick={onBurgerClick}>
+        <i className="fas fa-bars"></i>
+      </button>
+
       {/* -------- RIGHT -------- */}
-      <div className="ldms-header-right">
+      <div
+        className={`ldms-header-right ${showMobileMenu ? "mobile-open" : ""}`}
+      >
         {/* Notifications */}
         <div className="ldms-notification-wrapper">
           <button
@@ -252,6 +260,8 @@ export default function LdmsHeader() {
           background: transparent;
           border: none;
           cursor: pointer;
+          width: 100%;
+          min-width: 0;  
         }
 
         .ldms-user-avatar {
@@ -271,6 +281,11 @@ export default function LdmsHeader() {
           font-size: 14px;
           font-weight: 600;
           color: var(--ldms-text-dark);
+          max-width: 130px;  
+          white-space: nowrap;
+          overflow: hidden;
+          word-break: break-word;
+          white-space: normal;
         }
 
         .ldms-user-menu {
@@ -299,6 +314,27 @@ export default function LdmsHeader() {
         .ldms-logout-btn:hover {
           background: var(--ldms-red-light);
         }
+
+        /* Burger */
+        .ldms-burger {
+          display: none;
+          background: transparent;
+          border: none;
+          font-size: 22px;
+          color: var(--ldms-red);
+          cursor: pointer;
+        }
+
+        /* ---------------- MOBILE ---------------- */
+        @media (max-width: 768px) {
+          .ldms-header-right {
+            display: none;
+          }
+
+          .ldms-burger {
+            display: block;
+          }
+        }    
       `}</style>
     </header>
   );

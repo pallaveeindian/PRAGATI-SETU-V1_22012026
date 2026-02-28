@@ -96,7 +96,7 @@ export default function SupportBenefitExt() {
         department: d,
         percentage: Math.floor(20 + ((i * 33) % 53)), // max 53%
       })),
-    []
+    [],
   );
 
   /* ---------------------------
@@ -108,7 +108,7 @@ export default function SupportBenefitExt() {
         name: s,
         value: Math.floor(18 + ((i * 29) % 53)),
       })),
-    [department]
+    [department],
   );
 
   /* ---------------------------
@@ -139,25 +139,55 @@ export default function SupportBenefitExt() {
       <div className="ldms-chart-card">
         <h4>Needs vs Support Extension</h4>
 
-        <ResponsiveContainer width="100%" height={320}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              cx="45%"
-              cy="50%"
-              outerRadius={120}
-              label={({ value }) => `${value}%`}
-            >
-              {pieData.map((_, i) => (
-                <Cell key={i} fill={PIE_COLORS[i]} />
-              ))}
-            </Pie>
-            <Tooltip formatter={(v) => `${v}%`} />
-            <Legend align="right" />
-          </PieChart>
-        </ResponsiveContainer>
+        <div className="pie-layout">
+          {/* ===== LEFT : PIE ===== */}
+          <div className="pie-left">
+            <ResponsiveContainer width="100%" height={320}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={120}
+                  label={({ value }) => `${value}%`}
+                >
+                  {pieData.map((_, i) => (
+                    <Cell key={i} fill={PIE_COLORS[i]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => `${v}%`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
+
+          {/* ===== RIGHT : LEGEND + TABLE ===== */}
+          <div className="pie-right">
+            <table className="legend-table">
+              <thead>
+                <tr>
+                  <th>Support Type</th>
+                  <th style={{ textAlign: "center" }}>%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pieData.map((item, i) => (
+                  <tr key={item.name}>
+                    <td>
+                      <span
+                        className="legend-dot"
+                        style={{ background: PIE_COLORS[i] }}
+                      />
+                      {item.name}
+                    </td>
+                    <td>{item.value}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* ================= AREA ================= */}
@@ -263,80 +293,272 @@ export default function SupportBenefitExt() {
         .ldms-support-analytics {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 32px;
+          width: 100%;
         }
 
+        /* ===== GRID ===== */
         .ldms-bottom-grid {
           display: grid;
           grid-template-columns: 1fr 1fr;
-          gap: 16px;
+          gap: 24px;
+          width: 100%;
         }
 
+        /* ===== CARD ===== */
         .ldms-chart-card {
           background: #ffffff;
-          border: 1px solid #f1c0c0;
-          border-radius: 12px;
-          padding: 14px 16px;
+          border-radius: 14px;
+          padding: 22px 24px;
+          border: 1px solid #f3d6d6;
+          box-shadow: 0 4px 18px rgba(139, 0, 0, 0.04);
+          transition: all 0.35s ease;
+          position: relative;
         }
 
+        /* Hover polish */
+        .ldms-chart-card:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 10px 32px rgba(139, 0, 0, 0.1);
+        }
+
+        /* subtle red bottom accent animation */
+        .ldms-chart-card::after {
+          content: "";
+          position: absolute;
+          bottom: 0;
+          left: 0;
+          width: 0%;
+          height: 3px;
+          background: #c62828;
+          transition: width 0.4s ease;
+        }
+
+        .ldms-chart-card:hover::after {
+          width: 100%;
+        }
+
+        /* ===== HEADINGS ===== */
         .ldms-chart-card h4 {
-          margin: 0 0 10px 0;
-          font-size: 14px;
+          margin: 0 0 16px 0;
+          font-size: 16px;
           font-weight: 700;
-          color: #c62828;
+          color: #8b0000;
+          text-align: center;
+          letter-spacing: 0.5px;
         }
 
+        /* ===== CHART HEADER ===== */
         .chart-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 10px;
+          margin-bottom: 14px;
+          flex-wrap: wrap;
+          gap: 10px;
         }
 
+        /* ===== SELECT ===== */
         select {
-          padding: 4px 8px;
-          font-size: 12px;
-          border-radius: 6px;
-          border: 1px solid #f1c0c0;
+          padding: 6px 10px;
+          font-size: 13px;
+          border-radius: 8px;
+          border: 1px solid #e5bcbc;
           color: #8b1d1d;
           background: #ffffff;
+          transition: all 0.3s ease;
         }
 
+        select:hover {
+          border-color: #c62828;
+        }
+
+        select:focus {
+          outline: none;
+          border-color: #c62828;
+          box-shadow: 0 0 0 2px rgba(198, 40, 40, 0.15);
+        }
+
+        /* ===== TABLE ===== */
         .table-wrap {
           max-height: 420px;
           overflow-y: auto;
+          border-radius: 10px;
+          border: 1px solid #f1d0d0;
         }
 
         table {
           width: 100%;
           border-collapse: collapse;
-          font-size: 12px;
+          font-size: 13px;
+          background: #ffffff;
         }
 
-        /* 🔴 FIXED HEADER OVERRIDE */
+        /* HEADER */
         .table-wrap thead th {
           background: #c62828;
           color: #ffffff;
-          padding: 10px 8px;
+          padding: 12px 8px;
           font-weight: 700;
+          text-align: center;
+          position: sticky;
+          top: 0;
+          z-index: 1;
         }
 
-        td {
-          padding: 8px;
-          border-bottom: 1px solid #e5e7eb;
+        /* ROWS */
+        tbody td {
+          padding: 10px 8px;
+          border-bottom: 1px solid #f0f0f0;
+          text-align: center;
+          transition: background 0.2s ease;
         }
 
+        tbody tr:hover {
+          background: #fff5f5;
+        }
+
+        /* FOOTER */
         tfoot {
           position: sticky;
           bottom: 0;
           background: #fdecea;
           font-weight: 700;
+          text-align: center;
         }
 
+        /* ===== PIE LAYOUT ===== */
+        .pie-layout {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 30px;
+          align-items: center;
+        }
+
+        .pie-left {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .pie-right {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        /* ===== LEGEND TABLE ===== */
+        .legend-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+          border: 1px solid #f1d0d0;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .legend-table thead th {
+          background: #c62828;
+          color: #ffffff;
+          padding: 12px;
+          font-weight: 700;
+        }
+
+        .legend-table td {
+          padding: 10px 12px;
+          border-bottom: 1px solid #f3e1e1;
+          text-align: center;
+          font-weight: 500;
+        }
+
+        .legend-table tbody tr:hover {
+          background: #fff5f5;
+        }
+
+        .legend-dot {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 8px;
+        }
+
+        .legend-table td:first-child {
+          text-align: left;
+          font-weight: 600;
+          color: #111;
+        }
+
+        /* ===== RESPONSIVE ===== */
         @media (max-width: 1024px) {
           .ldms-bottom-grid {
             grid-template-columns: 1fr;
           }
+
+          .pie-layout {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }
+
+          .pie-right {
+            width: 100%;
+          }          
+        }
+
+        @media (max-width: 768px) {
+          .ldms-chart-card {
+            padding: 18px;
+          }
+
+          .ldms-chart-card h4 {
+            font-size: 15px;
+          }
+
+          table {
+            font-size: 12px;
+          }
+
+          .legend-table {
+            font-size: 12px;
+          }
+
+          .legend-table thead th {
+            padding: 8px;
+          }
+
+          .legend-table td {
+            padding: 8px;
+          }          
+        }
+
+        @media (max-width: 480px) {
+          .ldms-support-analytics {
+            gap: 22px;
+          }
+
+          .ldms-chart-card {
+            padding: 14px;
+          }
+
+          .ldms-chart-card h4 {
+            font-size: 14px;
+          }
+
+          .table-wrap {
+            max-height: 320px;
+          }
+
+          .legend-table {
+            font-size: 12px;
+          }
+
+          .legend-table thead th {
+            padding: 8px;
+          }
+
+          .legend-table td {
+            padding: 8px;
+          }          
         }
       `}</style>
     </div>
