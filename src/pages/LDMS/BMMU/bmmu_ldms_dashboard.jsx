@@ -21,7 +21,7 @@ export default function BmmuLdmsDashboard() {
   return (
     <div className="bmmu-dashboard-wrapper">
       {/* Page Header */}
-      <DashboardHeader title="BMMU LDMS Dashboard" username={user?.username} />
+      <DashboardHeader title="BMMU Dashboard" username={user?.username} />
 
       {/* Grid */}
       <div className="dashboard-grid">

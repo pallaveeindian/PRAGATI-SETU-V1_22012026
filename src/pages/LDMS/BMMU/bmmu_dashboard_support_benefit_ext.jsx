@@ -295,6 +295,7 @@ export default function SupportBenefitExt() {
           flex-direction: column;
           gap: 32px;
           width: 100%;
+          overflow: hidden;
         }
 
         /* ===== GRID ===== */
@@ -314,6 +315,7 @@ export default function SupportBenefitExt() {
           box-shadow: 0 4px 18px rgba(139, 0, 0, 0.04);
           transition: all 0.35s ease;
           position: relative;
+          overflow: hidden;
         }
 
         /* Hover polish */
