@@ -53,7 +53,7 @@ const MENU = {
     { label: "Dashboard", to: "/ldms/dmmu/dashboard", icon: FaTachometerAlt },
     { label: "Meetings", to: "/ldms/meetings-list", icon: FaUsers },
     { label: "Demand Analytics", to: "#", icon: FaChartBar },
-    { label: "Scheme Dictionary", to: "#", icon: FaBook },
+    { label: "Scheme Dictionary", to: "/ldms/scheme-dictionary", icon: FaBook },
     {
       label: "Support Bucket List",
       to: "/ldms/support-map-list",
@@ -65,6 +65,7 @@ const MENU = {
   ],
   smmu: [
     { label: "Dashboard", to: "/ldms/smmu/dashboard", icon: FaTachometerAlt },
+    { label: "Scheme Dictionary", to: "/ldms/scheme-dictionary", icon: FaBook },
     {
       label: "Support Bucket List",
       to: "/ldms/support-map-list",
