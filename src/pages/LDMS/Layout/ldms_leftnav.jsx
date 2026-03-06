@@ -124,6 +124,15 @@ export default function LdmsLeftNav({
     <aside
       className={`ldms-leftnav ${collapsed ? "collapsed" : ""} ${mobileOpen ? "mobile-open" : ""}`}
     >
+      <button
+        className={`ldms-burger ${mobileOpen ? "open" : ""}`}
+        onClick={() => (mobileOpen ? onCloseMobile() : onToggle())}
+      >
+        <span></span>
+        <span></span>
+        <span></span>
+      </button>
+
       {/* LOGO
       <div className="ldms-logo" onClick={() => navigate("/dashboard")}>
         <img src={logo} alt="LDMS" />

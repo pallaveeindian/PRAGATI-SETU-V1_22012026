@@ -272,7 +272,6 @@ export default function BlockMap({ blockId: propBlockId }) {
           border: none;
           background: #c62828;
           color: #fff;
-          width: 7%;
           height: 32px;
           border-radius: 50%;
           cursor: pointer;
