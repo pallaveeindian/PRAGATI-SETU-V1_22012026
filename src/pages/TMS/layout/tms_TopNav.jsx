@@ -47,7 +47,7 @@ export default function TopNav({ left = null, right = null }) {
 
   const defaultRight = (
     <>
-      <div className="topnav-user">
+      {/* <div className="topnav-user">
         {user?.username ? `Hi, ${user.username}` : "Welcome"}
         {scopeLabel && (
           <span
@@ -60,19 +60,38 @@ export default function TopNav({ left = null, right = null }) {
             ({scopeLabel})
           </span>
         )}
+      </div> */}
+      <div className="btn-ghost">
+        <button className="btn " onClick={handleLogout}>
+          Logout
+        </button>
       </div>
-      <button className="btn btn-ghost" onClick={handleLogout}>
-        Logout
-      </button>
     </>
   );
 
   return (
-    <header className="topnav">
-      <div className="topnav-left">
-        {left || <div className="app-title">Dashboard</div>}
-      </div>
+    // <header className="topnav">
+    // <div className="topnav-left">
+    //   {left || <div className="app-title">Dashboard</div>}
+    // </div>
+    <header>
       <div className="topnav-right">{right || defaultRight}</div>
+      <style>
+        {`
+header{
+  display: flex;
+  justify-content: flex-end;
+  align-items: center;
+  width: 100%;
+}
+
+.btn-ghost{
+  display: flex;
+  justify-content: flex-end;
+  padding-top: 10px;
+}
+`}
+      </style>
     </header>
   );
 }

@@ -280,7 +280,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
           padding: 10px 12px;
           border-radius: 8px;
           text-decoration: none;
-          color: #061b46;;
+          color: #061b46;
           font-size: 14px;
           transition: background 0.2s ease;
           white-space: nowrap;

@@ -676,27 +676,27 @@ function CombinedParticipantSelector({
       const list =
         trainingReq.training_type === "BENEFICIARY"
           ? resp.data.beneficiary_registrations.map((x) => ({
-              ...x,
-              // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
-              // tr_participation_id: x.id,
-              // training: tr.id,
-              // _uid: `trp-${x.id}`,
-              id: x.id, // Primary Key of TRBeneficiary
-              training: tr.id,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-            }))
+            ...x,
+            // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
+            // tr_participation_id: x.id,
+            // training: tr.id,
+            // _uid: `trp-${x.id}`,
+            id: x.id, // Primary Key of TRBeneficiary
+            training: tr.id,
+            _uid: `trp-${x.id}`, // ✅ Standardized UID
+            // _uid: `reg-${x.id}`
+          }))
           : resp.data.trainer_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary Key of TRTrainer
-              training: tr.id,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
-              // tr_participation_id: x.id,
-              // training: tr.id,
-              // _uid: `trp-${x.id}`,
-            }));
+            ...x,
+            id: x.id, // Primary Key of TRTrainer
+            training: tr.id,
+            _uid: `trp-${x.id}`, // ✅ Standardized UID
+            // _uid: `reg-${x.id}`
+            // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
+            // tr_participation_id: x.id,
+            // training: tr.id,
+            // _uid: `trp-${x.id}`,
+          }));
 
       setParticipantCache((old) => ({
         ...old,
@@ -823,26 +823,18 @@ function PreviewModal({ open, payload, onClose, onConfirm, disabled }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: 900 }}>
-        <h3>Preview Batch Creation Payload</h3>
+      <div className="modal-card" style={{ maxWidth: 500 }}>
+        <h3>Confirm Proposal</h3>
 
-        <pre
-          style={{
-            maxHeight: 400,
-            overflow: "auto",
-            background: "#111",
-            color: "#0f0",
-            padding: 12,
-            fontSize: 12,
-          }}
-        >
-          {JSON.stringify(payload, null, 2)}
-        </pre>
+        <p style={{ marginTop: 12, fontSize: 15 }}>
+          Are you sure you want to propose this training request to <b>DMMU</b>?
+        </p>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
           <button className="btn-outline" onClick={onClose}>
             Back
           </button>
+
           <button
             className="btn btn-primary"
             disabled={disabled}
@@ -1110,28 +1102,28 @@ export default function TpCreateBatch() {
         const list =
           r.data.training_type === "BENEFICIARY"
             ? r.data.beneficiary_registrations.map((x) => ({
-                ...x,
-                id: x.id, // Primary key of TRBeneficiary
-                training: requestId,
-                _uid: `trp-${x.id}`, // ✅ Standardized UID
-                // _uid: `reg-${x.id}`
-                // id: x.beneficiary,
-                // tr_participation_id: x.id,
-                // training: requestId,
-                // // _uid: `${requestId}-${x.beneficiary}`,
-                // _uid: `trp-${x.id}`
-              }))
+              ...x,
+              id: x.id, // Primary key of TRBeneficiary
+              training: requestId,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+              // id: x.beneficiary,
+              // tr_participation_id: x.id,
+              // training: requestId,
+              // // _uid: `${requestId}-${x.beneficiary}`,
+              // _uid: `trp-${x.id}`
+            }))
             : r.data.trainer_registrations.map((x) => ({
-                ...x,
-                id: x.id, // Primary key of TRTrainer
-                training: requestId,
-                _uid: `trp-${x.id}`, // ✅ Standardized UID
-                // _uid: `reg-${x.id}`
-                // id: x.trainer,
-                // tr_participation_id: x.id,
-                // training: requestId,
-                // _uid: `${requestId}-${x.trainer}`,
-              }));
+              ...x,
+              id: x.id, // Primary key of TRTrainer
+              training: requestId,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+              // id: x.trainer,
+              // tr_participation_id: x.id,
+              // training: requestId,
+              // _uid: `${requestId}-${x.trainer}`,
+            }));
 
         seed[`tr-${requestId}`] = {
           list,
@@ -1725,9 +1717,9 @@ export default function TpCreateBatch() {
 
                               const ed = trainingReq?.training_plan?.no_of_days
                                 ? calcEndDate(
-                                    sd,
-                                    trainingReq.training_plan.no_of_days,
-                                  )
+                                  sd,
+                                  trainingReq.training_plan.no_of_days,
+                                )
                                 : "";
 
                               updateBatch(

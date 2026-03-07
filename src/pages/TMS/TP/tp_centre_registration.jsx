@@ -19,12 +19,47 @@ const EMPTY_MEDIA = {
 
 /* ===================== CONFIRM MODAL ===================== */
 
+// function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
+//   if (!open) return null;
+
+//   return (
+//     <div className="modal-backdrop">
+//       <div className="modal-card" style={{ maxWidth: 900 }}>
+//         <h3>
+//           Confirm Training Centre{" "}
+//           {payload?.centreId ? "Update" : "Registration"}
+//         </h3>
+
+//         {submitting ? (
+//           <div style={{ padding: 30, textAlign: "center" }}>
+//             <strong>Registering Your Centre, Please Wait…</strong>
+//           </div>
+//         ) : (
+//           <>
+//             <pre style={{ maxHeight: 350, overflow: "auto", fontSize: 12 }}>
+//               {JSON.stringify(payload, null, 2)}
+//             </pre>
+//             <div style={{ textAlign: "right", marginTop: 12 }}>
+//               <button className="btn-outline" onClick={onClose}>
+//                 Edit
+//               </button>{" "}
+//               <button className="btn" onClick={onConfirm}>
+//                 Confirm Submission
+//               </button>
+//             </div>
+//           </>
+//         )}
+//       </div>
+//     </div>
+//   );
+// }
+
 function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
   if (!open) return null;
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: 900 }}>
+      <div className="modal-card" style={{ maxWidth: 500 }}>
         <h3>
           Confirm Training Centre{" "}
           {payload?.centreId ? "Update" : "Registration"}
@@ -36,10 +71,11 @@ function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
           </div>
         ) : (
           <>
-            <pre style={{ maxHeight: 350, overflow: "auto", fontSize: 12 }}>
-              {JSON.stringify(payload, null, 2)}
-            </pre>
-            <div style={{ textAlign: "right", marginTop: 12 }}>
+            <p style={{ marginTop: 16, fontSize: 15 }}>
+              Are you sure you want to <b>confirm submission</b>?
+            </p>
+
+            <div style={{ textAlign: "right", marginTop: 20 }}>
               <button className="btn-outline" onClick={onClose}>
                 Edit
               </button>{" "}
@@ -914,16 +950,19 @@ export default function TpCentreRegistration() {
             )}
           </div>
         </main>
+        <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
+          <ConfirmModal
+            open={confirmOpen}
+            payload={{ centre, rooms, media, centreId }}
+            submitting={submitting}
+            onClose={() => setConfirmOpen(false)}
+            onConfirm={handleConfirmSubmit}
+          />
+        </div>
       </div>
 
       {/* Confirm Modal */}
-      <ConfirmModal
-        open={confirmOpen}
-        payload={{ centre, rooms, media, centreId }}
-        submitting={submitting}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={handleConfirmSubmit}
-      />
-    </div>
+
+    </div >
   );
 }

@@ -5,7 +5,7 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
 import LoadingModal from "../../../components/ui/LoadingModal";
-
+import TrainingThemeChart from "./TrainingThemeChart";
 const GEOSCOPE_KEY = "ps_user_geoscope";
 const BMMU_CACHE_KEY = "tms_bmmu_dashboard_cache_v1";
 
@@ -19,7 +19,7 @@ async function resolveEffectiveUserId(user) {
       const parsed = JSON.parse(raw);
       if (parsed?.user_id) return parsed.user_id;
     }
-  } catch (e) {}
+  } catch (e) { }
 
   try {
     if (user?.id || user?.user_id) {
@@ -29,11 +29,11 @@ async function resolveEffectiveUserId(user) {
       if (payload?.user_id) {
         try {
           localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-        } catch (e) {}
+        } catch (e) { }
         return payload.user_id;
       }
     }
-  } catch (e) {}
+  } catch (e) { }
 
   return null;
 }
@@ -77,7 +77,7 @@ export default function BmmuTmsDashboard() {
   const { user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
-
+  const [hover, setHover] = useState(false);
   /* State */
   const [effectiveUserId, setEffectiveUserId] = useState(null);
   const [blockId, setBlockId] = useState(null);
@@ -114,7 +114,7 @@ export default function BmmuTmsDashboard() {
           const geo = JSON.parse(raw);
           bId = geo?.blocks?.[0] ?? geo?.block_id ?? null;
         }
-      } catch (e) {}
+      } catch (e) { }
 
       if (!bId && uid) {
         try {
@@ -123,10 +123,10 @@ export default function BmmuTmsDashboard() {
           if (payload) {
             try {
               localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-            } catch (e) {}
+            } catch (e) { }
             bId = payload?.blocks?.[0] ?? payload?.block_id ?? null;
           }
-        } catch (e) {}
+        } catch (e) { }
       }
       setBlockId(bId);
 
@@ -175,7 +175,7 @@ export default function BmmuTmsDashboard() {
             limit: 1,
           });
           beneficiariesCount = res?.data?.count ?? res?.count ?? 0;
-        } catch (e) {}
+        } catch (e) { }
 
         /* #2 trainers trained */
         try {
@@ -184,7 +184,7 @@ export default function BmmuTmsDashboard() {
             limit: 1,
           });
           trainersCount = res?.data?.count ?? res?.count ?? 0;
-        } catch (e) {}
+        } catch (e) { }
       }
 
       /* #3 trainings in your block (created_by) */
@@ -194,7 +194,7 @@ export default function BmmuTmsDashboard() {
           limit: 1,
         });
         trainingsCount = res?.data?.count ?? res?.count ?? 0;
-      } catch (e) {}
+      } catch (e) { }
 
       const newKpis = {
         beneficiaries_trained: Number(beneficiariesCount),
@@ -241,7 +241,39 @@ export default function BmmuTmsDashboard() {
     boxShadow: "0 2px 8px rgba(0,0,0,0.04)",
     minWidth: 160,
   };
-  const small = { color: "#6c757d", fontSize: 13 };
+  const cardStyleTeal = {
+    background: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    flex: "1 1 220px", // RESPONSIVE FIX
+    minWidth: 200, // RESPONSIVE FIX
+    border: "3px solid #3d6ba6", // Rose-900 border
+    boxShadow: "0 2px 2px #a7c6ed",
+
+  };
+
+  const cardStyleAmber = {
+    background: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    flex: "1 1 220px", // RESPONSIVE FIX
+    minWidth: 200, // RESPONSIVE FIX
+    border: "3px solid #3d6ba6", // Rose-900 border
+    boxShadow: "0 2px 2px #a7c6ed",
+
+  };
+
+  const cardStyleRose = {
+    background: "#fff",
+    borderRadius: 12,
+    padding: 20,
+    flex: "1 1 220px", // RESPONSIVE FIX
+    minWidth: 200, // RESPONSIVE FIX
+    border: "3px solid #3d6ba6", // Rose-900 border
+    boxShadow: "0 2px 2px #a7c6ed",
+
+  };
+  const small = { color: "#374151", fontSize: 13 };
 
   /* ====================================================================== */
   /*                                   UI                                   */
@@ -267,47 +299,71 @@ export default function BmmuTmsDashboard() {
             left={<div className="app-title">Pragati Setu — TMS (BMMU)</div>}
           />
 
-          <main className="dashboard-main" style={{ padding: 18 }}>
+          <main className="dashboard-main" style={{ padding: 18, }}>
             <div
               style={{
-                maxWidth: 1100,
+                width: "100%", // RESPONSIVE FIX
                 margin: "20px auto",
                 padding: "0 16px",
               }}
             >
               {/* HEADER */}
+
               <div
                 style={{
                   display: "flex",
-                  gap: 16,
+                  flexWrap: "wrap", // RESPONSIVE FIX
+                  justifyContent: "space-between", // RESPONSIVE FIX
                   alignItems: "center",
-                  marginBottom: 16,
+                  gap: 16,
+                  marginBottom: 24,
+                  padding: "24px 28px",
+                  width: "100%",
+                  maxWidth: "full", // Increased width
+                  background: "#ffffff",
+                  borderRadius: 16,
+                  border: "3px solid #3d6ba6", // Rose-900 border
+                  boxShadow: "0 2px 2px #a7c6ed",
+                  transition: "all 0.3s ease",
                 }}
               >
-                <h2 style={{ margin: 0 }}>BMMU — Training Management</h2>
+                <h2 style={{ margin: 0, fontSize: 22, fontWeight: 700, color: "#0369a1" }}>
+                  BMMU — Training Management
+                </h2>
 
                 <div
                   style={{
                     marginLeft: "auto",
                     display: "flex",
-                    gap: 12,
+                    flexWrap: "wrap", // RESPONSIVE FIX
+                    gap: 16,
                     alignItems: "center",
                     color: "#6c757d",
                   }}
                 >
-                  <div style={{ fontSize: 13 }}>
-                    {user?.first_name
-                      ? `Welcome, ${user.first_name}`
-                      : "Welcome"}
+                  <div style={{ fontSize: 20, fontWeight: 500, color: "#0f766e" }}>
+                    {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
                   </div>
 
                   <button
-                    className="btn"
                     onClick={handleRefresh}
                     disabled={refreshing}
                     style={{
-                      padding: "6px 10px",
-                      borderRadius: 6,
+                      fontSize: 20,
+                      padding: "8px 16px",
+                      borderRadius: 10,
+                      backgroundColor: "#EB5B00",
+                      color: "#ffffff",
+                      fontWeight: 600,
+                      cursor: "pointer",
+                      transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                      boxShadow: "0 6px 14px #ede9fe",
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.transform = "rotate(-3deg) translateY(3px)";
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.transform = "rotate(0deg) translateY(0px)";
                     }}
                   >
                     {refreshing
@@ -322,18 +378,19 @@ export default function BmmuTmsDashboard() {
               {/* KPI CARDS */}
               <div
                 style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(180px, 1fr))",
-                  gap: 12,
-                  marginBottom: 18,
+                  display: 'flex',
+                  gap: 16,
+                  marginBottom: 24,
+                  flexWrap: "wrap",
+
                 }}
               >
                 {/* Beneficiaries */}
-                <div style={cardStyle}>
-                  <div style={{ fontSize: 28, fontWeight: 700 }}>
+                <div style={cardStyleTeal}>
+                  <div style={{ fontSize: 30, fontWeight: 700, color: '#111827' }}>
                     {animBeneficiaries}
                   </div>
-                  <div style={{ marginTop: 6, fontWeight: 700 }}>
+                  <div style={{ marginTop: 8, fontWeight: 700, color: "#3d6ba6" }}>
                     Beneficiaries trained
                   </div>
                   <div style={small}>
@@ -342,22 +399,24 @@ export default function BmmuTmsDashboard() {
                 </div>
 
                 {/* Trainers */}
-                <div style={cardStyle}>
-                  <div style={{ fontSize: 28, fontWeight: 700 }}>
+                <div style={cardStyleAmber}>
+                  <div style={{ fontSize: 30, fontWeight: 700, color: '#111827' }}>
                     {animTrainers}
                   </div>
-                  <div style={{ marginTop: 6, fontWeight: 700 }}>
+                  <div style={{ marginTop: 8, fontWeight: 700, color: "#3d6ba6" }}>
                     Trainers trained
                   </div>
-                  <div style={small}>Total trainers trained in your block</div>
+                  <div style={small}>
+                    Total trainers trained in your block
+                  </div>
                 </div>
 
                 {/* Trainings */}
-                <div style={cardStyle}>
-                  <div style={{ fontSize: 28, fontWeight: 700 }}>
+                <div style={cardStyleRose}>
+                  <div style={{ fontSize: 30, fontWeight: 700, color: '#111827' }}>
                     {animTrainings}
                   </div>
-                  <div style={{ marginTop: 6, fontWeight: 700 }}>
+                  <div style={{ marginTop: 8, fontWeight: 700, color: "#3d6ba6" }}>
                     Trainings (your block)
                   </div>
                   <div style={small}>
@@ -366,81 +425,117 @@ export default function BmmuTmsDashboard() {
                 </div>
               </div>
 
-              {/* QUICK ACTIONS + NOTES */}
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "1fr 420px",
-                  gap: 20,
-                }}
-              >
+              {/* TRAINING THEME CHART */}
+              <div style={{
+                display: "flex",
+                gap: 20,
+                flexWrap: "wrap",
+              }}>
+                <div style={{ flex: "2 1 500px" }}>
+                  <TrainingThemeChart />
+                </div>
+
+                {/* QUICK ACTIONS + NOTES */}
+
+
+                {/* Quick Actions Card */}
                 <div
                   style={{
                     background: "#fff",
-                    borderRadius: 8,
+                    borderRadius: 12,
                     padding: 16,
-                    boxShadow: "0 1px 0 rgba(0,0,0,0.03)",
+                    border: "3px solid #3d6ba6", // Rose-900 border
+                    boxShadow: "0 2px 2px #a7c6ed",
+                    display: "flex",
+                    flexDirection: "column",
+                    gap: 16,
+                    flex: "1 1 280px", // RESPONSIVE FIX
                   }}
                 >
-                  <h3 style={{ marginTop: 0 }}>Quick Actions</h3>
+                  <h3 style={{ marginTop: 0, color: '#111827' }}>Quick Actions</h3>
 
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                  <div style={{ display: "flex", flexDirection: "column", gap: 12, flexWrap: "wrap", alignItems: "center", }}>
                     <button
                       onClick={() => navigate("/tms/create-training-request")}
+                      onMouseEnter={() => setHover("create")}
+                      onMouseLeave={() => setHover(null)}
                       className="btn"
                       style={{
-                        background: "#0b2540",
+                        background: "linear-gradient(90deg, #5a8cc2, #3d6ba6)",
                         color: "#fff",
-                        padding: "8px 12px",
-                        borderRadius: 6,
+                        borderRadius: 12,
+                        width: "100%", // RESPONSIVE FIX
+                        padding: "24px",
+                        border: "none",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        cursor: "pointer",
+                        transform: hover === "create" ? "translateY(-6px)" : "translateY(0)",
+                        transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                        boxShadow: hover === "create" ? "0 10px 18px rgba(0,0,0,0.15)" : "none"
                       }}
                     >
                       Create New Training Request
                     </button>
-
                     <button
                       onClick={() => navigate("/tms/training-requests")}
+                      onMouseEnter={() => setHover("view")}
+                      onMouseLeave={() => setHover(null)}
                       className="btn"
-                      style={{ padding: "8px 12px", borderRadius: 6 }}
+                      style={{
+                        background: "linear-gradient(90deg, #5a8cc2, #a7c6ed)",
+                        color: "#fff",
+                        padding: "24px",
+                        borderRadius: 12,
+                        width: "100%", // RESPONSIVE FIX
+                        border: "none",
+                        fontWeight: 600,
+                        textAlign: "center",
+                        cursor: "pointer",
+                        transform: hover === "view" ? "translateY(-6px)" : "translateY(0)",
+                        transition: "transform 0.25s ease, box-shadow 0.25s ease",
+                        boxShadow: hover === "view" ? "0 10px 18px rgba(0,0,0,0.15)" : "none"
+                      }}
                     >
                       View All Training Requests
                     </button>
-
-                    {/* <button
-                      onClick={() => navigate("/tms/bmmu/create-training-plan")}
-                      className="btn"
-                      style={{ padding: "8px 12px", borderRadius: 6 }}
-                    >
-                      Propose Training Plan
-                    </button> */}
                   </div>
 
-                  <div style={{ marginTop: 16 }}>
-                    <h4 style={{ margin: "8px 0" }}>Info</h4>
-                    <div style={small}>Block: {blockId ?? "—"}</div>
+                  <div style={{ marginTop: 8 }}>
+                    <h4 style={{ margin: "8px 0", color: "#ff8c00" }}>Info</h4>
+                    <div style={{ fontSize: 14, color: "#555" }}>
+                      Block: {blockId ?? "—"}
+                    </div>
                   </div>
                 </div>
 
+                {/* Notes Card */}
                 <aside
                   style={{
-                    background: "#fff",
-                    borderRadius: 8,
+                    background: "linear-gradient(90deg,	#a7c6ed, #5a8cc2 )",
+                    borderRadius: 12,
                     padding: 16,
-                    boxShadow: "0 1px 0 rgba(0,0,0,0.03)",
+                    color: "#fff",
+                    border: "3px solid #3d6ba6", // Rose-900 border
+                    boxShadow: "0 2px 2px #a7c6ed",
+                    gap: 8,
+                    flex: "1 1 260px", // RESPONSIVE FIX
                   }}
+
                 >
-                  <h4 style={{ marginTop: 0 }}>Notes</h4>
-                  <div style={small}>
-                    This dashboard uses block-scoped analytics based on your
-                    geoscope. If block is missing, fallback uses created_by
-                    scoping.
+                  <h4 style={{ marginTop: 0, color: '#111827' }}>Notes</h4>
+                  <div style={{ fontSize: 14 }}>
+                    This dashboard uses block-scoped analytics based on your geoscope.
+                    If block is missing, fallback uses created_by scoping.
                   </div>
                 </aside>
+
               </div>
             </div>
           </main>
         </div>
       </div>
+
     </>
   );
 }

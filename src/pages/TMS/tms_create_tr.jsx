@@ -78,7 +78,7 @@ function resolveFinalDistrict({
           district = isNaN(Number(d)) ? d : Number(d);
           setDistrictId?.(district);
         }
-      } catch {}
+      } catch { }
     }
     return district;
   })();
@@ -1266,7 +1266,7 @@ export default function CreateTrainingRequest() {
       null;
 
     const payload = {
-      training_plan: selectedPlan?.id ?? null,
+      training_plan: selectedPlan?.training_name ?? null,
       partner: form.partner ? Number(form.partner) : null,
       training_type: form.training_type,
       level: form.level,
@@ -1969,9 +1969,9 @@ export default function CreateTrainingRequest() {
                                     const already = selectedBeneficiaries.some(
                                       (p) =>
                                         String(p.lokos_member_code) ===
-                                          String(lokos_member_code) &&
+                                        String(lokos_member_code) &&
                                         String(p.lokos_shg_code) ===
-                                          String(lokos_shg_code),
+                                        String(lokos_shg_code),
                                     );
                                     if (already) return;
 
@@ -2321,7 +2321,7 @@ export default function CreateTrainingRequest() {
               Review payload below. Confirm to submit.
             </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
+            {/* <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <h4>Request payload</h4>
                 <pre
@@ -2334,7 +2334,71 @@ export default function CreateTrainingRequest() {
                 >
                   {JSON.stringify(buildPreviewPayload(), null, 2)}
                 </pre>
+              </div> */}
+
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <h4>Details</h4>
+
+                <div
+                  style={{
+                    background: "#f7fafc",
+                    padding: 14,
+                    borderRadius: 6,
+                    fontSize: 14,
+                  }}
+                >
+                  {Object.entries(buildPreviewPayload() || {})
+                    .filter(
+                      ([key]) =>
+                        key !== "block" &&
+                        key !== "created_by" &&
+                        key !== "district"
+                    )
+                    .map(([key, value]) => {
+
+                      // Training Plan Name
+                      if (key === "training_plan") {
+                        value =
+                          selectedPlan?.training_name ||
+                          selectedPlan?.name ||
+                          selectedPlan?.title ||
+                          "-";
+                      }
+
+                      // Partner Name
+                      if (key === "partner") {
+                        const partnerObj = Array.isArray(partners)
+                          ? partners.find((p) => p.id === Number(form.partner))
+                          : null;
+
+                        value = partnerObj?.name || value || "-";
+                      }
+
+                      return (
+                        <div
+                          key={key}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "200px 1fr",
+                            padding: "6px 0",
+                            borderBottom: "1px solid #e5e7eb",
+                          }}
+                        >
+                          <div style={{ fontWeight: 600 }}>
+                            {key
+                              .replaceAll("_", " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </div>
+
+                          <div>{value ?? "-"}</div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
+
+
 
               <div style={{ width: 360 }}>
                 <h4>Participants</h4>
@@ -2418,174 +2482,181 @@ export default function CreateTrainingRequest() {
             </div>
           </div>
         </div>
-      )}
+      )
+      }
 
       {/* After submission summary modal (if needed) */}
-      {submitSummary && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9998,
-          }}
-        >
+      {
+        submitSummary && (
           <div
             style={{
-              width: 760,
-              background: "#fff",
-              borderRadius: 8,
-              padding: 18,
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9998,
             }}
           >
-            <h3>Submission Result</h3>
-            <div style={{ marginBottom: 8 }}>
-              {submitSummary.trId ? (
-                <div>
-                  Training Request created:{" "}
-                  <strong>{submitSummary.trId}</strong>
-                </div>
-              ) : (
-                <div style={{ color: "#b03a2e" }}>
-                  Failed to create training request
+            <div
+              style={{
+                width: 760,
+                background: "#fff",
+                borderRadius: 8,
+                padding: 18,
+              }}
+            >
+              <h3>Submission Result</h3>
+              <div style={{ marginBottom: 8 }}>
+                {submitSummary.trId ? (
+                  <div>
+                    Training Request created:{" "}
+                    <strong>{submitSummary.trId}</strong>
+                  </div>
+                ) : (
+                  <div style={{ color: "#b03a2e" }}>
+                    Failed to create training request
+                  </div>
+                )}
+              </div>
+
+              <div>
+                Child rows succeeded: {submitSummary.successes?.length ?? 0}
+              </div>
+              <div>Child rows failed: {submitSummary.failures?.length ?? 0}</div>
+
+              {submitSummary.failures?.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <h4>Errors</h4>
+                  <div
+                    style={{
+                      maxHeight: 260,
+                      overflow: "auto",
+                      border: "1px solid #f1f3f5",
+                      padding: 8,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <ul>
+                      {submitSummary.failures.map((f, i) => (
+                        <li key={i}>
+                          <strong>{f.type}</strong>:{" "}
+                          {f.error || JSON.stringify(f.row)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
               )}
-            </div>
 
-            <div>
-              Child rows succeeded: {submitSummary.successes?.length ?? 0}
-            </div>
-            <div>Child rows failed: {submitSummary.failures?.length ?? 0}</div>
-
-            {submitSummary.failures?.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <h4>Errors</h4>
-                <div
-                  style={{
-                    maxHeight: 260,
-                    overflow: "auto",
-                    border: "1px solid #f1f3f5",
-                    padding: 8,
-                    borderRadius: 6,
-                  }}
-                >
-                  <ul>
-                    {submitSummary.failures.map((f, i) => (
-                      <li key={i}>
-                        <strong>{f.type}</strong>:{" "}
-                        {f.error || JSON.stringify(f.row)}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              </div>
-            )}
-
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                justifyContent: "flex-end",
-                marginTop: 12,
-              }}
-            >
-              <button
-                className="btn btn-outline"
-                onClick={() => setSubmitSummary(null)}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                  marginTop: 12,
+                }}
               >
-                Close
-              </button>
-              <button className="btn" onClick={() => setSubmitSummary(null)}>
-                OK
-              </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setSubmitSummary(null)}
+                >
+                  Close
+                </button>
+                <button className="btn" onClick={() => setSubmitSummary(null)}>
+                  OK
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* ---------- Preload modal ---------- */}
-      {preloading && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 99999,
-          }}
-        >
+      {
+        preloading && (
           <div
             style={{
-              width: 520,
-              background: "#fff",
-              borderRadius: 8,
-              padding: 18,
-              textAlign: "center",
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 99999,
             }}
           >
-            <h3 style={{ marginTop: 0 }}>Loading data…</h3>
-            <p style={{ color: "#6c757d" }}>
-              Preparing training plans and themes. Master trainers and partners
-              are loaded only when needed.
-            </p>
-            <div style={{ marginTop: 12 }}>
-              <div className="table-spinner" style={{ padding: 12 }}>
-                Loading…
-              </div>
-            </div>
             <div
               style={{
-                marginTop: 12,
-                display: "flex",
-                justifyContent: "center",
-                gap: 8,
+                width: 520,
+                background: "#fff",
+                borderRadius: 8,
+                padding: 18,
+                textAlign: "center",
               }}
             >
-              <button
-                className="btn btn-outline"
-                onClick={() => setPreloading(false)}
+              <h3 style={{ marginTop: 0 }}>Loading data…</h3>
+              <p style={{ color: "#6c757d" }}>
+                Preparing training plans and themes. Master trainers and partners
+                are loaded only when needed.
+              </p>
+              <div style={{ marginTop: 12 }}>
+                <div className="table-spinner" style={{ padding: 12 }}>
+                  Loading…
+                </div>
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
               >
-                Cancel
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setPreloading(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )
+      }
+
+      {/* If there were non-fatal preload errors, show a dismissible notice */}
+      {
+        !preloading && preloadErrors?.length > 0 && (
+          <div
+            style={{
+              position: "fixed",
+              right: 12,
+              bottom: 12,
+              zIndex: 99999,
+              background: "#fff4e5",
+              border: "1px solid #ffd8a8",
+              padding: 12,
+              borderRadius: 8,
+              maxWidth: 420,
+            }}
+          >
+            <strong>Some data failed to load</strong>
+            <div style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}>
+              {preloadErrors.join(", ")}
+            </div>
+            <div style={{ marginTop: 8, textAlign: "right" }}>
+              <button
+                className="btn-sm btn-flat"
+                onClick={() => setPreloadErrors([])}
+              >
+                Dismiss
               </button>
             </div>
           </div>
-        </div>
-      )}
-
-      {/* If there were non-fatal preload errors, show a dismissible notice */}
-      {!preloading && preloadErrors?.length > 0 && (
-        <div
-          style={{
-            position: "fixed",
-            right: 12,
-            bottom: 12,
-            zIndex: 99999,
-            background: "#fff4e5",
-            border: "1px solid #ffd8a8",
-            padding: 12,
-            borderRadius: 8,
-            maxWidth: 420,
-          }}
-        >
-          <strong>Some data failed to load</strong>
-          <div style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}>
-            {preloadErrors.join(", ")}
-          </div>
-          <div style={{ marginTop: 8, textAlign: "right" }}>
-            <button
-              className="btn-sm btn-flat"
-              onClick={() => setPreloadErrors([])}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Small style to hide the last column (View Detail / Action) only inside MemberListArea wrapper */}
       <style>{`
@@ -2596,7 +2667,7 @@ export default function CreateTrainingRequest() {
           display: none;
         }
       `}</style>
-    </div>
+    </div >
   );
 }
 

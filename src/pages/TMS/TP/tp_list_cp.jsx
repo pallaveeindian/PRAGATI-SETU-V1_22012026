@@ -61,7 +61,7 @@ function CPViewModal({ open, cp, onClose }) {
   if (!open || !cp) return null;
 
   return (
-    <div className="modal-backdrop">
+    <div className="modal-backdrop-tp-cp ">
       <div className="modal-card" style={{ maxWidth: 900 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <h3>Contact Person Details</h3>
@@ -203,6 +203,7 @@ export default function TpListCP() {
   }
 
   return (
+
     <div className="app-shell">
       <LeftNav
         collapsed={navCollapsed}
@@ -212,82 +213,85 @@ export default function TpListCP() {
         <TopNav
           left={<div className="app-title">Pragati Setu — Contact Persons</div>}
         />
+        <div className="app-shell-TP-CP">
 
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div style={{ display: "flex", marginBottom: 12 }}>
-              <h2 style={{ margin: 0 }}>Contact Persons</h2>
 
-              <button
-                className="btn btn-primary"
-                style={{ marginLeft: "auto" }}
-                onClick={() => navigate("/tms/tp/cp/create")}
-              >
-                + Create Contact Person
-              </button>
-            </div>
+          <main style={{ padding: 18 }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              <div style={{ display: "flex", marginBottom: 12 }}>
+                <h2 style={{ margin: 0 }}>Contact Persons</h2>
 
-            <table className="table table-compact">
-              <thead>
-                <tr>
-                  <th>S.No</th>
-                  <th>Name</th>
-                  <th>Mobile</th>
-                  <th>User ID</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
+                <button
+                  className="btn btn-primary"
+                  style={{ marginLeft: "auto" }}
+                  onClick={() => navigate("/tms/tp/cp/create")}
+                >
+                  + Create Contact Person
+                </button>
+              </div>
+
+              <table className="table table-compact">
+                <thead>
                   <tr>
-                    <td colSpan={5}>Loading…</td>
+                    <th>S.No</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                    <th>User ID</th>
+                    <th />
                   </tr>
-                ) : cps.length === 0 ? (
-                  <tr>
-                    <td colSpan={5}>No contact persons found</td>
-                  </tr>
-                ) : (
-                  cps.map((cp, i) => (
-                    <tr key={cp.id}>
-                      <td>{i + 1}</td>
-                      <td>{cp.name}</td>
-                      <td>{cp.mobile_number || "-"}</td>
-                      <td>{cp.master_user || "-"}</td>
-                      <td>
-                        <button
-                          className="btn-sm btn-flat"
-                          onClick={() => setViewCp(cp)}
-                        >
-                          View
-                        </button>{" "}
-                        <button
-                          className="btn-sm btn-flat"
-                          onClick={() => navigate(`/tms/tp/cp/edit/${cp.id}`)}
-                        >
-                          Edit
-                        </button>{" "}
-                        <button
-                          className="btn-sm btn-danger"
-                          disabled={deletingId === cp.id}
-                          onClick={() => handleDelete(cp)}
-                        >
-                          {deletingId === cp.id ? "Deleting…" : "Delete"}
-                        </button>
-                      </td>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5}>Loading…</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </main>
-      </div>
+                  ) : cps.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No contact persons found</td>
+                    </tr>
+                  ) : (
+                    cps.map((cp, i) => (
+                      <tr key={cp.id}>
+                        <td>{i + 1}</td>
+                        <td>{cp.name}</td>
+                        <td>{cp.mobile_number || "-"}</td>
+                        <td>{cp.master_user || "-"}</td>
+                        <td>
+                          <button
+                            className="btn-sm btn-flat"
+                            onClick={() => setViewCp(cp)}
+                          >
+                            View
+                          </button>{" "}
+                          <button
+                            className="btn-sm btn-flat"
+                            onClick={() => navigate(`/tms/tp/cp/edit/${cp.id}`)}
+                          >
+                            Edit
+                          </button>{" "}
+                          <button
+                            className="btn-sm btn-danger"
+                            disabled={deletingId === cp.id}
+                            onClick={() => handleDelete(cp)}
+                          >
+                            {deletingId === cp.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </main>
+        </div>
 
-      <CPViewModal
-        open={!!viewCp}
-        cp={viewCp}
-        onClose={() => setViewCp(null)}
-      />
+        <CPViewModal
+          open={!!viewCp}
+          cp={viewCp}
+          onClose={() => setViewCp(null)}
+        />
+      </div>
     </div>
   );
 }
