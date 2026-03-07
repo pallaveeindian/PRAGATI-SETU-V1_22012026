@@ -80,7 +80,11 @@ const GENERAL_ROLE_KEYS = new Set([
 const schema = yup.object({
   module: yup.string().required(),
   userType: yup.string().required("Select user type"),
-  role: yup.string().required("Select role"),
+  role: yup.string().when("userType", {
+    is: "CRP-EP Mapping",
+    then: (s) => s.notRequired(),
+    otherwise: (s) => s.required("Select role"),
+  }),
   username: yup.string().required("Enter username"),
   password: yup.string().required("Enter password"),
 });
@@ -259,10 +263,27 @@ export default function Login() {
               />{" "}
               General
             </label>
+            <label>
+              <input
+                type="radio"
+                value="CRP-EP Mapping"
+                {...register("userType")}
+                onChange={() => {
+                  setUserType("CRP-EP Mapping");
+                  setRole("");
+                }}
+              />{" "}
+              CRP-EP Mapping
+            </label>
           </div>
 
           <label className="block-label">Role</label>
-          <RoleSelector userType={userType} value={role} onChange={setRole} />
+          <RoleSelector
+            userType={userType}
+            value={role}
+            onChange={setRole}
+            disabled={userType === "CRP-EP Mapping"}
+          />
 
           <label className="block-label">Username</label>
           <input className="form-input" {...register("username")} />

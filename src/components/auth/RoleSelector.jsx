@@ -16,10 +16,15 @@ export default function RoleSelector({
   userType = "Admin",
   value = "",
   onChange = () => {},
+  disabled = false,
 }) {
   const roles = userType === "Admin" ? ADMIN_ROLES : GENERAL_ROLES;
   return (
-    <select value={value} onChange={(e) => onChange(e.target.value)}>
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      disabled={disabled}
+    >
       <option value="">Select role</option>
       {roles.map((r) => (
         <option key={r.id} value={r.id}>
