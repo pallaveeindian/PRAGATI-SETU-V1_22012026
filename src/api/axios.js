@@ -272,6 +272,7 @@ export const LOOKUP_API = {
   villages: makeCrud("/lookups/villages/"),
   village_detail: makeCrud("/lookups/villages/detail/"),
   users: makeCrud("/lookups/users/"),
+  createUser: makeCrud("/lookups/users/create"),
 
   // SHG / VO / CLF master lists (DB backed)
   clfList: makeCrud("/lookups/clf-list/"),
@@ -417,16 +418,17 @@ export const LOOKUP_API = {
 export const EPSAKHI_API = {
   // CRP master + mapping
   crp: makeCrud("/epsakhi/crp/"),
-  crpPanchayatMap: makeCrud("/epsakhi/crp-panchayat-mapping/"),
+  crpPanchayatMap: makeCrud("/epsakhi/crud-panchayats-under-crp/"),
 
   // ------------------------
   // CRP-EP Form Views
   // ------------------------
 
-  // CRP → Panchayats linkage  
-  crpPanchayatBulk: (data) =>
-    api.post("/epsakhi/crp-panchayat-bulk/", data),
+  // CRP → Panchayats linkage
+  crpPanchayatBulk: (data) => api.post("/epsakhi/crp-panchayat-bulk/", data),
 
+  // CRP List with panchayats
+  crpPanchList: (params) => api.get(`/epsakhi/crp-panch-list/`, { params }),
   // UPSRLM SHG wrappers used by app (epSakhi views wrapping core UPSRLM)
   // GET /epsakhi/upsrlm-shg-list/<block_id>/
   upsrlmShgList: (blockId, params) =>

@@ -1,0 +1,295 @@
+import React, { useEffect, useState } from "react";
+import { EPSAKHI_API } from "../../../../api/axios";
+import {
+  FaUser,
+  FaPhone,
+  FaMapMarkedAlt,
+  FaMap,
+  FaLocationArrow,
+  FaSpinner,
+  FaMapMarkerAlt,
+} from "react-icons/fa";
+
+export default function CRPTable({ filters }) {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+
+      try {
+        const res = await EPSAKHI_API.crpPanchList({
+          ...filters,
+          page_size: 1000,
+        });
+
+        setData(res.data?.results || []);
+      } catch (err) {
+        console.error(err);
+      }
+
+      setLoading(false);
+    }
+
+    load();
+  }, [filters]);
+
+  return (
+    <div className="crp-table-wrapper">
+      {/* LOADER */}
+
+      {loading && (
+        <div className="table-loader">
+          <FaSpinner className="spin" /> Loading CRPs...
+        </div>
+      )}
+
+      {!loading && data.length === 0 && (
+        <div className="table-empty">
+          <FaMapMarkerAlt />
+          No CRPs found for selected filters
+        </div>
+      )}
+
+      {!loading && data.length > 0 && (
+        <table className="crp-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>
+                <FaUser /> Name
+              </th>
+              <th>
+                <FaPhone /> Mobile
+              </th>
+              <th>
+                <FaMapMarkedAlt /> District
+              </th>
+              <th>
+                <FaMap /> Block
+              </th>
+              <th>
+                <FaLocationArrow /> Panchayat
+              </th>
+              <th>
+                <FaMapMarkerAlt /> Allocated Panchayats
+              </th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {data.map((crp, index) => {
+              const allocated = crp.allocated_panchayats || [];
+
+              return (
+                <tr key={crp.id}>
+                  <td data-label="S.No">{index + 1}</td>
+
+                  <td data-label="Name">{crp.name}</td>
+
+                  <td data-label="Mobile">{crp.mobile_number}</td>
+
+                  <td data-label="District">{crp.district_name_en}</td>
+
+                  <td data-label="Block">{crp.block_name_en}</td>
+
+                  <td data-label="Panchayat">{crp.panchayat_name_en}</td>
+
+                  <td data-label="Allocated Panchayats">
+                    <div className="panch-badges">
+                      {allocated.map((p) => (
+                        <span key={p.panchayat_id} className="panch-badge">
+                          {p.panchayat_name_en}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+
+      <style>{`
+
+      .crp-table-wrapper{
+        width:100%;
+        overflow-x:auto;
+        animation:fadeIn .35s ease;
+      }
+
+
+      /* TABLE */
+
+      .crp-table{
+        width:100%;
+        border-collapse:collapse;
+        font-size:14px;
+        min-width:900px;
+      }
+
+      .crp-table thead{
+        background:var(--epsms-red);
+        color:white;
+      }
+
+      .crp-table th{
+
+        padding:10px;
+        text-align:left;
+        font-weight:600;
+        white-space:nowrap;
+        background:var(--epsms-white);
+        color:var(--epsms-red);
+      }
+
+      .crp-table td{
+        padding:10px;
+        border-bottom:1px solid var(--epsms-muted);
+        vertical-align:top;
+      }
+
+      .crp-table tbody tr{
+        transition:.25s ease;
+      }
+
+      .crp-table tbody tr:hover{
+        background:#fff7f5;
+      }
+
+
+      /* ICONS */
+
+      .cell-icon{
+        margin-right:6px;
+        color:var(--epsms-red);
+      }
+
+
+      /* PANCHAYAT BADGES */
+
+      .panch-badges{
+        display:flex;
+        flex-wrap:wrap;
+        gap:6px;
+      }
+
+      .panch-badge{
+        background:var(--epsms-green);
+        color:white;
+        padding:4px 8px;
+        border-radius:20px;
+        font-size:12px;
+        white-space:nowrap;
+        animation:badgePop .25s ease;
+      }
+
+
+      /* LOADER */
+
+      .table-loader{
+
+        display:flex;
+        align-items:center;
+        gap:10px;
+        color:var(--epsms-text-muted);
+        padding:20px;
+
+      }
+
+
+      /* EMPTY */
+
+      .table-empty{
+
+        display:flex;
+        align-items:center;
+        gap:10px;
+        padding:20px;
+        color:var(--epsms-text-muted);
+
+      }
+
+
+      /* SPIN */
+
+      .spin{
+        animation:spin 1s linear infinite;
+      }
+
+      @keyframes spin{
+        from{transform:rotate(0)}
+        to{transform:rotate(360deg)}
+      }
+
+
+      /* BADGE POP */
+
+      @keyframes badgePop{
+        from{
+          opacity:0;
+          transform:scale(.8);
+        }
+        to{
+          opacity:1;
+          transform:scale(1);
+        }
+      }
+
+
+      /* MOBILE CARD MODE */
+
+      @media(max-width:768px){
+
+        .crp-table{
+          border:0;
+          min-width:100%;
+        }
+
+        .crp-table thead{
+          display:none;
+        }
+
+        .crp-table tr{
+          display:block;
+          margin-bottom:14px;
+          border:1px solid var(--epsms-muted);
+          border-radius:8px;
+          padding:10px;
+        }
+
+        .crp-table td{
+          display:flex;
+          justify-content:space-between;
+          padding:6px 0;
+          border:none;
+        }
+
+        .crp-table td::before{
+          content:attr(data-label);
+          font-weight:600;
+          color:var(--epsms-text-dark);
+        }
+
+      }
+
+
+      /* ANIMATION */
+
+      @keyframes fadeIn{
+        from{
+          opacity:0;
+          transform:translateY(6px);
+        }
+        to{
+          opacity:1;
+          transform:translateY(0);
+        }
+      }
+
+      `}</style>
+    </div>
+  );
+}

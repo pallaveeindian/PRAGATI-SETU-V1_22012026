@@ -1,12 +1,12 @@
 // src/pages/ViewRecordedCRPs/ViewRecCRPs.jsx
 import React, { useState } from "react";
-// import CRPFilters from "./VRCComponents/CRPFilters";
-// import CRPTable from "./VRCComponents/CRPTable";
+import CRPFilters from "./VRCComponents/CRPFilters";
+import CRPTable from "./VRCComponents/CRPTable";
 // import ExportButton from "./VRCComponents/ExportButton";
 import { FaFilter, FaTable } from "react-icons/fa";
 
 export default function ViewRecCRPs() {
-//   const [filters, setFilters] = React.useState({});
+  const [filters, setFilters] = React.useState({});
 
   return (
     <div className="crpform-epsms-dashboard">
@@ -17,7 +17,7 @@ export default function ViewRecCRPs() {
             <FaFilter className="epsms-icon" /> Filters / Constraints
           </h3>
 
-          {/* <CRPFilters onFetch={setFilters} /> */}
+          <CRPFilters onFetch={setFilters} />
         </div>
       </div>
 
@@ -28,7 +28,7 @@ export default function ViewRecCRPs() {
             <FaTable className="epsms-icon" /> CRP Table
           </h3>
 
-          {/* <CRPTable filters={filters} /> */}
+          <CRPTable filters={filters} />
         </div>
 
         {/* Export */}
