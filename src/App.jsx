@@ -76,6 +76,8 @@ import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
 
 // EPSMS Screens
 import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
+import CRPForm from "./pages/EPSMS/RecordForm/CRPForm";
+import ViewRecCRPs from "./pages/EPSMS/ViewRecordedCRPs/ViewRecCRPs";
 
 // tiny placeholder landing for /tms
 function TmsLanding() {
@@ -300,8 +302,14 @@ export default function App() {
       </Route>
 
       {/* ------ EPSMS Routes ------ */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/epsms" element={<EpsmsLayout />}></Route>
+      <Route element={<ProtectedRoute allowedRoles={["crp_record"]} />}>
+        <Route path="/epsms" element={<EpsmsLayout />}>
+          {/* CRP Form */}
+          <Route path="crp-form" element={<CRPForm />} />
+
+          {/* View Recorded CRPs */}
+          <Route path="recorded-crps" element={<ViewRecCRPs />} />
+        </Route>
       </Route>
       {/* 404 */}
       <Route path="*" element={<div>404</div>} />

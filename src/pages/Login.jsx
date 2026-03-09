@@ -43,6 +43,11 @@ const ROLE_LDMS_ROUTE = {
   default: "/ldms",
 };
 
+const ROLE_EPSMS_ROUTE = {
+  crp_record: "/epsms/crp-form/",
+  default: "/epsms",
+};
+
 /* -------------------------------------------------
    ROLE ID MAP
 -------------------------------------------------- */
@@ -58,6 +63,7 @@ const ROLE_ID_TO_KEY = {
   9: "pmu_admin",
   10: "dcnrlm",
   11: "tp_contact_person",
+  12: "crp_record",  
 };
 
 const ADMIN_ROLE_KEYS = new Set([
@@ -152,6 +158,12 @@ export default function Login() {
     setFailedAttempts(0);
     const backendUser = getUser();
     const backendRoleKey = ROLE_ID_TO_KEY[Number(backendUser.role_id)];
+
+    /* ---- BYPASS FOR CRP-EP FORM ---- */
+    if (data.userType === "CRP-EP Mapping") {
+      navigate(ROLE_EPSMS_ROUTE.crp_record, { replace: true });
+      return;
+    }    
 
     if (backendRoleKey !== data.role) {
       alert("Role mismatch");

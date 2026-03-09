@@ -1,23 +1,50 @@
 // src/pages/EPSMS/RecordForm/CRPForm.jsx
-import React from "react";
-// import GeoFilters from "./FormComponents/GeoFilters";
-// import SHGListMem from "./FormComponents/SHGListMem";
-// import AssignedCRPs from "./FormComponents/AssignedCRPs";
+import React , {useState} from "react";
+import GeoFilters from "./FormComponents/GeoFilters";
+import SHGList from "./FormComponents/SHGList";
+import AssignedCRPs from "./FormComponents/AssignedCRPs";
 // import PanchayatsList from "./FormComponents/PanchayatsList";
 
-export default function MeetingsList() {
+export default function CRPForm() {
+  const [geoFilters, setGeoFilters] = useState({
+    district_id: null,
+    block_id: null,
+  });
+
   return (
     <div className="crpform-epsms-dashboard">
       {/* Row 1 */}
       <div className="epsms-grid-row one-col">
-        <div className="epsms-card">{/* <GeoFilters /> */}</div>
+        <div className="epsms-card">
+          <GeoFilters onChange={setGeoFilters} />
+        </div>
       </div>
 
       {/* Row 2 */}
       <div className="epsms-grid-row three-col">
-        <div className="epsms-card">{/* <SHGListMem /> */}</div>
-        <div className="epsms-card">{/* <AssignedCRPs /> */}</div>
-        <div className="epsms-card">{/* <PanchayatsList /> */}</div>
+        <div className="epsms-card">
+          <SHGList
+            blockId={geoFilters.block_id}
+            onSelectMember={(memberData) => {
+              console.log("Selected Member:", memberData);
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Row 3 */}
+      <div className="epsms-grid-row one-col">
+        <div className="epsms-card">
+          <AssignedCRPs />
+        </div>
+      </div>
+
+      {/* Row 4 */}
+      <div className="epsms-grid-row one-col">
+        <div className="epsms-card">
+          <h1>Panchayats List</h1>
+          {/* <PanchayatsList /> */}
+          </div>
       </div>
 
       {/* ---- styles ---- */}

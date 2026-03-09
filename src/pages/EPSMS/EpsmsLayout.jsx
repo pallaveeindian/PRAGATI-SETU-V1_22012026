@@ -2,10 +2,10 @@
 import React, { useState } from "react";
 import { Outlet } from "react-router-dom";
 
-// import EpsmsLeftNav from "./Layout/EpsmsLeftnav";
-// import EpsmsHeader from "./Layout/EpsmsHeader";
-// import EpsmsFooter from "./Layout/EpsmsFooter";
-import bgImage from "../../../assets/EPSMS/bg.jpg";
+import EpsmsLeftNav from "./Layout/EpsmsLeftnav";
+import EpsmsHeader from "./Layout/EpsmsHeader";
+import EpsmsFooter from "./Layout/EpsmsFooter";
+import bgImage from "../../assets/EPSMS/rform_bg.jpg";
 
 export default function LdmsLayout() {
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -14,7 +14,7 @@ export default function LdmsLayout() {
   return (
     <div className="epsms-app-shell">
       {/* ---------------- HEADER ---------------- */}
-      {/* <EpsmsHeader onBurgerClick={() => setMobileNavOpen(true)} /> */}
+      <EpsmsHeader onBurgerClick={() => setMobileNavOpen(true)} />
 
       {/* ---------------- BODY ---------------- */}
       <div className="epsms-body">
@@ -27,12 +27,12 @@ export default function LdmsLayout() {
         )}
 
         {/* LEFT NAV */}
-        {/* <EpsmsLeftNav
+        <EpsmsLeftNav
           collapsed={navCollapsed}
           onToggle={() => setNavCollapsed((v) => !v)}
           mobileOpen={mobileNavOpen}
           onCloseMobile={() => setMobileNavOpen(false)}
-        /> */}
+        />
 
         {/* MAIN / HERO */}
         <main className="epsms-main">
@@ -43,7 +43,7 @@ export default function LdmsLayout() {
       </div>
 
       {/* ---------------- FOOTER ---------------- */}
-      {/* <EpsmsFooter /> */}
+      <EpsmsFooter />
 
       {/* ---------------- STYLES ---------------- */}
       <style>{`
@@ -76,7 +76,7 @@ export default function LdmsLayout() {
           flex: 1;
           overflow-y: auto;
           padding: 0;
-          background-image: background-image: url(${bgImage});
+          background-image: url(${bgImage});
           background-repeat: no-repeat;
           background-position: center bottom;
           background-size: cover;

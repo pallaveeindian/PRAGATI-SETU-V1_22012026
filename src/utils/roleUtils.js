@@ -11,6 +11,7 @@ export const ROLE_ID_MAP = {
   9: "pmu_admin",
   10: "dcnrlm",
   11: "tp_contact_person",
+  12: "crp_record",
 };
 
 /**
@@ -49,6 +50,7 @@ export function getCanonicalRole(obj = {}) {
     if (nameStr.includes("crp_ld")) return "crp_ld";
     if (nameStr.includes("state_admin")) return "state_admin";
     if (nameStr.includes("pmu_admin")) return "pmu_admin";
+    if (nameStr.includes("crp_record")) return "crp_record";
   }
 
   // 4) fallback: try geoscope in localStorage
