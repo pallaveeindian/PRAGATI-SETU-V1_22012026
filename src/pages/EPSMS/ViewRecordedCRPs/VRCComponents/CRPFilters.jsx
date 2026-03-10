@@ -97,9 +97,9 @@ export default function CRPFilters({ onFetch }) {
 
   function handleFetch() {
     const filters = {
-      district_id: district || null,
-      block_id: block || null,
-      panchayat_id: panchayat || null,
+      district: district || null,
+      block: block || null,
+      panchayat: panchayat || null,
     };
 
     if (onFetch) onFetch(filters);

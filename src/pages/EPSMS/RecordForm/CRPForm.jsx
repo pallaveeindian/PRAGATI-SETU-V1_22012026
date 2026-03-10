@@ -6,7 +6,7 @@ import api, { LOOKUP_API, EPSAKHI_API } from "../../../api/axios";
 import { AuthContext } from "../../../contexts/AuthContext";
 import {
   FaUser,
-  FaPhone,
+  FaPhoneAlt,
   FaIdCard,
   FaUsers,
   FaLayerGroup,
@@ -21,19 +21,13 @@ import PanchayatsList from "./FormComponents/PanchayatsList";
 
 // Password for CRP Account Validation
 function validatePassword(pass) {
-  if (!pass) return "Password is required";
-
-  if (pass.length < 8) return "Password must be at least 8 characters";
-
-  if (!/[A-Z]/.test(pass)) return "Must contain one uppercase letter";
-
-  if (!/[a-z]/.test(pass)) return "Must contain one lowercase letter";
-
-  if (!/[0-9]/.test(pass)) return "Must contain one number";
-
-  if (!/[!@#$%^&*]/.test(pass)) return "Must contain one special character";
-
-  return "";
+  return {
+    length: pass.length >= 8,
+    upper: /[A-Z]/.test(pass),
+    lower: /[a-z]/.test(pass),
+    number: /[0-9]/.test(pass),
+    special: /[!@#$%^&*]/.test(pass),
+  };
 }
 
 function generateThUrid() {
@@ -57,7 +51,13 @@ export default function CRPForm() {
   const [clf_code, setCLFCode] = useState("");
   const [subcat, setSubCat] = useState("");
   const [mobileInput, setMobileInput] = useState("");
-  const [passwordError, setPasswordError] = useState("");
+  const [passwordRules, setPasswordRules] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    number: false,
+    special: false,
+  });
   const [creating, setCreating] = useState(false);
 
   const [successData, setSuccessData] = useState(null);
@@ -71,10 +71,12 @@ export default function CRPForm() {
   // -------------------------------------------------
   async function handleCreateCRP() {
     if (creating) return;
-    const err = validatePassword(password);
-    setPasswordError(err);
+    const rules = validatePassword(password);
+    setPasswordRules(rules);
 
-    if (err) return;
+    if (!Object.values(rules).every(Boolean)) {
+      return;
+    }
 
     if (!selectedMember) {
       alert("Select a member first");
@@ -172,7 +174,13 @@ export default function CRPForm() {
       setMobileInput("");
       setCLFCode("");
       setSubCat("");
-      setPasswordError("");
+      setPasswordRules({
+        length: false,
+        upper: false,
+        lower: false,
+        number: false,
+        special: false,
+      });
     } catch (err) {
       const apiError =
         err?.response?.data?.detail ||
@@ -239,7 +247,7 @@ export default function CRPForm() {
               </div>
 
               <div className="crp-detail">
-                <FaPhone className="crp-icon" />
+                <FaPhoneAlt className="crp-icon" />
                 <div>
                   <span className="crp-label">Mobile Number</span>
                   <span className="crp-value">
@@ -285,7 +293,7 @@ export default function CRPForm() {
             {selectedMember && !selectedMember.mobile_number && (
               <div className="crp-input-group">
                 <label>
-                  <FaPhone /> Mobile Number
+                  <FaPhoneAlt /> Mobile Number
                 </label>
 
                 <input
@@ -302,7 +310,7 @@ export default function CRPForm() {
             {/* Optional Nodal CLF Code */}
             <div className="crp-input-group">
               <label>
-                <FaBuilding /> Nodal CLF Code (Optional)
+                <FaBuilding /> Nodal CLF Code
               </label>
 
               <input
@@ -316,7 +324,7 @@ export default function CRPForm() {
             {/* Subcategory */}
             <div className="crp-input-group">
               <label>
-                <FaTags /> CRP Subcategory
+                <FaTags /> CRP Subcategory (Optional)
               </label>
               <input
                 type="text"
@@ -335,15 +343,22 @@ export default function CRPForm() {
               type="password"
               value={password}
               onChange={(e) => {
-                setPassword(e.target.value);
-                setPasswordError(validatePassword(e.target.value));
+                const val = e.target.value;
+                setPassword(val);
+                setPasswordRules(validatePassword(val));
               }}
               placeholder="Enter secure password"
               className="password-input"
             />
 
-            {passwordError && (
-              <div className="password-error">{passwordError}</div>
+            {password && (
+              <div className="password-rules">
+                {!passwordRules.length && <div>• At least 8 characters</div>}
+                {!passwordRules.upper && <div>• One uppercase letter</div>}
+                {!passwordRules.lower && <div>• One lowercase letter</div>}
+                {!passwordRules.number && <div>• One number</div>}
+                {!passwordRules.special && <div>• One special character</div>}
+              </div>
             )}
 
             <button
@@ -740,6 +755,14 @@ export default function CRPForm() {
           outline:none;
           border-color:var(--epsms-red);
           box-shadow:0 0 0 2px rgba(201,88,53,.15);
+        }
+
+        .password-rules{
+          font-size:13px;
+          color:#dc2626;
+          display:flex;
+          flex-direction:column;
+          gap:3px;
         }
 
         /* HOVER */

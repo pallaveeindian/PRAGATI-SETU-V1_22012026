@@ -2,7 +2,7 @@ import React, { useEffect, useState } from "react";
 import { EPSAKHI_API } from "../../../../api/axios";
 import {
   FaUser,
-  FaPhone,
+  FaPhoneAlt,
   FaMapMarkedAlt,
   FaMap,
   FaLocationArrow,
@@ -13,10 +13,13 @@ import {
 export default function CRPTable({ filters }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
 
   useEffect(() => {
     async function load() {
       setLoading(true);
+      setCurrentPage(1);
 
       try {
         const res = await EPSAKHI_API.crpPanchList({
@@ -24,7 +27,13 @@ export default function CRPTable({ filters }) {
           page_size: 1000,
         });
 
-        setData(res.data?.results || []);
+        const results = res.data?.results || [];
+
+        results.sort((a, b) =>
+          (a.district_name_en || "").localeCompare(b.district_name_en || ""),
+        );
+
+        setData(results);
       } catch (err) {
         console.error(err);
       }
@@ -34,6 +43,11 @@ export default function CRPTable({ filters }) {
 
     load();
   }, [filters]);
+
+  const totalPages = Math.ceil(data.length / itemsPerPage);
+
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentData = data.slice(startIndex, startIndex + itemsPerPage);
 
   return (
     <div className="crp-table-wrapper">
@@ -61,7 +75,7 @@ export default function CRPTable({ filters }) {
                 <FaUser /> Name
               </th>
               <th>
-                <FaPhone /> Mobile
+                <FaPhoneAlt /> Mobile
               </th>
               <th>
                 <FaMapMarkedAlt /> District
@@ -79,12 +93,12 @@ export default function CRPTable({ filters }) {
           </thead>
 
           <tbody>
-            {data.map((crp, index) => {
+            {currentData.map((crp, index) => {
               const allocated = crp.allocated_panchayats || [];
 
               return (
                 <tr key={crp.id}>
-                  <td data-label="S.No">{index + 1}</td>
+                  <td data-label="S.No">{startIndex + index + 1}</td>
 
                   <td data-label="Name">{crp.name}</td>
 
@@ -111,7 +125,25 @@ export default function CRPTable({ filters }) {
           </tbody>
         </table>
       )}
+      <div className="pagination">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+        >
+          Prev
+        </button>
 
+        <span>
+          Page {currentPage} / {totalPages}
+        </span>
+
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+        >
+          Next
+        </button>
+      </div>
       <style>{`
 
       .crp-table-wrapper{
@@ -287,6 +319,31 @@ export default function CRPTable({ filters }) {
           opacity:1;
           transform:translateY(0);
         }
+      }
+
+      .pagination{
+        display:flex;
+        justify-content:center;
+        align-items:center;
+        gap:12px;
+        margin-top:14px;
+      }
+
+      .pagination button{
+        padding:6px 12px;
+        background:var(--epsms-green);
+        cursor:pointer;
+        font-weight:600;
+      }
+
+      .pagination button:hover{
+        background:var(--epsms-red);
+        color:white;
+      }
+
+      .pagination button:disabled{
+        opacity:.5;
+        cursor:not-allowed;
       }
 
       `}</style>
