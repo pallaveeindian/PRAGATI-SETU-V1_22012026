@@ -7,7 +7,7 @@ import React, {
   useRef,
   useCallback,
 } from "react";
-import TopNav from "./layout/tms_TopNav";
+// import TopNav from "./layout/tms_TopNav";
 import LeftNav from "./layout/tms_LeftNav";
 import { AuthContext } from "../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API, EPSAKHI_API } from "../../api/axios";
@@ -219,7 +219,13 @@ const MasterTrainerList = React.memo(function MasterTrainerList({
             setSearch(e.target.value || "");
             setPage(1);
           }}
-          style={{ width: 180 }}
+          style={{
+            width: 180,
+            border: "2px solid #3d6ba6",
+            borderRadius: 6,
+            outline: "none",
+            padding: 6,
+          }}
         />
         <select
           className="input"
@@ -228,6 +234,7 @@ const MasterTrainerList = React.memo(function MasterTrainerList({
             setDesignation(e.target.value);
             setPage(1);
           }}
+          style={{ outline: "2px solid #3d6ba6" }}
         >
           <option value="">All designations</option>
           <option value="BRP">BRP</option>
@@ -325,6 +332,7 @@ export default function CreateTrainingRequest() {
   const [blockList, setBlockList] = useState([]);
   const [blockLoading, setBlockLoading] = useState(false);
 
+  const [hover, setHover] = useState(null);
   const geoscopeCached = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem(GEOSCOPE_KEY) || "null");
@@ -1266,7 +1274,7 @@ export default function CreateTrainingRequest() {
       null;
 
     const payload = {
-      training_plan: selectedPlan?.id ?? null,
+      training_plan: selectedPlan?.training_name ?? null,
       partner: form.partner ? Number(form.partner) : null,
       training_type: form.training_type,
       level: form.level,
@@ -1478,37 +1486,109 @@ export default function CreateTrainingRequest() {
       `Plan ${selectedPlan.id}`);
 
   /* ---------- render ---------- */
+  const cardStyle = {
+    background: "#fff",
+    padding: 18,
+    borderRadius: 10,
+    border: "2px solid #3d6ba6",
+    boxShadow: "0 4px 10px #a7c6ed",
+  };
+
+  const btnPrimary = {
+    background: "linear-gradient(20deg, #e4ecf5, #5a8cc2)",
+    border: "2px solid #3d6ba6",
+    color: "#111827",
+    fontWeight: 600,
+    padding: "8px 10px",
+    borderRadius: 6,
+    cursor: "pointer",
+    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+  };
+
+  const btnOutline = {
+    background: "#fff",
+    border: "2px solid #3d6ba6",
+    color: "#111827",
+    fontWeight: 600,
+    padding: "8px 14px",
+    borderRadius: 6,
+    cursor: "pointer",
+  };
+
+  const headerGradient = {
+    background: "linear-gradient(90deg, #e4ecf5, #a7c6ed)",
+    padding: "10px 14px",
+    borderRadius: 8,
+    fontWeight: 700,
+    color: "#111827",
+    marginBottom: 12,
+    border: "2px solid #3d6ba6",
+  };
+
+  const stepActive = {
+    background: "linear-gradient(90deg, #e4ecf5, #a7c6ed)",
+    color: "#111827",
+    fontWeight: 700,
+    padding: "8px 12px",
+    borderRadius: 8,
+    cursor: "pointer",
+    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+  };
+
+  const stepInactive = {
+    background: "#f5f7fa",
+    color: "#111827",
+    fontWeight: 600,
+    padding: "8px 12px",
+    borderRadius: 8,
+    cursor: "pointer",
+    border: "2px solid #3d6ba6",
+    transition: "transform 0.25s ease, box-shadow 0.25s ease",
+  };
+
   return (
-    <div className="app-shell">
+    <div style={{ display: "flex", minHeight: "100vh", width: "100%" }}>
       <LeftNav
         collapsed={navCollapsed}
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Create Training Request
             </div>
           }
-        />
+        /> */}
 
         <main style={{ padding: 18 }}>
           <div
-            style={{ maxWidth: 1200, margin: "20px auto", padding: "0 12px" }}
+            style={{
+              width: "100%",
+              margin: "20px 0",
+              padding: "0 12px",
+            }}
           >
             <div
               style={{
                 display: "flex",
-                gap: 12,
+                flexWrap: "wrap",
+                justifyContent: "space-between",
                 alignItems: "center",
-                marginBottom: 12,
+                gap: 16,
+                marginBottom: 24,
+                padding: "24px 28px",
+                width: "100%",
+                boxSizing: "border-box",
               }}
             >
-              <h2 style={{ margin: 0 }}>Create Training Request</h2>
+              <h2 style={{ margin: 0, color: "#0369a1" }}>
+                Create Training Request
+              </h2>
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                 <button
-                  className="btn"
+                  className="btnPrimaryHover"
+                  style={{ ...btnPrimary, color: "#111827" }}
                   onClick={() => {
                     // Clear caches and re-run preload (no page reload)
                     localStorage.removeItem(TRP_SCOPE_CACHE);
@@ -1537,14 +1617,8 @@ export default function CreateTrainingRequest() {
                 <div
                   key={s.id}
                   onClick={() => jumpToStep(s.id)}
-                  style={{
-                    cursor: "pointer",
-                    padding: "8px 12px",
-                    borderRadius: 8,
-                    background: s.id === step ? "#0b2540" : "#f5f7fa",
-                    color: s.id === step ? "#fff" : "#0b2540",
-                    fontWeight: s.id === step ? 700 : 600,
-                  }}
+                  style={s.id === step ? stepActive : stepInactive}
+                  className="btnPrimaryHover"
                 >
                   {s.title}
                 </div>
@@ -1552,18 +1626,19 @@ export default function CreateTrainingRequest() {
             </div>
 
             <div
+              className="training-content"
               style={{
                 display: "grid",
-                gridTemplateColumns: "1fr 420px",
                 gap: 20,
+                width: "100%",
               }}
             >
               {/* LEFT column */}
-              <div style={{ background: "#fff", padding: 16, borderRadius: 8 }}>
+              <div style={cardStyle}>
                 {/* Step content */}
                 {step === 1 && (
                   <>
-                    <h3 style={{ marginTop: 0 }}>1 — Choose Training Plan</h3>
+                    <h3 style={headerGradient}>1 — Choose Training Plan</h3>
                     <div style={{ marginBottom: 12 }}>
                       <label
                         style={{
@@ -1574,8 +1649,8 @@ export default function CreateTrainingRequest() {
                       >
                         Training Plan (allowed for your role)
                       </label>
+
                       <select
-                        className="input"
                         value={selectedPlan?.id || ""}
                         onChange={(e) => {
                           const id = e.target.value;
@@ -1584,8 +1659,20 @@ export default function CreateTrainingRequest() {
                           );
                           handlePlanSelect(pl || null);
                         }}
+                        style={{
+                          width: "100%",
+                          maxWidth: "100%",
+                          padding: "10px",
+                          borderRadius: "6px",
+                          border: "2px solid #3d6ba6",
+                          outline: "none",
+                          fontSize: "14px",
+                          boxSizing: "border-box",
+                          background: "#fff",
+                        }}
                       >
                         <option value="">-- select training plan --</option>
+
                         {plans.map((p) => {
                           const title =
                             p.training_name ||
@@ -1593,6 +1680,7 @@ export default function CreateTrainingRequest() {
                             p.trainingTitle ||
                             p.name ||
                             `Plan ${p.id}`;
+
                           return (
                             <option key={p.id} value={p.id}>
                               {title}{" "}
@@ -1652,7 +1740,8 @@ export default function CreateTrainingRequest() {
 
                     <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                       <button
-                        className="btn"
+                        className="btnPrimaryHover"
+                        style={btnPrimary}
                         onClick={() => goToNext()}
                         disabled={!selectedPlan}
                       >
@@ -1673,22 +1762,24 @@ export default function CreateTrainingRequest() {
                       }}
                     >
                       <div>
-                        <h3 style={{ marginTop: 0 }}>
-                          2 — Select Participants
-                        </h3>
+                        <h3 style={headerGradient}>2 — Select Participants</h3>
                         <div className="muted">
                           Choose beneficiaries (SHGs) or trainers depending on
                           selection.
                         </div>
                       </div>
                       <div>
-                        <button className="btn btn-outline" onClick={goToPrev}>
+                        <button
+                          className="btnPrimaryHover"
+                          style={btnOutline}
+                          onClick={goToPrev}
+                        >
                           Back
                         </button>
                         <button
-                          className="btn"
-                          style={{ marginLeft: 8 }}
+                          style={{ ...btnPrimary, marginLeft: 8 }}
                           onClick={() => goToNext()}
+                          className="btnPrimaryHover"
                         >
                           Next
                         </button>
@@ -1714,6 +1805,7 @@ export default function CreateTrainingRequest() {
                             fetchMasterTrainersByDistrict(true);
                           }
                         }}
+                        style={{ outline: "2px solid #3d6ba6" }}
                       >
                         <option value="BENEFICIARY">Beneficiary</option>
                         <option value="TRAINER">Master Trainer</option>
@@ -1727,6 +1819,7 @@ export default function CreateTrainingRequest() {
                         onChange={(e) =>
                           setForm({ ...form, level: e.target.value })
                         }
+                        style={{ outline: "2px solid #3d6ba6" }}
                       >
                         <option value="BLOCK">Block</option>
                         <option value="DISTRICT">District</option>
@@ -2037,13 +2130,18 @@ export default function CreateTrainingRequest() {
                         </div>
                       </div>
                       <div>
-                        <button className="btn btn-outline" onClick={goToPrev}>
+                        <button
+                          className="btnPrimaryHover"
+                          style={btnPrimary}
+                          onClick={goToPrev}
+                        >
                           Back
                         </button>
                         <button
-                          className="btn"
-                          style={{ marginLeft: 8 }}
+                          // style={btnPrimary}
+                          style={{ ...btnPrimary, marginLeft: 8 }}
                           onClick={openPreview}
+                          className="btnPrimaryHover"
                         >
                           Preview & Confirm
                         </button>
@@ -2091,6 +2189,7 @@ export default function CreateTrainingRequest() {
                           }
                           className="input"
                           disabled={roleKey === "bmmu" && autoPartnerAssigned}
+                          style={{ outline: "2px solid #3d6ba6" }}
                         >
                           <option value="">-- select partner --</option>
                           {partners.map((p) => (
@@ -2199,9 +2298,9 @@ export default function CreateTrainingRequest() {
 
               {/* RIGHT column */}
               <aside
-                style={{ background: "#fff", padding: 16, borderRadius: 8 }}
+                style={{ ...cardStyle, width: "100%", maxHeight: "350px" }}
               >
-                <h3 style={{ marginTop: 0 }}>Request Summary</h3>
+                <h3 style={headerGradient}>Request Summary</h3>
                 <div
                   style={{ fontSize: 13, color: "#6c757d", marginBottom: 8 }}
                 >
@@ -2233,11 +2332,16 @@ export default function CreateTrainingRequest() {
                 </div>
 
                 <div style={{ display: "flex", gap: 8 }}>
-                  <button className="btn" onClick={openPreview}>
+                  <button
+                    className="btnPrimaryHover"
+                    style={btnPrimary}
+                    onClick={openPreview}
+                  >
                     Preview & Confirm
                   </button>
                   <button
-                    className="btn btn-outline"
+                    className="btnPrimaryHover"
+                    style={btnPrimary}
                     onClick={() => {
                       setSelectedBeneficiaries([]);
                       setSelectedTrainersMap(new Map());
@@ -2321,7 +2425,7 @@ export default function CreateTrainingRequest() {
               Review payload below. Confirm to submit.
             </div>
 
-            <div style={{ display: "flex", gap: 12 }}>
+            {/* <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <h4>Request payload</h4>
                 <pre
@@ -2334,6 +2438,67 @@ export default function CreateTrainingRequest() {
                 >
                   {JSON.stringify(buildPreviewPayload(), null, 2)}
                 </pre>
+              </div> */}
+
+            <div style={{ display: "flex", gap: 12 }}>
+              <div style={{ flex: 1 }}>
+                <h4>Details</h4>
+
+                <div
+                  style={{
+                    background: "#f7fafc",
+                    padding: 14,
+                    borderRadius: 6,
+                    fontSize: 14,
+                  }}
+                >
+                  {Object.entries(buildPreviewPayload() || {})
+                    .filter(
+                      ([key]) =>
+                        key !== "block" &&
+                        key !== "created_by" &&
+                        key !== "district",
+                    )
+                    .map(([key, value]) => {
+                      // Training Plan Name
+                      if (key === "training_plan") {
+                        value =
+                          selectedPlan?.training_name ||
+                          selectedPlan?.name ||
+                          selectedPlan?.title ||
+                          "-";
+                      }
+
+                      // Partner Name
+                      if (key === "partner") {
+                        const partnerObj = Array.isArray(partners)
+                          ? partners.find((p) => p.id === Number(form.partner))
+                          : null;
+
+                        value = partnerObj?.name || value || "-";
+                      }
+
+                      return (
+                        <div
+                          key={key}
+                          style={{
+                            display: "grid",
+                            gridTemplateColumns: "200px 1fr",
+                            padding: "6px 0",
+                            borderBottom: "1px solid #e5e7eb",
+                          }}
+                        >
+                          <div style={{ fontWeight: 600 }}>
+                            {key
+                              .replaceAll("_", " ")
+                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                          </div>
+
+                          <div>{value ?? "-"}</div>
+                        </div>
+                      );
+                    })}
+                </div>
               </div>
 
               <div style={{ width: 360 }}>
@@ -2595,6 +2760,19 @@ export default function CreateTrainingRequest() {
         .no-action .table tbody td:last-child {
           display: none;
         }
+          .btnPrimaryHover:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+}
+.training-content{
+  grid-template-columns: minmax(0,1fr) 360px;
+}
+
+@media (max-width: 900px){
+  .training-content{
+    grid-template-columns: 1fr;
+  }
+}
       `}</style>
     </div>
   );

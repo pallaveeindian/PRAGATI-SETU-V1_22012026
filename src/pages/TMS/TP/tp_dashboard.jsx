@@ -1,10 +1,15 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
+import TPStatCard from "./components/TPStatCard";
+import TPLeftPanel from "./components/TPLeftPanel";
+import TPRightPanel from "./components/TPRightPanel";
+import "../../../tp_styles.css";
 
+import { FaBuilding, FaUsers, FaClock, FaLayerGroup } from "react-icons/fa";
 /* ===================================================== */
 
 const TP_SELF_PARTNER_KEY = "tp_self_partner_id";
@@ -119,54 +124,53 @@ export default function TpDashboard() {
       />
 
       <div className="main-area">
-        <TopNav />
+        {/* <TopNav /> */}
 
-        <div style={{ maxWidth: 1200, margin: "0 auto", padding: 16 }}>
-          <h2>Training Partner Dashboard</h2>
-
-          <div className="muted" style={{ marginBottom: 20 }}>
+        <div className="tp-page tp-dashboard">
+          <h2 className="tp-title">Training Partner Dashboard</h2>
+          <div className="tp-subtitle">
             Overview of training centres, contact persons, requests and batches.
           </div>
-
           {loading ? (
             <div className="muted">Loading dashboard…</div>
           ) : (
-            <div className="grid grid-2" style={{ gap: 16 }}>
-              {/* Training Centres */}
-              <div className="card">
-                <h4>Training Centres</h4>
-                <p className="muted">
-                  Total centres registered under your organisation.
-                </p>
-                <div className="stat-value">{counts.centres}</div>
+            <>
+              {/* ===== TOP KPI CARDS ===== */}
+
+              <div className="tp-stat-grid">
+                <TPStatCard
+                  title="Training Centres"
+                  value={counts.centres}
+                  icon={<FaBuilding />}
+                />
+
+                <TPStatCard
+                  title="Contact Persons"
+                  value={counts.contactPersons}
+                  icon={<FaUsers />}
+                />
+
+                <TPStatCard
+                  title="Pending Requests"
+                  value={counts.pendingRequests}
+                  icon={<FaClock />}
+                />
+
+                <TPStatCard
+                  title="Batches"
+                  value={counts.batches}
+                  icon={<FaLayerGroup />}
+                />
               </div>
 
-              {/* Contact Persons */}
-              <div className="card">
-                <h4>Contact Persons</h4>
-                <p className="muted">Centre-level contact person accounts.</p>
-                <div className="stat-value">{counts.contactPersons}</div>
-              </div>
+              {/* ===== LOWER PANELS ===== */}
 
-              {/* Pending Requests */}
-              <div className="card">
-                <h4>Pending Training Requests</h4>
-                <p className="muted">Requests awaiting batch creation.</p>
-                <div className="stat-value warning">
-                  {counts.pendingRequests}
-                </div>
+              <div className="tp-bottom-grid">
+                <TPLeftPanel />
+                <TPRightPanel />
               </div>
-
-              {/* Batches */}
-              <div className="card">
-                <h4>Batches</h4>
-                <p className="muted">
-                  All batches created under your organisation.
-                </p>
-                <div className="stat-value success">{counts.batches}</div>
-              </div>
-            </div>
-          )}
+            </>
+          )}{" "}
         </div>
       </div>
     </div>

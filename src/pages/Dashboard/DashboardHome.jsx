@@ -607,7 +607,7 @@ function SmmuDashboard() {
   async function loadBlocksForDistrict(
     districtId,
     page = 1,
-    aspirational = false
+    aspirational = false,
   ) {
     if (!districtId) return;
     setBlockLoading(true);
@@ -724,7 +724,7 @@ function SmmuDashboard() {
     districtMeta && districtMeta.page_size > 0
       ? Math.max(
           1,
-          Math.ceil((districtMeta.total || 0) / districtMeta.page_size)
+          Math.ceil((districtMeta.total || 0) / districtMeta.page_size),
         )
       : 1;
   const blockTotalPages =
@@ -948,7 +948,7 @@ function SmmuDashboard() {
                       loadBlocksForDistrict(
                         selectedDistrict.district_id,
                         blockMeta.page - 1,
-                        onlyAspirational
+                        onlyAspirational,
                       )
                     }
                   >
@@ -964,7 +964,7 @@ function SmmuDashboard() {
                       loadBlocksForDistrict(
                         selectedDistrict.district_id,
                         blockMeta.page + 1,
-                        onlyAspirational
+                        onlyAspirational,
                       )
                     }
                   >
@@ -1234,7 +1234,7 @@ export default function DashboardHome() {
         console.error("Error loading user geoscope", err);
         if (!cancelled) {
           setGeoError(
-            "Could not resolve your geographical scope. Please contact administrator."
+            "Could not resolve your geographical scope. Please contact administrator.",
           );
           // fallback: canonicalise from user object
           setRoleNameNormalized(getCanonicalRole(user || {}));

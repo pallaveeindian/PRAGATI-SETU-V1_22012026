@@ -1256,7 +1256,7 @@ export default function BatchCertificate() {
         </main>
       </div>
       <style>
-      {`
+        {`
         @media print {
 
           @page {

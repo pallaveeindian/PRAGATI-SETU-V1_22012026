@@ -161,17 +161,26 @@ export default function TrainingReqListFilter({ user, onApply }) {
   return (
     <div
       style={{
-        background: "#fff",
-        padding: 14,
-        borderRadius: 8,
-        marginBottom: 12,
+        background: "#e4ecf5",
+        padding: 16,
+        borderRadius: 10,
+        marginBottom: 14,
+        border: "2px solid #3d6ba6",
+        boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
       }}
     >
-      <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+      <div
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 12,
+          alignItems: "center",
+        }}
+      >
         {/* ===== Mandal (ONLY SMMU) ===== */}
         {role === "smmu" && (
           <select
-            className="input"
+            className="filter-input"
             value={filters.mandal_id}
             onChange={(e) =>
               setFilters((f) => ({ ...f, mandal_id: e.target.value }))
@@ -185,10 +194,11 @@ export default function TrainingReqListFilter({ user, onApply }) {
             ))}
           </select>
         )}
+
         {/* ===== District Category (ONLY SMMU) ===== */}
         {role === "smmu" && (
           <select
-            className="input"
+            className="filter-input"
             value={filters.district_category_id}
             onChange={(e) =>
               setFilters((f) => ({
@@ -205,10 +215,11 @@ export default function TrainingReqListFilter({ user, onApply }) {
             ))}
           </select>
         )}
-        {/* ===== District (NOT BMMU, LOCKED FOR DMMU) ===== */}
+
+        {/* ===== District ===== */}
         {role !== "bmmu" && (
           <select
-            className="input"
+            className="filter-input"
             value={filters.district_id}
             disabled={role === "dmmu"}
             onChange={(e) =>
@@ -231,9 +242,21 @@ export default function TrainingReqListFilter({ user, onApply }) {
           </select>
         )}
 
-        {/* ===== Aspirational (NOT BMMU) ===== */}
+        {/* ===== Aspirational ===== */}
         {role !== "bmmu" && (
-          <label style={{ display: "flex", alignItems: "center", gap: 6 }}>
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 14,
+              color: "#2b4e72",
+              background: "#fff",
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: "1px solid #a7c6ed",
+            }}
+          >
             <input
               type="checkbox"
               checked={filters.aspirational_only}
@@ -249,10 +272,10 @@ export default function TrainingReqListFilter({ user, onApply }) {
           </label>
         )}
 
-        {/* ===== Block (NOT BMMU) ===== */}
+        {/* ===== Block ===== */}
         {role !== "bmmu" && blocks.length > 0 && (
           <select
-            className="input"
+            className="filter-input"
             value={filters.block_id}
             onChange={(e) =>
               setFilters((f) => ({ ...f, block_id: e.target.value }))
@@ -270,7 +293,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
         {/* ===== Partner ===== */}
         {role !== "training_partner" && role !== "tpcp" && (
           <select
-            className="input"
+            className="filter-input"
             value={filters.partner_id}
             onChange={(e) =>
               setFilters((f) => ({ ...f, partner_id: e.target.value }))
@@ -287,7 +310,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
         {/* ===== Theme ===== */}
         <select
-          className="input"
+          className="filter-input"
           value={filters.theme_id}
           onChange={(e) =>
             setFilters((f) => ({
@@ -308,7 +331,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
         {/* ===== Training Plan ===== */}
         {trainingPlans.length > 0 && (
           <select
-            className="input"
+            className="filter-input"
             value={filters.training_plan_id}
             onChange={(e) =>
               setFilters((f) => ({ ...f, training_plan_id: e.target.value }))
@@ -325,7 +348,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
         {/* ===== Status ===== */}
         <select
-          className="input"
+          className="filter-input"
           value={filters.status}
           onChange={(e) =>
             setFilters((f) => ({ ...f, status: e.target.value }))
@@ -348,7 +371,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
         {/* ===== Participant ===== */}
         <select
-          className="input"
+          className="filter-input"
           value={filters.training_type}
           onChange={(e) =>
             setFilters((f) => ({ ...f, training_type: e.target.value }))
@@ -361,7 +384,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
         {/* ===== Level ===== */}
         <select
-          className="input"
+          className="filter-input"
           value={filters.level}
           onChange={(e) => setFilters((f) => ({ ...f, level: e.target.value }))}
         >
@@ -370,20 +393,59 @@ export default function TrainingReqListFilter({ user, onApply }) {
           <option value="DISTRICT">District</option>
           <option value="BLOCK">Block</option>
         </select>
-
-        <div
-          style={{
-            width: "100%",
-            display: "flex",
-            justifyContent: "center",
-            marginTop: 12,
-          }}
-        >
-          <button className="btn btn-primary" onClick={handleFetch}>
-            Fetch Training Requests
-          </button>
-        </div>
       </div>
+
+      {/* FETCH BUTTON */}
+      <div
+        style={{
+          width: "100%",
+          display: "flex",
+          justifyContent: "center",
+          marginTop: 16,
+        }}
+      >
+        <button className="fetch-btn" onClick={handleFetch}>
+          Fetch Training Requests
+        </button>
+      </div>
+
+      {/* STYLES */}
+      <style>{`
+
+.filter-input{
+  border:1px solid #3d6ba6;
+  border-radius:6px;
+  padding:7px 10px;
+  background:#fff;
+  outline:none;
+  font-size:14px;
+  min-width:160px;
+  transition:all .2s ease;
+}
+
+.filter-input:focus{
+  border-color:#5a8cc2;
+  box-shadow:0 0 0 2px rgba(61,107,166,0.2);
+}
+
+.fetch-btn{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  padding:8px 18px;
+  border-radius:6px;
+  font-weight:500;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.fetch-btn:hover{
+  background:#5a8cc2;
+  transform:translateY(-2px);
+  box-shadow:0 6px 14px rgba(0,0,0,0.12);
+}
+
+`}</style>
     </div>
   );
 }

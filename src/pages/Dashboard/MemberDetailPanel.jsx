@@ -66,7 +66,7 @@ export default function MemberDetailPanel({ shgCode, memberCode }) {
           setRecord(first);
           if (!first) {
             setError(
-              "No member record found for this member code in the selected SHG."
+              "No member record found for this member code in the selected SHG.",
             );
           }
         }
@@ -74,13 +74,13 @@ export default function MemberDetailPanel({ shgCode, memberCode }) {
       } catch (e) {
         console.error(
           "Failed to load member detail from UPSRLM",
-          e?.response?.data || e.message || e
+          e?.response?.data || e.message || e,
         );
         if (!cancelled) {
           setError(
             e?.response?.data?.detail ||
               e.message ||
-              "Failed to fetch member detail from UPSRLM."
+              "Failed to fetch member detail from UPSRLM.",
           );
         }
       } finally {
@@ -99,9 +99,7 @@ export default function MemberDetailPanel({ shgCode, memberCode }) {
   return (
     <div className="card soft" style={{ marginTop: 16 }}>
       <div className="header-row space-between">
-        <h3 style={{ marginTop: 0, marginBottom: 0 }}>
-          Beneficiary Detail
-        </h3>
+        <h3 style={{ marginTop: 0, marginBottom: 0 }}>Beneficiary Detail</h3>
         {memberCode && (
           <button
             className="btn-sm btn-flat"
@@ -130,9 +128,7 @@ export default function MemberDetailPanel({ shgCode, memberCode }) {
           <div style={{ marginBottom: 8 }}>
             <strong>{record.member_name || "Member"}</strong>{" "}
             {record.member_code && (
-              <span className="small-muted">
-                (Code: {record.member_code})
-              </span>
+              <span className="small-muted">(Code: {record.member_code})</span>
             )}
           </div>
 
@@ -251,13 +247,11 @@ export default function MemberDetailPanel({ shgCode, memberCode }) {
                   <td style={{ fontWeight: 600 }}>Designation</td>
                   <td>
                     {Array.isArray(record.member_designations) &&
-                    record.member_designations.length > 0 ? (
-                      record.member_designations
-                        .map((d) => d.designation)
-                        .join(", ")
-                    ) : (
-                      "-"
-                    )}
+                    record.member_designations.length > 0
+                      ? record.member_designations
+                          .map((d) => d.designation)
+                          .join(", ")
+                      : "-"}
                   </td>
                 </tr>
               </tbody>

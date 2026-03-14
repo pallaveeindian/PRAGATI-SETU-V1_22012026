@@ -1,7 +1,7 @@
 // src/pages/TMS/DMMU/dmmu_tms_dashboard.jsx
 import React, { useEffect, useState, useContext, useRef } from "react";
 import TmsLeftNav from "../layout/tms_LeftNav";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
@@ -231,54 +231,31 @@ export default function DmmuTmsDashboard() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={<div className="app-title">Pragati Setu — TMS (DMMU)</div>}
-        />
-
-        <main className="dashboard-main" style={{ padding: 18 }}>
-          <div
-            style={{ maxWidth: 1200, margin: "20px auto", padding: "0 16px" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: 16,
-                alignItems: "center",
-                marginBottom: 24,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>
+        /> */}
+        <main className="dmmu-main">
+          <div className="dmmu-container">
+            {/* HEADER */}
+            <div className="dmmu-header">
+              <h2 className="dmmu-title">
                 DMMU Dashboard
                 {districtId && (
-                  <span
-                    style={{
-                      color: "#6c757d",
-                      fontWeight: 400,
-                      fontSize: 16,
-                      marginLeft: 12,
-                    }}
-                  >
+                  <span className="dmmu-district">
                     — District #{districtId}
                   </span>
                 )}
               </h2>
-              <div
-                style={{
-                  marginLeft: "auto",
-                  color: "#6c757d",
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ fontSize: 13 }}>
+
+              <div className="dmmu-user">
+                <div className="dmmu-user-text">
                   {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
                 </div>
+
                 <button
-                  className="btn"
+                  className="btn btn-primary"
                   onClick={handleRefresh}
                   disabled={refreshing || !districtId}
-                  style={{ padding: "8px 16px", borderRadius: 6 }}
                 >
                   {refreshing
                     ? "Refreshing…"
@@ -289,65 +266,47 @@ export default function DmmuTmsDashboard() {
               </div>
             </div>
 
-            {/* KPIs Grid - Animate until ALL loaded */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                gap: 20,
-                marginBottom: 32,
-              }}
-            >
-              <div style={cardStyle}>
-                <div style={numberStyle}>
+            {/* KPI GRID */}
+            <div className="dmmu-kpi-grid">
+              <div className="dmmu-kpi-card">
+                <div className="dmmu-kpi-number">
                   {loadingKpis ? "…" : animBeneficiaries}
                 </div>
-                <div style={labelStyle}>Total Beneficiaries</div>
-                <div style={small}>Trained in district</div>
+                <div className="dmmu-kpi-label">Total Beneficiaries</div>
+                <div className="dmmu-kpi-small">Trained in district</div>
               </div>
 
-              <div style={cardStyle}>
-                <div style={numberStyle}>
+              <div className="dmmu-kpi-card">
+                <div className="dmmu-kpi-number">
                   {loadingKpis ? "…" : animTrainers}
                 </div>
-                <div style={labelStyle}>Total Trainers</div>
-                <div style={small}>Trained in district</div>
+                <div className="dmmu-kpi-label">Total Trainers</div>
+                <div className="dmmu-kpi-small">Trained in district</div>
               </div>
 
-              <div style={cardStyle}>
-                <div style={numberStyle}>
+              <div className="dmmu-kpi-card">
+                <div className="dmmu-kpi-number">
                   {loadingKpis ? "…" : animTrainings}
                 </div>
-                <div style={labelStyle}>Total Trainings</div>
-                <div style={small}>Requests in district</div>
+                <div className="dmmu-kpi-label">Total Trainings</div>
+                <div className="dmmu-kpi-small">Requests in district</div>
               </div>
 
-              <div style={cardStyle}>
-                <div style={numberStyle}>{loadingKpis ? "…" : animPlds}</div>
-                <div style={labelStyle}>PLDs Trained</div>
-                <div style={small}>
+              <div className="dmmu-kpi-card">
+                <div className="dmmu-kpi-number">
+                  {loadingKpis ? "…" : animPlds}
+                </div>
+                <div className="dmmu-kpi-label">PLDs Trained</div>
+                <div className="dmmu-kpi-small">
                   Potential Lakhpatis trained in your District
                 </div>
               </div>
             </div>
 
-            {/* Quick Actions + Notes */}
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 380px",
-                gap: 24,
-              }}
-            >
-              {/* Quick Actions */}
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: 12,
-                  padding: 24,
-                  boxShadow: "0 4px 12px rgba(10,20,40,0.06)",
-                }}
-              >
+            {/* GRID */}
+            <div className="dmmu-grid">
+              {/* LEFT CARD */}
+              <div className="dmmu-card">
                 <div
                   style={{
                     display: "flex",
@@ -355,27 +314,12 @@ export default function DmmuTmsDashboard() {
                     gap: 12,
                     marginTop: 16,
                   }}
-                >
-                </div>
+                ></div>
 
-                <div
-                  style={{
-                    marginTop: 24,
-                    paddingTop: 20,
-                    borderTop: "1px solid #f1f3f5",
-                  }}
-                >
-                  <h4 style={{ margin: "0 0 12px 0", color: "#374151" }}>
-                    Notes
-                  </h4>
-                  <ul
-                    style={{
-                      margin: 0,
-                      paddingLeft: 20,
-                      color: "#6c757d",
-                      fontSize: 14,
-                    }}
-                  >
+                <div className="dmmu-notes">
+                  <h4 className="dmmu-notes-title">Notes</h4>
+
+                  <ul className="dmmu-notes-list">
                     <li>Review pending training requests from BMMUs</li>
                     <li>Monitor batch progress across blocks</li>
                     <li>Verify PLD completion rates</li>
@@ -384,81 +328,40 @@ export default function DmmuTmsDashboard() {
                 </div>
               </div>
 
-              {/* Recent Activity / Stats Sidebar */}
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: 12,
-                  padding: 24,
-                  boxShadow: "0 4px 12px rgba(10,20,40,0.06)",
-                }}
-              >
-                <h4 style={{ marginTop: 0, color: "#1a1a1a" }}>
-                  District Overview
-                </h4>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#6c757d",
-                    lineHeight: 1.5,
-                    marginBottom: 20,
-                  }}
-                >
+              {/* SIDEBAR */}
+              <div className="dmmu-card">
+                <h4 className="dmmu-overview-title">District Overview</h4>
+
+                <div className="dmmu-overview-text">
                   District #{districtId || "Loading..."} — {kpis.totalTrainings}{" "}
                   active trainings
                   {kpis.totalBeneficiaries > 0 && (
-                    <div
-                      style={{
-                        marginTop: 12,
-                        padding: "12px 16px",
-                        background: "#f0f9ff",
-                        borderRadius: 6,
-                        borderLeft: "3px solid #0ea5e9",
-                      }}
-                    >
+                    <div className="dmmu-pld-box">
                       <strong>PLD Coverage:</strong>{" "}
                       {Math.round(
                         (kpis.totalPlds / kpis.totalBeneficiaries) * 100,
                       ) || 0}
                       %
-                      <div style={{ fontSize: 11, marginTop: 4, opacity: 0.8 }}>
+                      <div className="dmmu-pld-small">
                         {kpis.totalPlds}/{kpis.totalBeneficiaries} beneficiaries
                       </div>
                     </div>
                   )}
                 </div>
 
-                <div style={{ borderTop: "1px solid #f1f3f5", paddingTop: 16 }}>
-                  <h5
-                    style={{
-                      margin: "0 0 12px 0",
-                      color: "#374151",
-                      fontSize: 14,
-                    }}
-                  >
-                    Quick Links
-                  </h5>
-                  <div
-                    style={{ display: "flex", flexDirection: "column", gap: 8 }}
-                  >
+                <div className="dmmu-links">
+                  <h5 className="dmmu-links-title">Quick Links</h5>
+
+                  <div className="dmmu-links-list">
                     <button
-                      className="btn btn-outline"
-                      style={{
-                        padding: "10px",
-                        textAlign: "left",
-                        borderRadius: 6,
-                      }}
+                      className="btn btn-primary dmmu-link-btn"
                       onClick={() => navigate("/tms/dmmu/batches")}
                     >
                       → View District Batches
                     </button>
+
                     <button
-                      className="btn btn-outline"
-                      style={{
-                        padding: "10px",
-                        textAlign: "left",
-                        borderRadius: 6,
-                      }}
+                      className="btn btn-primary dmmu-link-btn"
                       onClick={() => navigate("/tms/training-requests")}
                     >
                       → All Training Requests
@@ -470,6 +373,194 @@ export default function DmmuTmsDashboard() {
           </div>
         </main>
       </div>
+      <style>{`/* MAIN */
+.dmmu-main {
+  padding: 18px;
+}
+
+.dmmu-container {
+  max-width: 1200px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+
+/* HEADER */
+.dmmu-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 24px;
+}
+
+.dmmu-title {
+  margin: 0;
+  color: #2b4e72;
+}
+
+.dmmu-district {
+  color: #5a8cc2;
+  font-weight: 400;
+  font-size: 16px;
+  margin-left: 12px;
+}
+
+.dmmu-user {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #5a8cc2;
+}
+
+.dmmu-user-text {
+  font-size: 13px;
+}
+
+/* KPI GRID */
+.dmmu-kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 20px;
+  margin-bottom: 32px;
+}
+
+.dmmu-kpi-card {
+  background: #fff;
+  border: 2px solid #a7c6ed;
+  border-radius: 12px;
+  padding: 20px;
+  transition: 0.2s ease;
+}
+
+.dmmu-kpi-card:hover {
+  background: #e4ecf5;
+}
+
+.dmmu-kpi-number {
+  font-size: 30px;
+  font-weight: 700;
+  color: #2b4e72;
+}
+
+.dmmu-kpi-label {
+  margin-top: 6px;
+  font-weight: 700;
+  color: #3d6ba6;
+}
+
+.dmmu-kpi-small {
+  font-size: 12px;
+  color: #5a8cc2;
+}
+
+/* MAIN GRID */
+.dmmu-grid {
+  display: grid;
+  grid-template-columns: 1fr 380px;
+  gap: 24px;
+}
+
+/* CARDS */
+.dmmu-card {
+  background: #fff;
+  border: 2px solid #a7c6ed;
+  border-radius: 12px;
+  padding: 24px;
+}
+
+/* NOTES */
+.dmmu-notes {
+  margin-top: 24px;
+  padding-top: 20px;
+  border-top: 1px solid #e4ecf5;
+}
+
+.dmmu-notes-title {
+  margin: 0 0 12px 0;
+  color: #2b4e72;
+}
+
+.dmmu-notes-list {
+  margin: 0;
+  padding-left: 20px;
+  color: #5a8cc2;
+  font-size: 14px;
+}
+
+/* DISTRICT OVERVIEW */
+.dmmu-overview-title {
+  margin-top: 0;
+  color: #2b4e72;
+}
+
+.dmmu-overview-text {
+  font-size: 13px;
+  color: #5a8cc2;
+  line-height: 1.5;
+  margin-bottom: 20px;
+}
+
+/* PLD COVERAGE */
+.dmmu-pld-box {
+  margin-top: 12px;
+  padding: 12px 16px;
+  background: #e4ecf5;
+  border-radius: 6px;
+  border-left: 4px solid #3d6ba6;
+}
+
+.dmmu-pld-small {
+  font-size: 11px;
+  margin-top: 4px;
+  opacity: 0.8;
+}
+
+/* QUICK LINKS */
+.dmmu-links {
+  border-top: 1px solid #e4ecf5;
+  padding-top: 16px;
+}
+
+.dmmu-links-title {
+  margin: 0 0 12px 0;
+  color: #2b4e72;
+  font-size: 14px;
+}
+
+.dmmu-links-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.dmmu-link-btn {
+  padding: 10px;
+  text-align: left;
+  border-radius: 6px;
+}
+/* base button */
+.btn{
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  font-size:13px;
+  transition:all .25s ease;
+}
+
+/* primary button */
+.btn-primary{
+  background:#3d6ba6;
+  color:#fff;
+}
+
+/* hover effect */
+.btn-primary:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+`}</style>
     </div>
   );
 }

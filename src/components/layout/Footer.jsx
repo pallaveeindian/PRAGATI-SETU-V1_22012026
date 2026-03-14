@@ -3,17 +3,13 @@ import ps_logo from "../../assets/PS_TRANS.png";
 import bdoLogo from "../../assets/BDO_logo.png";
 /**
  * Footer
- * LokOS-style footer adapted for Pragati Setu
- * Images intentionally left as placeholders
  */
 
 export default function Footer() {
   return (
     <footer className="ps-footer">
-
       {/* ===== TOP FOOTER ===== */}
       <div className="ps-footer-top">
-
         {/* COLUMN 1 */}
         <div className="footer-col brand">
           <div className="footer-logo">
@@ -23,8 +19,8 @@ export default function Footer() {
 
           <p className="brand-desc">
             Pragati Setu is a unified digital platform for monitoring,
-            analytics, and governance, empowering Self Help Groups and
-            rural institutions across Uttar Pradesh.
+            analytics, and governance, empowering Self Help Groups and rural
+            institutions across Uttar Pradesh.
           </p>
 
           <div className="social-icons">
@@ -72,7 +68,9 @@ export default function Footer() {
             <li>Frequently Asked Questions</li>
             <li>What’s New</li>
 
-            <li className="section-gap"><strong>Legal Info</strong></li>
+            <li className="section-gap">
+              <strong>Legal Info</strong>
+            </li>
             <li>Advisory & Guidelines</li>
             <li>Copyright Policy</li>
           </ul>
@@ -80,24 +78,28 @@ export default function Footer() {
 
         {/* COLUMN 5 */}
         <div className="footer-col right">
-          <img src={bdoLogo} alt="BDO Logo" style={{ width: '80px', marginTop: '20px' }} />
+          <img
+            src={bdoLogo}
+            alt="BDO Logo"
+            style={{ width: "80px", marginTop: "20px" }}
+          />
           <div className="powered-by">
             <p>
-              Powered by<br />
-              BDO India LLP<br />
-              All rights reserved. 
+              Powered by
+              <br />
+              BDO India LLP
+              <br />
+              All rights reserved.
             </p>
           </div>
         </div>
-
       </div>
 
       {/* ===== BOTTOM BAR ===== */}
       <div className="ps-footer-bottom">
         <span>
-          © 2026 – Copyright UPSRLM.
-          Powered by BDO India LLP | Government of Uttar Pradesh.
-          All rights reserved.
+          © 2026 – Copyright UPSRLM. Powered by BDO India LLP | Government of
+          Uttar Pradesh. All rights reserved.
         </span>
 
         <div className="footer-links">

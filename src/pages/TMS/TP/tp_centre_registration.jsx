@@ -1,9 +1,18 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
+import {
+  FaArrowLeft,
+  FaArrowRight,
+  FaCheck,
+  FaPlus,
+  FaTrash,
+  FaDownload,
+  FaUniversity,
+} from "react-icons/fa";
 
 /* ===================== CONSTANTS ===================== */
 
@@ -17,14 +26,12 @@ const EMPTY_MEDIA = {
   existing_url: null,
 };
 
-/* ===================== CONFIRM MODAL ===================== */
-
 function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
   if (!open) return null;
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: 900 }}>
+    <div className="tp-modal-backdrop">
+      <div className="tp-modal-card" style={{ maxWidth: 500 }}>
         <h3>
           Confirm Training Centre{" "}
           {payload?.centreId ? "Update" : "Registration"}
@@ -36,15 +43,16 @@ function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
           </div>
         ) : (
           <>
-            <pre style={{ maxHeight: 350, overflow: "auto", fontSize: 12 }}>
-              {JSON.stringify(payload, null, 2)}
-            </pre>
-            <div style={{ textAlign: "right", marginTop: 12 }}>
-              <button className="btn-outline" onClick={onClose}>
-                Edit
+            <p style={{ marginTop: 16, fontSize: 15 }}>
+              Are you sure you want to <b>confirm submission</b>?
+            </p>
+
+            <div style={{ textAlign: "right", marginTop: 20 }}>
+              <button className="tp-btn-outline" onClick={onClose}>
+                <FaArrowLeft /> Edit
               </button>{" "}
-              <button className="btn" onClick={onConfirm}>
-                Confirm Submission
+              <button className="tp-btn" onClick={onConfirm}>
+                <FaCheck /> Confirm Submission
               </button>
             </div>
           </>
@@ -276,6 +284,7 @@ export default function TpCentreRegistration() {
 
   const table = (rows, key) => (
     <table
+      className="tp-table"
       key={key}
       style={{
         width: "100%",
@@ -297,16 +306,31 @@ export default function TpCentreRegistration() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu —{" "}
               {isEdit ? "Edit Training Centre" : "New Training Centre"}
             </div>
           }
-        />
+        /> */}
 
-        <main style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
+        <main style={{ padding: "50px 18px" }}>
+          {/* ===== Page Header ===== */}
+          <div className="tp-page-header">
+            <div>
+              <h2 className="tp-page-title">
+                <FaUniversity />
+                {isEdit
+                  ? "Edit Training Centre"
+                  : "Training Centre Registration"}
+              </h2>
+              <p className="tp-page-subtitle">
+                Fill the required details to register your training centre
+              </p>
+            </div>
+          </div>
+          {/* ===== Stepper ===== */}
           <div className="stepper">
             {STEPS.map((s, i) => (
               <button
@@ -314,7 +338,9 @@ export default function TpCentreRegistration() {
                 className={i === step ? "step active" : "step"}
                 onClick={() => setStep(i)}
               >
-                {i + 1}. {s}
+                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                  {i + 1}. {s}
+                </span>
               </button>
             ))}
           </div>
@@ -713,12 +739,12 @@ export default function TpCentreRegistration() {
                       `rd_${i}`,
                       "Action",
                       <button
-                        className="btn-danger"
+                        className="tp-btn-danger"
                         onClick={() =>
                           setRooms(rooms.filter((_, idx) => idx !== i))
                         }
                       >
-                        Delete
+                        <FaTrash /> Delete
                       </button>,
                     ),
                   ],
@@ -727,10 +753,10 @@ export default function TpCentreRegistration() {
               )}
 
               <button
-                className="btn"
+                className="tp-btn"
                 onClick={() => setRooms([...rooms, { ...EMPTY_ROOM }])}
               >
-                + Add Room
+                <FaPlus /> Add Room
               </button>
             </>
           )}
@@ -811,7 +837,7 @@ export default function TpCentreRegistration() {
                                 }
                               }}
                             >
-                              Download existing file
+                              <FaDownload /> Download existing file
                             </button>
                           </div>
                         )}
@@ -864,7 +890,7 @@ export default function TpCentreRegistration() {
                       `md_${i}`,
                       "Action",
                       <button
-                        className="btn-danger"
+                        className="tp-btn-danger"
                         onClick={async () => {
                           if (m.id) {
                             await TMS_API.trainingPartnerSubmissions.destroy(
@@ -875,7 +901,7 @@ export default function TpCentreRegistration() {
                           setMedia(media.filter((_, idx) => idx !== i));
                         }}
                       >
-                        Delete
+                        <FaTrash /> Delete
                       </button>,
                     ),
                   ],
@@ -884,10 +910,10 @@ export default function TpCentreRegistration() {
               )}
 
               <button
-                className="btn"
+                className="tp-btn"
                 onClick={() => setMedia([...media, { ...EMPTY_MEDIA }])}
               >
-                + Add Media
+                <FaPlus /> Add Media
               </button>
             </>
           )}
@@ -895,35 +921,40 @@ export default function TpCentreRegistration() {
           {/* ===================== ACTIONS ===================== */}
           <div style={{ textAlign: "right", marginTop: 20 }}>
             {step > 0 && (
-              <button className="btn-outline" onClick={() => setStep(step - 1)}>
-                Back
+              <button
+                className="tp-btn-outline"
+                onClick={() => setStep(step - 1)}
+              >
+                <FaArrowLeft /> Back
               </button>
             )}{" "}
             {step < STEPS.length - 1 ? (
-              <button className="btn" onClick={() => setStep(step + 1)}>
-                Next
+              <button className="tp-btn" onClick={() => setStep(step + 1)}>
+                Next <FaArrowRight />
               </button>
             ) : (
               <button
-                className="btn"
+                className="tp-btn"
                 disabled={submitting}
                 onClick={() => setConfirmOpen(true)}
               >
-                Register Centre
+                <FaCheck /> Register Centre
               </button>
             )}
           </div>
         </main>
+        <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
+          <ConfirmModal
+            open={confirmOpen}
+            payload={{ centre, rooms, media, centreId }}
+            submitting={submitting}
+            onClose={() => setConfirmOpen(false)}
+            onConfirm={handleConfirmSubmit}
+          />
+        </div>
       </div>
 
       {/* Confirm Modal */}
-      <ConfirmModal
-        open={confirmOpen}
-        payload={{ centre, rooms, media, centreId }}
-        submitting={submitting}
-        onClose={() => setConfirmOpen(false)}
-        onConfirm={handleConfirmSubmit}
-      />
     </div>
   );
 }

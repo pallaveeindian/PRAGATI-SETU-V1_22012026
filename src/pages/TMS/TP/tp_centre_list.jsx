@@ -4,6 +4,15 @@ import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
+import {
+  FaSearch,
+  FaSyncAlt,
+  FaPlus,
+  FaEye,
+  FaEdit,
+  FaPrint,
+  FaDownload,
+} from "react-icons/fa";
 
 /* ---------------- cache keys ---------------- */
 
@@ -174,7 +183,7 @@ function CentreViewModal({ open, data, onClose }) {
             <h2 style={{ margin: 0 }}>{venue_name}</h2>
             <div style={{ display: "flex", gap: 8 }}>
               <button className="btn-outline" onClick={handlePrint}>
-                🖨 Print / Save PDF
+                <FaPrint /> Print / Save PDF
               </button>
               <button className="btn-outline" onClick={onClose}>
                 Back
@@ -318,7 +327,7 @@ function CentreViewModal({ open, data, onClose }) {
                         }
                       }}
                     >
-                      Download existing file
+                      <FaDownload /> Download
                     </button>
                   </div>
                 );
@@ -405,46 +414,44 @@ export default function TpCentreList() {
         />
 
         <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1200, margin: "0 auto" }}>
+          <div>
             {/* HEADER BAR */}
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>My Training Centres</h2>
+            <div className="tp-toolbar">
+              <h2 className="tp-page-title">
+                <FaEye /> My Training Centres
+              </h2>
 
-              <input
-                placeholder="Search by centre name…"
-                className="input"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                style={{ marginLeft: "auto", maxWidth: 260 }}
-              />
+              <div className="tp-toolbar-actions">
+                <div className="tp-search">
+                  <FaSearch />
+                  <input
+                    placeholder="Search centre name..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                  />
+                </div>
 
-              <button
-                className="btn"
-                onClick={() => {
-                  localStorage.removeItem(CACHE_KEY);
-                  setRefreshToken((t) => t + 1);
-                }}
-              >
-                Refresh
-              </button>
+                <button
+                  className="tp-btn-outline"
+                  onClick={() => {
+                    localStorage.removeItem(CACHE_KEY);
+                    setRefreshToken((t) => t + 1);
+                  }}
+                >
+                  <FaSyncAlt /> Refresh
+                </button>
 
-              <button
-                className="btn btn-primary"
-                onClick={() => navigate("/tms/tp/centre/new")}
-              >
-                + Register New Centre
-              </button>
+                <button
+                  className="tp-btn"
+                  onClick={() => navigate("/tms/tp/centre/new")}
+                >
+                  <FaPlus /> Register Centre
+                </button>
+              </div>
             </div>
 
             {/* TABLE */}
-            <table className="table table-compact">
+            <table className="tp-table">
               <thead>
                 <tr>
                   <th>Serial Number</th>
@@ -472,19 +479,23 @@ export default function TpCentreList() {
                       <td>{c.centre_type}</td>
                       <td>{c.training_hall_count}</td>
                       <td>
-                        <button
-                          className="btn-sm btn-flat"
-                          disabled={viewLoadingId === c.id}
-                          onClick={() => handleViewCentre(c.id)}
-                        >
-                          {viewLoadingId === c.id ? "Opening…" : "View"}
-                        </button>{" "}
-                        <button
-                          className="btn-sm btn-flat"
-                          onClick={() => navigate(`/tms/tp/centre/${c.id}`)}
-                        >
-                          Edit
-                        </button>
+                        <div className="tp-action-buttons">
+                          <button
+                            className="tp-btn-outline"
+                            disabled={viewLoadingId === c.id}
+                            onClick={() => handleViewCentre(c.id)}
+                          >
+                            <FaEye />{" "}
+                            {viewLoadingId === c.id ? "Opening..." : "View"}
+                          </button>
+
+                          <button
+                            className="tp-btn-outline"
+                            onClick={() => navigate(`/tms/tp/centre/${c.id}`)}
+                          >
+                            <FaEdit /> Edit
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))

@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TmsLeftNav from "../layout/tms_LeftNav";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api from "../../../api/axios";
 
@@ -295,7 +295,7 @@ export default function CpBatchClosure() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav left={<div className="app-title">{heading}</div>} />
+        {/* <TopNav left={<div className="app-title">{heading}</div>} /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1100, margin: "0 auto" }}>
             <div

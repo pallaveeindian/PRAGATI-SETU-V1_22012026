@@ -1,7 +1,7 @@
 // src/pages/TMS/DMMU/dmmu_request_closure.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api from "../../../api/axios";
@@ -334,11 +334,11 @@ export default function DmmuRequestClosure() {
     <div className="app-shell">
       <LeftNav />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">Pragati Setu — DMMU Request Closure</div>
           }
-        />
+        /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1100, margin: "20px auto" }}>
             <div

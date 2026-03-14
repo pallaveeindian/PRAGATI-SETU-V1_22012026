@@ -1,7 +1,7 @@
 // src/pages/TMS/TRs/training_req_detail.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
@@ -128,6 +128,9 @@ export default function TrainingRequestDetail() {
 
   // filters
   const [pldFilter, setPldFilter] = useState("");
+  // pagination
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
   // simple refresh token to trigger useEffect
   const [refreshToken, setRefreshToken] = useState(0);
@@ -361,6 +364,14 @@ export default function TrainingRequestDetail() {
     });
   }, [participants, pldFilter]);
 
+  const totalPages = Math.ceil(visibleParticipants.length / rowsPerPage);
+
+  const paginatedParticipants = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return visibleParticipants.slice(start, end);
+  }, [visibleParticipants, currentPage]);
+
   useEffect(() => {
     function onVisibilityChange() {
       if (document.visibilityState === "visible" && !inFlightRef.current) {
@@ -537,6 +548,10 @@ export default function TrainingRequestDetail() {
     setRefreshToken((t) => t + 1);
   }
 
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [pldFilter]);
+
   return (
     <div className="app-shell">
       <LeftNav
@@ -544,88 +559,98 @@ export default function TrainingRequestDetail() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Training Request Detail
             </div>
           }
-        />
-        <main style={{ padding: 18 }}>
+        /> */}
+        <main
+          style={{
+            padding: 20,
+            minHeight: "100vh",
+          }}
+        >
           <div style={{ maxWidth: 1100, margin: "20px auto" }}>
+            {/* HEADER */}
             <div
               style={{
                 display: "flex",
-                gap: 8,
-                marginBottom: 12,
+                gap: 10,
+                marginBottom: 16,
                 alignItems: "center",
+                borderBottom: "2px solid #a7c6ed",
+                paddingBottom: 10,
               }}
             >
-              <h2 style={{ margin: 0 }}>Training Request #{id}</h2>
+              <h2 style={{ margin: 0, color: "#2b4e72", fontWeight: 700 }}>
+                Training Request #{id}
+              </h2>
 
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button className="btn" onClick={handleRefresh}>
+                <button className="btn-primary" onClick={handleRefresh}>
                   Refresh
                 </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => navigate(-1)}
-                >
+
+                <button className="btn-outline" onClick={() => navigate(-1)}>
                   Back
                 </button>
               </div>
             </div>
 
-            <div style={{ background: "#fff", padding: 12, borderRadius: 8 }}>
+            {/* MAIN CARD */}
+            <div className="card-ui">
               {loadingAll ? (
-                <div className="table-spinner">Loading all details…</div>
+                <div className="table-message">Loading all details…</div>
               ) : !tr ? (
-                <div className="muted">Training request not found.</div>
+                <div className="table-message">Training request not found.</div>
               ) : (
                 <>
-                  <div style={{ marginBottom: 12 }}>
-                    <strong>Plan:</strong>{" "}
-                    {trainingPlanObj?.training_name || tr.training_plan || "-"}{" "}
-                    &nbsp;&nbsp;
-                    <strong>Type:</strong> {tr.training_type || "-"}{" "}
-                    &nbsp;&nbsp;
-                    <strong>Level:</strong> {tr.level || "-"} &nbsp;&nbsp;
-                    <strong>Status:</strong>{" "}
-                    <span style={{ fontWeight: 700 }}>{tr.status || "-"}</span>
+                  {/* SUMMARY */}
+                  <div className="summary-box">
+                    <div>
+                      <strong>Plan:</strong>{" "}
+                      {trainingPlanObj?.training_name ||
+                        tr.training_plan ||
+                        "-"}
+                    </div>
+
+                    <div>
+                      <strong>Type:</strong> {tr.training_type || "-"}
+                    </div>
+
+                    <div>
+                      <strong>Level:</strong> {tr.level || "-"}
+                    </div>
+
+                    <div>
+                      <strong>Status:</strong>{" "}
+                      <span className="status-badge">{tr.status || "-"}</span>
+                    </div>
                   </div>
 
-                  {/* Status tab */}
-                  <div
-                    style={{
-                      padding: 12,
-                      borderRadius: 6,
-                      background: "#fbfdff",
-                      marginBottom: 12,
-                    }}
-                  >
+                  {/* STATUS PANEL */}
+                  <div className="status-panel">
                     {statusMessage(tr, partner)}
                   </div>
 
-                  {/* Participants */}
-                  <div style={{ marginBottom: 12 }}>
-                    <h4>Participants</h4>
+                  {/* PARTICIPANTS */}
+                  <div style={{ marginBottom: 14 }}>
+                    <h4 style={{ color: "#2b4e72", marginBottom: 8 }}>
+                      Participants
+                    </h4>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        alignItems: "center",
-                        marginBottom: 8,
-                      }}
-                    >
+                    <div className="participant-toolbar">
                       {(tr.training_type || "").toUpperCase() ===
                         "BENEFICIARY" && (
                         <>
-                          <label style={{ fontWeight: 700 }}>PLD Filter</label>
+                          <label style={{ fontWeight: 600 }}>PLD Filter</label>
+
                           <select
                             value={pldFilter}
                             onChange={(e) => setPldFilter(e.target.value)}
-                            className="input"
+                            className="input-filter"
                           >
                             <option value="">All</option>
                             <option value="YES">YES</option>
@@ -634,23 +659,25 @@ export default function TrainingRequestDetail() {
                         </>
                       )}
 
-                      <div style={{ marginLeft: "auto", color: "#6c757d" }}>
+                      <div style={{ marginLeft: "auto", color: "#2b4e72" }}>
                         {participantLoading
                           ? "Loading participants…"
-                          : `${visibleParticipants.length} shown`}
+                          : `${paginatedParticipants.length} shown`}
                       </div>
                     </div>
 
                     {participantLoading ? (
-                      <div className="table-spinner">
+                      <div className="table-message">
                         Fetching participants…
                       </div>
                     ) : visibleParticipants.length === 0 ? (
-                      <div className="muted">No participants found.</div>
+                      <div className="table-message">
+                        No participants found.
+                      </div>
                     ) : (tr.training_type || "").toUpperCase() ===
                       "BENEFICIARY" ? (
-                      <div style={{ maxHeight: 420, overflow: "auto" }}>
-                        <table className="table table-compact">
+                      <div className="table-container">
+                        <table className="training-table">
                           <thead>
                             <tr>
                               <th>SHG Code</th>
@@ -663,8 +690,9 @@ export default function TrainingRequestDetail() {
                               <th>View</th>
                             </tr>
                           </thead>
+
                           <tbody>
-                            {visibleParticipants.map((p) => (
+                            {paginatedParticipants.map((p) => (
                               <tr key={p.id}>
                                 <td>{p.lokos_shg_code}</td>
                                 <td>{p.lokos_member_code}</td>
@@ -675,7 +703,7 @@ export default function TrainingRequestDetail() {
                                 <td>{p.pld_status}</td>
                                 <td>
                                   <button
-                                    className="btn-sm btn-flat"
+                                    className="view-btn"
                                     onClick={() => onViewBeneficiary(p)}
                                   >
                                     View
@@ -687,8 +715,8 @@ export default function TrainingRequestDetail() {
                         </table>
                       </div>
                     ) : (
-                      <div style={{ maxHeight: 420, overflow: "auto" }}>
-                        <table className="table table-compact">
+                      <div className="table-container">
+                        <table className="training-table">
                           <thead>
                             <tr>
                               <th>Trainer ID</th>
@@ -697,6 +725,7 @@ export default function TrainingRequestDetail() {
                               <th>View</th>
                             </tr>
                           </thead>
+
                           <tbody>
                             {visibleParticipants.map((p) => (
                               <tr key={p.id}>
@@ -705,7 +734,7 @@ export default function TrainingRequestDetail() {
                                 <td>{p.mobile_no}</td>
                                 <td>
                                   <button
-                                    className="btn-sm btn-flat"
+                                    className="view-btn"
                                     onClick={() => onViewTrainer(p)}
                                   >
                                     View
@@ -717,118 +746,108 @@ export default function TrainingRequestDetail() {
                         </table>
                       </div>
                     )}
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "center",
+                        alignItems: "center",
+                        gap: 8,
+                        marginTop: 12,
+                      }}
+                    >
+                      <button
+                        className="btn-outline"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((p) => p - 1)}
+                      >
+                        Prev
+                      </button>
+
+                      <span style={{ fontWeight: 600 }}>
+                        Page {currentPage} of {totalPages || 1}
+                      </span>
+
+                      <button
+                        className="btn-outline"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
 
-                  {/* Conditional actions based on status */}
+                  {/* ACTION BUTTONS */}
                   <div style={{ marginTop: 12 }}>
-                    {/* PENDING → DMMU REVIEW */}
                     {isDmmu &&
                       (tr.status || "").toUpperCase() === "PENDING" && (
-                        <div style={{ marginBottom: 8 }}>
+                        <div className="action-box">
                           <strong>Note:</strong> Request is PENDING. Appropriate
                           authority action required.
-                          <div style={{ marginTop: 8 }}>
-                            <button
-                              className="btn"
-                              onClick={() =>
-                                navigate(`/tms/dmmu/tr-review/${id}`)
-                              }
-                            >
-                              Go to DMMU Review
-                            </button>
-                          </div>
+                          <button
+                            className="btn-primary"
+                            onClick={() =>
+                              navigate(`/tms/dmmu/tr-review/${id}`)
+                            }
+                          >
+                            Go to DMMU Review
+                          </button>
                         </div>
                       )}
 
-                    {/* REVIEW → DMMU CLOSURE */}
                     {isDmmu && (tr.status || "").toUpperCase() === "REVIEW" && (
-                      <div style={{ marginBottom: 8 }}>
-                        <strong>Note:</strong> Request is PENDING. Appropriate
-                        authority action required.
-                        <div style={{ marginTop: 8 }}>
-                          <button
-                            className="btn"
-                            onClick={() =>
-                              navigate(`/tms/dmmu/tr-closure/${id}`)
-                            }
-                          >
-                            Go to DMMU Closure
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* TP REVERTED TR */}
-                    {isTP && (tr.status || "").toUpperCase() === "REJECTED" && (
-                      <div style={{ marginBottom: 8 }}>
-                        <strong>Note:</strong> Request is REJECTED !.
-                        Appropriate authority action required.
-                        <div style={{ marginTop: 8 }}>
-                          <button
-                            className="btn"
-                            onClick={() =>
-                              navigate(`/tms/tp/batches/create/${id}`)
-                            }
-                          >
-                            Review Batches
-                          </button>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* TRAINING PARTNER + BATCHING → CREATE BATCHES */}
-                    {isTP && (tr.status || "").toUpperCase() === "BATCHING" ? (
-                      <div>
+                      <div className="action-box">
+                        <strong>Note:</strong> Request is under REVIEW.
                         <button
-                          className="btn btn-primary"
+                          className="btn-primary"
+                          onClick={() => navigate(`/tms/dmmu/tr-closure/${id}`)}
+                        >
+                          Go to DMMU Closure
+                        </button>
+                      </div>
+                    )}
+
+                    {isTP && (tr.status || "").toUpperCase() === "REJECTED" && (
+                      <div className="action-box">
+                        <strong>Note:</strong> Request is REJECTED.
+                        <button
+                          className="btn-primary"
                           onClick={() =>
                             navigate(`/tms/tp/batches/create/${id}`)
                           }
                         >
-                          Create Batches
+                          Review Batches
                         </button>
                       </div>
-                    ) : (
-                      /* ALL OTHER CASES → status-based TP action */
-                      <>
-                        {/* TP + REVIEW → CLOSE TRAINING REQUEST */}
-                        {isTP &&
-                          (tr.status || "").toUpperCase() === "REVIEW" && (
-                            <div>
-                              <button
-                                className="btn"
-                                onClick={() =>
-                                  navigate(`/tms/tp/tr-closure/${id}`)
-                                }
-                              >
-                                Close Training Request
-                              </button>
-                            </div>
-                          )}
+                    )}
 
-                        {/* Other statuses → VIEW BATCHES */}
-                        {(!isTP ||
-                          !["REVIEW"].includes(
-                            (tr.status || "").toUpperCase(),
-                          )) &&
-                          [
-                            "ONGOING",
-                            "PENDING",
-                            "COMPLETED",
-                            "REJECTED",
-                          ].includes((tr.status || "").toUpperCase()) && (
-                            <div>
-                              <button
-                                className="btn"
-                                onClick={() =>
-                                  navigate(`/tms/batches-list/${id}`)
-                                }
-                              >
-                                View Batches in this Training Request
-                              </button>
-                            </div>
-                          )}
-                      </>
+                    {isTP && (tr.status || "").toUpperCase() === "BATCHING" && (
+                      <button
+                        className="btn-primary"
+                        onClick={() => navigate(`/tms/tp/batches/create/${id}`)}
+                      >
+                        Create Batches
+                      </button>
+                    )}
+
+                    {isTP && (tr.status || "").toUpperCase() === "REVIEW" && (
+                      <button
+                        className="btn-primary"
+                        onClick={() => navigate(`/tms/tp/tr-closure/${id}`)}
+                      >
+                        Close Training Request
+                      </button>
+                    )}
+
+                    {["ONGOING", "PENDING", "COMPLETED", "REJECTED"].includes(
+                      (tr.status || "").toUpperCase(),
+                    ) && (
+                      <button
+                        className="btn-outline"
+                        onClick={() => navigate(`/tms/batches-list/${id}`)}
+                      >
+                        View Batches in this Training Request
+                      </button>
                     )}
                   </div>
                 </>
@@ -841,18 +860,11 @@ export default function TrainingRequestDetail() {
       {/* Participant / Trainer modal */}
       <Modal open={modalOpen} onClose={closeModal} title={modalTitle}>
         {modalPayload ? (
-          <div style={{ display: "grid", gap: 10 }}>
+          <div className="modal-grid">
             {Object.keys(modalPayload).map((label) => (
-              <div
-                key={label}
-                style={{ display: "flex", gap: 12, alignItems: "flex-start" }}
-              >
-                <div style={{ minWidth: 160, fontWeight: 700, color: "#333" }}>
-                  {label}
-                </div>
-                <div style={{ color: "#111", whiteSpace: "pre-wrap" }}>
-                  {modalPayload[label] ?? "-"}
-                </div>
+              <div key={label} className="modal-row">
+                <div className="modal-label">{label}</div>
+                <div className="modal-value">{modalPayload[label] ?? "-"}</div>
               </div>
             ))}
           </div>
@@ -860,6 +872,189 @@ export default function TrainingRequestDetail() {
           <div style={{ padding: 12 }}>Loading details…</div>
         )}
       </Modal>
+
+      {/* STYLES */}
+      <style>{`
+
+.card-ui{
+  background:#fff;
+  padding:16px;
+  border-radius:10px;
+  border:2px solid #3d6ba6;
+  box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+
+.summary-box{
+  display:flex;
+  flex-wrap:wrap;
+  gap:20px;
+  margin-bottom:12px;
+  color:#2b4e72;
+}
+
+.status-badge{
+  background:#a7c6ed;
+  color:#2b4e72;
+  padding:4px 10px;
+  border-radius:6px;
+  font-weight:700;
+}
+
+.status-panel{
+  padding:12px;
+  border-radius:6px;
+  background:#f4f8fd;
+  border-left:4px solid #3d6ba6;
+  margin-bottom:14px;
+}
+
+.participant-toolbar{
+  display:flex;
+  gap:8px;
+  align-items:center;
+  margin-bottom:10px;
+}
+
+.input-filter{
+  border:1px solid #3d6ba6;
+  padding:6px 10px;
+  border-radius:6px;
+  outline:"none"
+}
+
+.table-container{
+  max-height:420px;
+  overflow:auto;
+  border:1px solid #e4ecf5;
+  border-radius:8px;
+}
+
+.training-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+.training-table thead{
+  background:#3d6ba6;
+  color:white;
+  position:sticky;
+  top:0;
+}
+
+.training-table th{
+  padding:10px;
+  text-align:left;
+  border-right:1px solid rgba(255,255,255,0.2);
+}
+
+.training-table th:last-child{
+  border-right:none;
+}
+
+.training-table td{
+  padding:10px;
+  border-bottom:1px solid #e4ecf5;
+  border-right:1px solid #e4ecf5;
+}
+
+.training-table td:last-child{
+  border-right:none;
+}
+
+.training-table tbody tr{
+  transition:background 0.2s ease;
+}
+
+.training-table tbody tr:nth-child(even){
+  background:#f7fbff;
+}
+
+.training-table tbody tr:hover{
+  background:#e4ecf5;
+}
+
+.view-btn{
+  background:#5a8cc2;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:5px 12px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.view-btn:hover{
+  transform:translateY(-4px);
+  box-shadow:0 8px 14px rgba(0,0,0,0.15);
+}
+
+.btn-primary{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btn-primary:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-outline{
+  background:#5a8cc2;
+  color:#fff;
+  border:none;
+  padding:7px 16px;
+  border-radius:6px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btn-outline:hover{
+  transform:translateY(-4px);
+  box-shadow:0 8px 14px rgba(0,0,0,0.15);
+}
+
+.action-box{
+  background:#f4f8fd;
+  border-left:4px solid #5a8cc2;
+  padding:10px;
+  margin-bottom:10px;
+}
+
+.modal-grid{
+  display:grid;
+  gap:10px;
+}
+
+.modal-row{
+  display:flex;
+  gap:12px;
+  padding:6px 0;
+  border-bottom:1px solid #e4ecf5;
+}
+
+.modal-label{
+  min-width:160px;
+  font-weight:700;
+  color:#2b4e72;
+}
+
+.modal-value{
+  color:#111;
+}
+
+.table-message{
+  padding:20px;
+  text-align:center;
+  color:#2b4e72;
+}
+
+`}</style>
     </div>
   );
 }

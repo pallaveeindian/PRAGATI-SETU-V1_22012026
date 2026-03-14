@@ -1,8 +1,9 @@
 // src/pages/TMS/layout/tms_LeftNav.jsx
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../contexts/AuthContext";
 import logo from "../../../assets/TMS/tms_logo.png";
+import TopNav from "./tms_TopNav";
 import {
   FaTachometerAlt,
   FaUsers,
@@ -184,43 +185,53 @@ function getRoleKey(user) {
 export default function TmsLeftNav({ collapsed, onToggle }) {
   const { user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
-
+  const [mobileOpen, setMobileOpen] = useState(false);
   const roleKey = getRoleKey(user);
   const menu = MENU[roleKey] || [];
 
   return (
-    <aside className={`tms-leftnav ${collapsed ? "collapsed" : ""}`}>
-      {/* LOGO */}
-      <div className="tms-logo" onClick={() => navigate("/dashboard")}>
-        <img src={logo} alt="TMS" />
-        <span className="logo-text">Training Management System</span>
-      </div>
-
-      {/* NAV */}
-      <nav className="tms-nav">
-        {menu.map((item) => (
-          <NavLink
-            key={item.label}
-            to={item.to}
-            className={({ isActive }) =>
-              "tms-nav-item" + (isActive ? " active" : "")
-            }
-          >
-            <span className="nav-icon">
-              <item.icon size={20} />
-            </span>
-            <span className="nav-label">{item.label}</span>
-          </NavLink>
-        ))}
-      </nav>
-
-      {/* TOGGLE */}
-      <button className="tms-toggle" onClick={onToggle}>
-        {collapsed ? "→" : "←"}
+    <>
+      <button className="tms-mobile-burger" onClick={() => setMobileOpen(true)}>
+        ☰
       </button>
+      <aside
+        className={`tms-leftnav 
+  ${collapsed ? "collapsed" : ""} 
+  ${mobileOpen ? "mobile-open" : ""}`}
+      >
+        {/* LOGO */}
+        <div className="tms-logo" onClick={() => navigate("/dashboard")}>
+          <img src={logo} alt="TMS" />
+          <span className="logo-text">Training Management System</span>
+        </div>
 
-      {/* STYLES */}
-      <style>{`
+        {/* NAV */}
+        <nav className="tms-nav">
+          {menu.map((item) => (
+            <NavLink
+              key={item.label}
+              to={item.to}
+              onClick={() => setMobileOpen(false)}
+              className={({ isActive }) =>
+                "tms-nav-item" + (isActive ? " active" : "")
+              }
+            >
+              <span className="nav-icon">
+                <item.icon size={20} />
+              </span>
+              <span className="nav-label">{item.label}</span>
+            </NavLink>
+          ))}
+          <TopNav />
+        </nav>
+
+        {/* TOGGLE */}
+        <button className="tms-toggle" onClick={onToggle}>
+          {collapsed ? "→" : "←"}
+        </button>
+
+        {/* STYLES */}
+        <style>{`
         .tms-leftnav {
           width: 220px;
           background: #ffffff;
@@ -264,14 +275,15 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
         }
 
         /* Nav */
-        .tms-nav {
-          flex: 1;
-          padding: 12px 8px;
-          display: flex;
-          flex-direction: column;
-          gap: 4px;
-          overflow-y: auto;
-        }
+      .tms-nav {
+  flex: 1;
+  padding: 12px 8px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+}
+
 
         .tms-nav-item {
           display: flex;
@@ -280,7 +292,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
           padding: 10px 12px;
           border-radius: 8px;
           text-decoration: none;
-          color: #061b46;;
+          color: #061b46;
           font-size: 14px;
           transition: background 0.2s ease;
           white-space: nowrap;
@@ -365,6 +377,61 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
           display: block;
         }          
       `}</style>
-    </aside>
+      </aside>
+      {mobileOpen && (
+        <div
+          className="tms-mobile-overlay"
+          onClick={() => setMobileOpen(false)}
+        />
+      )}
+      <style>{`/* MOBILE BURGER */
+.tms-mobile-burger {
+  display: none;
+  position: fixed;
+  top: 10px;
+  left: 10px;
+  z-index: 1200;
+  background: #061b46;
+  color: white;
+  border: none;
+  padding: 8px 10px;
+  font-size: 18px;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+/* MOBILE OVERLAY */
+.tms-mobile-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,0.35);
+  z-index: 1100;
+}
+
+/* MOBILE RESPONSIVE */
+@media (max-width: 768px) {
+
+  .tms-mobile-burger {
+    display: block;
+  }
+
+    .tms-leftnav {
+    position: fixed;
+    top: 0;
+    left: -240px;
+    width: 240px;
+    height: 100dvh; /* full mobile screen */
+    background: #ffffff;
+    z-index: 1201;
+    transition: left 0.3s ease;
+    box-shadow: 2px 0 10px rgba(0,0,0,0.15);
+  }
+
+  .tms-leftnav.mobile-open {
+    left: 0;
+  }
+
+}`}</style>
+    </>
   );
 }

@@ -1,7 +1,7 @@
 // src/pages/TMS/TRs/training_req_list.jsx
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
@@ -90,7 +90,10 @@ export default function TrainingRequestList() {
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState(() => loadCache()?.payload || []);
   const [refreshToken, setRefreshToken] = useState(0);
-
+  // PAGINATION CHANGE START
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
+  // PAGINATION CHANGE END
   const [filters, setFilters] = useState({
     status: "",
     level: "",
@@ -248,8 +251,8 @@ export default function TrainingRequestList() {
         page_size: 500,
         ...Object.fromEntries(
           Object.entries(appliedFilters).filter(
-            ([, v]) => v !== "" && v !== false
-          )
+            ([, v]) => v !== "" && v !== false,
+          ),
         ),
       };
 
@@ -287,15 +290,42 @@ export default function TrainingRequestList() {
 
   /* ---------------- filtered view ---------------- */
 
+  // const filtered = useMemo(() => {
+  //   return requests.filter((r) => {
+  //     if (filters.status && r.status !== filters.status) return false;
+  //     if (filters.level && r.level !== filters.level) return false;
+  //     if (filters.training_type && r.training_type !== filters.training_type)
+  //       return false;
+  //     return true;
+  //   });
+  // }, [requests, filters]);
+
   const filtered = useMemo(() => {
-    return requests.filter((r) => {
+    const result = requests.filter((r) => {
       if (filters.status && r.status !== filters.status) return false;
       if (filters.level && r.level !== filters.level) return false;
       if (filters.training_type && r.training_type !== filters.training_type)
         return false;
       return true;
     });
+
+    // PAGINATION CHANGE
+    setCurrentPage(1);
+
+    return result;
   }, [requests, filters]);
+
+  // PAGINATION CHANGE START
+
+  const totalPages = Math.ceil(filtered.length / rowsPerPage);
+
+  const paginatedData = useMemo(() => {
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+    return filtered.slice(start, end);
+  }, [filtered, currentPage]);
+
+  // PAGINATION CHANGE END
 
   /* ---------------- render helpers ---------------- */
 
@@ -312,28 +342,46 @@ export default function TrainingRequestList() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">Pragati Setu — Training Requests</div>
           }
-        />
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1200, margin: "20px auto" }}>
-            <div><TrainingReqListFilter
-            user={user}
-            onApply={fetchRequestsWithFilters}
-            /></div>            
+        /> */}
+        <main
+          style={{
+            padding: 18,
+            minHeight: "100vh",
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 1200,
+              margin: "20px auto",
+            }}
+          >
+            {/* FILTER */}
+            <div style={{ marginBottom: 14 }}>
+              <TrainingReqListFilter
+                user={user}
+                onApply={fetchRequestsWithFilters}
+              />
+            </div>
+
+            {/* HEADER */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
                 marginBottom: 12,
+                borderBottom: "2px solid #a7c6ed",
+                paddingBottom: 8,
               }}
             >
-              <h2 style={{ margin: 0 }}>Training Requests</h2>
+              <h2 style={{ margin: 0, color: "#2b4e72" }}>Training Requests</h2>
+
               <div style={{ marginLeft: "auto" }}>
                 <button
-                  className="btn"
+                  className="btnPrimary"
                   onClick={() => {
                     localStorage.removeItem(CACHE_KEY);
                     localStorage.removeItem(TP_SELF_PARTNER_KEY);
@@ -345,9 +393,23 @@ export default function TrainingRequestList() {
               </div>
             </div>
 
-            <div style={{ background: "#fff", padding: 12, borderRadius: 8 }}>
-              <div style={{ maxHeight: 520, overflow: "auto" }}>
-                <table className="table table-compact">
+            {/* TABLE CARD */}
+            <div
+              style={{
+                background: "#fff",
+                padding: 14,
+                borderRadius: 10,
+                border: "2px solid #3d6ba6",
+                boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+              }}
+            >
+              <div
+                style={{
+                  maxHeight: 520,
+                  overflow: "auto",
+                }}
+              >
+                <table className="training-table">
                   <thead>
                     <tr>
                       <th>ID</th>
@@ -362,17 +424,19 @@ export default function TrainingRequestList() {
                       <th />
                     </tr>
                   </thead>
+
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={8}>Loading…</td>
+                        <td colSpan={10}>Loading…</td>
                       </tr>
                     ) : filtered.length === 0 ? (
                       <tr>
-                        <td colSpan={8}>No training requests</td>
+                        <td colSpan={10}>No training requests</td>
                       </tr>
                     ) : (
-                      filtered.map((r) => (
+                      // filtered.map((r) => (
+                      paginatedData.map((r) => (
                         <tr key={r.id}>
                           <td>{r.id}</td>
                           <td>{r.theme_name}</td>
@@ -385,7 +449,7 @@ export default function TrainingRequestList() {
                           <td>{r.block_name}</td>
                           <td>
                             <button
-                              className="btn-sm btn-flat"
+                              className="btnView"
                               onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
                             >
                               View
@@ -396,9 +460,157 @@ export default function TrainingRequestList() {
                     )}
                   </tbody>
                 </table>
+                {/* PAGINATION CONTROLS */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 12,
+                  }}
+                >
+                  <div style={{ color: "#2b4e72", fontSize: 14 }}>
+                    Page {currentPage} of {totalPages || 1}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      className="btnPage"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => p - 1)}
+                    >
+                      Prev
+                    </button>
+
+                    {[...Array(totalPages)].map((_, i) => (
+                      <button
+                        key={i}
+                        className={`btnPage ${currentPage === i + 1 ? "activePage" : ""}`}
+                        onClick={() => setCurrentPage(i + 1)}
+                      >
+                        {i + 1}
+                      </button>
+                    ))}
+
+                    <button
+                      className="btnPage"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
+
+          {/* CSS */}
+          <style>{`
+
+/* BUTTON */
+.btnPrimary{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btnPrimary:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* VIEW BUTTON */
+.btnView{
+  background:#5a8cc2;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:5px 12px;
+  cursor:pointer;
+    transition:all .25s ease;
+}
+
+.btnView:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+}
+
+/* TABLE */
+.training-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+/* HEADER */
+.training-table thead{
+  background:#3d6ba6;
+  color:white;
+}
+
+.training-table th{
+  padding:10px;
+  text-align:left;
+  font-weight:600;
+}
+
+/* BODY */
+.training-table td{
+  padding:10px;
+  border-bottom:1px solid #e4ecf5;
+}
+
+/* ROW BACKGROUND */
+.training-table tbody tr{
+  background:#f8fbff;
+}
+
+/* ALTERNATE ROW */
+.training-table tbody tr:nth-child(even){
+  background:#edf4fb;
+}
+
+/* HOVER */
+.training-table tbody tr:hover{
+  background:#a7c6ed;
+  transition:background .2s;
+}
+
+/* LOADING / EMPTY */
+.training-table tbody td{
+  color:#1f2937;
+}
+/* PAGINATION BUTTON */
+.btnPage{
+  background:#e4ecf5;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  color:#2b4e72;
+  transition:all .2s ease;
+}
+
+.btnPage:hover{
+  background:#a7c6ed;
+}
+
+.btnPage:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+}
+
+/* ACTIVE PAGE */
+.activePage{
+  background:#3d6ba6;
+  color:#fff;
+}
+`}</style>
         </main>
       </div>
     </div>

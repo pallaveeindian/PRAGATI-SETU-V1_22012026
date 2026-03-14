@@ -1,9 +1,17 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
+import {
+  FaUserPlus,
+  FaEye,
+  FaEdit,
+  FaTrash,
+  FaArrowLeft,
+  FaUser,
+} from "react-icons/fa";
 
 /* ---------------- TP resolver ---------------- */
 
@@ -61,17 +69,17 @@ function CPViewModal({ open, cp, onClose }) {
   if (!open || !cp) return null;
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: 900 }}>
+    <div className="tp-modal-backdrop">
+      <div className="tp-modal" style={{ maxWidth: 900 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
           <h3>Contact Person Details</h3>
-          <button className="btn-outline" onClick={onClose}>
-            Back
+          <button className="tp-btn-outline" onClick={onClose}>
+            <FaArrowLeft /> Back
           </button>
         </div>
 
         <h4>Basic Details</h4>
-        <table className="table table-compact">
+        <table className="tp-table">
           <tbody>
             <tr>
               <td>Name</td>
@@ -93,7 +101,7 @@ function CPViewModal({ open, cp, onClose }) {
         </table>
 
         <h4>Login Details</h4>
-        <table className="table table-compact">
+        <table className="tp-table">
           <tbody>
             <tr>
               <td>Username</td>
@@ -110,7 +118,7 @@ function CPViewModal({ open, cp, onClose }) {
         {centres.length === 0 ? (
           <p>No centres assigned</p>
         ) : (
-          <table className="table table-compact">
+          <table className="tp-table">
             <thead>
               <tr>
                 <th>Serial</th>
@@ -209,85 +217,95 @@ export default function TpListCP() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={<div className="app-title">Pragati Setu — Contact Persons</div>}
-        />
-
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div style={{ display: "flex", marginBottom: 12 }}>
-              <h2 style={{ margin: 0 }}>Contact Persons</h2>
-
-              <button
-                className="btn btn-primary"
-                style={{ marginLeft: "auto" }}
-                onClick={() => navigate("/tms/tp/cp/create")}
+        /> */}
+        <div className="app-shell-TP-CP">
+          <main style={{ padding: 18 }}>
+            <div>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 20,
+                }}
               >
-                + Create Contact Person
-              </button>
-            </div>
+                <h2 className="tp-page-title">
+                  <FaUser /> Contact Persons
+                </h2>
 
-            <table className="table table-compact">
-              <thead>
-                <tr>
-                  <th>S.No</th>
-                  <th>Name</th>
-                  <th>Mobile</th>
-                  <th>User ID</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
+                <button
+                  className="tp-btn"
+                  style={{ marginLeft: "auto" }}
+                  onClick={() => navigate("/tms/tp/cp/create")}
+                >
+                  <FaUserPlus style={{ marginRight: 6 }} /> Create Contact
+                  Person
+                </button>
+              </div>
+
+              <table className="tp-table">
+                <thead>
                   <tr>
-                    <td colSpan={5}>Loading…</td>
+                    <th>S.No</th>
+                    <th>Name</th>
+                    <th>Mobile</th>
+                    <th>User ID</th>
+                    <th>Actions</th>
                   </tr>
-                ) : cps.length === 0 ? (
-                  <tr>
-                    <td colSpan={5}>No contact persons found</td>
-                  </tr>
-                ) : (
-                  cps.map((cp, i) => (
-                    <tr key={cp.id}>
-                      <td>{i + 1}</td>
-                      <td>{cp.name}</td>
-                      <td>{cp.mobile_number || "-"}</td>
-                      <td>{cp.master_user || "-"}</td>
-                      <td>
-                        <button
-                          className="btn-sm btn-flat"
-                          onClick={() => setViewCp(cp)}
-                        >
-                          View
-                        </button>{" "}
-                        <button
-                          className="btn-sm btn-flat"
-                          onClick={() => navigate(`/tms/tp/cp/edit/${cp.id}`)}
-                        >
-                          Edit
-                        </button>{" "}
-                        <button
-                          className="btn-sm btn-danger"
-                          disabled={deletingId === cp.id}
-                          onClick={() => handleDelete(cp)}
-                        >
-                          {deletingId === cp.id ? "Deleting…" : "Delete"}
-                        </button>
-                      </td>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5}>Loading…</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </main>
-      </div>
+                  ) : cps.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No contact persons found</td>
+                    </tr>
+                  ) : (
+                    cps.map((cp, i) => (
+                      <tr key={cp.id}>
+                        <td>{i + 1}</td>
+                        <td>{cp.name}</td>
+                        <td>{cp.mobile_number || "-"}</td>
+                        <td>{cp.master_user || "-"}</td>
+                        <td>
+                          <button
+                            className="tp-btn-outline"
+                            onClick={() => setViewCp(cp)}
+                          >
+                            <FaEye /> View
+                          </button>{" "}
+                          <button
+                            className="tp-btn-outline"
+                            onClick={() => navigate(`/tms/tp/cp/edit/${cp.id}`)}
+                          >
+                            <FaEdit /> Edit
+                          </button>{" "}
+                          <button
+                            className="tp-btn-outline"
+                            disabled={deletingId === cp.id}
+                            onClick={() => handleDelete(cp)}
+                          >
+                            {deletingId === cp.id ? "Deleting…" : "Delete"}
+                          </button>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </main>
+        </div>
 
-      <CPViewModal
-        open={!!viewCp}
-        cp={viewCp}
-        onClose={() => setViewCp(null)}
-      />
+        <CPViewModal
+          open={!!viewCp}
+          cp={viewCp}
+          onClose={() => setViewCp(null)}
+        />
+      </div>
     </div>
   );
 }

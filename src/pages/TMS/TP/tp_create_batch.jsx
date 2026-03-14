@@ -1,7 +1,7 @@
 // src/pages/TMS/TP/tp_create_batch.jsx
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios"; // shared axios instance with interceptors [web:39][web:40]
@@ -823,26 +823,18 @@ function PreviewModal({ open, payload, onClose, onConfirm, disabled }) {
 
   return (
     <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: 900 }}>
-        <h3>Preview Batch Creation Payload</h3>
+      <div className="modal-card" style={{ maxWidth: 500 }}>
+        <h3>Confirm Proposal</h3>
 
-        <pre
-          style={{
-            maxHeight: 400,
-            overflow: "auto",
-            background: "#111",
-            color: "#0f0",
-            padding: 12,
-            fontSize: 12,
-          }}
-        >
-          {JSON.stringify(payload, null, 2)}
-        </pre>
+        <p style={{ marginTop: 12, fontSize: 15 }}>
+          Are you sure you want to propose this training request to <b>DMMU</b>?
+        </p>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
+        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
           <button className="btn-outline" onClick={onClose}>
             Back
           </button>
+
           <button
             className="btn btn-primary"
             disabled={disabled}
@@ -994,7 +986,7 @@ function BatchSubmitSection({
   return (
     <>
       <button
-        className="btn btn-primary"
+        className="btn btnPrimary"
         disabled={disabled}
         onClick={() => {
           // 🔒 HARD VALIDATION: each batch must have ≥ 1 participant
@@ -1454,31 +1446,51 @@ export default function TpCreateBatch() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               {isReviewMode ? "Review & Modify Batches" : "Create Batches"}
             </div>
           }
-        />
+        /> */}
 
-        <main style={{ padding: 18 }}>
+        <main
+          style={{
+            padding: 18,
+            minHeight: "100vh", // UPDATED UI
+          }}
+        >
           {loadingTR ? (
             <p>Loading Training Request…</p>
           ) : !trainingReq ? (
             <p>Training Request not found</p>
           ) : (
             <>
-              <div className="card">
-                <h3>{trainingReq.training_plan.training_name}</h3>
+              {/* TRAINING REQUEST SUMMARY */}
+              <div
+                className="card"
+                style={{
+                  background: "#fff", // UPDATED UI
+                  borderRadius: 10, // UPDATED UI
+                  padding: 20, // UPDATED UI
+                  borderLeft: "6px solid #3d6ba6", // UPDATED UI
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                }}
+              >
+                <h3 style={{ color: "#2b4e72" }}>
+                  {trainingReq.training_plan.training_name}
+                </h3>
+
                 <p>
-                  Theme: <b>{themeName}</b>
+                  Theme: <b style={{ color: "#3d6ba6" }}>{themeName}</b>
                 </p>
+
                 <p>
                   Type: <b>{trainingReq.training_type}</b> | Level:{" "}
                   <b>{trainingReq.level}</b> | Status:{" "}
-                  <b>{trainingReq.status}</b>
+                  <b style={{ color: "#3d6ba6" }}>{trainingReq.status}</b>
                 </p>
+
                 <p>
                   Location:{" "}
                   <b>
@@ -1488,8 +1500,17 @@ export default function TpCreateBatch() {
                 </p>
               </div>
 
+              {/* ADD BATCH BUTTON */}
               <div style={{ marginTop: 16, marginBottom: 8 }}>
-                <button className="btn" onClick={addBatch}>
+                <button
+                  className="btn btnPrimary"
+                  style={{
+                    background: "#3d6ba6", // UPDATED UI
+                    border: "none",
+                    color: "#fff",
+                  }}
+                  onClick={addBatch}
+                >
                   + Add Batch
                 </button>
               </div>
@@ -1500,18 +1521,26 @@ export default function TpCreateBatch() {
                   new Map(
                     Object.values(perBatchSel)
                       .flat()
-                      // .map((p) => [`${p.training}-${p.id}`, p]),
                       .map((p) => [p._uid, p]),
                   ).values(),
                 );
+
                 const count = selectedList.length;
 
                 return (
                   <div
                     key={batch.key}
                     className="card"
-                    style={{ marginTop: 12 }}
+                    style={{
+                      marginTop: 12,
+                      background: "#fff", // UPDATED UI
+                      borderRadius: 10,
+                      padding: 18,
+                      boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                      borderLeft: "6px solid #5a8cc2", // UPDATED UI
+                    }}
                   >
+                    {/* BATCH HEADER */}
                     <div
                       style={{
                         display: "flex",
@@ -1523,15 +1552,27 @@ export default function TpCreateBatch() {
                         updateBatch(batch.key, { expanded: !batch.expanded });
                       }}
                     >
-                      <h4 style={{ margin: 0, flex: 1 }}>
-                        {batch.title}{" "}
-                        <span style={{ fontSize: 12 }}>
+                      <h4
+                        style={{
+                          margin: 0,
+                          flex: 1,
+                          color: "#2b4e72", // UPDATED UI
+                        }}
+                      >
+                        {batch.title}
+                        <span style={{ fontSize: 12, color: "#5a8cc2" }}>
+                          {" "}
                           ({count} participants)
                         </span>
                       </h4>
+
                       {batches.length > 1 && (
                         <button
                           className="btn-sm btn-outline"
+                          style={{
+                            borderColor: "#3d6ba6", // UPDATED UI
+                            color: "#3d6ba6",
+                          }}
                           onClick={(e) => {
                             e.stopPropagation();
                             removeBatch(batch.key);
@@ -1540,15 +1581,27 @@ export default function TpCreateBatch() {
                           Delete
                         </button>
                       )}
+
                       <span style={{ marginLeft: 8 }}>
                         {batch.expanded ? "▲" : "▼"}
                       </span>
                     </div>
 
+                    {/* BATCH CONTENT */}
                     {batch.expanded && (
                       <div style={{ marginTop: 12 }}>
-                        <div className="card" style={{ marginTop: 8 }}>
+                        {/* BATCH TYPE */}
+                        <div
+                          className="card"
+                          style={{
+                            marginTop: 8,
+                            padding: 16,
+                            borderRadius: 8,
+                            background: "#f8fbff", // UPDATED UI
+                          }}
+                        >
                           <label>Batch Type</label>
+
                           <select
                             className="input"
                             value={batch.batchType}
@@ -1566,6 +1619,7 @@ export default function TpCreateBatch() {
                           </select>
                         </div>
 
+                        {/* PARTICIPANT TABLE */}
                         <ParticipantTable
                           trId={requestId}
                           title="Participants from this Training Request"
@@ -1582,64 +1636,74 @@ export default function TpCreateBatch() {
                           usedUidsAcrossBatches={usedUidsAcrossBatches}
                         />
 
+                        {/* SELECTED PARTICIPANTS */}
                         {selectedList.length > 0 && (
-                          <div className="card" style={{ marginTop: 12 }}>
-                            <h4>Selected Participants for this Batch</h4>
+                          <div
+                            className="card"
+                            style={{
+                              marginTop: 12,
+                              padding: 16,
+                              borderRadius: 8,
+                            }}
+                          >
+                            <h4 style={{ color: "#2b4e72" }}>
+                              Selected Participants for this Batch
+                            </h4>
 
-                            <table className="table table-compact">
-                              <thead>
-                                <tr>
-                                  <th>Name</th>
-                                  <th>Mobile</th>
-                                  <th>TR ID</th>
-                                  <th />
-                                </tr>
-                              </thead>
-
-                              <tbody>
-                                {selectedList.map((p) => (
-                                  <tr key={p._uid}>
-                                    <td>{p.full_name || p.member_name}</td>
-                                    <td>{p.mobile_no || p.mobile}</td>
-                                    <td>{p.training}</td>
-                                    <td>
-                                      <button
-                                        className="btn-sm btn-outline"
-                                        onClick={() =>
-                                          removeParticipantFromBatch(
-                                            batch.key,
-                                            p.training,
-                                            p,
-                                          )
-                                        }
-                                      >
-                                        Remove
-                                      </button>
-                                    </td>
+                            <div style={{ overflowX: "auto" }}>
+                              {/* UPDATED UI */}
+                              <table className="table table-compact">
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Mobile</th>
+                                    <th>TR ID</th>
+                                    <th />
                                   </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                </thead>
+
+                                <tbody>
+                                  {selectedList.map((p) => (
+                                    <tr key={p._uid}>
+                                      <td>{p.full_name || p.member_name}</td>
+                                      <td>{p.mobile_no || p.mobile}</td>
+                                      <td>{p.training}</td>
+
+                                      <td>
+                                        <button
+                                          className="btn-sm btn-outline"
+                                          style={{
+                                            borderColor: "#3d6ba6",
+                                            color: "#3d6ba6",
+                                          }}
+                                          onClick={() =>
+                                            removeParticipantFromBatch(
+                                              batch.key,
+                                              p.training,
+                                              p,
+                                            )
+                                          }
+                                        >
+                                          Remove
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           </div>
                         )}
 
-                        {batch.batchType === "COMBINED" && (
-                          <CombinedParticipantSelector
-                            trainingReq={trainingReq}
-                            participantCache={participantCache}
-                            setParticipantCache={setParticipantCache}
-                            selectedParticipants={participantSelections}
-                            setSelectedParticipants={setParticipantSelections}
-                            batchKey={batch.key}
-                            blockNamesCache={blockNamesCache}
-                            setBlockNamesCache={setBlockNamesCache}
-                            markBatchTouched={markBatchTouched}
-                            usedUidsAcrossBatches={usedUidsAcrossBatches}
-                          />
-                        )}
-
-                        <div className="card" style={{ marginTop: 16 }}>
-                          <h4>Allot Centre</h4>
+                        {/* ALLOT CENTRE */}
+                        <div
+                          className="card"
+                          style={{
+                            marginTop: 16,
+                            padding: 16,
+                          }}
+                        >
+                          <h4 style={{ color: "#2b4e72" }}>Allot Centre</h4>
 
                           {loadingCentres ? (
                             <p>Loading centres…</p>
@@ -1648,62 +1712,82 @@ export default function TpCreateBatch() {
                               No centres found. Please register a centre first.
                             </p>
                           ) : (
-                            <table className="table table-compact">
-                              <thead>
-                                <tr>
-                                  <th />
-                                  <th>Serial</th>
-                                  <th>Centre</th>
-                                  <th>Type</th>
-                                  <th>Training Halls</th>
-                                  <th />
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {centres.map((c) => (
-                                  <tr key={c.id}>
-                                    <td>
-                                      <input
-                                        type="radio"
-                                        checked={batch.centre?.id === c.id}
-                                        onChange={() =>
-                                          updateBatch(
-                                            batch.key,
-                                            { centre: c },
-                                            true,
-                                          )
-                                        }
-                                      />
-                                    </td>
-                                    <td>{c.serial_number}</td>
-                                    <td
-                                      style={{ cursor: "pointer" }}
-                                      onClick={() => handleViewCentre(c.id)}
-                                    >
-                                      {c.venue_name}
-                                    </td>
-                                    <td>{c.centre_type}</td>
-                                    <td>{c.training_hall_count}</td>
-                                    <td>
-                                      <button
-                                        className="btn-sm btn-flat"
-                                        disabled={viewLoadingId === c.id}
+                            <div style={{ overflowX: "auto" }}>
+                              {/* UPDATED UI */}
+                              <table className="table table-compact">
+                                <thead>
+                                  <tr>
+                                    <th />
+                                    <th>Serial</th>
+                                    <th>Centre</th>
+                                    <th>Type</th>
+                                    <th>Training Halls</th>
+                                    <th />
+                                  </tr>
+                                </thead>
+
+                                <tbody>
+                                  {centres.map((c) => (
+                                    <tr key={c.id}>
+                                      <td>
+                                        <input
+                                          type="radio"
+                                          checked={batch.centre?.id === c.id}
+                                          onChange={() =>
+                                            updateBatch(
+                                              batch.key,
+                                              { centre: c },
+                                              true,
+                                            )
+                                          }
+                                        />
+                                      </td>
+
+                                      <td>{c.serial_number}</td>
+
+                                      <td
+                                        style={{
+                                          cursor: "pointer",
+                                          color: "#3d6ba6",
+                                        }}
                                         onClick={() => handleViewCentre(c.id)}
                                       >
-                                        {viewLoadingId === c.id
-                                          ? "Opening…"
-                                          : "View"}
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
+                                        {c.venue_name}
+                                      </td>
+
+                                      <td>{c.centre_type}</td>
+
+                                      <td>{c.training_hall_count}</td>
+
+                                      <td>
+                                        <button
+                                          className="btn-sm btn-flat"
+                                          disabled={viewLoadingId === c.id}
+                                          onClick={() => handleViewCentre(c.id)}
+                                        >
+                                          {viewLoadingId === c.id
+                                            ? "Opening…"
+                                            : "View"}
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
                           )}
                         </div>
 
-                        <div className="card" style={{ marginTop: 16 }}>
+                        {/* START DATE */}
+                        <div
+                          className="card"
+                          style={{
+                            marginTop: 16,
+                            padding: 16,
+                          }}
+                        >
                           <label>Start Date</label>
+
                           <input
                             type="date"
                             className="input"
@@ -1740,40 +1824,20 @@ export default function TpCreateBatch() {
                               );
                             }}
                           />
+
                           {batch.endDate && (
                             <p>
                               End Date: <b>{batch.endDate}</b>
                             </p>
                           )}
                         </div>
-
-                        {batch.touched && batch.errors.length > 0 && (
-                          <div className="card" style={{ marginTop: 16 }}>
-                            <h4>Cannot proceed for this batch</h4>
-                            <ul>
-                              {batch.errors.map((e, i) => (
-                                <li key={i}>{e}</li>
-                              ))}
-                            </ul>
-                          </div>
-                        )}
                       </div>
                     )}
                   </div>
                 );
               })}
 
-              {globalErrors.length > 0 && (
-                <div className="card" style={{ marginTop: 16 }}>
-                  <h4>Overall issues</h4>
-                  <ul>
-                    {globalErrors.map((e, i) => (
-                      <li key={i}>{e}</li>
-                    ))}
-                  </ul>
-                </div>
-              )}
-
+              {/* SUBMIT */}
               <div style={{ marginTop: 16 }}>
                 <BatchSubmitSection
                   disabled={globalErrors.length > 0}
@@ -1796,6 +1860,21 @@ export default function TpCreateBatch() {
         data={centrePreview}
         onClose={() => setCentrePreview(null)}
       />
+      <style>{`.btnPrimary{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btnPrimary:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+`}</style>
     </div>
   );
 }

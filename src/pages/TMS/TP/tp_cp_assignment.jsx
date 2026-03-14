@@ -1,6 +1,6 @@
 // src/pages/TMS/TP/tp_cp_assignment.jsx
 import React, { useContext, useEffect, useState } from "react";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API } from "../../../api/axios";
@@ -70,25 +70,48 @@ function AssignModal({
         background: "rgba(0,0,0,0.45)",
         backdropFilter: "blur(4px)",
         zIndex: 1000,
+        display: "flex", // UPDATED UI: center modal vertically
+        alignItems: "center", // UPDATED UI
+        justifyContent: "center", // UPDATED UI
+        padding: 16, // UPDATED UI for mobile spacing
       }}
     >
       <div
         style={{
           background: "#fff",
+          width: "100%", // UPDATED UI: responsive
           maxWidth: 520,
-          margin: "120px auto",
-          borderRadius: 10,
-          padding: 20,
+          borderRadius: 12, // UPDATED UI
+          padding: 22, // UPDATED UI
+          boxShadow: "0 10px 25px rgba(0,0,0,0.18)", // UPDATED UI
+          borderTop: "5px solid #3d6ba6", // UPDATED UI accent
         }}
       >
-        <h3>
+        {/* HEADER */}
+        <h3
+          style={{
+            marginTop: 0,
+            marginBottom: 16,
+            color: "#2b4e72", // UPDATED UI
+          }}
+        >
           {initialData ? "Edit Assignment" : "Assign Centre to Contact Person"}
         </h3>
 
         {/* CONTACT PERSON */}
-        <label>Contact Person</label>
+        <label
+          style={{
+            fontWeight: 600, // UPDATED UI
+            color: "#2b4e72", // UPDATED UI
+          }}
+        >
+          Contact Person
+        </label>
+
         {loadingCP ? (
-          <p style={{ fontSize: 13 }}>Loading contact persons…</p>
+          <p style={{ fontSize: 13, color: "#5a8cc2" }}>
+            Loading contact persons…
+          </p>
         ) : (
           <select
             className="input"
@@ -97,8 +120,12 @@ function AssignModal({
             onChange={(e) =>
               setForm({ ...form, contact_person: e.target.value })
             }
+            style={{
+              marginTop: 6, // UPDATED UI
+            }}
           >
             <option value="">Select Contact Person</option>
+
             {contactPersons.map((cp) => (
               <option key={cp.id} value={cp.id}>
                 {cp.name}
@@ -108,9 +135,19 @@ function AssignModal({
         )}
 
         {/* CENTRE */}
-        <label style={{ marginTop: 12 }}>Centre</label>
+        <label
+          style={{
+            marginTop: 14,
+            display: "block", // UPDATED UI
+            fontWeight: 600,
+            color: "#2b4e72",
+          }}
+        >
+          Centre
+        </label>
+
         {loadingCentres ? (
-          <p style={{ fontSize: 13 }}>Loading centres…</p>
+          <p style={{ fontSize: 13, color: "#5a8cc2" }}>Loading centres…</p>
         ) : (
           <select
             className="input"
@@ -119,8 +156,12 @@ function AssignModal({
             onChange={(e) =>
               setForm({ ...form, allocated_centre: e.target.value })
             }
+            style={{
+              marginTop: 6,
+            }}
           >
             <option value="">Select Centre</option>
+
             {centres.map((c) => (
               <option key={c.id} value={c.id}>
                 {c.venue_name}
@@ -129,8 +170,28 @@ function AssignModal({
           </select>
         )}
 
-        <div style={{ display: "flex", gap: 10, marginTop: 16 }}>
-          <button className="btn" disabled={saving} onClick={handleSubmit}>
+        {/* ACTION BUTTONS */}
+        <div
+          style={{
+            display: "flex",
+            gap: 10,
+            marginTop: 20,
+            justifyContent: "flex-end", // UPDATED UI
+            flexWrap: "wrap", // UPDATED UI for mobile
+          }}
+        >
+          <button
+            className="btn"
+            disabled={saving}
+            onClick={handleSubmit}
+            style={{
+              background: "#3d6ba6", // UPDATED UI
+              color: "#fff",
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 6,
+            }}
+          >
             {saving
               ? initialData
                 ? "Updating…"
@@ -140,7 +201,18 @@ function AssignModal({
                 : "Assign"}
           </button>
 
-          <button className="btn-outline" disabled={saving} onClick={onClose}>
+          <button
+            className="btn-outline"
+            disabled={saving}
+            onClick={onClose}
+            style={{
+              border: "1px solid #3d6ba6", // UPDATED UI
+              color: "#3d6ba6",
+              padding: "8px 16px",
+              borderRadius: 6,
+              background: "#fff",
+            }}
+          >
             Cancel
           </button>
         </div>
@@ -226,28 +298,53 @@ export default function TpCpAssignment() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Contact Person Centre Assignment
             </div>
           }
-        />
+        /> */}
 
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+        <main
+          style={{
+            padding: 18,
+            minHeight: "100vh", // UPDATED UI
+          }}
+        >
+          <div
+            style={{
+              maxWidth: 1100,
+              margin: "0 auto",
+            }}
+          >
+            {/* HEADER */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                marginBottom: 12,
+                marginBottom: 16,
+                flexWrap: "wrap", // UPDATED UI: mobile friendly
+                gap: 10, // UPDATED UI
               }}
             >
-              <h2 style={{ margin: 0 }}>Centre Assignments</h2>
+              <h2
+                style={{
+                  margin: 0,
+                  color: "#2b4e72", // UPDATED UI
+                }}
+              >
+                Centre Assignments
+              </h2>
 
               <button
-                className="btn btn-primary"
-                style={{ marginLeft: "auto" }}
+                className="btn btnPrimary"
+                style={{
+                  marginLeft: "auto",
+                  background: "#3d6ba6", // UPDATED UI
+                  border: "none",
+                  color: "#fff",
+                }}
                 onClick={() => {
                   setEditRow(null);
                   setModalOpen(true);
@@ -257,52 +354,97 @@ export default function TpCpAssignment() {
               </button>
             </div>
 
-            <table className="table table-compact">
-              <thead>
-                <tr>
-                  <th>S.No</th>
-                  <th>Centre</th>
-                  <th>Contact Person</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
-                  <tr>
-                    <td colSpan={4}>Loading assignments…</td>
-                  </tr>
-                ) : links.length === 0 ? (
-                  <tr>
-                    <td colSpan={4}>No assignments found</td>
-                  </tr>
-                ) : (
-                  links.map((l, i) => (
-                    <tr key={l.id}>
-                      <td>{i + 1}</td>
-                      <td>{l.allocated_centre?.venue_name}</td>
-                      <td>{l.contact_person?.name}</td>
-                      <td>
-                        <button
-                          className="btn-sm btn-flat"
-                          onClick={() => {
-                            setEditRow(l);
-                            setModalOpen(true);
+            {/* TABLE CARD WRAPPER */}
+            <div
+              className="card"
+              style={{
+                background: "#fff", // UPDATED UI
+                borderRadius: 10, // UPDATED UI
+                padding: 18, // UPDATED UI
+                boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                borderLeft: "6px solid #3d6ba6", // UPDATED UI accent
+              }}
+            >
+              <div style={{ overflowX: "auto" }}>
+                {/* UPDATED UI: mobile scroll */}
+                <table className="table table-compact">
+                  <thead
+                    style={{
+                      background: "#f4f8fd", // UPDATED UI
+                    }}
+                  >
+                    <tr>
+                      <th>S.No</th>
+                      <th>Centre</th>
+                      <th>Contact Person</th>
+                      <th>Action</th> {/* UPDATED UI */}
+                    </tr>
+                  </thead>
+
+                  <tbody>
+                    {loading ? (
+                      <tr>
+                        <td colSpan={4}>Loading assignments…</td>
+                      </tr>
+                    ) : links.length === 0 ? (
+                      <tr>
+                        <td colSpan={4}>No assignments found</td>
+                      </tr>
+                    ) : (
+                      links.map((l, i) => (
+                        <tr
+                          key={l.id}
+                          style={{
+                            borderBottom: "1px solid #e4ecf5", // UPDATED UI
                           }}
                         >
-                          Edit
-                        </button>{" "}
-                        <button
-                          className="btn-sm btn-danger"
-                          onClick={() => handleDelete(l.id)}
-                        >
-                          Delete
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
+                          <td>{i + 1}</td>
+
+                          <td
+                            style={{
+                              color: "#3d6ba6", // UPDATED UI
+                              fontWeight: 500,
+                            }}
+                          >
+                            {l.allocated_centre?.venue_name}
+                          </td>
+
+                          <td>{l.contact_person?.name}</td>
+
+                          <td>
+                            <button
+                              className="btn-sm btn-flat"
+                              style={{
+                                color: "#3d6ba6", // UPDATED UI
+                              }}
+                              onClick={() => {
+                                setEditRow(l);
+                                setModalOpen(true);
+                              }}
+                            >
+                              Edit
+                            </button>
+
+                            <button
+                              className="btn-sm btnPrimary"
+                              style={{
+                                marginLeft: 8,
+                                background: "#2b4e72", // UPDATED UI
+                                border: "none",
+                                color: "#fff",
+                              }}
+                              onClick={() => handleDelete(l.id)}
+                            >
+                              Delete
+                            </button>
+                          </td>
+                        </tr>
+                      ))
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
           </div>
         </main>
       </div>
@@ -320,6 +462,21 @@ export default function TpCpAssignment() {
         loadingCP={loadingCP}
         loadingCentres={loadingCentres}
       />
+      <style>{`.btnPrimary{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btnPrimary:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+`}</style>
     </div>
   );
 }

@@ -129,12 +129,12 @@ export default function ShgMemberListTable({
     } catch (e) {
       console.error(
         "Failed to load SHG members",
-        e?.response?.data || e.message || e
+        e?.response?.data || e.message || e,
       );
       setError(
         e?.response?.data?.detail ||
           e.message ||
-          "Failed to load SHG members from UPSRLM."
+          "Failed to load SHG members from UPSRLM.",
       );
     } finally {
       setLoading(false);
@@ -194,14 +194,34 @@ export default function ShgMemberListTable({
     if (onToggleMember) onToggleMember(member, !!checked);
     if (checked && onSelectMember) onSelectMember(member);
   }
-
   return (
-    <div className="card" style={{ marginTop: 16 }}>
-      <div className="header-row space-between">
+    <div
+      className="card"
+      style={{
+        marginTop: 16,
+        background: "#fff",
+        border: "2px solid #3d6ba6",
+        borderRadius: 10,
+        padding: 20,
+        boxShadow: "0 4px 10px rgba(43,78,114,0.15)",
+      }}
+    >
+      {/* HEADER */}
+      <div
+        className="header-row space-between"
+        style={{
+          display: "flex",
+          justifyContent: "space-between",
+          alignItems: "center",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 16,
+        }}
+      >
         <div>
-          <h3>
+          <h3 style={{ margin: 0, color: "#2b4e72" }}>
             Members in SHG:{" "}
-            <span style={{ color: "#111827" }}>
+            <span style={{ color: "#111827", fontWeight: 600 }}>
               {shg?.shg_name ||
                 shg?.name ||
                 shg?.shg_code ||
@@ -210,27 +230,61 @@ export default function ShgMemberListTable({
             </span>
           </h3>
         </div>
+
         <button
-          className="btn-sm btn-flat"
+          className="btnPrimaryHover"
           onClick={() => setReloadToken((t) => t + 1)}
           disabled={loading}
+          style={{
+            background: "#3d6ba6",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 14px",
+            cursor: "pointer",
+            transition: "transform 0.25s ease, box-shadow 0.25s ease",
+          }}
         >
           Refresh
         </button>
       </div>
 
-      <div className="filters-row" style={{ gap: 8 }}>
+      {/* FILTERS */}
+      <div
+        className="filters-row"
+        style={{
+          display: "flex",
+          flexWrap: "wrap",
+          gap: 10,
+          marginBottom: 16,
+          alignItems: "center",
+        }}
+      >
         <input
           type="text"
-          className="input"
+          className="search-input"
           placeholder="Search member name / code"
           value={search}
           onChange={(e) => setSearch(e.target.value)}
+          style={{
+            border: "1px solid #3d6ba6",
+            borderRadius: 6,
+            padding: "7px 12px",
+            minWidth: 200,
+            outline: "none",
+          }}
         />
+
         <select
-          className="input"
+          className="search-input"
           value={ordering}
           onChange={(e) => setOrdering(e.target.value)}
+          style={{
+            border: "1px solid #3d6ba6",
+            borderRadius: 6,
+            padding: "7px 12px",
+            outline: "none",
+          }}
         >
           <option value="">Order by…</option>
           <option value="member_name">Name (A–Z)</option>
@@ -238,9 +292,16 @@ export default function ShgMemberListTable({
           <option value="dob">Age (Youngest first)</option>
           <option value="-dob">Age (Oldest first)</option>
         </select>
+
         <label
           className="small-muted"
-          style={{ display: "flex", alignItems: "center", gap: 4 }}
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: 6,
+            fontSize: 13,
+            color: "#2b4e72",
+          }}
         >
           <input
             type="checkbox"
@@ -249,16 +310,30 @@ export default function ShgMemberListTable({
           />
           Only working PLD status
         </label>
+
         <button
-          className="btn-sm btn-outline"
+          className="btnPrimaryHover"
           onClick={() => load(1, { force: true })}
+          style={{
+            background: "#5a8cc2",
+            color: "#fff",
+            border: "none",
+            borderRadius: 6,
+            padding: "6px 14px",
+            cursor: "pointer",
+            transition: "transform 0.25s ease, box-shadow 0.25s ease",
+          }}
         >
           Apply
         </button>
       </div>
 
+      {/* LOADING */}
       {loading ? (
-        <div className="table-spinner">
+        <div
+          className="table-spinner"
+          style={{ padding: 20, textAlign: "center", color: "#2b4e72" }}
+        >
           <span>Loading members…</span>
         </div>
       ) : error ? (
@@ -266,34 +341,52 @@ export default function ShgMemberListTable({
           {error}
         </div>
       ) : rows.length === 0 ? (
-        <p className="muted" style={{ marginTop: 8 }}>
+        <p className="muted" style={{ marginTop: 8, color: "#6b7280" }}>
           No members found for this SHG.
         </p>
       ) : (
         <>
-          <div className="table-wrapper">
-            <table className="table table-compact">
-              <thead>
+          {/* TABLE */}
+          <div
+            className="table-wrapper"
+            style={{
+              overflowX: "auto",
+              border: "1px solid #e4ecf5",
+              borderRadius: 8,
+            }}
+          >
+            <table
+              className="table table-compact"
+              style={{
+                width: "100%",
+                borderCollapse: "collapse",
+                minWidth: 900,
+                fontSize: 14,
+              }}
+            >
+              <thead style={{ background: "#3d6ba6", color: "#fff" }}>
                 <tr>
-                  <th style={{ width: 40 }}> </th>
-                  <th>Member Name</th>
-                  <th>Member Code</th>
-                  <th>Age</th>
-                  <th>Gender</th>
-                  <th>Marital Status</th>
-                  <th>Designation</th>
-                  <th>Mobile</th>
-                  <th>Religion</th>
-                  <th>Social Category</th>
-                  <th>Aadhaar No</th>
-                  <th>Aadhaar Verified</th>
-                  <th>PLD Status</th>
-                  <th>Action</th>
+                  <th style={{ width: 40, padding: 10 }}> </th>
+                  <th style={{ padding: 10 }}>Member Name</th>
+                  <th style={{ padding: 10 }}>Member Code</th>
+                  <th style={{ padding: 10 }}>Age</th>
+                  <th style={{ padding: 10 }}>Gender</th>
+                  <th style={{ padding: 10 }}>Marital Status</th>
+                  <th style={{ padding: 10 }}>Designation</th>
+                  <th style={{ padding: 10 }}>Mobile</th>
+                  <th style={{ padding: 10 }}>Religion</th>
+                  <th style={{ padding: 10 }}>Social Category</th>
+                  <th style={{ padding: 10 }}>Aadhaar No</th>
+                  <th style={{ padding: 10 }}>Aadhaar Verified</th>
+                  <th style={{ padding: 10 }}>PLD Status</th>
+                  <th style={{ padding: 10 }}>Action</th>
                 </tr>
               </thead>
+
               <tbody>
                 {rows.map((m) => {
                   const code = m.member_code || m.lokos_member_code || m.id;
+
                   const isSelected =
                     (selectedMemberCode &&
                       code &&
@@ -301,6 +394,7 @@ export default function ShgMemberListTable({
                     isMemberSelected(m);
 
                   const age = calculateAge(m.dob);
+
                   const phone =
                     (Array.isArray(m.member_phones) &&
                       m.member_phones.find((p) => p.is_default)?.phone_no) ||
@@ -319,8 +413,12 @@ export default function ShgMemberListTable({
                     <tr
                       key={code || `${m.member_name}-${Math.random()}`}
                       className={isSelected ? "row-selected" : ""}
+                      style={{
+                        background: isSelected ? "#a7c6ed" : "",
+                        borderBottom: "1px solid #e4ecf5",
+                      }}
                     >
-                      <td>
+                      <td style={{ padding: 8 }}>
                         <input
                           type="checkbox"
                           checked={!!isSelected}
@@ -328,23 +426,35 @@ export default function ShgMemberListTable({
                         />
                       </td>
 
-                      <td>{m.member_name || "-"}</td>
-                      <td>{code || "-"}</td>
-                      <td>{age || "-"}</td>
-                      <td>{m.gender || "-"}</td>
-                      <td>{m.marital_status || "-"}</td>
-                      <td>{designation || "-"}</td>
-                      <td>{phone}</td>
-                      <td>{m.religion || "-"}</td>
-                      <td>{m.social_category || "-"}</td>
-                      <td>{m.aadhar_no || "-"}</td>
-                      <td>{m.aadhar_verified ? "Yes" : "No"}</td>
-                      <td>{m.pld_status ? "Yes" : "No"}</td>
-                      <td>
-                        {/* Legacy action kept for backward compatibility */}
+                      <td style={{ padding: 8 }}>{m.member_name || "-"}</td>
+                      <td style={{ padding: 8 }}>{code || "-"}</td>
+                      <td style={{ padding: 8 }}>{age || "-"}</td>
+                      <td style={{ padding: 8 }}>{m.gender || "-"}</td>
+                      <td style={{ padding: 8 }}>{m.marital_status || "-"}</td>
+                      <td style={{ padding: 8 }}>{designation || "-"}</td>
+                      <td style={{ padding: 8 }}>{phone}</td>
+                      <td style={{ padding: 8 }}>{m.religion || "-"}</td>
+                      <td style={{ padding: 8 }}>{m.social_category || "-"}</td>
+                      <td style={{ padding: 8 }}>{m.aadhar_no || "-"}</td>
+                      <td style={{ padding: 8 }}>
+                        {m.aadhar_verified ? "Yes" : "No"}
+                      </td>
+                      <td style={{ padding: 8 }}>
+                        {m.pld_status ? "Yes" : "No"}
+                      </td>
+
+                      <td style={{ padding: 8 }}>
                         <button
                           className="btn-sm btn-outline"
                           onClick={() => onSelectMember && onSelectMember(m)}
+                          style={{
+                            padding: "5px 10px",
+                            border: "1px solid #3d6ba6",
+                            background: "#fff",
+                            color: "#2b4e72",
+                            borderRadius: 6,
+                            cursor: "pointer",
+                          }}
                         >
                           View Detail
                         </button>
@@ -356,22 +466,48 @@ export default function ShgMemberListTable({
             </table>
           </div>
 
+          {/* PAGINATION */}
           {meta && meta.total > meta.page_size && (
-            <div className="pagination" style={{ marginTop: 8 }}>
+            <div
+              className="pagination"
+              style={{
+                marginTop: 12,
+                display: "flex",
+                justifyContent: "center",
+                alignItems: "center",
+                gap: 12,
+              }}
+            >
               <button
                 className="btn-sm btn-flat"
                 disabled={meta.page <= 1}
                 onClick={() => load(meta.page - 1)}
+                style={{
+                  padding: "6px 12px",
+                  background: "#5a8cc2",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                }}
               >
                 Prev
               </button>
-              <span>
+
+              <span style={{ color: "#2b4e72", fontWeight: 500 }}>
                 Page {meta.page} of {totalPages}
               </span>
+
               <button
                 className="btn-sm btn-flat"
                 disabled={meta.page >= totalPages}
                 onClick={() => load(meta.page + 1)}
+                style={{
+                  padding: "6px 12px",
+                  background: "#5a8cc2",
+                  color: "#fff",
+                  border: "none",
+                  borderRadius: 6,
+                }}
               >
                 Next
               </button>
@@ -379,6 +515,75 @@ export default function ShgMemberListTable({
           )}
         </>
       )}
+      <style>{`.table-wrapper{
+  border-radius:8px;
+  overflow:hidden;
+}
+
+/* Table base */
+.table{
+  width:100%;
+  border-collapse:collapse;
+  background:#e4ecf5;
+  font-size:14px;
+}
+
+/* Header */
+.table thead{
+  background:#3d6ba6;
+  color:#fff;
+}
+
+.table th{
+  padding:10px;
+  text-align:left;
+  font-weight:600;
+}
+
+/* Body rows */
+.table tbody tr{
+  background:#f8fbff;
+  border-bottom:1px solid #d3e2f3;
+}
+
+/* Alternate row color */
+.table tbody tr:nth-child(even){
+  background:#edf4fb;
+}
+
+/* Hover effect */
+.table tbody tr:hover{
+  background:#a7c6ed;
+  transition:background 0.2s ease;
+}
+
+/* Selected row */
+.row-selected{
+  background:#a7c6ed !important;
+}
+
+/* Table cells */
+.table td{
+  padding:10px;
+  color:#1f2937;
+}
+.btnPrimaryHover:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+}
+.search-input{
+  border: 1px solid #3d6ba6;
+  border-radius: 6px;
+  padding: 6px 10px;
+  outline: none;
+  transition: all 0.2s ease;
+}
+  /* Focus effect */
+.search-input:focus{
+  border-color: #2563eb;
+  box-shadow: 0 0 0 2px rgba(61,107,166,0.25);
+}
+`}</style>
     </div>
   );
 }

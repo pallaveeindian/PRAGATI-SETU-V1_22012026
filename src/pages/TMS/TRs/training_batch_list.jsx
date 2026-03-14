@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
@@ -81,7 +81,18 @@ export default function TrainingBatchList() {
 
   const [tpPartnerId, setTpPartnerId] = useState(null);
   const [tpPartnerName, setTpPartnerName] = useState(null);
+  // ⭐ PAGINATION CHANGE
+  const [currentPage, setCurrentPage] = useState(1);
+  const rowsPerPage = 10;
 
+  // ⭐ PAGINATION CHANGE
+  const totalPages = Math.ceil(batches.length / rowsPerPage);
+
+  // ⭐ PAGINATION CHANGE
+  const paginatedBatches = batches.slice(
+    (currentPage - 1) * rowsPerPage,
+    currentPage * rowsPerPage,
+  );
   /* ---------------- filters ---------------- */
 
   const [filters, setFilters] = useState({
@@ -341,7 +352,7 @@ export default function TrainingBatchList() {
       const items = resp?.data?.results || [];
 
       setBatches(items);
-
+      setCurrentPage(1);
       // ❌ DO NOT CACHE request-scoped results
       if (!isRequestScoped) {
         saveCache(getScopeKey(), items);
@@ -402,24 +413,19 @@ export default function TrainingBatchList() {
       />
 
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">Pragati Setu — Training Batches</div>
           }
-        />
+        /> */}
 
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
             {/* ================= FILTERS ================= */}
+
             {!isRequestScoped && (
-              <div
-                style={{
-                  background: "#fff",
-                  padding: 12,
-                  borderRadius: 8,
-                  marginBottom: 12,
-                }}
-              >
+              // ⭐ CHANGE: filter-panel class added
+              <div className="filter-panel">
                 <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
                   {role === "smmu" && (
                     <>
@@ -539,7 +545,6 @@ export default function TrainingBatchList() {
                     </select>
                   )}
 
-                  {/* Training Partner filter */}
                   {role !== "training_partner" && role !== "tpcp" && (
                     <select
                       className="input"
@@ -657,8 +662,9 @@ export default function TrainingBatchList() {
 
             {/* ================= TABLE ================= */}
 
-            <div style={{ background: "#fff", padding: 12, borderRadius: 8 }}>
-              <table className="table table-compact">
+            {/* ⭐ CHANGE: table-wrapper class */}
+            <div className="table-wrapper">
+              <table className="table">
                 <thead>
                   <tr>
                     <th>#</th>
@@ -675,6 +681,7 @@ export default function TrainingBatchList() {
                     <th>Action</th>
                   </tr>
                 </thead>
+
                 <tbody>
                   {loading ? (
                     <tr>
@@ -685,11 +692,24 @@ export default function TrainingBatchList() {
                       <td colSpan={12}>No batches found</td>
                     </tr>
                   ) : (
-                    batches.map((b, i) => (
+                    // batches.map((b, i) => (
+                    // ⭐ PAGINATION CHANGE
+                    paginatedBatches.map((b, i) => (
                       <tr key={b.id}>
-                        <td>{i + 1}</td>
+                        <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
                         <td>{b.code}</td>
-                        <td>{b.status}</td>
+
+                        {/* ⭐ CHANGE: status badge */}
+                        <td>
+                          <span
+                            className={`status-badge status-${String(
+                              b.status,
+                            ).toLowerCase()}`}
+                          >
+                            {b.status}
+                          </span>
+                        </td>
+
                         <td>{b.request?.training_type}</td>
                         <td>{b.start_date}</td>
                         <td>{b.end_date}</td>
@@ -698,6 +718,7 @@ export default function TrainingBatchList() {
                         <td>{b.centre?.partner?.name || "-"}</td>
                         <td>{b.request?.block?.block_name_en || "-"}</td>
                         <td>{b.request?.district?.district_name_en || "-"}</td>
+
                         <td>
                           <button
                             className="btn-sm btn-flat"
@@ -725,9 +746,210 @@ export default function TrainingBatchList() {
                 </tbody>
               </table>
             </div>
+            {/* ⭐ PAGINATION CHANGE */}
+            <div className="pagination">
+              <button
+                className="btn-sm btn-flat"
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Prev
+              </button>
+
+              <span className="pagination-info">
+                Page {currentPage} of {totalPages || 1}
+              </span>
+
+              <button
+                className="btn-sm btn-flat"
+                disabled={currentPage === totalPages || totalPages === 0}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
           </div>
         </main>
       </div>
+      <style>{`
+/* ================= FILTER PANEL ================= */
+
+.filter-panel{
+  background:#fff;
+  padding:16px;
+  border-radius:10px;
+  border:2px solid #3d6ba6;
+  box-shadow:0 6px 16px rgba(0,0,0,0.05);
+  margin-bottom: 20px
+}
+
+.input{
+  padding:7px 10px;
+  border-radius:6px;
+  border:1px solid #a7c6ed;
+  background:#f8fbff;
+  min-width:140px;
+  transition:all .25s ease;
+}
+
+.input:focus{
+  outline:none;
+  border-color:#3d6ba6;
+  box-shadow:0 0 0 2px rgba(61,107,166,0.15);
+}
+
+
+/* ================= BUTTONS ================= */
+
+.btn{
+  padding:7px 14px;
+  border-radius:6px;
+  cursor:pointer;
+  border:none;
+  font-weight:600;
+  transition:all .25s ease;
+}
+
+.btn-primary{
+  background:#3d6ba6;
+  color:#fff;
+}
+
+.btn-primary:hover{
+  background:#5a8cc2;
+  transform:translateY(-2px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-sm{
+  padding:5px 10px;
+  font-size:13px;
+}
+
+.btn-flat{
+  background:#5a8cc2;
+  color:#fff;
+  border-radius:5px;
+}
+
+.btn-flat:hover{
+  background:#3d6ba6;
+  transform:translateY(-2px);
+  box-shadow:0 4px 10px rgba(0,0,0,0.15);
+}
+
+
+/* ================= TABLE ================= */
+
+.table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+.table thead{
+  background:#3d6ba6;
+  color:#fff;
+  position:sticky;
+  top:0;
+}
+
+.table th{
+  padding:10px;
+  text-align:left;
+  border-right:1px solid rgba(255,255,255,0.2);
+}
+
+.table th:last-child{
+  border-right:none;
+}
+
+.table td{
+  padding:10px;
+  border-bottom:1px solid #e4ecf5;
+  border-right:1px solid #e4ecf5;
+}
+
+.table td:last-child{
+  border-right:none;
+}
+
+.table tbody tr:nth-child(even){
+  background:#f7fbff;
+}
+
+.table tbody tr:hover{
+  background:#e4ecf5;
+  transition:background .2s ease;
+}
+
+
+/* ================= TABLE CONTAINER ================= */
+
+.table-wrapper{
+  background:#fff;
+  border-radius:10px;
+  border:2px solid #3d6ba6;
+  box-shadow:0 6px 16px rgba(0,0,0,0.05);
+  overflow:auto;
+  max-height:600px;
+}
+
+
+/* ================= STATUS BADGES ================= */
+
+.status-badge{
+  padding:3px 8px;
+  border-radius:5px;
+  font-weight:600;
+  font-size:12px;
+}
+
+.status-draft{
+  background:#e4ecf5;
+  color:#2b4e72;
+}
+
+.status-pending{
+  background:#fff3cd;
+  color:#856404;
+}
+
+.status-ongoing{
+  background:#d4edda;
+  color:#155724;
+}
+
+.status-scheduled{
+  background:#d1ecf1;
+  color:#0c5460;
+}
+
+.status-completed{
+  background:#c3e6cb;
+  color:#155724;
+}
+
+.status-rejected{
+  background:#f8d7da;
+  color:#721c24;
+}
+/* ================= PAGINATION ================= */
+
+.pagination{
+  display:flex;
+  justify-content:center;
+  align-items:center;
+  gap:14px;
+  padding:12px;
+}
+
+.pagination-info{
+  font-weight:600;
+  color:#2b4e72;
+}
+
+`}</style>
     </div>
   );
 }

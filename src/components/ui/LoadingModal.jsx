@@ -12,7 +12,6 @@ export default function LoadingModal({
   return (
     <div className="ps-modal-backdrop">
       <div className="ps-modal-square">
-
         <div className="ps-loader" aria-hidden="true" />
 
         <h3 className="ps-modal-title">{title}</h3>

@@ -1,4 +1,3 @@
-// src/pages/GovtHeader.jsx
 import React from "react";
 
 export default function GovHeader({ logo, title, onFontChange }) {
@@ -26,6 +25,7 @@ export default function GovHeader({ logo, title, onFontChange }) {
       </div>
 
       <style>{`
+      
         .gov-header {
           background: #0f172a;
           color: #fff;

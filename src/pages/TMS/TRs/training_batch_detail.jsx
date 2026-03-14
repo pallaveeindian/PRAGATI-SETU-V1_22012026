@@ -1,7 +1,7 @@
 // src/pages/TMS/TRs/training_batch_detail.jsx
 import React, { useContext, useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api from "../../../api/axios";
@@ -265,9 +265,9 @@ export default function TrainingBatchDetail() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          <TopNav
+          {/* <TopNav
             left={<div className="app-title">Pragati Setu — Batch Detail</div>}
-          />
+          /> */}
           <main style={{ padding: 18 }}>
             <div style={{ maxWidth: 1200, margin: "20px auto" }}>
               <div className="table-spinner">Loading batch details…</div>
@@ -285,70 +285,49 @@ export default function TrainingBatchDetail() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={<div className="app-title">Pragati Setu — Batch Detail</div>}
-        />
+        /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1200, margin: "20px auto" }}>
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                marginBottom: 12,
-                alignItems: "center",
-              }}
-            >
-              <h2 style={{ margin: 0 }}>
-                Batch #{batchId} {batchData?.code ? `(${batchData.code})` : ""}
+            <div className="batch-header">
+              <h2 className="batch-page-title">
+                Batch #{batchId}
+                {batchData?.code ? (
+                  <span className="batch-code">({batchData.code})</span>
+                ) : (
+                  ""
+                )}
               </h2>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button className="btn" onClick={handleRefresh}>
+
+              <div className="batch-header-actions">
+                <button className="btn-primary" onClick={handleRefresh}>
                   Refresh
                 </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => navigate(-1)}
-                >
+
+                <button className="btn-secondary" onClick={() => navigate(-1)}>
                   Back
                 </button>
               </div>
             </div>
 
             {/* NEW: Closure banner */}
+            {/* CLOSURE BANNER */}
             {loadingClosureInfo ? (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: 10,
-                  borderRadius: 6,
-                  background: "#f9fafb",
-                  border: "1px dashed #e5e7eb",
-                  fontSize: 13,
-                }}
-              >
+              <div className="closure-banner loading">
                 Checking batch closure status…
               </div>
             ) : closureRequest ? (
-              <div
-                style={{
-                  marginBottom: 12,
-                  padding: 12,
-                  borderRadius: 8,
-                  background: "#ecfdf5",
-                  border: "1px solid #bbf7d0",
-                  color: "#166534",
-                  fontSize: 14,
-                }}
-              >
-                <strong>This batch is now closed.</strong> A closure request has
+              <div className="closure-banner closed">
+                <strong>This batch is now closed.</strong>A closure request has
                 been submitted for this batch and is under review / processing.
               </div>
             ) : null}
 
-            <div style={{ background: "#fff", padding: 20, borderRadius: 8 }}>
+            <div className="batch-main-card">
               {!batchData ? (
                 <div className="muted">
-                  Batch not found.{" "}
+                  Batch not found.
                   <button className="btn-sm" onClick={handleRefresh}>
                     Retry
                   </button>
@@ -356,144 +335,133 @@ export default function TrainingBatchDetail() {
               ) : (
                 <>
                   {/* 1. TRAINING DETAILS */}
-                  <div style={{ marginBottom: 24 }}>
-                    <h3
-                      style={{
-                        margin: "0 0 16px 0",
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      📋 Training Details
-                    </h3>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(250px, 1fr))",
-                        gap: 16,
-                      }}
-                    >
-                      <div>
-                        <strong>Type:</strong>{" "}
-                        {trainingRequestDetail?.training_type ||
-                          batchData?.request?.training_type ||
-                          "-"}
+                  <div className="training-section">
+                    <h3 className="section-title">📋 Training Details</h3>
+
+                    <div className="training-grid">
+                      <div className="info-tile">
+                        <span className="info-label">Type</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.training_type ||
+                            batchData?.request?.training_type ||
+                            "-"}
+                        </span>
                       </div>
-                      <div>
-                        <strong>Level:</strong>{" "}
-                        {trainingRequestDetail?.level ||
-                          batchData?.request?.level ||
-                          "-"}
+
+                      <div className="info-tile">
+                        <span className="info-label">Level</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.level ||
+                            batchData?.request?.level ||
+                            "-"}
+                        </span>
                       </div>
-                      <div>
-                        <strong>Status:</strong>{" "}
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: "#0b5cff",
-                          }}
-                        >
+
+                      <div className="info-tile">
+                        <span className="info-label">Status</span>
+                        <span className="info-value highlight">
                           {trainingRequestDetail?.status ||
                             batchData?.request?.status ||
                             "-"}
                         </span>
                       </div>
-                      <div>
-                        <strong>Training Name:</strong>{" "}
-                        {trainingRequestDetail?.training_plan?.training_name ||
-                          "-"}
+
+                      <div className="info-tile">
+                        <span className="info-label">Training Name</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.training_plan
+                            ?.training_name || "-"}
+                        </span>
                       </div>
-                      <div>
-                        <strong>Type of Training:</strong>{" "}
-                        {trainingRequestDetail?.training_plan
-                          ?.type_of_training || "-"}
+
+                      <div className="info-tile">
+                        <span className="info-label">Type of Training</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.training_plan
+                            ?.type_of_training || "-"}
+                        </span>
                       </div>
-                      <div>
-                        <strong>Level of Training:</strong>{" "}
-                        {trainingRequestDetail?.training_plan
-                          ?.level_of_training || "-"}
+
+                      <div className="info-tile">
+                        <span className="info-label">Level of Training</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.training_plan
+                            ?.level_of_training || "-"}
+                        </span>
                       </div>
-                      <div>
-                        <strong>No. of Days:</strong>{" "}
-                        {trainingRequestDetail?.training_plan?.no_of_days ||
-                          "-"}
+
+                      <div className="info-tile">
+                        <span className="info-label">No. of Days</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.training_plan?.no_of_days ||
+                            "-"}
+                        </span>
                       </div>
-                      <div>
-                        <strong>District:</strong>{" "}
-                        {trainingRequestDetail?.district?.district_name_en ||
-                          "-"}
+
+                      <div className="info-tile">
+                        <span className="info-label">District</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.district?.district_name_en ||
+                            "-"}
+                        </span>
                       </div>
-                      <div>
-                        <strong>Block:</strong>{" "}
-                        {trainingRequestDetail?.block?.block_name_en || "-"}
+
+                      <div className="info-tile">
+                        <span className="info-label">Block</span>
+                        <span className="info-value">
+                          {trainingRequestDetail?.block?.block_name_en || "-"}
+                        </span>
                       </div>
                     </div>
                   </div>
 
                   {/* 2. BATCH DETAILS */}
-                  <div style={{ marginBottom: 24 }}>
-                    <h3
-                      style={{
-                        margin: "0 0 16px 0",
-                        color: "#1a1a1a",
-                      }}
-                    >
-                      🎯 Batch Details
-                    </h3>
-                    <div
-                      style={{
-                        display: "grid",
-                        gridTemplateColumns:
-                          "repeat(auto-fit, minmax(200px, 1fr))",
-                        gap: 16,
-                      }}
-                    >
-                      <div>
-                        <strong>Batch Code:</strong>{" "}
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: "#1976d2",
-                          }}
-                        >
+                  <div className="batch-card">
+                    <h3 className="batch-title">🎯 Batch Details</h3>
+
+                    <div className="batch-grid">
+                      <div className="batch-item">
+                        <div className="batch-label">Batch Code</div>
+                        <div className="batch-value highlight">
                           {batchData.code || "-"}
-                        </span>
+                        </div>
                       </div>
-                      <div>
-                        <strong>Batch Type:</strong>{" "}
-                        {batchData.batch_type || "-"}
+
+                      <div className="batch-item">
+                        <div className="batch-label">Batch Type</div>
+                        <div className="batch-value">
+                          {batchData.batch_type || "-"}
+                        </div>
                       </div>
-                      <div>
-                        <strong>Status:</strong>{" "}
-                        <span
-                          style={{
-                            fontWeight: 700,
-                            color: "#0b5cff",
-                          }}
-                        >
+
+                      <div className="batch-item">
+                        <div className="batch-label">Status</div>
+                        <div className="batch-value status">
                           {batchData.status || "-"}
-                        </span>
+                        </div>
                       </div>
-                      <div>
-                        <strong>Start Date:</strong>{" "}
-                        {fmtDate(batchData.start_date)}
+
+                      <div className="batch-item">
+                        <div className="batch-label">Start Date</div>
+                        <div className="batch-value">
+                          {fmtDate(batchData.start_date)}
+                        </div>
                       </div>
-                      <div>
-                        <strong>End Date:</strong> {fmtDate(batchData.end_date)}
+
+                      <div className="batch-item">
+                        <div className="batch-label">End Date</div>
+                        <div className="batch-value">
+                          {fmtDate(batchData.end_date)}
+                        </div>
                       </div>
                     </div>
                   </div>
-
                   {/* 3. ATTENDANCE + MEDIA DETAILS */}
                   <div style={{ marginBottom: 24 }}>
-                    <h3
-                      style={{
-                        margin: "0 0 16px 0",
-                        color: "#1a1a1a",
-                      }}
-                    >
+                    <h3 className="attendance-title">
                       📅 Attendance (All Dates)
                     </h3>
+
                     {loadingAttendance ? (
                       <div className="table-spinner">Loading attendance…</div>
                     ) : attendanceList.length === 0 ? (
@@ -502,8 +470,8 @@ export default function TrainingBatchDetail() {
                       </div>
                     ) : (
                       <>
-                        <div style={{ maxHeight: 250, overflow: "auto" }}>
-                          <table className="table table-compact">
+                        <div className="attendance-table-wrapper">
+                          <table className="table table-compact attendance-table">
                             <thead>
                               <tr>
                                 <th>Date</th>
@@ -511,6 +479,7 @@ export default function TrainingBatchDetail() {
                                 <th>CSV Uploaded</th>
                               </tr>
                             </thead>
+
                             <tbody>
                               {attendanceList.map((att) => (
                                 <tr key={att.id}>
@@ -519,8 +488,8 @@ export default function TrainingBatchDetail() {
                                       type="button"
                                       className={
                                         selectedAttendanceDate === att.date
-                                          ? "btn-sm btn-flat active"
-                                          : "btn-sm btn-flat"
+                                          ? "attendance-date-btn active"
+                                          : "attendance-date-btn"
                                       }
                                       onClick={() =>
                                         fetchAttendanceParticipantsForDate(
@@ -531,33 +500,21 @@ export default function TrainingBatchDetail() {
                                       {fmtDate(att.date)}
                                     </button>
                                   </td>
+
                                   <td>{fmtDate(att.created_at)}</td>
+
                                   <td>
-                                    {att.csv_upload ? (
-                                      <span
-                                        style={{
-                                          fontSize: 12,
-                                          padding: "2px 8px",
-                                          borderRadius: 999,
-                                          background: "#e0f2fe",
-                                          color: "#0369a1",
-                                        }}
-                                      >
-                                        Yes
-                                      </span>
-                                    ) : (
-                                      <span
-                                        style={{
-                                          fontSize: 12,
-                                          padding: "2px 8px",
-                                          borderRadius: 999,
-                                          background: "#f3f4f6",
-                                          color: "#4b5563",
-                                        }}
-                                      >
-                                        No
-                                      </span>
-                                    )}
+                                    <span
+                                      className={
+                                        att.csv_upload
+                                          ? "badge badge-uploaded"
+                                          : "badge badge-not-uploaded"
+                                      }
+                                    >
+                                      {att.csv_upload
+                                        ? "Uploaded"
+                                        : "Not Uploaded"}
+                                    </span>
                                   </td>
                                 </tr>
                               ))}
@@ -566,16 +523,11 @@ export default function TrainingBatchDetail() {
                         </div>
 
                         {selectedAttendanceDate && (
-                          <div
-                            style={{
-                              marginTop: 12,
-                              paddingTop: 10,
-                              borderTop: "1px solid #e5e7eb",
-                            }}
-                          >
-                            <h4>
+                          <div className="attendance-detail">
+                            <h4 className="attendance-subtitle">
                               Attendance on {fmtDate(selectedAttendanceDate)}
                             </h4>
+
                             {loadingSelectedAttendance ? (
                               <div className="table-spinner">
                                 Loading participant records…
@@ -585,14 +537,8 @@ export default function TrainingBatchDetail() {
                                 No participant attendance records for this date.
                               </div>
                             ) : (
-                              <div
-                                style={{
-                                  maxHeight: 300,
-                                  overflow: "auto",
-                                  marginTop: 6,
-                                }}
-                              >
-                                <table className="table table-compact">
+                              <div className="attendance-participant-table">
+                                <table className="table table-compact attendance-table">
                                   <thead>
                                     <tr>
                                       <th>Name</th>
@@ -600,28 +546,27 @@ export default function TrainingBatchDetail() {
                                       <th>Status</th>
                                     </tr>
                                   </thead>
+
                                   <tbody>
                                     {selectedAttendanceRecords.map((r) => (
                                       <tr key={r.id}>
                                         <td>{r.participant_name}</td>
+
                                         <td>
-                                          {r.participant_role === "trainer"
-                                            ? "Trainer"
-                                            : "Trainee"}
+                                          <span className="role-pill">
+                                            {r.participant_role === "trainer"
+                                              ? "Trainer"
+                                              : "Trainee"}
+                                          </span>
                                         </td>
+
                                         <td>
                                           <span
-                                            style={{
-                                              fontSize: 12,
-                                              padding: "2px 8px",
-                                              borderRadius: 999,
-                                              background: r.present
-                                                ? "#dcfce7"
-                                                : "#fee2e2",
-                                              color: r.present
-                                                ? "#166534"
-                                                : "#b91c1c",
-                                            }}
+                                            className={
+                                              r.present
+                                                ? "badge badge-present"
+                                                : "badge badge-absent"
+                                            }
                                           >
                                             {r.present ? "Present" : "Absent"}
                                           </span>
@@ -734,220 +679,160 @@ export default function TrainingBatchDetail() {
 
                   {/* 4. CENTRE DETAILS */}
                   {centreDetail && (
-                    <div style={{ marginBottom: 24 }}>
-                      <h3
-                        style={{
-                          margin: "0 0 16px 0",
-                          color: "#1a1a1a",
-                        }}
-                      >
-                        🏢 Centre Details
-                      </h3>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns:
-                            "repeat(auto-fit, minmax(300px, 1fr))",
-                          gap: 16,
-                        }}
-                      >
-                        <div>
-                          <div
-                            style={{
-                              fontWeight: 700,
-                              marginBottom: 8,
-                              fontSize: 18,
-                            }}
-                          >
+                    <div className="centre-card">
+                      <h3 className="centre-title">🏢 Centre Details</h3>
+
+                      <div className="centre-grid">
+                        {/* LEFT SIDE */}
+                        <div className="centre-left">
+                          <div className="centre-name">
                             {centreDetail.venue_name}
                           </div>
-                          <div style={{ color: "#666", marginBottom: 12 }}>
+
+                          <div className="centre-address">
                             {centreDetail.venue_address}
                           </div>
-                          <div>
-                            <strong>Serial:</strong>{" "}
-                            {centreDetail.serial_number || "-"}
-                          </div>
-                          <div>
-                            <strong>Type:</strong>{" "}
-                            {centreDetail.centre_type || "-"}
-                          </div>
-                          <div>
-                            <strong>Halls:</strong>{" "}
-                            {centreDetail.training_hall_count || 0} (Capacity:{" "}
-                            {centreDetail.training_hall_capacity || 0})
+
+                          <div className="centre-meta">
+                            <div>
+                              <strong>Serial:</strong>{" "}
+                              {centreDetail.serial_number || "-"}
+                            </div>
+                            <div>
+                              <strong>Type:</strong>{" "}
+                              {centreDetail.centre_type || "-"}
+                            </div>
+                            <div>
+                              <strong>Halls:</strong>{" "}
+                              {centreDetail.training_hall_count || 0} (Capacity:{" "}
+                              {centreDetail.training_hall_capacity || 0})
+                            </div>
                           </div>
 
-                          {centreDetail.rooms &&
-                            centreDetail.rooms.length > 0 && (
-                              <div style={{ marginTop: 12 }}>
-                                <h4
-                                  style={{
-                                    margin: "8px 0",
-                                    fontSize: 14,
-                                  }}
-                                >
-                                  Training Halls
-                                </h4>
-                                <table
-                                  style={{
-                                    width: "100%",
-                                    borderCollapse: "collapse",
-                                  }}
-                                >
-                                  <thead>
-                                    <tr style={{ background: "#f5f5f5" }}>
-                                      <th
-                                        style={{
-                                          padding: "8px",
-                                          border: "1px solid #ddd",
-                                          textAlign: "left",
-                                        }}
-                                      >
-                                        Name
-                                      </th>
-                                      <th
-                                        style={{
-                                          padding: "8px",
-                                          border: "1px solid #ddd",
-                                          textAlign: "left",
-                                        }}
-                                      >
-                                        Capacity
-                                      </th>
+                          {centreDetail.rooms?.length > 0 && (
+                            <div className="centre-halls">
+                              <h4>Training Halls</h4>
+
+                              <table className="centre-table">
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Capacity</th>
+                                  </tr>
+                                </thead>
+
+                                <tbody>
+                                  {centreDetail.rooms.map((room) => (
+                                    <tr key={room.id}>
+                                      <td>{room.room_name}</td>
+                                      <td>{room.room_capacity}</td>
                                     </tr>
-                                  </thead>
-                                  <tbody>
-                                    {centreDetail.rooms.map((room) => (
-                                      <tr key={room.id}>
-                                        <td
-                                          style={{
-                                            padding: "8px",
-                                            border: "1px solid #ddd",
-                                          }}
-                                        >
-                                          {room.room_name}
-                                        </td>
-                                        <td
-                                          style={{
-                                            padding: "8px",
-                                            border: "1px solid #ddd",
-                                          }}
-                                        >
-                                          {room.room_capacity}
-                                        </td>
-                                      </tr>
-                                    ))}
-                                  </tbody>
-                                </table>
-                              </div>
-                            )}
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
                         </div>
 
-                        <div>
-                          <div>
-                            <strong>Security:</strong>{" "}
-                            {centreDetail.security_arrangements || "-"}
+                        {/* RIGHT SIDE */}
+                        <div className="centre-right">
+                          <h4 className="facility-title">Facilities</h4>
+
+                          <div className="facility-grid">
+                            <div className="facility-item">
+                              Security
+                              <span>
+                                {centreDetail.security_arrangements || "-"}
+                              </span>
+                            </div>
+
+                            <div className="facility-item">
+                              Toilets
+                              <span>
+                                {centreDetail.toilets_bathrooms || "-"}
+                              </span>
+                            </div>
+
+                            <div className="facility-item">
+                              Power/Water
+                              <span>
+                                {centreDetail.power_water_facility || "-"}
+                              </span>
+                            </div>
+
+                            <div className="facility-item">
+                              Medical Kit
+                              <span>
+                                {centreDetail.medical_kit ? "✅" : "❌"}
+                              </span>
+                            </div>
+
+                            <div className="facility-item">
+                              Open Space
+                              <span>
+                                {centreDetail.open_space ? "✅" : "❌"}
+                              </span>
+                            </div>
+
+                            <div className="facility-item">
+                              Field Visit
+                              <span>
+                                {centreDetail.field_visit_facility
+                                  ? "✅"
+                                  : "❌"}
+                              </span>
+                            </div>
+
+                            <div className="facility-item">
+                              Transport
+                              <span>
+                                {centreDetail.transport_facility ? "✅" : "❌"}
+                              </span>
+                            </div>
+
+                            <div className="facility-item">
+                              Dining
+                              <span>
+                                {centreDetail.dining_facility ? "✅" : "❌"}
+                              </span>
+                            </div>
                           </div>
-                          <div>
-                            <strong>Toilets:</strong>{" "}
-                            {centreDetail.toilets_bathrooms || "-"}
-                          </div>
-                          <div>
-                            <strong>Power/Water:</strong>{" "}
-                            {centreDetail.power_water_facility || "-"}
-                          </div>
-                          <div>
-                            <strong>Medical Kit:</strong>{" "}
-                            {centreDetail.medical_kit ? "✅ Yes" : "❌ No"}
-                          </div>
-                          <div>
-                            <strong>Open Space:</strong>{" "}
-                            {centreDetail.open_space ? "✅ Yes" : "❌ No"}
-                          </div>
-                          <div>
-                            <strong>Field Visit:</strong>{" "}
-                            {centreDetail.field_visit_facility
-                              ? "✅ Yes"
-                              : "❌ No"}
-                          </div>
-                          <div>
-                            <strong>Transport:</strong>{" "}
-                            {centreDetail.transport_facility
-                              ? "✅ Yes"
-                              : "❌ No"}
-                          </div>
-                          <div>
-                            <strong>Dining:</strong>{" "}
-                            {centreDetail.dining_facility ? "✅ Yes" : "❌ No"}
-                          </div>
-                          <div style={{ marginTop: 8 }}>
+
+                          <div className="centre-other">
                             <strong>Other:</strong>{" "}
                             {centreDetail.other_details || "-"}
                           </div>
 
-                          {centreDetail.submissions &&
-                            centreDetail.submissions.length > 0 && (
-                              <div style={{ marginTop: 16 }}>
-                                <h4
-                                  style={{
-                                    margin: "8px 0",
-                                    fontSize: 14,
-                                  }}
-                                >
-                                  Media
-                                </h4>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    flexWrap: "wrap",
-                                    gap: 12,
-                                  }}
-                                >
-                                  {centreDetail.submissions.map(
-                                    (submission) => {
-                                      const src = normalizeMediaUrl(
-                                        submission.file,
-                                      );
-                                      return (
-                                        <div
-                                          key={submission.id}
-                                          style={{
-                                            textAlign: "center",
-                                            border: "1px solid #eee",
-                                            padding: 8,
-                                            borderRadius: 4,
-                                          }}
-                                        >
-                                          <img
-                                            src={src}
-                                            alt={submission.category}
-                                            style={{
-                                              height: 80,
-                                              width: 80,
-                                              objectFit: "cover",
-                                              borderRadius: 4,
-                                              cursor: "pointer",
-                                            }}
-                                            onClick={() =>
-                                              window.open(src, "_blank")
-                                            }
-                                          />
-                                          <div
-                                            style={{
-                                              fontSize: 12,
-                                              marginTop: 4,
-                                            }}
-                                          >
-                                            {submission.category}
-                                          </div>
-                                        </div>
-                                      );
-                                    },
-                                  )}
-                                </div>
+                          {centreDetail.submissions?.length > 0 && (
+                            <div className="media-section">
+                              <h4>Media</h4>
+
+                              <div className="media-grid">
+                                {centreDetail.submissions.map((submission) => {
+                                  const src = normalizeMediaUrl(
+                                    submission.file,
+                                  );
+
+                                  return (
+                                    <div
+                                      key={submission.id}
+                                      className="media-card"
+                                    >
+                                      <img
+                                        src={src}
+                                        alt={submission.category}
+                                        onClick={() =>
+                                          window.open(src, "_blank")
+                                        }
+                                      />
+
+                                      <div>{submission.category}</div>
+                                    </div>
+                                  );
+                                })}
                               </div>
-                            )}
+                            </div>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -955,38 +840,25 @@ export default function TrainingBatchDetail() {
 
                   {/* 5. PARTICIPANT DETAILS */}
                   <div>
-                    <h3>
+                    <h3 className="participants-title">
                       👥 {isTrainerTraining ? "Batch Trainers" : "Participants"}{" "}
                       ({displayedParticipants.length})
                     </h3>
 
                     {hasMasterTrainers && firstMasterTrainer && (
-                      <div
-                        style={{
-                          background: "#e3f2fd",
-                          border: "2px solid #2196f3",
-                          borderRadius: 8,
-                          padding: 16,
-                          marginBottom: 20,
-                        }}
-                      >
-                        <div
-                          style={{
-                            fontWeight: 700,
-                            fontSize: 16,
-                            marginBottom: 8,
-                            color: "#1976d2",
-                          }}
-                        >
+                      <div className="master-trainer-card">
+                        <div className="master-trainer-heading">
                           👨‍🏫 Master Trainer
                         </div>
-                        <div style={{ display: "flex", gap: 16 }}>
+
+                        <div className="master-trainer-info">
                           <div>
                             <strong>Name:</strong>{" "}
                             {firstMasterTrainer.full_name ||
                               firstMasterTrainer.name ||
                               "-"}
                           </div>
+
                           <div>
                             <strong>Mobile:</strong>{" "}
                             {firstMasterTrainer.mobile_no ||
@@ -996,29 +868,51 @@ export default function TrainingBatchDetail() {
                         </div>
                       </div>
                     )}
-                    <div style={{ maxHeight: 400, overflow: "auto" }}>
-                      <table className="table table-compact">
-                        <thead>
+                    <div
+                      style={{
+                        maxHeight: 400,
+                        overflow: "auto",
+                        borderRadius: 8, // UI CHANGE
+                        border: "1px solid #a7c6ed", // UI CHANGE
+                        background: "#fff",
+                      }}
+                    >
+                      <table
+                        className="table table-compact"
+                        style={{
+                          width: "100%",
+                          borderCollapse: "collapse",
+                          fontSize: 14,
+                        }}
+                      >
+                        <thead
+                          style={{
+                            background: "#e4ecf5", // UI CHANGE
+                            position: "sticky", // UI CHANGE
+                            top: 0,
+                            zIndex: 1,
+                          }}
+                        >
                           <tr>
-                            <th>S.No.</th>
-                            <th>Name</th>
-                            <th>Mobile</th>
+                            <th className="thStyle">S.No.</th>
+                            <th className="thStyle">Name</th>
+                            <th className="thStyle">Mobile</th>
 
                             {isTrainerTraining ? (
                               <>
-                                <th>Remarks</th>
-                                <th>Registered On</th>
-                                <th>Replaced</th>
+                                <th className="thStyle">Remarks</th>
+                                <th className="thStyle">Registered On</th>
+                                <th className="thStyle">Replaced</th>
                               </>
                             ) : (
                               <>
-                                <th>Age</th>
-                                <th>Gender</th>
-                                <th>PLD</th>
-                                <th>Social Category</th>
-                                <th>Religion</th>
-                                <th>Education</th>
-                                <th>Address</th>
+                                <th className="thStyle">Age</th>
+                                <th className="thStyle">Gender</th>
+                                <th className="thStyle">PLD</th>
+                                <th className="thStyle">Social Category</th>
+                                <th className="thStyle">Religion</th>
+                                <th className="thStyle">Education</th>
+                                <th className="thStyle">Address</th>
                               </>
                             )}
                           </tr>
@@ -1029,42 +923,82 @@ export default function TrainingBatchDetail() {
                             <tr>
                               <td
                                 colSpan={isTrainerTraining ? 6 : 10}
-                                style={{ textAlign: "center", padding: 20 }}
+                                style={{
+                                  textAlign: "center",
+                                  padding: 20,
+                                  color: "#2b4e72", // UI CHANGE
+                                  background: "#f8fbff",
+                                }}
                               >
                                 No participants assigned
                               </td>
                             </tr>
                           ) : (
                             displayedParticipants.map((p, index) => (
-                              <tr key={p.id || index}>
-                                <td>{index + 1}</td>
-                                <td style={{ fontWeight: 500 }}>
+                              <tr
+                                key={p.id || index}
+                                style={{
+                                  borderBottom: "1px solid #e4ecf5", // UI CHANGE
+                                  transition: "background 0.2s",
+                                }}
+                                onMouseEnter={
+                                  (e) =>
+                                    (e.currentTarget.style.background =
+                                      "#f4f8fd") // UI CHANGE hover
+                                }
+                                onMouseLeave={(e) =>
+                                  (e.currentTarget.style.background =
+                                    "transparent")
+                                }
+                              >
+                                <td className="tdStyle">{index + 1}</td>
+
+                                <td className="table-cell table-cell-bold">
                                   {p.full_name || p.member_name || "-"}
                                 </td>
-                                <td>{p.mobile_no || p.mobile || "-"}</td>
+
+                                <td className="tdStyle">
+                                  {p.mobile_no || p.mobile || "-"}
+                                </td>
 
                                 {isTrainerTraining ? (
                                   <>
-                                    <td>{p.remarks || "-"}</td>
-                                    <td>{fmtDate(p.registered_on)}</td>
-                                    <td>{p.is_replaced ? "Yes" : "No"}</td>
+                                    <td className="tdStyle">
+                                      {p.remarks || "-"}
+                                    </td>
+                                    <td className="tdStyle">
+                                      {fmtDate(p.registered_on)}
+                                    </td>
+                                    <td
+                                      className={`table-cell-bold ${
+                                        p.is_replaced
+                                          ? "replaced-yes"
+                                          : "replaced-no"
+                                      }`}
+                                    >
+                                      {p.is_replaced ? "Yes" : "No"}
+                                    </td>
                                   </>
                                 ) : (
                                   <>
-                                    <td>{p.age || "-"}</td>
-                                    <td>{p.gender || "-"}</td>
-                                    <td>{p.pld_status || "-"}</td>
-                                    <td>{p.social_category || "-"}</td>
-                                    <td>{p.religion || "-"}</td>
-                                    <td>{p.education || "-"}</td>
-                                    <td
-                                      style={{
-                                        maxWidth: 200,
-                                        whiteSpace: "nowrap",
-                                        overflow: "hidden",
-                                        textOverflow: "ellipsis",
-                                      }}
-                                    >
+                                    <td className="tdStyle">{p.age || "-"}</td>
+                                    <td className="tdStyle">
+                                      {p.gender || "-"}
+                                    </td>
+                                    <td className="tdStyle">
+                                      {p.pld_status || "-"}
+                                    </td>
+                                    <td className="tdStyle">
+                                      {p.social_category || "-"}
+                                    </td>
+                                    <td className="tdStyle">
+                                      {p.religion || "-"}
+                                    </td>
+                                    <td className="tdStyle">
+                                      {p.education || "-"}
+                                    </td>
+
+                                    <td className="table-cell table-cell-ellipsis">
                                       {p.address || "-"}
                                     </td>
                                   </>
@@ -1109,6 +1043,497 @@ export default function TrainingBatchDetail() {
           </div>
         )}
       </div>
+      <style>{`
+      /* Row hover */
+.table tbody tr:hover {
+  background: #e4ecf5;
+  transition: background .2s ease;
+}
+
+/* Table header style */
+.thStyle {
+  padding: 10px 12px;
+  text-align: left;
+  font-weight: 700;
+  font-size: 13px;
+  color: #2b4e72;
+  border-bottom: 2px solid #a7c6ed;
+}
+
+/* common table cell style (replacement of tdStyle) */
+.table-cell {
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #2b4e72;
+}
+
+/* bold cell */
+.table-cell-bold {
+  font-weight: 600;
+}
+
+/* address column ellipsis */
+.table-cell-ellipsis {
+  max-width: 200px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* when replaced */
+.replaced-yes {
+  color: #5a8cc2;
+  font-weight: 600;
+}
+
+/* when not replaced */
+.replaced-no {
+  color: #3d6ba6;
+  font-weight: 600;
+}
+/* Section title */
+.participants-title {
+  color: #2b4e72;
+  font-weight: 700;
+  margin-bottom: 14px;
+}
+
+/* Master trainer card */
+.master-trainer-card {
+  background: #e4ecf5;
+  border: 2px solid #5a8cc2;
+  border-radius: 8px;
+  padding: 16px;
+  margin-bottom: 20px;
+}
+
+/* Master trainer heading */
+.master-trainer-heading {
+  font-weight: 700;
+  font-size: 16px;
+  margin-bottom: 8px;
+  color: #3d6ba6;
+}
+
+/* Trainer info layout */
+.master-trainer-info {
+  display: flex;
+  gap: 20px;
+  color: #2b4e72;
+  font-size: 14px;
+}
+
+/* main card */
+.centre-card{
+  background:#fff;
+  border:2px solid #a7c6ed;
+  border-radius:10px;
+  padding:20px;
+  margin-bottom:24px;
+  box-shadow:0 4px 12px rgba(0,0,0,0.05);
+}
+
+/* title */
+.centre-title{
+  margin-bottom:18px;
+  color:#2b4e72;
+  font-weight:700;
+}
+
+/* grid layout */
+.centre-grid{
+  display:grid;
+  grid-template-columns:1fr 1fr;
+  gap:24px;
+}
+
+/* venue name */
+.centre-name{
+  font-size:20px;
+  font-weight:700;
+  color:#3d6ba6;
+  margin-bottom:6px;
+}
+
+/* address */
+.centre-address{
+  color:#5a8cc2;
+  margin-bottom:14px;
+}
+
+/* meta info */
+.centre-meta div{
+  margin-bottom:6px;
+  color:#2b4e72;
+}
+
+/* halls table */
+.centre-table{
+  width:100%;
+  border-collapse:collapse;
+  margin-top:10px;
+}
+
+.centre-table th{
+  background:#e4ecf5;
+  color:#2b4e72;
+  padding:8px;
+  text-align:left;
+}
+
+.centre-table td{
+  border-top:1px solid #a7c6ed;
+  padding:8px;
+}
+
+/* facilities */
+.facility-title{
+  margin-bottom:10px;
+  color:#3d6ba6;
+}
+
+.facility-grid{
+  display:grid;
+  grid-template-columns:repeat(2,1fr);
+  gap:10px;
+}
+
+.facility-item{
+  background:#e4ecf5;
+  border:1px solid #a7c6ed;
+  border-radius:6px;
+  padding:8px 10px;
+  font-size:13px;
+  display:flex;
+  justify-content:space-between;
+  color:#2b4e72;
+}
+
+/* other text */
+.centre-other{
+  margin-top:12px;
+  font-size:13px;
+  color:#2b4e72;
+}
+
+/* media */
+.media-section{
+  margin-top:16px;
+}
+
+.media-grid{
+  display:flex;
+  flex-wrap:wrap;
+  gap:12px;
+  margin-top:8px;
+}
+
+.media-card{
+  background:#e4ecf5;
+  border:1px solid #a7c6ed;
+  border-radius:6px;
+  padding:6px;
+  text-align:center;
+  width:90px;
+}
+
+.media-card img{
+  width:80px;
+  height:80px;
+  object-fit:cover;
+  border-radius:4px;
+  cursor:pointer;
+}
+
+.media-card div{
+  font-size:11px;
+  margin-top:4px;
+  color:#2b4e72;
+}
+/* title */
+.attendance-title{
+  margin-bottom:16px;
+  color:#2b4e72;
+  font-weight:700;
+}
+
+/* table wrapper */
+.attendance-table-wrapper{
+  max-height:250px;
+  overflow:auto;
+  border:1px solid #a7c6ed;
+  border-radius:8px;
+}
+
+/* table styling */
+.attendance-table thead{
+  background:#e4ecf5;
+  color:#2b4e72;
+}
+
+.attendance-table th{
+  font-weight:600;
+}
+
+/* date button */
+.attendance-date-btn{
+  border:1px solid #a7c6ed;
+  background:#e4ecf5;
+  color:#2b4e72;
+  padding:4px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  font-size:12px;
+}
+
+.attendance-date-btn:hover{
+  background:#a7c6ed;
+}
+
+.attendance-date-btn.active{
+  background:#3d6ba6;
+  color:#fff;
+  border-color:#3d6ba6;
+}
+
+/* badges */
+.badge{
+  font-size:12px;
+  padding:3px 8px;
+  border-radius:999px;
+  font-weight:500;
+}
+
+/* csv uploaded */
+.badge-uploaded{
+  background:#e4ecf5;
+  color:#2b4e72;
+}
+
+/* csv not uploaded */
+.badge-not-uploaded{
+  background:#f3f4f6;
+  color:#555;
+}
+
+/* present */
+.badge-present{
+  background:#e4ecf5;
+  color:#2b4e72;
+}
+
+/* absent */
+.badge-absent{
+  background:#fde2e2;
+  color:#b91c1c;
+}
+
+/* role pill */
+.role-pill{
+  background:#e4ecf5;
+  padding:2px 8px;
+  border-radius:999px;
+  font-size:12px;
+  color:#3d6ba6;
+}
+
+/* participant section */
+.attendance-detail{
+  margin-top:16px;
+  padding-top:12px;
+  border-top:1px solid #a7c6ed;
+}
+
+/* subtitle */
+.attendance-subtitle{
+  margin-bottom:8px;
+  color:#3d6ba6;
+}
+
+/* participant table scroll */
+.attendance-participant-table{
+  max-height:300px;
+  overflow:auto;
+}
+/* card container */
+.batch-card{
+  background:#fff;
+  border:2px solid #a7c6ed;
+  border-radius:10px;
+  padding:18px;
+  margin-bottom:24px;
+  box-shadow:0 4px 10px rgba(0,0,0,0.05);
+}
+
+/* section title */
+.batch-title{
+  margin-bottom:16px;
+  color:#2b4e72;
+  font-weight:700;
+}
+
+/* grid */
+.batch-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+  gap:14px;
+}
+
+/* info tile */
+.batch-item{
+  background:#e4ecf5;
+  border:1px solid #a7c6ed;
+  border-radius:8px;
+  padding:12px 14px;
+}
+
+/* label */
+.batch-label{
+  font-size:12px;
+  color:#5a8cc2;
+  margin-bottom:4px;
+}
+
+/* value */
+.batch-value{
+  font-size:15px;
+  font-weight:600;
+  color:#2b4e72;
+}
+
+/* highlight batch code */
+.batch-value.highlight{
+  color:#3d6ba6;
+  font-weight:700;
+}
+
+/* status style */
+.batch-value.status{
+  color:#3d6ba6;
+  font-weight:700;
+}
+  /* header */
+.batch-header{
+  display:flex;
+  align-items:center;
+  margin-bottom:14px;
+}
+
+.batch-page-title{
+  margin:0;
+  color:#2b4e72;
+}
+
+.batch-code{
+  color:#5a8cc2;
+  margin-left:6px;
+  font-weight:600;
+}
+
+.batch-header-actions{
+  margin-left:auto;
+  display:flex;
+  gap:8px;
+}
+
+/* buttons */
+.btn-primary{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btn-primary:hover{
+   transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-secondary{
+  background:#5a8cc2;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:5px 12px;
+  cursor:pointer;
+    transition:all .25s ease;
+}
+    .btn-secondary:hover{
+   transform: translateY(-6px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+}
+
+/* closure banner */
+.closure-banner{
+  margin-bottom:14px;
+  padding:10px 12px;
+  border-radius:8px;
+  font-size:14px;
+}
+
+.closure-banner.loading{
+  background:#f9fafb;
+  border:1px dashed #a7c6ed;
+}
+
+.closure-banner.closed{
+  background:#e4ecf5;
+  border:1px solid #a7c6ed;
+  color:#2b4e72;
+}
+
+/* main card */
+.batch-main-card{
+  background:white;
+  border:2px solid #a7c6ed;
+  border-radius:10px;
+  padding:20px;
+}
+
+/* section title */
+.section-title{
+  margin-bottom:16px;
+  color:#2b4e72;
+}
+
+/* grid */
+.training-grid{
+  display:grid;
+  grid-template-columns:repeat(auto-fit,minmax(220px,1fr));
+  gap:14px;
+}
+
+/* info tiles */
+.info-tile{
+  background:#e4ecf5;
+  border:1px solid #a7c6ed;
+  border-radius:8px;
+  padding:10px 12px;
+  display:flex;
+  flex-direction:column;
+}
+
+.info-label{
+  font-size:12px;
+  color:#5a8cc2;
+}
+
+.info-value{
+  font-size:14px;
+  font-weight:600;
+  color:#2b4e72;
+}
+
+.info-value.highlight{
+  color:#3d6ba6;
+}
+.training-section{
+margin-bottom:20px
+}
+`}</style>
     </div>
   );
 }

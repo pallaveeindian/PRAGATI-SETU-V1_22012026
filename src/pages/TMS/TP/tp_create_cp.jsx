@@ -1,9 +1,16 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
+import {
+  FaUserPlus,
+  FaUserEdit,
+  FaSyncAlt,
+  FaUser,
+  FaIdBadge,
+} from "react-icons/fa";
 
 /* ---------------- helpers ---------------- */
 
@@ -332,16 +339,20 @@ export default function TpCreateCP() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — {isEditMode ? "Edit" : "Create"} Contact Person
             </div>
           }
-        />
+        /> */}
 
         <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 720, margin: "0 auto" }}>
+          <h2 className="tp-title">
+            {" "}
+            <FaUserEdit /> Contact Persons Detail Section{" "}
+          </h2>
+          <div className="tp-card">
             {loading ? (
               <p>Loading contact person…</p>
             ) : (
@@ -353,12 +364,12 @@ export default function TpCreateCP() {
                     <h3 style={{ margin: 0 }}>Master Users</h3>
                     <button
                       type="button"
-                      className="btn"
+                      className="tp-btn"
                       style={{ padding: "4px 10px", fontSize: 12 }}
                       onClick={fetchMasterUsers}
                       disabled={loadingMasters}
                     >
-                      {loadingMasters ? "Refreshing…" : "Refresh"}
+                      <FaSyncAlt /> {loadingMasters ? "Refreshing…" : "Refresh"}
                     </button>
                   </div>
                 )}
@@ -439,7 +450,7 @@ export default function TpCreateCP() {
                 )}
 
                 <button
-                  className="btn"
+                  className="tp-btn"
                   disabled={isUserInvalid}
                   onClick={handleUserSubmit}
                 >
@@ -456,7 +467,7 @@ export default function TpCreateCP() {
                   value={cpForm.name}
                   onChange={(e) => {
                     const value = e.target.value;
-                    if (!/^[A-Za-z\s]*$/.test(value)) return;                    
+                    if (!/^[A-Za-z\s]*$/.test(value)) return;
                     const updated = { ...cpForm, name: e.target.value };
                     setCpForm(updated);
                     setCpErrors(validateCPForm(updated));
@@ -466,7 +477,7 @@ export default function TpCreateCP() {
                     if (!/^[A-Za-z\s]+$/.test(pastedText)) {
                       e.preventDefault();
                     }
-                  }}                  
+                  }}
                 />
                 {cpErrors.name && (
                   <div className="error-text">{cpErrors.name}</div>
@@ -520,7 +531,7 @@ export default function TpCreateCP() {
                 )}
 
                 <button
-                  className="btn"
+                  className="tp-btn"
                   disabled={isCPInvalid || !masterUserId}
                   onClick={handleCPSubmit}
                 >

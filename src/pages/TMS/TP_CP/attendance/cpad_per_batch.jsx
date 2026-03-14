@@ -586,7 +586,7 @@ export default function CpAdPerBatch() {
     if (!csvFile) {
       alert("CSV upload is mandatory. Please upload the punch machine CSV.");
       return;
-    }    
+    }
     if (!allEkycVerified) {
       alert("EKYC is not complete. Please verify all participants first.");
       return;
@@ -910,19 +910,27 @@ export default function CpAdPerBatch() {
                             ) : (
                               <form onSubmit={handleSubmitAttendance}>
                                 <div style={{ marginBottom: 12 }}>
-                                <label
-                                  style={{
-                                    fontWeight: 600,
-                                    marginBottom: 4,
-                                    display: "block",
-                                  }}
-                                >
-                                  Upload Punch Machine CSV <span style={{ color: "#dc2626" }}>*</span>
-                                </label>
+                                  <label
+                                    style={{
+                                      fontWeight: 600,
+                                      marginBottom: 4,
+                                      display: "block",
+                                    }}
+                                  >
+                                    Upload Punch Machine CSV{" "}
+                                    <span style={{ color: "#dc2626" }}>*</span>
+                                  </label>
 
-                                <div style={{ fontSize: 12, color: "#b91c1c", marginTop: 4 }}>
-                                  CSV upload is mandatory to submit today’s attendance.
-                                </div>
+                                  <div
+                                    style={{
+                                      fontSize: 12,
+                                      color: "#b91c1c",
+                                      marginTop: 4,
+                                    }}
+                                  >
+                                    CSV upload is mandatory to submit today’s
+                                    attendance.
+                                  </div>
                                   <input
                                     type="file"
                                     accept=".csv"

@@ -23,34 +23,33 @@ export default function HeroPSServices() {
       image: bmsImg,
       logo: bmsLogo,
       description:
-        "Capturing livelihood data to enable skill-based employment and financial inclusion. Empowering SHG women through structured data, targeted training, and continuous livelihood monitoring across the State."
+        "Capturing livelihood data to enable skill-based employment and financial inclusion. Empowering SHG women through structured data, targeted training, and continuous livelihood monitoring across the State.",
     },
     {
       title: "Training Management System",
       image: tmsImg,
       logo: tmsLogo,
       description:
-        "Monitoring capacity building at Block, District, and State level. Identifying skill gaps, delivering focused trainings, and tracking outcomes to build resilient rural livelihoods."
+        "Monitoring capacity building at Block, District, and State level. Identifying skill gaps, delivering focused trainings, and tracking outcomes to build resilient rural livelihoods.",
     },
     {
       title: "Enterprise Sakhi Management System",
       image: esmImg,
       logo: esmLogo,
       description:
-        "Enterprise Mapping & Beneficiary Management. Monitoring government support and village-level enterprises, mapping assistance, tracking enterprises, spreading awareness, and encouraging new women-led ventures across rural UP."
+        "Enterprise Mapping & Beneficiary Management. Monitoring government support and village-level enterprises, mapping assistance, tracking enterprises, spreading awareness, and encouraging new women-led ventures across rural UP.",
     },
     {
       title: "Lakhpati Didi Management System",
       image: ldmsImg,
       logo: ldmsLogo,
       description:
-        "From Potential to Lakhpati Didi. Tracking growth, income, and enterprise success, supporting SHG women in their journey with real-time progress tracking and outcome-based upliftment."
-    }
+        "From Potential to Lakhpati Didi. Tracking growth, income, and enterprise success, supporting SHG women in their journey with real-time progress tracking and outcome-based upliftment.",
+    },
   ];
 
   return (
     <div className="ps-services">
-
       <h2 className="ps-services-heading">
         <span className="serv-our">Our</span>{" "}
         <span className="serv-services">Services</span>
@@ -60,10 +59,8 @@ export default function HeroPSServices() {
         {services.map((service, index) => (
           <div className="card" key={index}>
             <div className="card-inner">
-
               {/* FRONT */}
               <div className="card-front">
-
                 {/* LOGO + TITLE STRIP */}
                 <div className="card-header">
                   <img src={service.logo} alt={`${service.title} Logo`} />
@@ -74,14 +71,12 @@ export default function HeroPSServices() {
                 <div className="card-image">
                   <img src={service.image} alt={service.title} />
                 </div>
-
               </div>
 
               {/* BACK */}
               <div className="card-back">
                 <p>{service.description}</p>
               </div>
-
             </div>
           </div>
         ))}

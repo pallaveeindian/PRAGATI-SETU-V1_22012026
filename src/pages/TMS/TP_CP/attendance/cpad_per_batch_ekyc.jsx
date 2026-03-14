@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TmsLeftNav from "../../layout/tms_LeftNav";
-import TopNav from "../../layout/tms_TopNav";
+// import TopNav from "../../layout/tms_TopNav";
 import { AuthContext } from "../../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../../api/axios";
 
@@ -461,13 +461,13 @@ export default function CpAdPerBatchEkyc() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Batch EKYC & Attendance (CP)
             </div>
           }
-        />
+        /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1100, margin: "0 auto" }}>
             <div

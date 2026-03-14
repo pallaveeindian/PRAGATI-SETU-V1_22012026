@@ -1,6 +1,6 @@
 // src/pages/TMS/SMMU/smmu_create_tp_targets.jsx
 import React, { useEffect, useState, useContext, useMemo } from "react";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
@@ -603,20 +603,20 @@ export default function SmmuCreatePartnerTargets() {
 
   // styles: now plan list and form sit horizontally (responsive)
   const styles = {
-    container: { maxWidth: 1200, margin: "20px auto", padding: "0 16px" },
-    layoutRow: {
-      display: "flex",
-      gap: 20,
-      alignItems: "flex-start",
-      flexWrap: "wrap",
-    },
-    planColumn: { flex: "1 1 640px", minWidth: 320 },
-    formColumn: { width: 420, minWidth: 300 },
+    container: { margin: "20px auto", padding: "16px 16px" },
+    // layoutRow: {
+    //   display: "flex",
+    //   gap: 20,
+    //   alignItems: "center",
+    //   flexWrap: "wrap",
+    // },
+    planColumn: { flex: "1 1 640px" },
     card: {
       background: "#fff",
       borderRadius: 6,
       padding: 16,
-      boxShadow: "0 1px 0 rgba(10,20,40,0.03)",
+      boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+      border: "2px solid #3d6ba6",
     },
     planList: {
       maxHeight: "62vh",
@@ -651,24 +651,24 @@ export default function SmmuCreatePartnerTargets() {
       background: "#fff",
       height: 40,
     },
-    btnPrimary: {
-      padding: "10px 12px",
-      borderRadius: 6,
-      border: "none",
-      cursor: "pointer",
-      fontWeight: 600,
-      background: "#0b2540",
-      color: "#fff",
-    },
-    btnSecondary: {
-      padding: "10px 12px",
-      borderRadius: 6,
-      border: "1px solid #dfe4e8",
-      cursor: "pointer",
-      fontWeight: 600,
-      background: "#fff",
-      color: "#0b2540",
-    },
+    // btnPrimary: {
+    //   padding: "10px 12px",
+    //   borderRadius: 6,
+    //   border: "none",
+    //   cursor: "pointer",
+    //   fontWeight: 600,
+    //   background: "#0b2540",
+    //   color: "#fff",
+    // },
+    // btnSecondary: {
+    //   padding: "10px 12px",
+    //   borderRadius: 6,
+    //   border: "1px solid #dfe4e8",
+    //   cursor: "pointer",
+    //   fontWeight: 600,
+    //   background: "#fff",
+    //   color: "#0b2540",
+    // },
     smallMuted: { color: "#6c757d", fontSize: 13 },
     badge: {
       display: "inline-block",
@@ -702,9 +702,9 @@ export default function SmmuCreatePartnerTargets() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={<div className="app-title">Pragati Setu — TMS (SMMU)</div>}
-        />
+        /> */}
         <main style={{ padding: 18 }}>
           <div style={styles.container}>
             <div
@@ -714,8 +714,9 @@ export default function SmmuCreatePartnerTargets() {
                 alignItems: "center",
                 marginBottom: 12,
               }}
+              className="tms-header-row"
             >
-              <h3 style={{ margin: 0 }}>
+              <h3 style={{ margin: 0 }} className="tms-page-title">
                 {editingTarget
                   ? `Edit Target #${editingTarget.id}`
                   : "Create Partner Targets"}
@@ -727,9 +728,10 @@ export default function SmmuCreatePartnerTargets() {
                   gap: 8,
                   alignItems: "center",
                 }}
+                className="tms-header-actions"
               >
                 <button
-                  className="btn"
+                  className="btn tms-refresh-btn"
                   onClick={handleRefresh}
                   disabled={loading.refresh}
                   style={{ padding: "8px 10px", borderRadius: 6 }}
@@ -739,73 +741,58 @@ export default function SmmuCreatePartnerTargets() {
               </div>
             </div>
 
-            <div style={styles.layoutRow}>
+            <div className="layout-grid">
               {/* Left: plans */}
-              <div style={{ ...styles.card, ...styles.planColumn }}>
-                <div style={styles.smallMuted}>
+              <div className="plan-card">
+                <div className="plan-muted">
                   {editingTarget
                     ? "Editing mode — change fields and Save."
                     : "Click a module row to prefill the form on the right."}
                 </div>
 
-                <div style={{ display: "flex", gap: 8, margin: "12px 0" }}>
+                <div className="plan-search">
                   <input
+                    className="plan-search-input"
                     placeholder="Filter modules by name / type / level"
                     value={searchQ}
                     onChange={(e) => setSearchQ(e.target.value)}
-                    style={{ ...styles.formControl, flex: 1 }}
                     aria-label="Search modules"
                   />
                 </div>
 
                 <div
-                  style={styles.planList}
+                  className="plan-table-wrapper"
                   role="table"
                   aria-label="Training plans"
                 >
                   {loading.plans ? (
-                    <div style={{ padding: 14, color: "#6c757d" }}>
-                      Loading modules…
-                    </div>
+                    <div className="plan-empty">Loading modules…</div>
                   ) : filteredPlans.length ? (
-                    <table
-                      style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        fontSize: 13,
-                      }}
-                    >
+                    <table className="plan-table">
                       <thead>
-                        <tr
-                          style={{
-                            textAlign: "left",
-                            borderBottom: "1px solid #eef1f4",
-                          }}
-                        >
-                          <th style={{ padding: "8px 6px", width: 70 }}>ID</th>
-                          <th style={{ padding: "8px 6px" }}>Training name</th>
-                          <th style={{ padding: "8px 6px", width: 120 }}>
-                            Type
-                          </th>
-                          <th style={{ padding: "8px 6px", width: 140 }}>
-                            Level
-                          </th>
-                          <th style={{ padding: "8px 6px", width: 90 }}>
-                            Days
-                          </th>
+                        <tr>
+                          <th style={{ width: 70 }}>ID</th>
+                          <th>Training name</th>
+                          <th style={{ width: 120 }}>Type</th>
+                          <th style={{ width: 140 }}>Level</th>
+                          <th style={{ width: 90 }}>Days</th>
                         </tr>
                       </thead>
+
                       <tbody>
                         {filteredPlans.map((p) => {
                           const assigned = assignedPlanMap[p.id];
                           const isAssigned = Boolean(assigned);
+
                           const isAssignedToThisEditingTarget =
                             editingTarget &&
                             (editingTarget.training_plan === p.id ||
                               String(editingTarget.training_plan) ===
                                 String(p.id));
+
                           const rowClickable =
                             !isAssigned || isAssignedToThisEditingTarget;
+
                           return (
                             <tr
                               key={p.id}
@@ -817,39 +804,22 @@ export default function SmmuCreatePartnerTargets() {
                                 rowClickable &&
                                 onPlanClick(p)
                               }
-                              style={{
-                                cursor: rowClickable
-                                  ? "pointer"
-                                  : "not-allowed",
-                                borderBottom: "1px solid #fbfbfb",
-                                background:
-                                  isAssigned && !isAssignedToThisEditingTarget
-                                    ? "#fbfcfe"
-                                    : "transparent",
-                                color:
-                                  isAssigned && !isAssignedToThisEditingTarget
-                                    ? "#7b8794"
-                                    : undefined,
-                              }}
+                              className={`plan-row 
+                  ${rowClickable ? "plan-row-clickable" : "plan-row-blocked"}
+                  ${isAssigned && !isAssignedToThisEditingTarget ? "plan-row-disabled" : ""}
+                `}
                             >
-                              <td
-                                style={{ padding: "8px 6px", fontWeight: 700 }}
-                              >
-                                {p.id}
-                              </td>
-                              <td
-                                style={{
-                                  padding: "8px 6px",
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: 8,
-                                }}
-                              >
+                              <td className="plan-td plan-td-id">{p.id}</td>
+
+                              <td className="plan-td plan-td-training">
                                 <span>{p.training_name}</span>
+
                                 {isAssigned && (
                                   <span
-                                    style={styles.badge}
-                                    title={`Assigned to ${assigned.partnerName || "partner"}`}
+                                    className="plan-badge"
+                                    title={`Assigned to ${
+                                      assigned.partnerName || "partner"
+                                    }`}
                                   >
                                     Assigned
                                     {assigned.partnerName
@@ -858,13 +828,16 @@ export default function SmmuCreatePartnerTargets() {
                                   </span>
                                 )}
                               </td>
-                              <td style={{ padding: "8px 6px" }}>
+
+                              <td className="plan-td">
                                 {p.type_of_training || "—"}
                               </td>
-                              <td style={{ padding: "8px 6px" }}>
+
+                              <td className="plan-td">
                                 {p.level_of_training || "—"}
                               </td>
-                              <td style={{ padding: "8px 6px" }}>
+
+                              <td className="plan-td">
                                 {p.no_of_days != null ? p.no_of_days : "—"}
                               </td>
                             </tr>
@@ -873,13 +846,7 @@ export default function SmmuCreatePartnerTargets() {
                       </tbody>
                     </table>
                   ) : (
-                    <div
-                      style={{
-                        padding: 24,
-                        textAlign: "center",
-                        color: "#6c757d",
-                      }}
-                    >
+                    <div className="plan-empty">
                       {themes.length
                         ? "No modules found for your assigned themes."
                         : "No themes found for your SMMU user."}
@@ -903,6 +870,7 @@ export default function SmmuCreatePartnerTargets() {
                         fontWeight: 600,
                         marginBottom: 6,
                       }}
+                      className="palette-label"
                     >
                       Training Partner
                     </label>
@@ -911,6 +879,7 @@ export default function SmmuCreatePartnerTargets() {
                       value={form.partner_id}
                       onChange={handleChange}
                       style={styles.formSelect}
+                      className="palette-input"
                       required
                     >
                       <option value="">-- select partner --</option>
@@ -929,6 +898,7 @@ export default function SmmuCreatePartnerTargets() {
                         fontWeight: 600,
                         marginBottom: 6,
                       }}
+                      className="palette-label"
                     >
                       Target type
                     </label>
@@ -938,6 +908,7 @@ export default function SmmuCreatePartnerTargets() {
                       onChange={handleChange}
                       style={styles.formSelect}
                       required
+                      className="palette-input"
                     >
                       <option value="MODULE">Module (module + district)</option>
                       <option value="DISTRICT">District (district only)</option>
@@ -953,6 +924,7 @@ export default function SmmuCreatePartnerTargets() {
                           fontWeight: 600,
                           marginBottom: 6,
                         }}
+                        className="palette-label"
                       >
                         Module / Training plan
                       </label>
@@ -961,6 +933,7 @@ export default function SmmuCreatePartnerTargets() {
                         value={form.training_plan_id}
                         onChange={handleChange}
                         style={styles.formSelect}
+                        className="palette-input"
                       >
                         <option value="">-- select module --</option>
                         {plans.map((m) => {
@@ -989,6 +962,7 @@ export default function SmmuCreatePartnerTargets() {
                       </select>
                       <div
                         style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
+                        className="palette-muted"
                       >
                         Tip: click a module row on the left to auto-select it
                         here.
@@ -1004,6 +978,7 @@ export default function SmmuCreatePartnerTargets() {
                           fontWeight: 600,
                           marginBottom: 6,
                         }}
+                        className="palette-label"
                       >
                         District
                       </label>
@@ -1012,6 +987,7 @@ export default function SmmuCreatePartnerTargets() {
                         value={form.district_id}
                         onChange={handleChange}
                         style={styles.formSelect}
+                        className="palette-input"
                       >
                         <option value="">-- select district --</option>
                         {districts.length ? (
@@ -1040,6 +1016,7 @@ export default function SmmuCreatePartnerTargets() {
                           fontWeight: 600,
                           marginBottom: 6,
                         }}
+                        className="palette-label"
                       >
                         Theme (optional)
                       </label>
@@ -1055,6 +1032,7 @@ export default function SmmuCreatePartnerTargets() {
                       </div>
                       <div
                         style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
+                        className="palette-input"
                       >
                         For THEME targets, theme will be auto-inferred from your
                         SMMU assignment or the selected module.
@@ -1069,6 +1047,7 @@ export default function SmmuCreatePartnerTargets() {
                         fontWeight: 600,
                         marginBottom: 6,
                       }}
+                      className="palette-label"
                     >
                       Batch count (target)
                     </label>
@@ -1080,6 +1059,7 @@ export default function SmmuCreatePartnerTargets() {
                       onChange={handleChange}
                       style={styles.formControl}
                       required
+                      className="palette-input"
                     />
                   </div>
 
@@ -1090,6 +1070,7 @@ export default function SmmuCreatePartnerTargets() {
                         fontWeight: 600,
                         marginBottom: 6,
                       }}
+                      className="palette-label"
                     >
                       Financial year
                     </label>
@@ -1099,6 +1080,7 @@ export default function SmmuCreatePartnerTargets() {
                       onChange={handleChange}
                       style={styles.formSelect}
                       required
+                      className="palette-input"
                     >
                       <option value="">-- select financial year --</option>
                       <option>2021-22</option>
@@ -1116,6 +1098,7 @@ export default function SmmuCreatePartnerTargets() {
                         fontWeight: 600,
                         marginBottom: 6,
                       }}
+                      className="palette-label"
                     >
                       Notes (finance / rationale)
                     </label>
@@ -1125,14 +1108,21 @@ export default function SmmuCreatePartnerTargets() {
                       onChange={handleChange}
                       style={{ ...styles.formControl, height: 80 }}
                       placeholder="Optional notes for finance or rationale"
+                      className="palette-input"
                     />
                   </div>
 
-                  <div style={{ display: "flex", gap: 10 }}>
+                  <div
+                    style={{ display: "flex", gap: 10 }}
+                    className="tms-btn-group"
+                  >
+                    {" "}
+                    {/* UI CHANGE */}
                     <button
                       type="submit"
                       disabled={saving}
                       style={{ ...styles.btnPrimary, flex: 1 }}
+                      className="tms-btn-primary" /* UI CHANGE */
                     >
                       {saving
                         ? editingTarget
@@ -1146,6 +1136,7 @@ export default function SmmuCreatePartnerTargets() {
                       type="button"
                       onClick={resetForm}
                       style={{ ...styles.btnSecondary, flex: 1 }}
+                      className="tms-btn-secondary" /* UI CHANGE */
                     >
                       Reset
                     </button>
@@ -1157,23 +1148,38 @@ export default function SmmuCreatePartnerTargets() {
                         marginTop: 12,
                         color: message.type === "error" ? "#d9534f" : "#28a745",
                       }}
+                      className="tms-message" /* UI CHANGE */
                     >
                       {message.text}
                     </div>
                   )}
                 </form>
 
-                <div style={styles.assignedList}>
-                  <h6 style={{ margin: "8px 0" }}>Assigned targets</h6>
+                {/* ASSIGNED TARGET LIST */}
+                <div style={styles.assignedList} className="tms-assigned-card">
+                  {" "}
+                  {/* UI CHANGE */}
+                  <h6 style={{ margin: "8px 0" }} className="tms-section-title">
+                    {" "}
+                    {/* UI CHANGE */}
+                    Assigned targets
+                  </h6>
                   <div
-                    style={{ fontSize: 13, color: "#6c757d", marginBottom: 8 }}
+                    style={{ fontSize: 13, marginBottom: 8 }}
+                    className="tms-muted-text" /* UI CHANGE */
                   >
                     Click a target to edit it.
                   </div>
-
-                  <div style={{ maxHeight: 240, overflow: "auto" }}>
+                  <div
+                    style={{ maxHeight: 240, overflow: "auto" }}
+                    className="tms-target-scroll"
+                  >
+                    {" "}
+                    {/* UI CHANGE */}
                     {loading.targets ? (
-                      <div style={{ padding: 12, color: "#6c757d" }}>
+                      <div style={{ padding: 12 }} className="tms-muted-text">
+                        {" "}
+                        {/* UI CHANGE */}
                         Loading targets…
                       </div>
                     ) : assignedTargets.length ? (
@@ -1187,14 +1193,22 @@ export default function SmmuCreatePartnerTargets() {
                             gap: 8,
                             alignItems: "center",
                           }}
+                          className="tms-target-row" /* UI CHANGE */
                         >
                           <div style={{ flex: 1 }}>
-                            <div style={{ fontWeight: 700, fontSize: 13 }}>
+                            <div
+                              style={{ fontWeight: 700, fontSize: 13 }}
+                              className="tms-partner-name" /* UI CHANGE */
+                            >
                               {t.partner_name ||
                                 (t.partner_obj && t.partner_obj.name) ||
                                 t.partner}
                             </div>
-                            <div style={{ fontSize: 13, color: "#6c757d" }}>
+
+                            <div
+                              style={{ fontSize: 13 }}
+                              className="tms-muted-text" /* UI CHANGE */
+                            >
                               {t.target_type} —{" "}
                               {t.training_plan_name ||
                                 (t.training_plan &&
@@ -1202,17 +1216,28 @@ export default function SmmuCreatePartnerTargets() {
                                 t.theme ||
                                 ""}
                             </div>
-                            <div style={{ fontSize: 13, color: "#6c757d" }}>
+
+                            <div
+                              style={{ fontSize: 13 }}
+                              className="tms-muted-text" /* UI CHANGE */
+                            >
                               FY: {t.financial_year || "—"}
                             </div>
                           </div>
+
                           <div style={{ textAlign: "right", minWidth: 120 }}>
-                            <div style={{ fontSize: 13 }}>
+                            <div
+                              style={{ fontSize: 13 }}
+                              className="tms-progress-text"
+                            >
+                              {" "}
+                              {/* UI CHANGE */}
                               {progressForTarget(t)}
                             </div>
+
                             <div style={{ marginTop: 6 }}>
                               <button
-                                className="btn"
+                                className="btn tms-btn-edit" /* UI CHANGE */
                                 onClick={() => editAssignedTarget(t)}
                                 style={{ padding: "6px 8px", borderRadius: 6 }}
                               >
@@ -1223,12 +1248,14 @@ export default function SmmuCreatePartnerTargets() {
                         </div>
                       ))
                     ) : (
-                      <div style={{ padding: 12, color: "#6c757d" }}>
+                      <div style={{ padding: 12 }} className="tms-muted-text">
+                        {" "}
+                        {/* UI CHANGE */}
                         No targets found.
                       </div>
                     )}
                   </div>
-
+                  {/* PAGINATION */}
                   <div
                     style={{
                       display: "flex",
@@ -1236,21 +1263,26 @@ export default function SmmuCreatePartnerTargets() {
                       alignItems: "center",
                       marginTop: 8,
                     }}
+                    className="tms-pagination" /* UI CHANGE */
                   >
                     <button
-                      className="btn"
+                      className="btn tms-page-btn" /* UI CHANGE */
                       onClick={gotoPrevPage}
                       disabled={assignedPage <= 1}
                       style={{ padding: "6px 8px", borderRadius: 6 }}
                     >
                       Prev
                     </button>
-                    <div style={{ fontSize: 13, color: "#6c757d" }}>
+
+                    <div style={{ fontSize: 13 }} className="tms-muted-text">
+                      {" "}
+                      {/* UI CHANGE */}
                       Page {assignedPage} /{" "}
                       {Math.max(1, Math.ceil(assignedTotal / assignedPageSize))}
                     </div>
+
                     <button
-                      className="btn"
+                      className="btn tms-page-btn" /* UI CHANGE */
                       onClick={gotoNextPage}
                       disabled={
                         assignedPage >=
@@ -1260,6 +1292,7 @@ export default function SmmuCreatePartnerTargets() {
                     >
                       Next
                     </button>
+
                     <select
                       value={assignedPageSize}
                       onChange={(e) => {
@@ -1267,6 +1300,7 @@ export default function SmmuCreatePartnerTargets() {
                         setAssignedPage(1);
                       }}
                       style={{ marginLeft: "auto", padding: 6 }}
+                      className="tms-page-select" /* UI CHANGE */
                     >
                       <option value={5}>5</option>
                       <option value={10}>10</option>
@@ -1275,9 +1309,18 @@ export default function SmmuCreatePartnerTargets() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: 12 }}>
-                  <h6 style={{ margin: "8px 0" }}>Recent activity</h6>
-                  <div style={{ color: "#6c757d", fontSize: 13 }}>
+                {/* RECENT ACTIVITY */}
+                <div style={{ marginTop: 12 }} className="tms-activity">
+                  {" "}
+                  {/* UI CHANGE */}
+                  <h6 style={{ margin: "8px 0" }} className="tms-section-title">
+                    {" "}
+                    {/* UI CHANGE */}
+                    Recent activity
+                  </h6>
+                  <div className="tms-muted-text" style={{ fontSize: 13 }}>
+                    {" "}
+                    {/* UI CHANGE */}
                     {recentActivity.length ? (
                       <ul style={{ marginTop: 6 }}>
                         {recentActivity.map((r, i) => (
@@ -1296,6 +1339,357 @@ export default function SmmuCreatePartnerTargets() {
           </div>
         </main>
       </div>
+      <style>{`/* PAGE BACKGROUND */
+
+/* CARD */
+.palette-card{
+background:#ffffff;
+border:1px solid #a7c6ed;
+border-radius:8px;
+box-shadow:0 4px 10px rgba(43,78,114,0.08);
+}
+
+
+/* LABELS */
+.palette-label{
+color:#2b4e72;
+font-weight:600;
+}
+
+
+/* MUTED TEXT */
+.palette-muted{
+color:#5a8cc2;
+}
+
+
+/* INPUTS */
+.palette-input{
+border:1px solid #a7c6ed !important;
+border-radius:6px;
+padding:8px;
+transition:all .2s;
+}
+
+.palette-input:focus{
+outline:none;
+border-color:#3d6ba6 !important;
+box-shadow:0 0 0 2px rgba(90,140,194,0.15);
+}
+
+
+/* PRIMARY BUTTON */
+.palette-btn-primary{
+background:#3d6ba6;
+color:white;
+border:none;
+border-radius:6px;
+transition:all .2s;
+}
+
+.palette-btn-primary:hover{
+background:#2b4e72;
+}
+
+
+/* SECONDARY BUTTON */
+.palette-btn-secondary{
+background:#a7c6ed;
+border:none;
+color:#2b4e72;
+border-radius:6px;
+}
+
+.palette-btn-secondary:hover{
+background:#5a8cc2;
+color:white;
+}
+
+/* SECTION TITLES */
+.tms-section-title{
+color:#2b4e72;
+font-weight:700;
+}
+
+
+/* MUTED TEXT */
+.tms-muted-text{
+color:#5a8cc2;
+}
+
+
+/* PRIMARY BUTTON */
+.tms-btn-primary{
+ background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.tms-btn-primary:hover{
+ transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+
+/* SECONDARY BUTTON */
+.tms-btn-secondary{
+background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.tms-btn-secondary:hover{
+ transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+
+/* EDIT BUTTON */
+.tms-btn-edit{
+background:#5a8cc2;
+color:white;
+border:none;
+  transition:all .25s ease;
+}
+
+.tms-btn-edit:hover{
+ transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+
+/* TARGET LIST CARD */
+.tms-assigned-card{
+background:white;
+border:1px solid #a7c6ed;
+border-radius:8px;
+}
+
+
+/* TARGET ROW */
+.tms-target-row:hover{
+background:#e4ecf5;
+}
+
+
+/* PAGINATION BUTTON */
+.tms-page-btn{
+background:#a7c6ed;
+border:none;
+}
+
+.tms-page-btn:hover{
+background:#5a8cc2;
+color:white;
+}
+
+
+/* PAGE SELECT */
+.tms-page-select{
+border:1px solid #a7c6ed;
+border-radius:4px;
+}
+
+
+/* MESSAGE */
+.tms-message{
+font-weight:500;
+}
+
+/* HEADER CONTAINER */
+.tms-header-row{
+background:#e4ecf5;
+padding:10px 14px;
+border-radius:8px;
+border:1px solid #a7c6ed;
+}
+
+
+/* PAGE TITLE */
+.tms-page-title{
+color:#2b4e72;
+font-weight:700;
+letter-spacing:0.2px;
+}
+
+
+/* HEADER ACTION AREA */
+.tms-header-actions{
+display:flex;
+align-items:center;
+gap:8px;
+}
+
+
+/* REFRESH BUTTON */
+.tms-refresh-btn{
+background:#5a8cc2;
+color:white;
+border:none;
+transition:all .2s ease;
+}
+
+.tms-refresh-btn:hover{
+background:#3d6ba6;
+}
+
+.tms-refresh-btn:disabled{
+background:#a7c6ed;
+cursor:not-allowed;
+}
+
+/* ===============================
+PLAN COLUMN CARD
+================================*/
+.plan-card {
+  background: #fff;
+  border: 2px solid #a7c6ed;
+  border-radius: 10px;
+  padding: 16px;
+  box-shadow: 0 4px 12px rgba(43, 78, 114, 0.08);
+}
+
+/* muted helper text */
+.plan-muted {
+  font-size: 13px;
+  color: #5a8cc2;
+  margin-bottom: 8px;
+}
+
+/* search container */
+.plan-search {
+  display: flex;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+/* search input */
+.plan-search-input {
+  flex: 1;
+  padding: 8px 10px;
+  border: 1px solid #a7c6ed;
+  border-radius: 6px;
+  font-size: 13px;
+  color: #2b4e72;
+  outline: none;
+}
+
+.plan-search-input:focus {
+  border-color: #3d6ba6;
+  box-shadow: 0 0 0 2px #e4ecf5;
+}
+
+/* table wrapper */
+.plan-table-wrapper{
+  max-height: 420px;      /* LIMIT HEIGHT */
+  overflow-y: auto;       /* ENABLE VERTICAL SCROLL */
+  overflow-x: auto;       /* ENABLE HORIZONTAL IF NEEDED */
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+}
+
+/* table */
+.plan-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+/* table head */
+.plan-table thead {
+  background: #e4ecf5;
+}
+
+.plan-table th {
+  padding: 10px 8px;
+  text-align: left;
+  color: #2b4e72;
+  font-weight: 700;
+  border-bottom: 2px solid #a7c6ed;
+}
+
+/* table body rows */
+.plan-row {
+  border-bottom: 1px solid #e4ecf5;
+  transition: background 0.2s ease;
+}
+
+.plan-row:hover {
+  background: #e4ecf5;
+}
+
+/* assigned row */
+.plan-row-disabled {
+  background: #f8fbff;
+  color: #5a8cc2;
+}
+
+/* clickable row */
+.plan-row-clickable {
+  cursor: pointer;
+}
+
+/* non clickable */
+.plan-row-blocked {
+  cursor: not-allowed;
+}
+
+/* table cells */
+.plan-td {
+  padding: 10px 8px;
+  color: #2b4e72;
+}
+
+.plan-td-id {
+  font-weight: 700;
+}
+
+/* training name cell */
+.plan-td-training {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+/* assigned badge */
+.plan-badge {
+  background: #e4ecf5;
+  color: #3d6ba6;
+  font-size: 11px;
+  font-weight: 600;
+  padding: 3px 6px;
+  border-radius: 4px;
+  border: 1px solid #a7c6ed;
+}
+
+/* empty state */
+.plan-empty {
+  padding: 24px;
+  text-align: center;
+  color: #5a8cc2;
+}
+
+.layout-grid{
+  display: grid;
+  grid-template-columns: 1fr 1fr; /* desktop side-by-side */
+  gap: 20px;
+  alignItems: "center",
+}
+
+@media (max-width: 768px){
+  .layout-grid{
+    grid-template-columns: 1fr; /* mobile stacked */
+  }
+}
+`}</style>
     </div>
   );
 }

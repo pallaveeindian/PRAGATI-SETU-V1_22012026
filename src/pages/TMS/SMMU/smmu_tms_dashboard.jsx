@@ -1,7 +1,7 @@
 // src/pages/TMS/SMMU/smmu_tms_dashboard.jsx
 import React, { useEffect, useState, useContext, useRef } from "react";
 import TmsLeftNav from "../layout/tms_LeftNav";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
@@ -376,40 +376,25 @@ export default function SmmuTmsDashboard() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={<div className="app-title">Pragati Setu — TMS (SMMU)</div>}
-        />
+        /> */}
 
-        <main className="dashboard-main" style={{ padding: 18 }}>
-          <div
-            style={{ maxWidth: 1100, margin: "20px auto", padding: "0 16px" }}
-          >
-            <div
-              style={{
-                display: "flex",
-                gap: 16,
-                alignItems: "center",
-                marginBottom: 16,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>SMMU — Training Management</h2>
-              <div
-                style={{
-                  marginLeft: "auto",
-                  color: "#6c757d",
-                  display: "flex",
-                  gap: 12,
-                  alignItems: "center",
-                }}
-              >
-                <div style={{ fontSize: 13 }}>
+        <main className="dashboard-main">
+          <div className="dashboard-container">
+            {/* HEADER */}
+            <div className="dashboard-header">
+              <h2 className="dashboard-title">SMMU — Training Management</h2>
+
+              <div className="dashboard-user">
+                <div>
                   {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
                 </div>
+
                 <button
-                  className="btn"
+                  className="btn primary-btn"
                   onClick={handleRefresh}
                   disabled={refreshing}
-                  style={{ padding: "6px 10px", borderRadius: 6 }}
                 >
                   {refreshing
                     ? "Refreshing…"
@@ -420,228 +405,163 @@ export default function SmmuTmsDashboard() {
               </div>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(160px, 1fr))",
-                gap: 12,
-                marginBottom: 18,
-              }}
-            >
-              <div style={cardStyle}>
-                <div style={{ fontSize: 28, fontWeight: 700 }}>
+            {/* KPI CARDS */}
+            <div className="kpi-grid">
+              <div className="kpi-card">
+                <div className="kpi-number">
                   {loadingKpis ? "…" : animTargets}
                 </div>
-                <div style={{ marginTop: 6, fontWeight: 700 }}>
-                  My Partner Targets
-                </div>
-                <div style={small}>Targets created by you</div>
+                <div className="kpi-title">My Partner Targets</div>
+                <div className="kpi-desc">Targets created by you</div>
               </div>
 
-              <div style={cardStyle}>
-                <div style={{ fontSize: 28, fontWeight: 700 }}>
+              <div className="kpi-card">
+                <div className="kpi-number">
                   {loadingKpis ? "…" : animPlans}
                 </div>
-                <div style={{ marginTop: 6, fontWeight: 700 }}>
-                  Training Plans
+                <div className="kpi-title">Training Plans</div>
+                <div className="kpi-desc">
+                  Available modules (theme-specific)
                 </div>
-                <div style={small}>Available modules (theme-specific)</div>
               </div>
 
-              <div style={cardStyle}>
-                <div style={{ fontSize: 28, fontWeight: 700 }}>
+              <div className="kpi-card">
+                <div className="kpi-number">
                   {loadingKpis ? "…" : animThemes}
                 </div>
-                <div style={{ marginTop: 6, fontWeight: 700 }}>
-                  Training Themes
-                </div>
-                <div style={small}>Theme categories</div>
+                <div className="kpi-title">Training Themes</div>
+                <div className="kpi-desc">Theme categories</div>
               </div>
 
-              <div style={cardStyle}>
-                <div style={{ fontSize: 28, fontWeight: 700 }}>
+              <div className="kpi-card">
+                <div className="kpi-number">
                   {loadingKpis ? "…" : animPartners}
                 </div>
-                <div style={{ marginTop: 6, fontWeight: 700 }}>
-                  Training Partners
-                </div>
-                <div style={small}>Registered partners</div>
+                <div className="kpi-title">Training Partners</div>
+                <div className="kpi-desc">Registered partners</div>
               </div>
             </div>
 
-            <div
-              style={{
-                display: "grid",
-                gridTemplateColumns: "1fr 420px",
-                gap: 20,
-              }}
-            >
-              <div
-                style={{
-                  background: "#fff",
-                  borderRadius: 8,
-                  padding: 16,
-                  boxShadow: "0 1px 0 rgba(10,20,40,0.03)",
-                }}
-              >
-                <h3 style={{ marginTop: 0 }}>Quick Actions</h3>
+            {/* MAIN GRID */}
+            <div className="dashboard-grid">
+              {/* QUICK ACTIONS */}
+              <div className="dashboard-card">
+                <h3>Quick Actions</h3>
+
                 <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
                   <button
                     onClick={() => navigate("/tms/smmu/partner-targets")}
-                    className="btn"
-                    style={{
-                      background: "#0b2540",
-                      color: "#fff",
-                      padding: "8px 12px",
-                      borderRadius: 6,
-                    }}
+                    className="btn primary-btn"
                   >
                     Create Partner Targets
                   </button>
+
                   <button
                     onClick={() => navigate("/tms/batches-list/")}
-                    className="btn"
-                    style={{ padding: "8px 12px", borderRadius: 6 }}
+                    className="btn primary-btn"
                   >
                     All Training Batches
                   </button>
                 </div>
 
                 <div style={{ marginTop: 16 }}>
-                  <h4 style={{ margin: "8px 0" }}>Recent activity</h4>
-                  <div style={small}>
+                  <h4>Recent activity</h4>
+                  <div className="small-text">
                     No recent activity tracked yet — use the Create Partner
                     Targets screen to assign targets to partners.
                   </div>
                 </div>
               </div>
 
-              <aside
-                style={{
-                  background: "#fff",
-                  borderRadius: 8,
-                  padding: 16,
-                  boxShadow: "0 1px 0 rgba(10,20,40,0.03)",
-                }}
-              >
-                <h4 style={{ marginTop: 0 }}>My Assigned Targets</h4>
-                <div
-                  style={{ fontSize: 13, color: "#6c757d", marginBottom: 12 }}
-                >
+              {/* TARGET LIST */}
+              <aside className="dashboard-card">
+                <h4>My Assigned Targets</h4>
+
+                <div className="small-text" style={{ marginBottom: 12 }}>
                   Paginated list of targets created by you (progress = targets
                   vs achieved).
                 </div>
 
-                <div
-                  style={{
-                    maxHeight: 360,
-                    overflow: "auto",
-                    borderTop: "1px solid #f1f3f5",
-                    paddingTop: 8,
-                  }}
-                >
+                <div style={{ maxHeight: 360, overflow: "auto" }}>
                   {loadingTargets ? (
-                    <div style={{ padding: 12, color: "#6c757d" }}>
-                      Loading targets…
-                    </div>
+                    <div className="small-text">Loading targets…</div>
                   ) : targets.length ? (
-                    <table
-                      style={{
-                        width: "100%",
-                        borderCollapse: "collapse",
-                        fontSize: 13,
-                      }}
-                    >
+                    <table className="targets-table">
                       <thead>
-                        <tr
-                          style={{
-                            textAlign: "left",
-                            borderBottom: "1px solid #eef1f4",
-                          }}
-                        >
-                          <th style={{ padding: "8px 6px" }}>Partner</th>
-                          <th style={{ padding: "8px 6px" }}>Scope</th>
-                          <th style={{ padding: "8px 6px", width: 120 }}>FY</th>
-                          <th style={{ padding: "8px 6px", width: 140 }}>
-                            Progress
-                          </th>
+                        <tr>
+                          <th>Partner</th>
+                          <th>Scope</th>
+                          <th style={{ width: 120 }}>FY</th>
+                          <th style={{ width: 140 }}>Progress</th>
                         </tr>
                       </thead>
+
                       <tbody>
                         {targets.map((t) => (
-                          <tr
-                            key={t.id}
-                            style={{ borderBottom: "1px solid #fbfbfb" }}
-                          >
-                            <td style={{ padding: "8px 6px" }}>
-                              {renderPartnerName(t)}
-                            </td>
-                            <td style={{ padding: "8px 6px" }}>
+                          <tr key={t.id}>
+                            <td>{renderPartnerName(t)}</td>
+
+                            <td>
                               {t.target_type}
+
                               {t.target_type === "MODULE" &&
                               (t.training_plan_name ||
                                 (plansMap[t.training_plan] &&
                                   plansMap[t.training_plan].training_name))
-                                ? ` — ${t.training_plan_name || plansMap[t.training_plan].training_name}`
+                                ? ` — ${
+                                    t.training_plan_name ||
+                                    plansMap[t.training_plan].training_name
+                                  }`
                                 : t.theme
                                   ? ` — ${t.theme}`
                                   : ""}
+
                               {t.target_type === "DISTRICT" && t.district_name
                                 ? ` — ${t.district_name}`
                                 : ""}
                             </td>
-                            <td style={{ padding: "8px 6px" }}>
-                              {t.financial_year || "—"}
-                            </td>
-                            <td style={{ padding: "8px 6px" }}>
-                              {computeProgress(t)}
-                            </td>
+
+                            <td>{t.financial_year || "—"}</td>
+
+                            <td>{computeProgress(t)}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
                   ) : (
-                    <div style={{ padding: 12, color: "#6c757d" }}>
-                      No assigned targets.
-                    </div>
+                    <div className="small-text">No assigned targets.</div>
                   )}
                 </div>
 
-                {/* pagination */}
-                <div
-                  style={{
-                    display: "flex",
-                    gap: 8,
-                    alignItems: "center",
-                    marginTop: 12,
-                  }}
-                >
+                {/* PAGINATION */}
+                <div className="pagination">
                   <button
-                    className="btn"
+                    className="btn primary-btn"
                     onClick={() => setPage((p) => Math.max(1, p - 1))}
                     disabled={page <= 1}
-                    style={{ padding: "6px 8px", borderRadius: 6 }}
                   >
                     Prev
                   </button>
-                  <div style={small}>
+
+                  <div className="small-text">
                     Page {page} / {totalPages}
                   </div>
+
                   <button
-                    className="btn"
+                    className="btn primary-btn"
                     onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
                     disabled={page >= totalPages}
-                    style={{ padding: "6px 8px", borderRadius: 6 }}
                   >
                     Next
                   </button>
+
                   <select
                     value={pageSize}
                     onChange={(e) => {
                       setPageSize(Number(e.target.value));
                       setPage(1);
                     }}
-                    style={{ marginLeft: "auto", padding: 6 }}
+                    className="input-outline"
                   >
                     <option value={5}>5</option>
                     <option value={10}>10</option>
@@ -653,6 +573,158 @@ export default function SmmuTmsDashboard() {
           </div>
         </main>
       </div>
+      <style>{`/* MAIN DASHBOARD */
+.dashboard-main {
+  padding: 18px;
+}
+
+.dashboard-container {
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 0 16px;
+}
+
+/* HEADER */
+.dashboard-header {
+  display: flex;
+  gap: 16px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  margin: 0;
+  color: #2b4e72;
+}
+
+.dashboard-user {
+  margin-left: auto;
+  display: flex;
+  gap: 12px;
+  align-items: center;
+  color: #5a8cc2;
+  font-size: 13px;
+}
+
+/* KPI GRID */
+.kpi-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+  margin-bottom: 18px;
+}
+
+.kpi-card {
+  background: #fff;
+  border: 2px solid #a7c6ed;
+  border-radius: 10px;
+  padding: 16px;
+  transition: all 0.2s ease;
+}
+
+.kpi-card:hover {
+  background: #e4ecf5;
+}
+
+.kpi-number {
+  font-size: 28px;
+  font-weight: 700;
+  color: #2b4e72;
+}
+
+.kpi-title {
+  margin-top: 6px;
+  font-weight: 700;
+  color: #3d6ba6;
+}
+
+.kpi-desc {
+  font-size: 12px;
+  color: #5a8cc2;
+}
+
+/* MAIN GRID */
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: 1fr 420px;
+  gap: 20px;
+}
+
+/* CARDS */
+.dashboard-card {
+  background: #fff;
+  border-radius: 10px;
+  border: 2px solid #a7c6ed;
+  padding: 16px;
+}
+
+/* QUICK ACTION BUTTON */
+.primary-btn {
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.primary-btn:hover {
+  transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+
+/* TABLE */
+.targets-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 13px;
+}
+
+.targets-table thead {
+  background: #e4ecf5;
+}
+
+.targets-table th {
+  text-align: left;
+  padding: 8px 6px;
+  border-bottom: 2px solid #a7c6ed;
+  color: #2b4e72;
+}
+
+.targets-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #e4ecf5;
+}
+
+.targets-table tr:hover {
+  background: #e4ecf5;
+}
+
+/* PAGINATION */
+.pagination {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-top: 12px;
+}
+
+.pagination select {
+  margin-left: auto;
+  padding: 6px;
+}
+
+/* SMALL TEXT */
+.small-text {
+  font-size: 13px;
+  color: #5a8cc2;
+}
+
+.input-outline{
+border: 2px solid #3d6ba6;
+outline: 'none'
+}
+`}</style>
     </div>
   );
 }

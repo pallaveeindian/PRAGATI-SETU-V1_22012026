@@ -55,15 +55,12 @@ export default function ShgDetailCard({ shg }) {
         }
         shgDetailCache.set(cacheKey, data);
       } catch (e) {
-        console.error(
-          "SHG detail failed",
-          e?.response?.data || e.message || e
-        );
+        console.error("SHG detail failed", e?.response?.data || e.message || e);
         if (!cancelled) {
           setError(
             e?.response?.data?.detail ||
               e.message ||
-              "Failed to load SHG detail from UPSRLM."
+              "Failed to load SHG detail from UPSRLM.",
           );
         }
       } finally {
@@ -85,8 +82,7 @@ export default function ShgDetailCard({ shg }) {
 
   const effective = detail || {};
   const addr =
-    (Array.isArray(effective.shg_addresses) &&
-      effective.shg_addresses[0]) ||
+    (Array.isArray(effective.shg_addresses) && effective.shg_addresses[0]) ||
     {};
   const bank =
     (Array.isArray(effective.shg_banks) && effective.shg_banks[0]) || {};

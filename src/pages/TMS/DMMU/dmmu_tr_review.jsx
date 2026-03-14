@@ -1,7 +1,7 @@
 // src/pages/TMS/DMMU/dmmu_tr_review.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API } from "../../../api/axios";
@@ -318,13 +318,13 @@ export default function DmmuTrReview() {
   /* ---------------- availability check + selection ---------------- */
   async function handleToggleMasterTrainer(batchId, trainer) {
     const currentArr = mtSelections[batchId] || [];
-    const exists = currentArr.some(t => t.id === trainer.id);
+    const exists = currentArr.some((t) => t.id === trainer.id);
 
     // 🔁 Deselect
     if (exists) {
-      setMtSelections(prev => ({
+      setMtSelections((prev) => ({
         ...prev,
-        [batchId]: currentArr.filter(t => t.id !== trainer.id),
+        [batchId]: currentArr.filter((t) => t.id !== trainer.id),
       }));
       return;
     }
@@ -350,7 +350,7 @@ export default function DmmuTrReview() {
       }
 
       // ✅ Add trainer
-      setMtSelections(prev => ({
+      setMtSelections((prev) => ({
         ...prev,
         [batchId]: [
           ...currentArr,
@@ -392,20 +392,18 @@ export default function DmmuTrReview() {
     if (!requestId || !tr) return;
     // 🚫 NEW: every batch must have at least one master trainer
     const unassignedBatches = batches.filter(
-      b => !(mtSelections[b.id] && mtSelections[b.id].length > 0)
+      (b) => !(mtSelections[b.id] && mtSelections[b.id].length > 0),
     );
 
     if (unassignedBatches.length > 0) {
-      const batchCodes = unassignedBatches
-        .map(b => b.code)
-        .join(", ");
+      const batchCodes = unassignedBatches.map((b) => b.code).join(", ");
 
       alert(
-        `Please assign at least one Master Trainer for all batches.\n\nMissing assignment for batch(es): ${batchCodes}`
+        `Please assign at least one Master Trainer for all batches.\n\nMissing assignment for batch(es): ${batchCodes}`,
       );
       return;
-    }  
-    
+    }
+
     if (!batches || batches.length === 0) {
       alert("No batches found for this training request.");
       return;
@@ -573,8 +571,8 @@ export default function DmmuTrReview() {
   }
 
   function getSelectedTrainerNames(batchId) {
-    return (mtSelections[batchId] || []).map(t => t.name);
-  } 
+    return (mtSelections[batchId] || []).map((t) => t.name);
+  }
 
   function renderTrSummary() {
     if (loadingTR) {
@@ -683,7 +681,9 @@ export default function DmmuTrReview() {
               </thead>
               <tbody>
                 {mtList.map((mt) => {
-                  const isSelected = selectedForBatch.some(t => t.id === mt.id);
+                  const isSelected = selectedForBatch.some(
+                    (t) => t.id === mt.id,
+                  );
                   const isChecking = mtCheckingId === mt.id;
                   return (
                     <tr key={mt.id}>
@@ -765,13 +765,13 @@ export default function DmmuTrReview() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — DMMU Training Request Review
             </div>
           }
-        />
+        /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1200, margin: "20px auto" }}>
             <div
@@ -859,7 +859,7 @@ export default function DmmuTrReview() {
                           <th>Start Date</th>
                           <th>End Date</th>
                           <th>Batch Type</th>
-                          <th>Master Trainer(s)</th>                          
+                          <th>Master Trainer(s)</th>
                           <th>Action</th>
                         </tr>
                       </thead>
@@ -876,7 +876,9 @@ export default function DmmuTrReview() {
                               {(() => {
                                 const names = getSelectedTrainerNames(b.id);
                                 if (!names.length) {
-                                  return <span className="muted">Not assigned</span>;
+                                  return (
+                                    <span className="muted">Not assigned</span>
+                                  );
                                 }
                                 return (
                                   <ul style={{ margin: 0, paddingLeft: 16 }}>
@@ -886,7 +888,7 @@ export default function DmmuTrReview() {
                                   </ul>
                                 );
                               })()}
-                            </td>                            
+                            </td>
                             <td>
                               <button
                                 className="btn-sm btn-flat"
@@ -947,7 +949,11 @@ export default function DmmuTrReview() {
                       fontWeight: 600,
                     }}
                     onClick={handleApprove}
-                    disabled={savingApprove || savingRevert || !Object.values(mtSelections).some(arr => arr?.length)}
+                    disabled={
+                      savingApprove ||
+                      savingRevert ||
+                      !Object.values(mtSelections).some((arr) => arr?.length)
+                    }
                   >
                     {savingApprove ? "Approving…" : "Approve Request"}
                   </button>
