@@ -15,7 +15,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://66.116.207.88:8089",
+        target: "https://thdevops.co.in/",
         changeOrigin: true,
         secure: false,
       },

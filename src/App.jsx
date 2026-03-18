@@ -302,7 +302,7 @@ export default function App() {
       </Route>
 
       {/* ------ EPSMS Routes ------ */}
-      <Route element={<ProtectedRoute allowedRoles={["crp_record"]} />}>
+      <Route element={<ProtectedRoute allowedRoles={["crp_record", "dmmu"]} />}>
         <Route path="/epsms" element={<EpsmsLayout />}>
           {/* CRP Form */}
           <Route path="crp-form" element={<CRPForm />} />

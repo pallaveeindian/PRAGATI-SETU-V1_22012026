@@ -1,6 +1,9 @@
 // src/pages/EPSMS/RecordForm/FormComponents/GeoFilters.jsx
 import React, { useEffect, useState } from "react";
 import { LOOKUP_API } from "../../../../api/axios";
+import { useContext } from "react";
+import { AuthContext } from "../../../../contexts/AuthContext";
+import { FaLock } from "react-icons/fa";
 
 export default function GeoFilters({ onChange }) {
   const [districts, setDistricts] = useState([]);
@@ -11,13 +14,39 @@ export default function GeoFilters({ onChange }) {
 
   const [loadingBlocks, setLoadingBlocks] = useState(false);
 
+  const { user } = useContext(AuthContext) || {};
+
+  const [isDistrictLocked, setIsDistrictLocked] = useState(false);
+
+  // Auto set District if DMMU
+  useEffect(() => {
+    if (!user?.id) return;
+
+    async function resolveUserDistrict() {
+      try {
+        const res = await LOOKUP_API.userGeoscopeByUserId(user.id);
+
+        const districts = res?.data?.districts || [];
+
+        if (districts.length === 1) {
+          setDistrict(districts[0]);
+          setIsDistrictLocked(true);
+        }
+      } catch (err) {
+        console.error("Failed to resolve user district", err);
+      }
+    }
+
+    resolveUserDistrict();
+  }, [user?.id]);
+
   // ---------------------------
   // Load Districts
   // ---------------------------
   useEffect(() => {
     async function loadDistricts() {
       try {
-        const res = await LOOKUP_API.districts.list({page_size: 100,});
+        const res = await LOOKUP_API.districts.list({ page_size: 100 });
         const rows = Array.isArray(res.data)
           ? res.data
           : res.data?.data || res.data?.results || [];
@@ -44,7 +73,9 @@ export default function GeoFilters({ onChange }) {
     async function loadBlocks() {
       setLoadingBlocks(true);
       try {
-        const res = await LOOKUP_API.blocksByDistrict(district, {page_size: 1000,});
+        const res = await LOOKUP_API.blocksByDistrict(district, {
+          page_size: 1000,
+        });
         const rows = Array.isArray(res.data)
           ? res.data
           : res.data?.data || res.data?.results || [];
@@ -74,14 +105,17 @@ export default function GeoFilters({ onChange }) {
 
   return (
     <div className="geo-filter-container">
-
       {/* District */}
       <div className="geo-field">
-        <label>District</label>
+        <label>
+          District {isDistrictLocked && <FaLock className="lock-icon" />}
+        </label>
 
         <select
           value={district}
+          disabled={isDistrictLocked}
           onChange={(e) => {
+            if (isDistrictLocked) return;
             setDistrict(e.target.value);
             setBlock("");
           }}
@@ -172,6 +206,27 @@ export default function GeoFilters({ onChange }) {
         .geo-field select:disabled {
           background: var(--epsms-muted);
           cursor: not-allowed;
+        }
+
+        .lock-icon {
+          margin-left: 6px;
+          font-size: 12px;
+          color: var(--epsms-red);
+        }
+
+        /* Locked dropdown */
+        .geo-field select:disabled {
+          background: #f3f4f6;
+          color: #374151;
+          border-style: dashed;
+        }
+
+        /* Optional badge */
+        .locked-badge {
+          font-size: 11px;
+          color: var(--epsms-red);
+          margin-top: 2px;
+          animation: fadeIn 0.3s ease;
         }
 
         @keyframes fadeIn {

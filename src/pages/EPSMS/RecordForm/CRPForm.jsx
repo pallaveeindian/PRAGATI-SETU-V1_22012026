@@ -66,6 +66,40 @@ export default function CRPForm() {
   const panchayatSection = useRef(null);
   const [showSuccessModal, setShowSuccessModal] = useState(false);
 
+  const [clfLoading, setClfLoading] = useState(false);
+  const [clfDisplay, setClfDisplay] = useState("");
+  const [clfError, setClfError] = useState("");
+
+  // AUTO FETCH CRP
+  async function autoFetchCLF(member) {
+    if (!member || !geoFilters.block_id) return;
+
+    try {
+      setClfLoading(true);
+      setClfError("");
+      setClfDisplay("");
+      setCLFCode("");
+
+      const res = await LOOKUP_API.upsrlmFindClf({
+        block_id: geoFilters.block_id,
+        member_code: member.member_code,
+      });
+
+      const data = res.data;
+
+      setCLFCode(data.clf_code);
+      setClfDisplay(`${data.name} | ${data.clfCategory}`);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setClfError("No CLF found for this member");
+      } else {
+        setClfError("Failed to fetch CLF");
+      }
+    } finally {
+      setClfLoading(false);
+    }
+  }
+
   // -------------------------------------------------
   // CREATE CRP FLOW
   // -------------------------------------------------
@@ -80,6 +114,11 @@ export default function CRPForm() {
 
     if (!selectedMember) {
       alert("Select a member first");
+      return;
+    }
+
+    if (!clf_code) {
+      alert("CLF Code is mandatory");
       return;
     }
 
@@ -216,6 +255,7 @@ export default function CRPForm() {
             blockId={geoFilters.block_id}
             onSelectMember={(memberData) => {
               setSelectedMember(memberData);
+              autoFetchCLF(memberData);
             }}
           />
         </div>
@@ -307,18 +347,33 @@ export default function CRPForm() {
               </div>
             )}
 
-            {/* Optional Nodal CLF Code */}
+            {/* Nodal CLF Code */}
             <div className="crp-input-group">
               <label>
-                <FaBuilding /> Nodal CLF Code
+                <FaBuilding /> Nodal CLF Code{" "}
+                <span className="required">*</span>
               </label>
 
-              <input
-                type="text"
-                placeholder="Enter Nodal CLF Code of CRP"
-                value={clf_code}
-                onChange={(e) => setCLFCode(e.target.value)}
-              />
+              <div className="clf-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Auto fetching CLF..."
+                  value={clf_code}
+                  readOnly
+                />
+
+                {clfLoading && <FaSpinner className="spin clf-spinner" />}
+              </div>
+
+              {/* CLF DISPLAY */}
+              {clfDisplay && (
+                <div className="clf-display">
+                  <FaCheckCircle /> {clfDisplay}
+                </div>
+              )}
+
+              {/* ERROR */}
+              {clfError && <div className="clf-error">⚠ {clfError}</div>}
             </div>
 
             {/* Subcategory */}
@@ -763,6 +818,71 @@ export default function CRPForm() {
           display:flex;
           flex-direction:column;
           gap:3px;
+        }
+
+        .required {
+          color: red;
+          margin-left: 4px;
+        }
+
+        /* CLF INPUT WRAPPER */
+        .clf-input-wrapper {
+          position: relative;
+          display: flex;
+          align-items: center;
+        }
+
+        .clf-input-wrapper input {
+          width: 100%;
+          padding-right: 40px;
+          background: #f9fafb;
+          font-weight: 600;
+        }
+
+        /* SPINNER */
+        .clf-spinner {
+          position: absolute;
+          right: 10px;
+          color: var(--epsms-red);
+        }
+
+        /* CLF DISPLAY */
+        .clf-display {
+          margin-top: 6px;
+          font-size: 13px;
+          color: var(--epsms-green);
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          animation: fadeSlide 0.3s ease;
+        }
+
+        /* ERROR */
+        .clf-error {
+          margin-top: 6px;
+          font-size: 13px;
+          color: #dc2626;
+          animation: fadeSlide 0.3s ease;
+        }
+
+        /* ANIMATION */
+        @keyframes fadeSlide {
+          from {
+            opacity: 0;
+            transform: translateY(6px);
+          }
+          to {
+            opacity: 1;
+            transform: translateY(0);
+          }
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 640px) {
+          .clf-display,
+          .clf-error {
+            font-size: 12px;
+          }
         }
 
         /* HOVER */

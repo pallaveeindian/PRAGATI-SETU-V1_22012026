@@ -360,6 +360,10 @@ export const LOOKUP_API = {
     api.get(`/lookups/upsrlm-clf-villages/${encodeURIComponent(clfCode)}/`, {
       params,
     }),
+  upsrlmFindClf: (params) =>
+    api.get(`/lookups/find-clf-by-member/`, {
+      params,
+    }),
 
   // VO via UPSRLM
   upsrlmVoList: (blockId, params) =>
