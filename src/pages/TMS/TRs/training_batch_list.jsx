@@ -6,6 +6,7 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 
+import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
 /* ===================================================== */
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
@@ -70,6 +71,8 @@ async function resolveTrainingPartnerIdForUser(userId) {
 
 export default function TrainingBatchList() {
   const { user } = useContext(AuthContext) || {};
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
   const role = getCanonicalRole(user || {});
   const { id: requestId } = useParams();
   const isRequestScoped = Boolean(requestId);
@@ -419,6 +422,10 @@ export default function TrainingBatchList() {
           }
         /> */}
 
+        <div className="dashboard-header">
+          <h2 className="dashboard-title">{roleMessage}</h2>
+        </div>
+
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1200, margin: "0 auto" }}>
             {/* ================= FILTERS ================= */}
@@ -426,225 +433,255 @@ export default function TrainingBatchList() {
             {!isRequestScoped && (
               // ⭐ CHANGE: filter-panel class added
               <div className="filter-panel">
-                <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
-                  {role === "smmu" && (
-                    <>
-                      <select
-                        className="input"
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            mandal_id: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Mandal</option>
-                        {mandals.map((m) => (
-                          <option key={m.id} value={m.id}>
-                            {m.name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        className="input"
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            district_category_id: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">District Category</option>
-                        {districtCategories.map((d) => (
-                          <option key={d.id} value={d.id}>
-                            {d.name}
-                          </option>
-                        ))}
-                      </select>
-                    </>
-                  )}
-
-                  {role !== "bmmu" && (
-                    <select
-                      className="input"
-                      value={filters.district_id}
-                      disabled={role === "dmmu"}
-                      onChange={(e) => {
-                        if (role === "dmmu") return;
-
-                        setBlocks([]);
-                        setFilters((f) => ({
-                          ...f,
-                          district_id: e.target.value,
-                          block_id: "",
-                          aspirational_only: false,
-                        }));
-                      }}
-                    >
-                      <option value="">District</option>
-                      {districts.map((d) => (
-                        <option key={d.district_id} value={d.district_id}>
-                          {d.district_name_en}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {role !== "bmmu" && (
-                    <label
-                      style={{ display: "flex", alignItems: "center", gap: 6 }}
-                    >
-                      <input
-                        type="checkbox"
-                        checked={filters.aspirational_only}
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            aspirational_only: e.target.checked,
-                            block_id: "",
-                          }))
-                        }
-                      />
-                      Aspirational
-                    </label>
-                  )}
-
-                  {role !== "bmmu" && filters.district_id && (
-                    <select
-                      key={filters.district_id}
-                      className="input"
-                      value={filters.block_id}
-                      onChange={(e) =>
-                        setFilters((f) => ({ ...f, block_id: e.target.value }))
-                      }
-                    >
-                      <option value="">Block</option>
-                      {blocks.map((b) => (
-                        <option key={b.block_id} value={b.block_id}>
-                          {b.block_name_en}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {role === "training_partner" && (
-                    <select
-                      className="input"
-                      value={filters.centre_id}
-                      onChange={(e) =>
-                        setFilters((f) => ({ ...f, centre_id: e.target.value }))
-                      }
-                    >
-                      <option value="">Centre</option>
-                      {centres.map((c) => (
-                        <option key={c.id} value={c.id}>
-                          {c.venue_name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  {role !== "training_partner" && role !== "tpcp" && (
-                    <select
-                      className="input"
-                      value={filters.partner}
-                      onChange={(e) =>
-                        setFilters((f) => ({ ...f, partner: e.target.value }))
-                      }
-                    >
-                      <option value="">Training Partner</option>
-                      {partners.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.name}
-                        </option>
-                      ))}
-                    </select>
-                  )}
-
-                  <select
-                    className="input"
-                    onChange={(e) =>
-                      setFilters((f) => ({
-                        ...f,
-                        theme: e.target.value,
-                        training_plan: "",
-                      }))
-                    }
+                <div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "nowrap", // ✅ force single row
+                      gap: 12,
+                      alignItems: "center",
+                      whiteSpace: "nowrap", // ✅ prevent breaking
+                    }}
                   >
-                    <option value="">Training Theme</option>
-                    {themes.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.theme_name}
-                      </option>
-                    ))}
-                  </select>
+                    {role === "smmu" && (
+                      <>
+                        <select
+                          className="input"
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              mandal_id: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Mandal</option>
+                          {mandals.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
 
-                  {plans.length > 0 && (
+                        <select
+                          className="input"
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              district_category_id: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">District Category</option>
+                          {districtCategories.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {role !== "bmmu" && (
+                      <select
+                        className="input"
+                        value={filters.district_id}
+                        disabled={role === "dmmu"}
+                        onChange={(e) => {
+                          if (role === "dmmu") return;
+
+                          setBlocks([]);
+                          setFilters((f) => ({
+                            ...f,
+                            district_id: e.target.value,
+                            block_id: "",
+                            aspirational_only: false,
+                          }));
+                        }}
+                      >
+                        <option value="">District</option>
+                        {districts.map((d) => (
+                          <option key={d.district_id} value={d.district_id}>
+                            {d.district_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role !== "bmmu" && (
+                      <label
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filters.aspirational_only}
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              aspirational_only: e.target.checked,
+                              block_id: "",
+                            }))
+                          }
+                        />
+                        Aspirational
+                      </label>
+                    )}
+
+                    {role !== "bmmu" && filters.district_id && (
+                      <select
+                        key={filters.district_id}
+                        className="input"
+                        value={filters.block_id}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            block_id: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Block</option>
+                        {blocks.map((b) => (
+                          <option key={b.block_id} value={b.block_id}>
+                            {b.block_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role === "training_partner" && (
+                      <select
+                        className="input"
+                        value={filters.centre_id}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            centre_id: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Centre</option>
+                        {centres.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.venue_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                    {role !== "training_partner" && role !== "tpcp" && (
+                      <select
+                        className="input"
+                        value={filters.partner}
+                        onChange={(e) =>
+                          setFilters((f) => ({ ...f, partner: e.target.value }))
+                        }
+                      >
+                        <option value="">Training Partner</option>
+                        {partners.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "nowrap", //  force single row
+                      gap: 12,
+                      alignItems: "center",
+                      whiteSpace: "nowrap", //  prevent breaking
+                    }}
+                  >
                     <select
                       className="input"
                       onChange={(e) =>
                         setFilters((f) => ({
                           ...f,
-                          training_plan: e.target.value,
+                          theme: e.target.value,
+                          training_plan: "",
                         }))
                       }
                     >
-                      <option value="">Training Plan</option>
-                      {plans.map((p) => (
-                        <option key={p.id} value={p.id}>
-                          {p.training_name}
+                      <option value="">Training Theme</option>
+                      {themes.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.theme_name}
                         </option>
                       ))}
                     </select>
-                  )}
 
-                  <select
-                    className="input"
-                    onChange={(e) =>
-                      setFilters((f) => ({ ...f, status: e.target.value }))
-                    }
-                  >
-                    <option value="">Status</option>
-                    {[
-                      "DRAFT",
-                      "PENDING",
-                      "ONGOING",
-                      "SCHEDULED",
-                      "COMPLETED",
-                      "REJECTED",
-                    ].map((s) => (
-                      <option key={s} value={s}>
-                        {s}
-                      </option>
-                    ))}
-                  </select>
+                    {plans.length > 0 && (
+                      <select
+                        className="input"
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            training_plan: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Training Plan</option>
+                        {plans.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.training_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
 
-                  <select
-                    className="input"
-                    onChange={(e) =>
-                      setFilters((f) => ({
-                        ...f,
-                        training_type: e.target.value,
-                      }))
-                    }
-                  >
-                    <option value="">Participant</option>
-                    <option value="BENEFICIARY">Beneficiary</option>
-                    <option value="TRAINER">Trainer</option>
-                  </select>
+                    <select
+                      className="input"
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, status: e.target.value }))
+                      }
+                    >
+                      <option value="">Status</option>
+                      {[
+                        "DRAFT",
+                        "PENDING",
+                        "ONGOING",
+                        "SCHEDULED",
+                        "COMPLETED",
+                        "REJECTED",
+                      ].map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
 
-                  <select
-                    className="input"
-                    onChange={(e) =>
-                      setFilters((f) => ({ ...f, batch_type: e.target.value }))
-                    }
-                  >
-                    <option value="">Batch Type</option>
-                    <option value="SEPARATE">Separate</option>
-                    <option value="COMBINED">Combined</option>
-                  </select>
+                    <select
+                      className="input"
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          training_type: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Participant</option>
+                      <option value="BENEFICIARY">Beneficiary</option>
+                      <option value="TRAINER">Trainer</option>
+                    </select>
 
+                    <select
+                      className="input"
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          batch_type: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Batch Type</option>
+                      <option value="SEPARATE">Separate</option>
+                      <option value="COMBINED">Combined</option>
+                    </select>
+                  </div>
                   <div
                     style={{
                       flexBasis: "100%",
@@ -949,6 +986,18 @@ export default function TrainingBatchList() {
   color:#2b4e72;
 }
 
+/* HEADER */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  margin-top: 25px;
+  margin-left: 30px;
+  color: #2b4e72;
+}
 `}</style>
     </div>
   );

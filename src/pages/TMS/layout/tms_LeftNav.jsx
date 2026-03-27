@@ -202,7 +202,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
         {/* LOGO */}
         <div className="tms-logo" onClick={() => navigate("/dashboard")}>
           <img src={logo} alt="TMS" />
-          <span className="logo-text">Training Management System</span>
+          <span className="logo-text">Training Management Sy stem</span>
         </div>
 
         {/* NAV */}

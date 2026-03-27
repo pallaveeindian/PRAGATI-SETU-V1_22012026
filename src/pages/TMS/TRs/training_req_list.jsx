@@ -8,6 +8,8 @@ import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 import TrainingReqListFilter from "./training_req_list_filters";
 
+import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
+
 const CACHE_KEY = "tms_training_requests_cache_v1";
 const USER_MAP_KEY = "tms_user_map_v1";
 const PARTNER_MAP_KEY = "tms_partner_map_v1";
@@ -84,6 +86,10 @@ async function resolveTrainingPartnerIdForUser(userId) {
 
 export default function TrainingRequestList() {
   const { user } = useContext(AuthContext) || {};
+
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
+
   const role = getCanonicalRole(user || {});
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
@@ -353,6 +359,10 @@ export default function TrainingRequestList() {
             minHeight: "100vh",
           }}
         >
+          <div className="dashboard-header">
+            <h2 className="dashboard-title">{roleMessage}</h2>
+          </div>
+
           <div
             style={{
               maxWidth: 1200,
@@ -609,6 +619,19 @@ export default function TrainingRequestList() {
 .activePage{
   background:#3d6ba6;
   color:#fff;
+}
+
+/* HEADER */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  margin-top: 25px;
+  margin-left: 30px;
+  color: #2b4e72;
 }
 `}</style>
         </main>

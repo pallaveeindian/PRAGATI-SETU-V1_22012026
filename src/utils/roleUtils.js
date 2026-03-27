@@ -13,6 +13,20 @@ export const ROLE_ID_MAP = {
   11: "tp_contact_person",
 };
 
+export const ROLE_WELCOME_MESSAGES = {
+  bmmu: "BMMU — Training Management",
+  dmmu: "DMMU — Training Management",
+  smmu: "SMMU — Training Management",
+  training_partner: "Training Partner Dashboard",
+  tp_contact_person: "TP Contact Person Dashboard",
+  master_trainer: "Master Trainer Dashboard",
+  crp_ep: "CRP-EP Dashboard",
+  crp_ld: "CRP-LD Dashboard",
+  state_admin: "State Admin Panel",
+  pmu_admin: "PMU Admin Panel",
+  dcnrlm: "DCNRLM Dashboard",
+};
+
 /**
  * Return canonical role key (string) for a user or geoscope object.
  * Prefers numeric id (user.role_id || user.role) then role_name or geoscope.role.
@@ -40,11 +54,17 @@ export function getCanonicalRole(obj = {}) {
   if (nameStr) {
     if (nameStr.includes("bmmu")) return "bmmu";
     if (nameStr.includes("dmmu")) return "dmmu";
-    if (nameStr.includes("smmu") || nameStr.includes("state_mission")) return "smmu";
+    if (nameStr.includes("smmu") || nameStr.includes("state_mission"))
+      return "smmu";
     if (nameStr.includes("training_partner")) return "training_partner";
     if (nameStr.includes("master_trainer")) return "master_trainer";
     if (nameStr.includes("dcnrlm")) return "dcnrlm";
-    if (nameStr.includes("contact") || nameStr.includes("tp_cp") || nameStr.includes("tp_contact")) return "tp_contact_person";
+    if (
+      nameStr.includes("contact") ||
+      nameStr.includes("tp_cp") ||
+      nameStr.includes("tp_contact")
+    )
+      return "tp_contact_person";
     if (nameStr.includes("crp_ep")) return "crp_ep";
     if (nameStr.includes("crp_ld")) return "crp_ld";
     if (nameStr.includes("state_admin")) return "state_admin";
@@ -53,7 +73,9 @@ export function getCanonicalRole(obj = {}) {
 
   // 4) fallback: try geoscope in localStorage
   try {
-    const geo = JSON.parse(window.localStorage.getItem("ps_user_geoscope") || "null");
+    const geo = JSON.parse(
+      window.localStorage.getItem("ps_user_geoscope") || "null",
+    );
     if (geo?.role) return getCanonicalRole(geo);
   } catch (e) {}
 

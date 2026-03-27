@@ -355,6 +355,7 @@ export default function TpCentreRegistration() {
                   <>
                     <input
                       type="text"
+                      className="input-blue"
                       inputMode="numeric"
                       pattern="[0-9]*"
                       value={centre.serial_number}
@@ -393,6 +394,7 @@ export default function TpCentreRegistration() {
                   <>
                     <input
                       type="text"
+                      className="input-blue"
                       value={centre.venue_name}
                       onChange={(e) => {
                         const value = e.target.value.toUpperCase();
@@ -419,6 +421,7 @@ export default function TpCentreRegistration() {
                   <>
                     <select
                       value={centre.centre_type}
+                      className="input-blue"
                       onChange={(e) =>
                         setCentre({ ...centre, centre_type: e.target.value })
                       }
@@ -469,8 +472,9 @@ export default function TpCentreRegistration() {
                   "addr",
                   "Centre Address",
                   <>
-                    <input
+                    <textarea
                       maxLength={150}
+                      className="input-blue"
                       value={centre.venue_address}
                       onChange={(e) =>
                         setCentre({ ...centre, venue_address: e.target.value })
@@ -485,6 +489,7 @@ export default function TpCentreRegistration() {
                   "District",
                   <select
                     value={centre.district}
+                    className="input-blue"
                     onChange={(e) =>
                       setCentre({ ...centre, district: e.target.value })
                     }
@@ -505,6 +510,7 @@ export default function TpCentreRegistration() {
                   ) : (
                     <select
                       value={centre.block}
+                      className="input-blue"
                       onChange={(e) =>
                         setCentre({ ...centre, block: e.target.value })
                       }
@@ -526,6 +532,7 @@ export default function TpCentreRegistration() {
                   ) : (
                     <select
                       value={centre.panchayat}
+                      className="input-blue"
                       onChange={(e) =>
                         setCentre({ ...centre, panchayat: e.target.value })
                       }
@@ -547,6 +554,7 @@ export default function TpCentreRegistration() {
                   ) : (
                     <select
                       value={centre.village}
+                      className="input-blue"
                       onChange={(e) =>
                         setCentre({ ...centre, village: e.target.value })
                       }
@@ -572,8 +580,9 @@ export default function TpCentreRegistration() {
                   "sec",
                   "Security Arrangements",
                   <>
-                    <input
+                    <textarea
                       maxLength={150}
+                      className="input-blue"
                       value={centre.security_arrangements}
                       onChange={(e) =>
                         setCentre({
@@ -591,6 +600,7 @@ export default function TpCentreRegistration() {
                   "Total Toilets / Bathrooms",
                   <input
                     type="number"
+                    className="input-blue"
                     min="1"
                     value={centre.toilets_bathrooms}
                     onChange={(e) =>
@@ -599,6 +609,10 @@ export default function TpCentreRegistration() {
                         toilets_bathrooms: e.target.value,
                       })
                     }
+                    style={{
+                      width: "100%",
+                      padding: "8px",
+                    }}
                   />,
                 ),
                 row(
@@ -606,6 +620,7 @@ export default function TpCentreRegistration() {
                   "Power / Water Availability",
                   <select
                     value={centre.power_water_facility}
+                    className="input-blue"
                     onChange={(e) =>
                       setCentre({
                         ...centre,
@@ -655,6 +670,7 @@ export default function TpCentreRegistration() {
                   <>
                     <textarea
                       maxLength={300}
+                      className="input-blue"
                       value={centre.other_details}
                       onChange={(e) =>
                         setCentre({ ...centre, other_details: e.target.value })
@@ -679,12 +695,17 @@ export default function TpCentreRegistration() {
                       type="number"
                       min="1"
                       value={centre.training_hall_count}
+                      className="input-blue"
                       onChange={(e) =>
                         setCentre({
                           ...centre,
                           training_hall_count: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                      }}
                     />,
                   ),
                   row(
@@ -694,12 +715,17 @@ export default function TpCentreRegistration() {
                       type="number"
                       min="1"
                       value={centre.training_hall_capacity}
+                      className="input-blue"
                       onChange={(e) =>
                         setCentre({
                           ...centre,
                           training_hall_capacity: e.target.value,
                         })
                       }
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                      }}
                     />,
                   ),
                 ],
@@ -712,8 +738,9 @@ export default function TpCentreRegistration() {
                     row(
                       `rn_${i}`,
                       "Hall Name",
-                      <input
+                      <textarea
                         value={r.room_name}
+                        className="input-blue"
                         onChange={(e) => {
                           const c = [...rooms];
                           c[i].room_name = e.target.value;
@@ -728,10 +755,15 @@ export default function TpCentreRegistration() {
                         type="number"
                         min="1"
                         value={r.room_capacity}
+                        className="input-blue"
                         onChange={(e) => {
                           const c = [...rooms];
                           c[i].room_capacity = e.target.value;
                           setRooms(c);
+                        }}
+                        style={{
+                          width: "100%",
+                          padding: "8px",
                         }}
                       />,
                     ),
@@ -772,6 +804,7 @@ export default function TpCentreRegistration() {
                       "Media Category",
                       <select
                         value={m.category}
+                        className="input-blue"
                         onChange={(e) => {
                           const c = [...media];
                           c[i].category = e.target.value;
@@ -874,9 +907,10 @@ export default function TpCentreRegistration() {
                       `mn_${i}`,
                       "Notes",
                       <>
-                        <input
+                        <textarea
                           maxLength={300}
                           value={m.notes}
+                          className="input-blue"
                           onChange={(e) => {
                             const c = [...media];
                             c[i].notes = e.target.value;
@@ -955,6 +989,31 @@ export default function TpCentreRegistration() {
       </div>
 
       {/* Confirm Modal */}
+      <style>{`
+
+.input-blue {
+  width: 100%;
+  border: 1px solid #5a8cc2 !important;
+  border-radius: 6px;
+  padding: 8px;
+  outline: none;
+  font-size: 14px;
+  transition: all 0.2s ease;
+  background: #fff;
+}
+
+/* Hover effect */
+.input-blue:hover {
+  border-color: #3d6ba6;
+}
+
+/* Focus effect */
+.input-blue:focus {
+  border-color: #5a8cc2;
+  box-shadow: 0 0 0 2px rgba(61,107,166,0.2);
+}
+
+`}</style>
     </div>
   );
 }

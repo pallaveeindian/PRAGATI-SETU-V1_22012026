@@ -6,6 +6,9 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
 
+import { getCanonicalRole } from "../../../utils/roleUtils";
+import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
+
 const GEOSCOPE_KEY = "ps_user_geoscope";
 const DASHBOARD_CACHE_KEY = "tms_smmu_dashboard_cache_v1";
 
@@ -101,6 +104,8 @@ function useAnimatedNumber(toVal, ms = 900) {
  */
 export default function SmmuTmsDashboard() {
   const { user } = useContext(AuthContext) || {};
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
 
@@ -384,7 +389,7 @@ export default function SmmuTmsDashboard() {
           <div className="dashboard-container">
             {/* HEADER */}
             <div className="dashboard-header">
-              <h2 className="dashboard-title">SMMU — Training Management</h2>
+              <h2 className="dashboard-title">{roleMessage}</h2>
 
               <div className="dashboard-user">
                 <div>
@@ -399,7 +404,7 @@ export default function SmmuTmsDashboard() {
                   {refreshing
                     ? "Refreshing…"
                     : usingCache
-                      ? "Refresh (reload APIs)"
+                      ? "Refresh Dashboard"
                       : "Refresh"}
                 </button>
               </div>

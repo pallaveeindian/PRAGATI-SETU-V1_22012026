@@ -6,6 +6,9 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getAccessToken } from "../../../utils/storage"; // used for JWT decode display
 
+import { getCanonicalRole } from "../../../utils/roleUtils";
+import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
+
 const GEOSCOPE_KEY = "ps_user_geoscope";
 const PLANS_CACHE_KEY = "tms_plans_cache_v1";
 
@@ -24,7 +27,8 @@ function decodeJwt(token = "") {
 
 export default function SmmuCreatePartnerTargets() {
   const { user } = useContext(AuthContext) || {};
-
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
   // resolved ids
   const [effectiveUserId, setEffectiveUserId] = useState(null);
   const [tokenUserId, setTokenUserId] = useState(null);
@@ -702,6 +706,9 @@ export default function SmmuCreatePartnerTargets() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
+        <div className="dashboard-header">
+          <h2 className="dashboard-title">{roleMessage}</h2>
+        </div>
         {/* <TopNav
           left={<div className="app-title">Pragati Setu — TMS (SMMU)</div>}
         /> */}
@@ -1689,6 +1696,20 @@ PLAN COLUMN CARD
     grid-template-columns: 1fr; /* mobile stacked */
   }
 }
+
+/* HEADER */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.dashboard-title {
+  margin-top: 25px;
+  margin-left: 30px;
+  color: #2b4e72;
+}
+
 `}</style>
     </div>
   );

@@ -243,13 +243,14 @@
 }
 
 .tp-btn-outline {
-  background: white;
+  padding: 7px 14px;
   border: 1px solid #a7c6ed;
-  color: #3d6ba6;
+  background: #3d6ba6;
+  color: white;
 }
 
 .tp-btn-outline:hover {
-  background: #e4ecf5;
+  background: #2b4e72;
 }
 
 .tp-btn svg,
@@ -538,6 +539,7 @@
   background: white;
   color: #3d6ba6;
   cursor: pointer;
+  font-weight: bold;
 }
 
 .stepper .step.active {
@@ -623,7 +625,10 @@ label input[type="radio"] {
   .tp-card {
     padding: 16px;
   }
-
+  .tp-btn-outline {
+    width: 100%;
+    justify-content: center;
+  }
   .tp-btn {
     width: 100%;
     justify-content: center;
