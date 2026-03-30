@@ -470,6 +470,56 @@ export default function TrainingRequestList() {
                     )}
                   </tbody>
                 </table>
+                {/* ========================= */}
+                {/* 🔽 ADDED: MOBILE CARD VIEW */}
+                {/* ========================= */}
+
+                <div className="mobile-card-list">
+                  {loading ? (
+                    <div className="mobile-card">Loading…</div>
+                  ) : filtered.length === 0 ? (
+                    <div className="mobile-card">No training requests</div>
+                  ) : (
+                    paginatedData.map((r) => (
+                      <div key={r.id} className="mobile-card">
+                        <div>
+                          <strong>ID:</strong> {r.id}
+                        </div>
+                        <div>
+                          <strong>Theme:</strong> {r.theme_name}
+                        </div>
+                        <div>
+                          <strong>Plan:</strong> {r.training_plan_name}
+                        </div>
+                        <div>
+                          <strong>Type:</strong> {r.training_type}
+                        </div>
+                        <div>
+                          <strong>Level:</strong> {r.level}
+                        </div>
+                        <div>
+                          <strong>Status:</strong> {r.status}
+                        </div>
+                        <div>
+                          <strong>Partner:</strong> {r.partner_name}
+                        </div>
+                        <div>
+                          <strong>District:</strong> {r.district_name}
+                        </div>
+                        <div>
+                          <strong>Block:</strong> {r.block_name}
+                        </div>
+
+                        <button
+                          className="btnView"
+                          onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
+                        >
+                          View
+                        </button>
+                      </div>
+                    ))
+                  )}
+                </div>
                 {/* PAGINATION CONTROLS */}
                 <div
                   style={{
@@ -633,6 +683,66 @@ export default function TrainingRequestList() {
   margin-left: 30px;
   color: #2b4e72;
 }
+
+/* ========================= */
+/* 🔽 ADDED: MOBILE CARD SYSTEM */
+/* ========================= */
+
+/* Hide cards on desktop */
+.mobile-card-list{
+  display:none;
+}
+
+/* ========================= */
+/* 🔽 MOBILE RESPONSIVE */
+/* ========================= */
+
+@media (max-width: 768px){
+
+  /* 🔥 FORCE HIDE TABLE COMPLETELY */
+  .training-table{
+    display:none !important; /* 🔽 IMPORTANT FIX */
+  }
+
+  /* SHOW CARD VIEW */
+  .mobile-card-list{
+    display:block;
+  }
+
+  .mobile-card{
+    background:#f8fbff;
+    border:1px solid #a7c6ed;
+    border-radius:10px;
+    padding:12px;
+    margin-bottom:12px;
+    box-shadow:0 4px 10px rgba(0,0,0,0.05);
+    font-size:13px;
+    color:#2b4e72;
+  }
+
+  .mobile-card div{
+    margin-bottom:4px;
+  }
+
+  /* full width button in card */
+  .mobile-card .btnView{
+    width:100%;
+    margin-top:8px;
+  }
+
+  /* pagination stacking */
+  .btnPage{
+    padding:6px 8px;
+    font-size:12px;
+  }
+
+  /* header adjust */
+  .dashboard-title{
+    margin-left:10px; /* 🔽 ADDED */
+    font-size:18px;   /* 🔽 ADDED */
+  }
+}
+
 `}</style>
         </main>
       </div>

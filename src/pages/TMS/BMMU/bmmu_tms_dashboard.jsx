@@ -9,6 +9,9 @@ import TrainingThemeChart from "./TrainingThemeChart";
 const GEOSCOPE_KEY = "ps_user_geoscope";
 const BMMU_CACHE_KEY = "tms_bmmu_dashboard_cache_v1";
 
+import { getCanonicalRole } from "../../../utils/roleUtils";
+import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
+
 /* ---------------------- resolve effective user ID ---------------------- */
 async function resolveEffectiveUserId(user) {
   if (user?.id || user?.user_id) return user.id ?? user.user_id;
@@ -75,6 +78,9 @@ function useAnimatedNumber(toVal, ms = 900) {
 
 export default function BmmuTmsDashboard() {
   const { user } = useContext(AuthContext) || {};
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
+
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [hover, setHover] = useState(false);
@@ -324,7 +330,7 @@ export default function BmmuTmsDashboard() {
                   transition: "all 0.3s ease",
                 }}
               >
-                <h2
+                {/* <h2
                   style={{
                     margin: 0,
                     fontSize: 22,
@@ -333,7 +339,10 @@ export default function BmmuTmsDashboard() {
                   }}
                 >
                   BMMU — Training Management
-                </h2>
+                </h2> */}
+                <div className="dashboard-header">
+                  <h2 className="dashboard-title">{roleMessage}</h2>
+                </div>
 
                 <div
                   style={{
@@ -545,12 +554,12 @@ export default function BmmuTmsDashboard() {
                     </button>
                   </div>
 
-                  <div style={{ marginTop: 8 }}>
+                  {/* <div style={{ marginTop: 8 }}>
                     <h4 style={{ margin: "8px 0", color: "#ff8c00" }}>Info</h4>
                     <div style={{ fontSize: 14, color: "#555" }}>
                       Block: {blockId ?? "—"}
                     </div>
-                  </div>
+                  </div> */}
                 </div>
 
                 {/* Notes Card */}
@@ -577,6 +586,15 @@ export default function BmmuTmsDashboard() {
             </div>
           </main>
         </div>
+        <style>{`/* HEADER */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-title {
+  color: #2b4e72;
+}`}</style>
       </div>
     </>
   );

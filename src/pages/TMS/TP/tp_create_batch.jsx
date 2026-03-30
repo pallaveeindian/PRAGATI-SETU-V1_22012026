@@ -892,6 +892,7 @@ function BatchSubmitSection({
   const [previewOpen, setPreviewOpen] = useState(false);
   const [payload, setPayload] = useState(null);
   const [submitting, setSubmitting] = useState(false);
+
   function buildPayload() {
     const batchItems = batches.map((b) => {
       const perBatchSel = participantSelections[b.key] || {};
@@ -930,21 +931,187 @@ function BatchSubmitSection({
     return { batches: batchItems };
   }
 
+  // async function execute() {
+  //   setSubmitting(true);
+
+  //   try {
+  //     // 🔥 REVIEW MODE = FULL RESET
+  //     if (isReviewMode) {
+  //       await deleteAllExistingBatchesAndParticipants(trainingReq);
+  //     }
+
+  //     const payload = buildPayload();
+
+  //     for (const item of payload.batches) {
+  //       const { batch, participants } = item;
+
+  //       // ALWAYS CREATE NEW BATCH
+  //       const created = await TMS_API.batches.create({
+  //         request: trainingReq.id,
+  //         centre: batch.centre,
+  //         batch_type: batch.batch_type,
+  //         start_date: batch.start_date,
+  //         end_date: batch.end_date,
+  //         code: batch.code,
+  //         status: "PENDING",
+  //         created_by: user.id,
+  //       });
+
+  //       const batchId = created.data.id;
+
+  //       const ids = participants.map((p) => p.id);
+
+  //       await api.post(
+  //         `/tms/batches/${batchId}/attach-participants/`,
+  //         trainingReq.training_type === "BENEFICIARY"
+  //           ? { beneficiary_ids: ids }
+  //           : { trainer_ids: ids },
+  //       );
+  //     }
+
+  //     await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
+  //       status: "PENDING",
+  //       updated_by: user.id,
+  //     });
+
+  //     alert("Batches submitted successfully !");
+  //     window.location.href = "/tms/training-requests";
+  //   } catch (e) {
+  //     console.error(e);
+  //     alert("Failed to update batches");
+  //   } finally {
+  //     setSubmitting(false);
+  //   }
+  // }
+
+  // async function execute() {
+  //   console.log("EXECUTE STARTED");
+  //   setSubmitting(true);
+
+  //   try {
+  //     for (let i = 0; i < batches.length; i++) {
+  //       const b = batches[i];
+  //       const perBatchSel = participantSelections[b.key] || {};
+  //       const count = Object.values(perBatchSel).flat().length;
+
+  //       console.log(`Batch ${b.title} count:`, count);
+
+  //       if (count < 1) {
+  //         alert(`"${b.title}" must have at least 1 participant`);
+  //         setSubmitting(false);
+  //         return;
+  //       }
+  //     }
+
+  //     if (isReviewMode) {
+  //       console.log("Deleting old batches...");
+  //       await deleteAllExistingBatchesAndParticipants(trainingReq);
+  //     }
+
+  //     const payload = buildPayload();
+  //     console.log("Payload:", payload);
+
+  //     for (const item of payload.batches) {
+  //       const { batch, participants } = item;
+
+  //       console.log("Creating batch:", batch);
+  //       console.log("Participants:", participants);
+
+  //       const created = await TMS_API.batches.create({
+  //         request: trainingReq.id,
+  //         centre: batch.centre,
+  //         batch_type: batch.batch_type,
+  //         start_date: batch.start_date,
+  //         end_date: batch.end_date,
+  //         code: batch.code,
+  //         status: "PENDING",
+  //         created_by: user.id,
+  //       });
+
+  //       const batchId = created.data.id;
+  //       console.log("Batch created ID:", batchId);
+
+  //       const ids = participants.map((p) => p.id);
+  //       console.log("Participant IDs:", ids);
+
+  //       await api.post(
+  //         `/tms/batches/${batchId}/attach-participants/`,
+  //         trainingReq.training_type === "BENEFICIARY"
+  //           ? { beneficiary_ids: ids }
+  //           : { trainer_ids: ids },
+  //       );
+
+  //       console.log("Participants attached");
+  //     }
+
+  //     await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
+  //       status: "PENDING",
+  //       updated_by: user.id,
+  //     });
+
+  //     alert("SUCCESS ✅");
+  //   } catch (e) {
+  //     console.error("ERROR ❌:", e);
+  //     alert(e?.response?.data?.detail || "Failed to update batches");
+  //   } finally {
+  //     setSubmitting(false);
+  //   }
+  // }
+
   async function execute() {
+    console.log("EXECUTE STARTED");
     setSubmitting(true);
 
     try {
-      // 🔥 REVIEW MODE = FULL RESET
+      // ✅ TOTAL participants from original TR
+      const totalParticipants =
+        trainingReq.training_type === "BENEFICIARY"
+          ? trainingReq?.beneficiary_registrations?.length || 0
+          : trainingReq?.trainer_registrations?.length || 0;
+
+      console.log("Total participants in TR:", totalParticipants);
+
+      // 🔒 HARD VALIDATION: EACH BATCH MUST HAVE ALL PARTICIPANTS
+      for (let i = 0; i < batches.length; i++) {
+        const b = batches[i];
+        const perBatchSel = participantSelections[b.key] || {};
+        const selectedCount = Object.values(perBatchSel).flat().length;
+
+        console.log(`Batch ${b.title} selected:`, selectedCount);
+
+        // ❌ Case 1: No participant
+        if (selectedCount < 1) {
+          alert(`"${b.title}" must have at least 1 participant`);
+          setSubmitting(false);
+          return;
+        }
+
+        // ❌ Case 2: Not all participants selected
+        if (selectedCount !== totalParticipants) {
+          alert(
+            `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
+          );
+          setSubmitting(false);
+          return;
+        }
+      }
+
+      // 🔁 REVIEW MODE CLEANUP
       if (isReviewMode) {
+        console.log("Deleting old batches...");
         await deleteAllExistingBatchesAndParticipants(trainingReq);
       }
 
       const payload = buildPayload();
+      console.log("Payload:", payload);
 
+      // 🚀 CREATE BATCHES
       for (const item of payload.batches) {
         const { batch, participants } = item;
 
-        // ALWAYS CREATE NEW BATCH
+        console.log("Creating batch:", batch);
+        console.log("Participants:", participants);
+
         const created = await TMS_API.batches.create({
           request: trainingReq.id,
           centre: batch.centre,
@@ -957,8 +1124,10 @@ function BatchSubmitSection({
         });
 
         const batchId = created.data.id;
+        console.log("Batch created ID:", batchId);
 
         const ids = participants.map((p) => p.id);
+        console.log("Participant IDs:", ids);
 
         await api.post(
           `/tms/batches/${batchId}/attach-participants/`,
@@ -966,18 +1135,20 @@ function BatchSubmitSection({
             ? { beneficiary_ids: ids }
             : { trainer_ids: ids },
         );
+
+        console.log("Participants attached");
       }
 
+      // ✅ UPDATE TRAINING REQUEST STATUS
       await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
         status: "PENDING",
         updated_by: user.id,
       });
 
-      alert("Batches submitted successfully !");
-      window.location.href = "/tms/training-requests";
+      alert("SUCCESS ✅");
     } catch (e) {
-      console.error(e);
-      alert("Failed to update batches");
+      console.error("ERROR ❌:", e);
+      alert(e?.response?.data?.detail || "Failed to update batches");
     } finally {
       setSubmitting(false);
     }
@@ -985,18 +1156,39 @@ function BatchSubmitSection({
 
   return (
     <>
-      <button
+      {/* <button
         className="btn btnPrimary"
         disabled={disabled}
         onClick={() => {
           // 🔒 HARD VALIDATION: each batch must have ≥ 1 participant
+          // for (let i = 0; i < batches.length; i++) {
+          //   const b = batches[i];
+          //   const perBatchSel = participantSelections[b.key] || {};
+          //   const count = Object.values(perBatchSel).flat().length;
+
+          //   if (count < 1) {
+          //     alert(`"${b.title}" must have at least 1 participant`);
+          //     return;
+          //   }
+          // }
           for (let i = 0; i < batches.length; i++) {
             const b = batches[i];
             const perBatchSel = participantSelections[b.key] || {};
-            const count = Object.values(perBatchSel).flat().length;
+            const selectedCount = Object.values(perBatchSel).flat().length;
 
-            if (count < 1) {
-              alert(`"${b.title}" must have at least 1 participant`);
+            const totalParticipants =
+              trainingReq.training_type === "BENEFICIARY"
+                ? trainingReq.beneficiary_registrations.length
+                : trainingReq.trainer_registrations.length;
+
+            console.log(`Batch ${b.title} selected:`, selectedCount);
+            console.log(`Total participants:`, totalParticipants);
+
+            if (selectedCount !== totalParticipants) {
+              alert(
+                `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
+              );
+              setSubmitting(false);
               return;
             }
           }
@@ -1009,8 +1201,50 @@ function BatchSubmitSection({
         {isReviewMode
           ? "Resubmit Revised Batches"
           : "Preview All Created Batches"}
-      </button>
+      </button> */}
+      <button
+        className="btn btnPrimary"
+        disabled={disabled}
+        onClick={() => {
+          //  TOTAL participants in TR
+          const totalParticipants =
+            trainingReq.training_type === "BENEFICIARY"
+              ? trainingReq?.beneficiary_registrations?.length || 0
+              : trainingReq?.trainer_registrations?.length || 0;
 
+          for (let i = 0; i < batches.length; i++) {
+            const b = batches[i];
+            const perBatchSel = participantSelections[b.key] || {};
+            const selectedCount = Object.values(perBatchSel).flat().length;
+
+            console.log(`Batch ${b.title} selected:`, selectedCount);
+            console.log(`Total participants:`, totalParticipants);
+
+            //  No participants
+            if (selectedCount < 1) {
+              alert(`"${b.title}" must have at least 1 participant`);
+              return;
+            }
+
+            //  Not all selected
+            if (selectedCount !== totalParticipants) {
+              alert(
+                `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
+              );
+              return;
+            }
+          }
+
+          //  Only opens preview if validation passes
+          const p = buildPayload();
+          setPayload(p);
+          setPreviewOpen(true);
+        }}
+      >
+        {isReviewMode
+          ? "Resubmit Revised Batches"
+          : "Preview All Created Batches"}
+      </button>
       <PreviewModal
         open={previewOpen}
         payload={payload}

@@ -1,6 +1,6 @@
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
@@ -407,12 +407,6 @@ export default function TpCentreList() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
-          left={
-            <div className="app-title">Pragati Setu — Training Centres</div>
-          }
-        />
-
         <main style={{ padding: 18 }}>
           <div>
             {/* HEADER BAR */}

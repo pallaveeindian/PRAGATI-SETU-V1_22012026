@@ -409,11 +409,11 @@ export default function DmmuTmsDashboard() {
   display: flex;
   gap: 12px;
   align-items: center;
-  color: #5a8cc2;
+  color: #0f766e;
 }
 
 .dmmu-user-text {
-  font-size: 13px;
+  font-size: 20px;
 }
 
 /* KPI GRID */

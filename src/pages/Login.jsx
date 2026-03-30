@@ -15,6 +15,8 @@ import {
   FaChalkboardTeacher,
   FaMapMarkedAlt,
   FaSeedling,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 
 import psLogo from "../assets/PS_lolo.png";
@@ -99,7 +101,8 @@ export default function Login() {
   const MAX_ATTEMPTS = 4;
   const [captchaValue, setCaptchaValue] = useState("");
   const [captchaError, setCaptchaError] = useState("");
-
+  // 🔽 ADDED: password visibility toggle state
+  const [showPassword, setShowPassword] = useState(false);
   const {
     register,
     handleSubmit,
@@ -211,13 +214,32 @@ export default function Login() {
           <label className="block-label">Username</label>
           <input className="form-input" {...register("username")} />
 
-          <label className="block-label">Password</label>
+          {/* <label className="block-label">Password</label>
           <input
             className="form-input"
             type="password"
             autoComplete="off"
             {...register("password")}
-          />
+          /> */}
+          <label className="block-label">Password</label>
+
+          {/*  wrapper for input + icon */}
+          <div className="password-wrapper">
+            <input
+              className="form-input"
+              type={showPassword ? "text" : "password"}
+              autoComplete="off"
+              {...register("password")}
+            />
+
+            {/*  eye icon toggle */}
+            <span
+              className="eye-icon"
+              onClick={() => setShowPassword((prev) => !prev)}
+            >
+              {showPassword ? <FaEyeSlash /> : <FaEye />}
+            </span>
+          </div>
           {failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && (
             <div className="error">
               Wrong password. Attempts left: {MAX_ATTEMPTS - failedAttempts}
@@ -280,7 +302,7 @@ export default function Login() {
       .login-bg-image {
         position: absolute;
         inset: 0;
-        background-image: url("/assets/login_bg.jpg"); /* 🔁 replace with actual bg */
+        background-image: url("/assets/login_bg.jpg"); /*  replace with actual bg */
         background-size: cover;
         background-position: center;
         filter: brightness(0.55);
@@ -488,6 +510,33 @@ export default function Login() {
           width: 92%;
         }
       }
+        /* wrapper */
+.password-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+/* icon styling */
+.eye-icon {
+  position: absolute;
+  right: 12px;
+  cursor: pointer;
+  font-size: 16px;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+}
+
+/* avoid overlap */
+.password-wrapper .form-input {
+  padding-right: 40px;
+}
+
+/* hover effect */
+.eye-icon:hover {
+  color: #0f172a;
+}
     `}</style>
     </div>
   );

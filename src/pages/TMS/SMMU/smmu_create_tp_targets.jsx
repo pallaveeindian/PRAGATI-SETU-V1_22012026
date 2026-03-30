@@ -1166,13 +1166,20 @@ export default function SmmuCreatePartnerTargets() {
                 <div style={styles.assignedList} className="tms-assigned-card">
                   {" "}
                   {/* UI CHANGE */}
-                  <h6 style={{ margin: "8px 0" }} className="tms-section-title">
+                  <h6
+                    style={{ margin: "8px 0", paddingLeft: "8px" }}
+                    className="tms-section-title"
+                  >
                     {" "}
                     {/* UI CHANGE */}
                     Assigned targets
                   </h6>
                   <div
-                    style={{ fontSize: 13, marginBottom: 8 }}
+                    style={{
+                      fontSize: 13,
+                      marginBottom: 8,
+                      paddingLeft: "8px",
+                    }}
                     className="tms-muted-text" /* UI CHANGE */
                   >
                     Click a target to edit it.
@@ -1203,14 +1210,14 @@ export default function SmmuCreatePartnerTargets() {
                           className="tms-target-row" /* UI CHANGE */
                         >
                           <div style={{ flex: 1 }}>
-                            <div
+                            {/* <div
                               style={{ fontWeight: 700, fontSize: 13 }}
-                              className="tms-partner-name" /* UI CHANGE */
+                              className="tms-partner-name" 
                             >
                               {t.partner_name ||
                                 (t.partner_obj && t.partner_obj.name) ||
                                 t.partner}
-                            </div>
+                            </div> */}
 
                             <div
                               style={{ fontSize: 13 }}
@@ -1269,6 +1276,7 @@ export default function SmmuCreatePartnerTargets() {
                       gap: 8,
                       alignItems: "center",
                       marginTop: 8,
+                      padding: 8,
                     }}
                     className="tms-pagination" /* UI CHANGE */
                   >
@@ -1668,15 +1676,15 @@ PLAN COLUMN CARD
 
 /* assigned badge */
 .plan-badge {
-  background: #e4ecf5;
-  color: #3d6ba6;
+  background: #e6f4ea;      /* light green background */
+  color: #1b5e20;           /* dark green text */
   font-size: 11px;
   font-weight: 600;
   padding: 3px 6px;
   border-radius: 4px;
-  border: 1px solid #a7c6ed;
+  border: 1px solid #a5d6a7; /* soft green border */
 }
-
+  
 /* empty state */
 .plan-empty {
   padding: 24px;

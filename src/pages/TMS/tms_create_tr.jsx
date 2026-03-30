@@ -14,6 +14,9 @@ import { TMS_API, LOOKUP_API, EPSAKHI_API } from "../../api/axios";
 import ShgListTable from "../Dashboard/ShgListTable";
 import ShgMemberListTable from "../Dashboard/ShgMemberListTable";
 
+import { getCanonicalRole } from "../../utils/roleUtils";
+import { ROLE_WELCOME_MESSAGES } from "../../utils/roleUtils"; // or same file
+
 const TRP_SCOPE_CACHE = "tms_trp_user_scope_v1";
 const TRAIN_PLAN_CACHE = "tms_training_plans_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
@@ -326,6 +329,8 @@ const MasterTrainerList = React.memo(function MasterTrainerList({
 
 export default function CreateTrainingRequest() {
   const { user } = useContext(AuthContext) || {};
+  const roleKeyNew = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKeyNew] || "Dashboard";
   const roleKey = getRoleKeyFromUser(user);
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [selectedBlockForShg, setSelectedBlockForShg] = useState(null);
@@ -1577,14 +1582,18 @@ export default function CreateTrainingRequest() {
                 alignItems: "center",
                 gap: 16,
                 marginBottom: 24,
-                padding: "24px 28px",
                 width: "100%",
                 boxSizing: "border-box",
               }}
             >
-              <h2 style={{ margin: 0, color: "#0369a1" }}>
-                Create Training Request
-              </h2>
+              <div>
+                <div className="dashboard-header">
+                  <h2 className="dashboard-title">{roleMessage}</h2>
+                </div>
+                <h2 style={{ margin: 0, color: "#0369a1" }}>
+                  Create Training Request
+                </h2>
+              </div>
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                 <button
                   className="btnPrimaryHover"
@@ -2440,7 +2449,7 @@ export default function CreateTrainingRequest() {
                 </pre>
               </div> */}
 
-            <div style={{ display: "flex", gap: 12 }}>
+            <div style={{ gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <h4>Details</h4>
 
@@ -2501,7 +2510,7 @@ export default function CreateTrainingRequest() {
                 </div>
               </div>
 
-              <div style={{ width: 360 }}>
+              <div>
                 <h4>Participants</h4>
                 {form.training_type === "BENEFICIARY" ? (
                   selectedBeneficiaries.length === 0 ? (
@@ -2610,8 +2619,8 @@ export default function CreateTrainingRequest() {
             <div style={{ marginBottom: 8 }}>
               {submitSummary.trId ? (
                 <div>
-                  Training Request created:{" "}
-                  <strong>{submitSummary.trId}</strong>
+                  Training Request created!
+                  {/* <strong>{submitSummary.trId}</strong> */}
                 </div>
               ) : (
                 <div style={{ color: "#b03a2e" }}>
@@ -2620,10 +2629,10 @@ export default function CreateTrainingRequest() {
               )}
             </div>
 
-            <div>
+            {/* <div>
               Child rows succeeded: {submitSummary.successes?.length ?? 0}
             </div>
-            <div>Child rows failed: {submitSummary.failures?.length ?? 0}</div>
+            <div>Child rows failed: {submitSummary.failures?.length ?? 0}</div> */}
 
             {submitSummary.failures?.length > 0 && (
               <div style={{ marginTop: 12 }}>
@@ -2772,6 +2781,15 @@ export default function CreateTrainingRequest() {
   .training-content{
     grid-template-columns: 1fr;
   }
+}
+ /* HEADER */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+}
+
+.dashboard-title {
+  color: #2b4e72;
 }
       `}</style>
     </div>

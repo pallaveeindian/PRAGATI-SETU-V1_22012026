@@ -867,6 +867,7 @@ export default function TrainingBatchList() {
   background:#5a8cc2;
   color:#fff;
   border-radius:5px;
+  margin-bottom:6px
 }
 
 .btn-flat:hover{
@@ -997,6 +998,63 @@ export default function TrainingBatchList() {
   margin-top: 25px;
   margin-left: 30px;
   color: #2b4e72;
+}
+
+/* ================= FILTER RESPONSIVE FIX (CSS ONLY) ================= */
+
+/* TARGET BOTH FILTER ROWS WITHOUT ADDING CLASS */
+.filter-panel > div > div {
+  width: 100%;
+}
+
+/*  TABLET VIEW */
+@media (max-width: 1024px){
+
+  /* override inline flex nowrap */
+  .filter-panel > div > div {
+    flex-wrap: wrap !important;           /*  CHANGE */
+    white-space: normal !important;       /*  CHANGE */
+    gap: 10px !important;                /*  CHANGE */
+  }
+
+  .input{
+    flex: 1 1 160px;                     /*  CHANGE */
+    min-width: 160px;
+  }
+
+}
+
+/*  MOBILE VIEW */
+@media (max-width: 768px){
+
+  .input{
+    height: 36px !important;        /*  FIX: control height */
+    padding: 4px 8px !important;    /*  FIX: reduce padding */
+    line-height: 1.2;               /*  FIX */
+  }
+
+  select.input{
+    height: 36px !important;        /*  FIX for dropdown */
+  }
+
+  /* prevent stretching */
+  .filter-panel > div > div > *{
+    flex: unset !important;         /*  FIX: stop stretching */
+  }
+
+}
+
+/*  SMALL MOBILE */
+@media (max-width: 480px){
+
+  .filter-panel{
+                     /*  CHANGE */
+  }
+
+  .input{
+    font-size: 13px; /*  CHANGE */
+  }
+
 }
 `}</style>
     </div>
