@@ -23,7 +23,7 @@ function loadJson(key) {
 function saveJson(key, payload) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch {}
+  } catch { }
 }
 
 function fmtDate(iso) {
@@ -454,6 +454,19 @@ export default function CpAdPerBatchEkyc() {
 
   /* ---------- render ---------- */
 
+  const formatTo12Hour = (time) => {
+    if (!time) return "—";
+
+    let [hours, minutes] = time.split(":");
+    hours = parseInt(hours, 10);
+
+    const ampm = hours >= 12 ? "PM" : "AM";
+
+    let hh12 = hours % 12;
+    if (hh12 === 0) hh12 = 12;
+
+    return `${hh12.toString().padStart(2, "0")}:${minutes} ${ampm}`;
+  };
   return (
     <div className="app-shell">
       <TmsLeftNav
@@ -489,7 +502,7 @@ export default function CpAdPerBatchEkyc() {
                       );
                       localStorage.removeItem(SCHEDULE_CACHE_PREFIX + batchId);
                       localStorage.removeItem(EKYC_CACHE_PREFIX + batchId);
-                    } catch {}
+                    } catch { }
                     setEkycRows([]);
                     fetchBatch(true);
                   }}
@@ -571,9 +584,14 @@ export default function CpAdPerBatchEkyc() {
                           <strong>Schedule Date:</strong>{" "}
                           {schedule.schedule_date}
                         </div>
-                        <div>
+                        {/* <div>
                           <strong>Start Time:</strong>{" "}
                           {schedule.start_time?.slice(0, 5) || "—"} (24-hour)
+                        </div> */}
+
+                        <div>
+                          <strong>Start Time:</strong>{" "}
+                          {formatTo12Hour(schedule.start_time)}
                         </div>
                         {schedule.remarks && (
                           <div>

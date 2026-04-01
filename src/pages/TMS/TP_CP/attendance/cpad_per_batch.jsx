@@ -2,7 +2,7 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TmsLeftNav from "../../layout/tms_LeftNav";
-import TopNav from "../../layout/tms_TopNav";
+// import TopNav from "../../layout/tms_TopNav";
 import { AuthContext } from "../../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../../api/axios";
 
@@ -24,7 +24,7 @@ function loadJson(key) {
 function saveJson(key, payload) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch {}
+  } catch { }
 }
 
 // get YYYY-MM-DD using local time (not UTC)
@@ -104,6 +104,7 @@ export default function CpAdPerBatch() {
 
   const [submitting, setSubmitting] = useState(false);
   const [submitMessage, setSubmitMessage] = useState("Submitting attendance…");
+  const [csvError, setCsvError] = useState("");
 
   const [missingDates, setMissingDates] = useState([]); // list of YYYY-MM-DD needing auto-absent
   const today = useMemo(() => todayLocalISO(), []);
@@ -578,7 +579,21 @@ export default function CpAdPerBatch() {
   ]);
 
   /* ---------------- submit today's attendance ---------------- */
+  const validateCsvFile = (file) => {
+    if (!file) return "CSV file is required";
 
+    // ❌ 0 KB file
+    if (file.size === 0) {
+      return "CSV file is empty (0 KB)";
+    }
+
+    // ❌ wrong extension
+    if (!file.name.toLowerCase().endsWith(".csv")) {
+      return "Only CSV file is allowed";
+    }
+
+    return null; // ✅ valid
+  };
   async function handleSubmitAttendance(e) {
     e.preventDefault();
     if (!batchId) return;
@@ -634,7 +649,11 @@ export default function CpAdPerBatch() {
         alert("Cannot create participant attendance without record id.");
         return;
       }
-
+      const error = validateCsvFile(csvFile);
+      if (error) {
+        alert(error);
+        return;
+      }
       const existingKeys = await getExistingParticipantAttendanceIds(rec.id);
 
       for (const p of participants) {
@@ -670,6 +689,20 @@ export default function CpAdPerBatch() {
 
   const attendanceAllowed = allEkycVerified;
 
+  const formatTo12Hour = (time) => {
+    if (!time) return "—";
+    const [h, m] = time.split(":");
+    const hour = parseInt(h, 10);
+
+    const ampm = hour >= 12 ? "PM" : "AM";
+    let hh12 = hour % 12;
+    if (hh12 === 0) hh12 = 12;
+
+    return `${hh12.toString().padStart(2, "0")}:${m} ${ampm}`;
+  };
+
+
+
   return (
     <div className="app-shell">
       <TmsLeftNav
@@ -677,13 +710,13 @@ export default function CpAdPerBatch() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Batch Attendance (CP)
             </div>
           }
-        />
+        /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1100, margin: "0 auto" }}>
             <div
@@ -706,7 +739,7 @@ export default function CpAdPerBatch() {
                       localStorage.removeItem(SCHEDULE_CACHE_PREFIX + batchId);
                       localStorage.removeItem(EKYC_CACHE_PREFIX + batchId);
                       localStorage.removeItem(ATT_TODAY_CACHE_PREFIX + batchId);
-                    } catch {}
+                    } catch { }
                     setAttendanceToday(null);
                     setAttendanceList([]);
                     setMissingDates([]);
@@ -783,9 +816,14 @@ export default function CpAdPerBatch() {
                         <strong>Schedule Date (first day):</strong>{" "}
                         {schedule.schedule_date}
                       </div>
-                      <div>
+                      {/* <div>
                         <strong>Daily Start Time:</strong>{" "}
                         {schedule.start_time?.slice(0, 5) || "—"} (24-hour)
+                      </div> */}
+
+                      <div>
+                        <strong>Daily Start Time:</strong>{" "}
+                        {formatTo12Hour(schedule.start_time)}
                       </div>
                       <div>
                         Attendance opens at the configured start time each day.
@@ -931,14 +969,37 @@ export default function CpAdPerBatch() {
                                     CSV upload is mandatory to submit today’s
                                     attendance.
                                   </div>
-                                  <input
+                                  {/* <input
                                     type="file"
                                     accept=".csv"
                                     onChange={(e) => {
                                       const file = e.target.files?.[0] || null;
                                       setCsvFile(file);
                                     }}
+                                  /> */}
+
+                                  <input
+                                    type="file"
+                                    accept=".csv"
+                                    onChange={(e) => {
+                                      const file = e.target.files?.[0] || null;
+
+                                      const error = validateCsvFile(file);
+
+                                      if (error) {
+                                        setCsvError(error);
+                                        setCsvFile(null);
+                                      } else {
+                                        setCsvError("");
+                                        setCsvFile(file);
+                                      }
+                                    }}
                                   />
+                                  {csvError && (
+                                    <div style={{ color: "#dc2626", fontSize: 12, marginTop: 4 }}>
+                                      {csvError}
+                                    </div>
+                                  )}
                                   <div
                                     style={{
                                       fontSize: 12,
@@ -1016,7 +1077,7 @@ export default function CpAdPerBatch() {
                                     disabled={
                                       savingAttendance ||
                                       !participants.length ||
-                                      !csvFile
+                                      !csvFile || csvError
                                     }
                                   >
                                     {savingAttendance

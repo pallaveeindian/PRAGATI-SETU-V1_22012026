@@ -326,6 +326,56 @@ export default function DmmuRequestClosure() {
     }
   }
 
+  const isAllBatchCostValid = () => {
+    if (!batches.length) return false;
+
+    for (let b of batches) {
+      const cost = batchCosts[b.id];
+
+      // ❌ cost load hi nahi hua
+      if (!cost) return false;
+
+      const base = parseFloat(cost?.batch_expenses?.total_cost || "0") || 0;
+      const trainer = parseFloat(cost?.trainer_part_cost || "0") || 0;
+      const tp = parseFloat(cost?.tp_part_cost || "0") || 0;
+
+      // ❌ agar sab zero hai → invalid
+      if (base === 0 && trainer === 0 && tp === 0) {
+        return false;
+      }
+    }
+
+    return true;
+  };
+
+  async function updateBatchCost(batchId, updatedFields) {
+    try {
+      const formData = new FormData();
+
+      Object.keys(updatedFields).forEach((key) => {
+        formData.append(key, updatedFields[key]);
+      });
+
+      const resp = await api.patch(
+        `/tms/batch-costs/${batchId}/`,
+        formData
+      );
+
+      const updated = resp?.data || resp;
+
+      // 🔁 Update local state (IMPORTANT)
+      setBatchCosts((m) => ({
+        ...m,
+        [batchId]: updated,
+      }));
+
+    } catch (e) {
+      console.error("Batch cost update failed", e);
+      alert("Failed to update batch cost");
+    }
+  }
+
+
   /* ========================================================= */
   /* =========================== UI ========================== */
   /* ========================================================= */
@@ -666,10 +716,121 @@ export default function DmmuRequestClosure() {
                                 "-"
                               )}
                             </td>
-                            <td>
+                            {/* <td>
                               {cost ? `₹ ${cost.trainer_part_cost}` : "-"}
                             </td>
-                            <td>{cost ? `₹ ${cost.tp_part_cost}` : "-"}</td>
+                            <td>{cost ? `₹ ${cost.tp_part_cost}` : "-"}</td> */}
+                            <td>
+                              {cost ? (
+                                <input
+                                  type="number"
+                                  value={cost.trainer_part_cost || ""}
+                                  style={{ width: 80 }}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+
+                                    // UI update (instant feel)
+                                    setBatchCosts((m) => ({
+                                      ...m,
+                                      [b.id]: {
+                                        ...m[b.id],
+                                        trainer_part_cost: val,
+                                      },
+                                    }));
+                                  }}
+                                  // onBlur={(e) => {
+                                  //   updateBatchCost(cost.id, {
+                                  //     trainer_part_cost: e.target.value,
+                                  //   });
+                                  // }}
+                                  onBlur={(e) => {
+                                    const newValue = e.target.value;
+                                    const oldValue = cost.trainer_part_cost;
+
+                                    // Agar value change hi nahi hui → kuch mat karo
+                                    if (newValue === oldValue) return;
+
+                                    const confirmUpdate = window.confirm(
+                                      "Are you sure you want to update the costing?"
+                                    );
+
+                                    if (!confirmUpdate) {
+                                      //  Revert UI back to old value
+                                      setBatchCosts((m) => ({
+                                        ...m,
+                                        [b.id]: {
+                                          ...m[b.id],
+                                          trainer_part_cost: oldValue,
+                                        },
+                                      }));
+                                      return;
+                                    }
+
+                                    //  Call API
+                                    updateBatchCost(cost.id, {
+                                      trainer_part_cost: newValue,
+                                    });
+                                  }}
+                                />
+                              ) : (
+                                "-"
+                              )}
+                            </td>
+
+                            <td>
+                              {cost ? (
+                                <input
+                                  type="number"
+                                  value={cost.tp_part_cost || ""}
+                                  style={{ width: 80 }}
+                                  onChange={(e) => {
+                                    const val = e.target.value;
+
+                                    setBatchCosts((m) => ({
+                                      ...m,
+                                      [b.id]: {
+                                        ...m[b.id],
+                                        tp_part_cost: val,
+                                      },
+                                    }));
+                                  }}
+                                  // onBlur={(e) => {
+                                  //   updateBatchCost(cost.id, {
+                                  //     tp_part_cost: e.target.value,
+                                  //   });
+                                  // }}
+                                  onBlur={(e) => {
+                                    const newValue = e.target.value;
+                                    const oldValue = cost.trainer_part_cost;
+
+                                    // Agar value change hi nahi hui → kuch mat karo
+                                    if (newValue === oldValue) return;
+
+                                    const confirmUpdate = window.confirm(
+                                      "Are you sure you want to update the costing?"
+                                    );
+
+                                    if (!confirmUpdate) {
+                                      //  Revert UI back to old value
+                                      setBatchCosts((m) => ({
+                                        ...m,
+                                        [b.id]: {
+                                          ...m[b.id],
+                                          trainer_part_cost: oldValue,
+                                        },
+                                      }));
+                                      return;
+                                    }
+                                    //  Call API
+                                    updateBatchCost(cost.id, {
+                                      trainer_part_cost: newValue,
+                                    });
+                                  }}
+                                />
+                              ) : (
+                                "-"
+                              )}
+                            </td>
                             <td>{cost ? `₹ ${total.toFixed(2)}` : "-"}</td>
                             <td>
                               <button
@@ -864,7 +1025,7 @@ export default function DmmuRequestClosure() {
 
                 <button
                   className="btn btn-success"
-                  disabled={updatingTrStatus}
+                  disabled={updatingTrStatus || !isAllBatchCostValid()}
                   onClick={handleMarkTrainingCompleted}
                 >
                   {updatingTrStatus
@@ -949,7 +1110,7 @@ function saveCache(id, payload) {
       DETAIL_CACHE_PREFIX + id,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch {}
+  } catch { }
 }
 
 function BatchDetailForDmmu({ batchId }) {
@@ -1110,7 +1271,7 @@ function BatchDetailForDmmu({ batchId }) {
   function handleRefresh() {
     try {
       localStorage.removeItem(DETAIL_CACHE_PREFIX + batchId);
-    } catch {}
+    } catch { }
     setSelectedAttendanceDate(null);
     setSelectedAttendanceRecords([]);
     setSelectedMediaDate(null);

@@ -198,7 +198,7 @@ const MENU = {
       children: [
         {
           label: "Batch List",
-          to: "/tms/batches-list/",
+          to: "/tms/cp/batch-list",
         },
       ],
     },

@@ -1,7 +1,7 @@
 // src/pages/TMS/TRs/batch_certificate.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-import TopNav from "../layout/tms_TopNav";
+// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
@@ -20,7 +20,7 @@ function saveCache(batchId, payload) {
       getCacheKey(batchId),
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch {}
+  } catch { }
 }
 
 function loadCache(batchId) {
@@ -994,6 +994,8 @@ export default function BatchCertificate() {
     ? `Batch Certificate — ${batchDetail.code}`
     : "Batch Certificate";
 
+  const isTrainingCompleted =
+    batchDetail?.training_request?.status === "COMPLETED"
   return (
     <div className="app-shell">
       <LeftNav
@@ -1001,11 +1003,11 @@ export default function BatchCertificate() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        <TopNav
+        {/* <TopNav
           left={
             <div className="app-title">Pragati Setu — Batch Certificate</div>
           }
-        />
+        /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1000, margin: "20px auto" }}>
             <div
@@ -1077,7 +1079,7 @@ export default function BatchCertificate() {
                     </div>
                   ) : canGenerateAtBlock || canGenerateAtDistrict ? (
                     <div>
-                      <button
+                      {/* <button
                         className="btn"
                         onClick={() => setShowFinancialModal(true)}
                         disabled={generating}
@@ -1086,9 +1088,44 @@ export default function BatchCertificate() {
                         {generating
                           ? "Generating..."
                           : "Generate Batch Certificate"}
+                      </button> */}
+                      <button
+                        className="btn"
+                        onClick={() => setShowFinancialModal(true)}
+                        disabled={generating || !isTrainingCompleted}
+                        style={{ marginBottom: 12 }}
+                      >
+                        {generating
+                          ? "Generating..."
+                          : "Generate Batch Certificate"}
                       </button>
 
-                      {renderUploadButton()}
+                      {/*  Show message if not completed */}
+                      {!isTrainingCompleted && (
+                        <div style={{ color: "#dc2626", fontSize: 13, marginBottom: 10 }}>
+                          Training not completed. Certificate generation is disabled.
+                        </div>
+                      )}
+
+                      {/* {renderUploadButton()} */}
+                      {isTrainingCompleted ? (
+                        renderUploadButton()
+                      ) : (
+                        <div style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}>
+                          Upload disabled until training is completed.
+                        </div>
+                      )}
+                    </div>
+                    // ) : (
+                    //   <div>
+                    //     Signed certificates will be available soon. Contact
+                    //     appropriate authorities.
+                    //   </div>
+                    // )}
+
+                  ) : !isTrainingCompleted ? (
+                    <div style={{ color: "#dc2626" }}>
+                      Training not completed. Certificate actions are disabled.
                     </div>
                   ) : (
                     <div>
