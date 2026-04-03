@@ -73,6 +73,8 @@ export default function SmmuCreatePartnerTargets() {
   const [assignedPageSize, setAssignedPageSize] = useState(10);
   const [assignedTotal, setAssignedTotal] = useState(0);
 
+  const [isModalOpen, setIsModalOpen] = useState(false);
+
   // map helpers
   const plansById = useMemo(() => {
     const m = {};
@@ -1164,165 +1166,146 @@ export default function SmmuCreatePartnerTargets() {
 
                 {/* ASSIGNED TARGET LIST */}
                 <div style={styles.assignedList} className="tms-assigned-card">
-                  {" "}
-                  {/* UI CHANGE */}
                   <h6
                     style={{ margin: "8px 0", paddingLeft: "8px" }}
                     className="tms-section-title"
                   >
-                    {" "}
-                    {/* UI CHANGE */}
-                    Assigned targets
+                    Assigned Targets
                   </h6>
-                  <div
-                    style={{
-                      fontSize: 13,
-                      marginBottom: 8,
-                      paddingLeft: "8px",
-                    }}
-                    className="tms-muted-text" /* UI CHANGE */
-                  >
-                    Click a target to edit it.
-                  </div>
-                  <div
-                    style={{ maxHeight: 240, overflow: "auto" }}
-                    className="tms-target-scroll"
-                  >
-                    {" "}
-                    {/* UI CHANGE */}
-                    {loading.targets ? (
-                      <div style={{ padding: 12 }} className="tms-muted-text">
-                        {" "}
-                        {/* UI CHANGE */}
-                        Loading targets…
-                      </div>
-                    ) : assignedTargets.length ? (
-                      assignedTargets.slice(0, 50).map((t) => (
-                        <div
-                          key={t.id}
-                          style={{
-                            padding: 8,
-                            borderBottom: "1px solid #f3f6fb",
-                            display: "flex",
-                            gap: 8,
-                            alignItems: "center",
-                          }}
-                          className="tms-target-row" /* UI CHANGE */
-                        >
-                          <div style={{ flex: 1 }}>
-                            {/* <div
-                              style={{ fontWeight: 700, fontSize: 13 }}
-                              className="tms-partner-name" 
-                            >
-                              {t.partner_name ||
-                                (t.partner_obj && t.partner_obj.name) ||
-                                t.partner}
-                            </div> */}
 
-                            <div
-                              style={{ fontSize: 13 }}
-                              className="tms-muted-text" /* UI CHANGE */
-                            >
-                              {t.target_type} —{" "}
-                              {t.training_plan_name ||
-                                (t.training_plan &&
-                                  t.training_plan.training_name) ||
-                                t.theme ||
-                                ""}
-                            </div>
-
-                            <div
-                              style={{ fontSize: 13 }}
-                              className="tms-muted-text" /* UI CHANGE */
-                            >
-                              FY: {t.financial_year || "—"}
-                            </div>
-                          </div>
-
-                          <div style={{ textAlign: "right", minWidth: 120 }}>
-                            <div
-                              style={{ fontSize: 13 }}
-                              className="tms-progress-text"
-                            >
-                              {" "}
-                              {/* UI CHANGE */}
-                              {progressForTarget(t)}
-                            </div>
-
-                            <div style={{ marginTop: 6 }}>
-                              <button
-                                className="btn tms-btn-edit" /* UI CHANGE */
-                                onClick={() => editAssignedTarget(t)}
-                                style={{ padding: "6px 8px", borderRadius: 6 }}
-                              >
-                                Edit
-                              </button>
-                            </div>
-                          </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div style={{ padding: 12 }} className="tms-muted-text">
-                        {" "}
-                        {/* UI CHANGE */}
-                        No targets found.
-                      </div>
-                    )}
-                  </div>
-                  {/* PAGINATION */}
                   <div
                     style={{
                       display: "flex",
-                      gap: 8,
+                      justifyContent: "space-between",
                       alignItems: "center",
-                      marginTop: 8,
-                      padding: 8,
+                      padding: "8px",
                     }}
-                    className="tms-pagination" /* UI CHANGE */
                   >
-                    <button
-                      className="btn tms-page-btn" /* UI CHANGE */
-                      onClick={gotoPrevPage}
-                      disabled={assignedPage <= 1}
-                      style={{ padding: "6px 8px", borderRadius: 6 }}
-                    >
-                      Prev
-                    </button>
-
-                    <div style={{ fontSize: 13 }} className="tms-muted-text">
-                      {" "}
-                      {/* UI CHANGE */}
-                      Page {assignedPage} /{" "}
-                      {Math.max(1, Math.ceil(assignedTotal / assignedPageSize))}
+                    <div className="tms-muted-text" style={{ fontSize: 13 }}>
+                      Total: {assignedTotal}
                     </div>
 
                     <button
-                      className="btn tms-page-btn" /* UI CHANGE */
-                      onClick={gotoNextPage}
-                      disabled={
-                        assignedPage >=
-                        Math.max(1, Math.ceil(assignedTotal / assignedPageSize))
-                      }
-                      style={{ padding: "6px 8px", borderRadius: 6 }}
+                      className="btn tms-btn-view"
+                      onClick={() => setIsModalOpen(true)}
+                      style={{ padding: "6px 12px", borderRadius: 6 }}
                     >
-                      Next
+                      View
                     </button>
-
-                    <select
-                      value={assignedPageSize}
-                      onChange={(e) => {
-                        setAssignedPageSize(Number(e.target.value));
-                        setAssignedPage(1);
-                      }}
-                      style={{ marginLeft: "auto", padding: 6 }}
-                      className="tms-page-select" /* UI CHANGE */
-                    >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={25}>25</option>
-                    </select>
                   </div>
                 </div>
+                {isModalOpen && (
+                  <div className="tms-modal-overlay">
+                    <div className="tms-modal">
+                      {/* HEADER */}
+                      <div className="tms-modal-header">
+                        <h5>Assigned Targets</h5>
+                        <button onClick={() => setIsModalOpen(false)}>✖</button>
+                      </div>
+
+                      {/* BODY */}
+                      <div style={{ maxHeight: 400, overflow: "auto" }}>
+                        {loading.targets ? (
+                          <div style={{ padding: 12 }}>Loading targets…</div>
+                        ) : assignedTargets.length ? (
+                          assignedTargets.map((t) => (
+                            <div
+                              key={t.id}
+                              style={{
+                                padding: 10,
+                                borderBottom: "1px solid #eee",
+                                display: "flex",
+                                justifyContent: "space-between",
+                              }}
+                            >
+                              <div>
+                                <div style={{ fontSize: 13 }}>
+                                  {t.target_type} —{" "}
+                                  {t.training_plan_name ||
+                                    (t.training_plan &&
+                                      t.training_plan.training_name) ||
+                                    t.theme ||
+                                    ""}
+                                </div>
+
+                                <div style={{ fontSize: 12, color: "#666" }}>
+                                  FY: {t.financial_year || "—"}
+                                </div>
+                              </div>
+
+                              <div style={{ textAlign: "right" }}>
+                                <div style={{ fontSize: 13 }}>
+                                  {progressForTarget(t)}
+                                </div>
+
+                                <button
+                                  className="btn tms-btn-edit"
+                                  onClick={() => editAssignedTarget(t)}
+                                  style={{ marginTop: 6 }}
+                                >
+                                  Edit
+                                </button>
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div style={{ padding: 12 }}>No targets found.</div>
+                        )}
+                      </div>
+
+                      {/* PAGINATION */}
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          alignItems: "center",
+                          padding: 10,
+                        }}
+                      >
+                        <button
+                          onClick={gotoPrevPage}
+                          disabled={assignedPage <= 1}
+                        >
+                          Prev
+                        </button>
+
+                        <span>
+                          Page {assignedPage} /{" "}
+                          {Math.max(
+                            1,
+                            Math.ceil(assignedTotal / assignedPageSize),
+                          )}
+                        </span>
+
+                        <button
+                          onClick={gotoNextPage}
+                          disabled={
+                            assignedPage >=
+                            Math.max(
+                              1,
+                              Math.ceil(assignedTotal / assignedPageSize),
+                            )
+                          }
+                        >
+                          Next
+                        </button>
+
+                        <select
+                          value={assignedPageSize}
+                          onChange={(e) => {
+                            setAssignedPageSize(Number(e.target.value));
+                            setAssignedPage(1);
+                          }}
+                          style={{ marginLeft: "auto" }}
+                        >
+                          <option value={5}>5</option>
+                          <option value={10}>10</option>
+                          <option value={25}>25</option>
+                        </select>
+                      </div>
+                    </div>
+                  </div>
+                )}
 
                 {/* RECENT ACTIVITY */}
                 <div style={{ marginTop: 12 }} className="tms-activity">
@@ -1717,7 +1700,33 @@ PLAN COLUMN CARD
   margin-left: 30px;
   color: #2b4e72;
 }
+.tms-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: rgba(0,0,0,0.4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 999;
+}
 
+.tms-modal {
+  background: #fff;
+  width: 600px;
+  max-width: 90%;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.tms-modal-header {
+  display: flex;
+  justify-content: space-between;
+  padding: 10px;
+  border-bottom: 1px solid #eee;
+}
 `}</style>
     </div>
   );

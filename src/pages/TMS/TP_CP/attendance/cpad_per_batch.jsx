@@ -24,7 +24,7 @@ function loadJson(key) {
 function saveJson(key, payload) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch { }
+  } catch {}
 }
 
 // get YYYY-MM-DD using local time (not UTC)
@@ -370,7 +370,12 @@ export default function CpAdPerBatch() {
   async function markBatchCompletedIfNeeded() {
     try {
       if (!batch || !batchId) return;
-      if (!batch.end_date || batch.end_date !== today) return;
+      // if (!batch.end_date || batch.end_date !== today) return;
+      if (
+        !batch.end_date ||
+        (batch.end_date !== today && new Date(batch.end_date) < new Date(today))
+      )
+        return;
       if ((batch.status || "").toUpperCase() !== "ONGOING") return;
 
       const resp = await api.patch(`/tms/batches/${batchId}/`, {
@@ -701,8 +706,6 @@ export default function CpAdPerBatch() {
     return `${hh12.toString().padStart(2, "0")}:${m} ${ampm}`;
   };
 
-
-
   return (
     <div className="app-shell">
       <TmsLeftNav
@@ -739,7 +742,7 @@ export default function CpAdPerBatch() {
                       localStorage.removeItem(SCHEDULE_CACHE_PREFIX + batchId);
                       localStorage.removeItem(EKYC_CACHE_PREFIX + batchId);
                       localStorage.removeItem(ATT_TODAY_CACHE_PREFIX + batchId);
-                    } catch { }
+                    } catch {}
                     setAttendanceToday(null);
                     setAttendanceList([]);
                     setMissingDates([]);
@@ -996,7 +999,13 @@ export default function CpAdPerBatch() {
                                     }}
                                   />
                                   {csvError && (
-                                    <div style={{ color: "#dc2626", fontSize: 12, marginTop: 4 }}>
+                                    <div
+                                      style={{
+                                        color: "#dc2626",
+                                        fontSize: 12,
+                                        marginTop: 4,
+                                      }}
+                                    >
                                       {csvError}
                                     </div>
                                   )}
@@ -1077,7 +1086,8 @@ export default function CpAdPerBatch() {
                                     disabled={
                                       savingAttendance ||
                                       !participants.length ||
-                                      !csvFile || csvError
+                                      !csvFile ||
+                                      csvError
                                     }
                                   >
                                     {savingAttendance

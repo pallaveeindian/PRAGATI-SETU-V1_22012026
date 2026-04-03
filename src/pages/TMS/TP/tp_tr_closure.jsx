@@ -675,8 +675,17 @@ export default function TpTrainingRequestClosure() {
                     </div>
                   </div>
 
-                  <div style={{ maxHeight: 520, overflow: "auto" }}>
-                    <table className="table table-compact">
+                  <div
+                    style={{
+                      maxHeight: 520,
+                      overflow: "auto",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: 10,
+                      background: "#fff",
+                      boxShadow: "0 4px 12px rgba(0,0,0,0.04)",
+                    }}
+                  >
+                    <table className="table table-compact tms-table">
                       <thead>
                         <tr>
                           <th>S.No.</th>
@@ -694,17 +703,15 @@ export default function TpTrainingRequestClosure() {
                           <th>Actions</th>
                         </tr>
                       </thead>
+
                       <tbody>
                         {loading ? (
                           <tr>
                             <td
                               colSpan={13}
-                              style={{
-                                textAlign: "center",
-                                padding: "40px",
-                              }}
+                              style={{ textAlign: "center", padding: "40px" }}
                             >
-                              <div>Loading batches…</div>
+                              Loading batches…
                             </td>
                           </tr>
                         ) : batches.length === 0 ? (
@@ -725,13 +732,22 @@ export default function TpTrainingRequestClosure() {
                               <tr key={bid}>
                                 <td>{index + 1}</td>
                                 <td>{batch.code}</td>
-                                <td>{batch.status}</td>
+
+                                {/* STATUS */}
+                                <td>
+                                  <span
+                                    className={`tms-status ${batch.status?.toLowerCase()}`}
+                                  >
+                                    {batch.status}
+                                  </span>
+                                </td>
+
                                 <td>{fmtDate(batch.start_date)}</td>
                                 <td>{fmtDate(batch.end_date)}</td>
                                 <td>{batch.batch_type}</td>
                                 <td>{batch.centre}</td>
 
-                                {/* Cost breakup form */}
+                                {/* COST BREAKUP */}
                                 <td style={{ minWidth: 220 }}>
                                   {loadingCosting[bid] ? (
                                     <span style={{ fontSize: 12 }}>
@@ -739,23 +755,12 @@ export default function TpTrainingRequestClosure() {
                                     </span>
                                   ) : !cost || !cost.id ? (
                                     <span
-                                      style={{
-                                        fontSize: 12,
-                                        color: "#b91c1c",
-                                      }}
+                                      style={{ fontSize: 12, color: "#b91c1c" }}
                                     >
                                       No breakup found
                                     </span>
                                   ) : (
-                                    <div
-                                      style={{
-                                        display: "grid",
-                                        gridTemplateColumns:
-                                          "repeat(2, minmax(0, 1fr))",
-                                        gap: 4,
-                                        fontSize: 12,
-                                      }}
-                                    >
+                                    <div className="tms-cost-box">
                                       <label>
                                         Total
                                         <input
@@ -771,6 +776,7 @@ export default function TpTrainingRequestClosure() {
                                           }
                                         />
                                       </label>
+
                                       <label>
                                         Centre
                                         <input
@@ -786,6 +792,7 @@ export default function TpTrainingRequestClosure() {
                                           }
                                         />
                                       </label>
+
                                       <label>
                                         Hostel
                                         <input
@@ -801,6 +808,7 @@ export default function TpTrainingRequestClosure() {
                                           }
                                         />
                                       </label>
+
                                       <label>
                                         Fooding
                                         <input
@@ -816,6 +824,7 @@ export default function TpTrainingRequestClosure() {
                                           }
                                         />
                                       </label>
+
                                       <label>
                                         Dresses
                                         <input
@@ -831,6 +840,7 @@ export default function TpTrainingRequestClosure() {
                                           }
                                         />
                                       </label>
+
                                       <label>
                                         Study Material
                                         <input
@@ -846,14 +856,8 @@ export default function TpTrainingRequestClosure() {
                                           }
                                         />
                                       </label>
-                                      <div
-                                        style={{
-                                          gridColumn: "1 / -1",
-                                          display: "flex",
-                                          gap: 4,
-                                          marginTop: 4,
-                                        }}
-                                      >
+
+                                      <div className="tms-cost-actions">
                                         <button
                                           type="button"
                                           className="btn-sm btn-flat"
@@ -861,6 +865,7 @@ export default function TpTrainingRequestClosure() {
                                         >
                                           Refresh
                                         </button>
+
                                         <button
                                           type="button"
                                           className="btn-sm btn-outline"
@@ -876,10 +881,10 @@ export default function TpTrainingRequestClosure() {
                                   )}
                                 </td>
 
-                                {/* Saved costing */}
+                                {/* SAVED COST */}
                                 <td style={{ minWidth: 140 }}>
                                   {savedCost ? (
-                                    <div style={{ fontSize: 12 }}>
+                                    <div className="tms-saved-box">
                                       <div>
                                         <strong>Trainer:</strong> ₹{" "}
                                         {savedCost.trainer_part_cost || "0.00"}
@@ -890,18 +895,13 @@ export default function TpTrainingRequestClosure() {
                                       </div>
                                     </div>
                                   ) : (
-                                    <span
-                                      style={{
-                                        fontSize: 12,
-                                        color: "#6b7280",
-                                      }}
-                                    >
+                                    <span className="tms-muted">
                                       Not saved yet
                                     </span>
                                   )}
                                 </td>
 
-                                {/* Schedules */}
+                                {/* SCHEDULE */}
                                 <td style={{ minWidth: 160 }}>
                                   {loadingSchedules[bid] ? (
                                     <span style={{ fontSize: 12 }}>
@@ -912,7 +912,7 @@ export default function TpTrainingRequestClosure() {
                                       No schedules
                                     </span>
                                   ) : (
-                                    <div style={{ fontSize: 12 }}>
+                                    <div className="tms-schedule-box">
                                       {schedules.slice(0, 3).map((s) => (
                                         <div key={s.id}>
                                           {fmtDate(s.schedule_date)}{" "}
@@ -926,6 +926,7 @@ export default function TpTrainingRequestClosure() {
                                       )}
                                     </div>
                                   )}
+
                                   <button
                                     type="button"
                                     className="btn-sm btn-flat"
@@ -936,12 +937,10 @@ export default function TpTrainingRequestClosure() {
                                   </button>
                                 </td>
 
-                                {/* Trainer Fee */}
+                                {/* FEES */}
                                 <td style={{ minWidth: 130 }}>
                                   <input
                                     type="number"
-                                    step="0.01"
-                                    min="0"
                                     value={trainerFee[bid] ?? ""}
                                     onChange={(e) =>
                                       handleFeeChange(
@@ -951,44 +950,32 @@ export default function TpTrainingRequestClosure() {
                                       )
                                     }
                                     className="form-control"
-                                    style={{ width: "100%" }}
                                   />
                                 </td>
 
-                                {/* TP Fee */}
                                 <td style={{ minWidth: 130 }}>
                                   <input
                                     type="number"
-                                    step="0.01"
-                                    min="0"
                                     value={tpFee[bid] ?? ""}
                                     onChange={(e) =>
                                       handleFeeChange(bid, "tp", e.target.value)
                                     }
                                     className="form-control"
-                                    style={{ width: "100%" }}
                                   />
                                 </td>
 
-                                {/* Actions */}
+                                {/* ACTIONS */}
                                 <td style={{ minWidth: 150 }}>
-                                  <div
-                                    style={{
-                                      display: "flex",
-                                      flexDirection: "column",
-                                      gap: 4,
-                                    }}
-                                  >
+                                  <div className="tms-actions">
                                     <button
-                                      type="button"
                                       className="btn-sm btn-primary"
                                       onClick={() => openBatchDetailModal(bid)}
                                     >
                                       View Detail
                                     </button>
+
                                     <button
-                                      type="button"
-                                      className="btn-sm"
+                                      className="btn-sm btn-outline"
                                       disabled={saving}
                                       onClick={() => handleSaveBatchCost(batch)}
                                     >
@@ -1072,6 +1059,97 @@ export default function TpTrainingRequestClosure() {
           />
         ) : null}
       </Modal>
+      <style>{`.tms-table thead {
+  position: sticky;
+  top: 0;
+  background: #f4f8fd;
+}
+
+.tms-table th {
+  padding: 10px;
+  color: #3d6ba6;
+  border-bottom: 2px solid #3d6ba6;
+}
+
+.tms-table td {
+  padding: 10px;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.tms-table tr:hover {
+  background: #f0f6ff;
+}
+
+/* INPUT */
+.form-control {
+  border: 1px solid #3d6ba6;
+  border-radius: 6px;
+  padding: 6px;
+}
+
+.form-control:focus {
+  border-color: #5a8cc2;
+  box-shadow: 0 0 0 2px rgba(61,107,166,0.2);
+}
+
+/* STATUS */
+.tms-status {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-size: 11px;
+}
+
+.tms-status.pending {
+  background: rgba(61,107,166,0.1);
+  color: #3d6ba6;
+}
+
+/* COST BOX */
+.tms-cost-box {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 6px;
+  background: #f4f8fd;
+  padding: 8px;
+  border-radius: 8px;
+}
+
+/* ACTIONS */
+.tms-actions {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+/* BUTTONS */
+.btn-sm {
+  padding: 6px 10px;
+  border-radius: 6px;
+}
+
+.btn-primary {
+  background: #3d6ba6;
+  color: #fff;
+}
+
+.btn-primary:hover {
+  background: #5a8cc2;
+}
+
+.btn-outline {
+  border: 1px solid #3d6ba6;
+  color: #3d6ba6;
+}
+
+.btn-flat {
+  background: transparent;
+  color: #3d6ba6;
+}
+
+/* TEXT */
+.tms-muted {
+  color: #6b7280;
+}`}</style>
     </div>
   );
 }

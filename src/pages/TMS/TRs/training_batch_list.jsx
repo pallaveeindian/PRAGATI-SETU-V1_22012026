@@ -944,32 +944,32 @@ export default function TrainingBatchList() {
 }
 
 .status-draft{
-  background:#e4ecf5;
+  background: #e7d63d;
   color:#2b4e72;
 }
 
 .status-pending{
-  background:#fff3cd;
-  color:#856404;
+  background: #ec1414;
+  color: #ffffff;
 }
 
 .status-ongoing{
-  background:#d4edda;
+  background: #FFF000;
   color:#155724;
 }
 
 .status-scheduled{
-  background:#d1ecf1;
+  background: #33bbd3;
   color:#0c5460;
 }
 
 .status-completed{
-  background:#c3e6cb;
+  background: #50ec74;
   color:#155724;
 }
 
 .status-rejected{
-  background:#f8d7da;
+  background: #3556eb;
   color:#721c24;
 }
 /* ================= PAGINATION ================= */

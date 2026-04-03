@@ -677,27 +677,27 @@ function CombinedParticipantSelector({
       const list =
         trainingReq.training_type === "BENEFICIARY"
           ? resp.data.beneficiary_registrations.map((x) => ({
-            ...x,
-            // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
-            // tr_participation_id: x.id,
-            // training: tr.id,
-            // _uid: `trp-${x.id}`,
-            id: x.id, // Primary Key of TRBeneficiary
-            training: tr.id,
-            _uid: `trp-${x.id}`, // ✅ Standardized UID
-            // _uid: `reg-${x.id}`
-          }))
+              ...x,
+              // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
+              // tr_participation_id: x.id,
+              // training: tr.id,
+              // _uid: `trp-${x.id}`,
+              id: x.id, // Primary Key of TRBeneficiary
+              training: tr.id,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+            }))
           : resp.data.trainer_registrations.map((x) => ({
-            ...x,
-            id: x.id, // Primary Key of TRTrainer
-            training: tr.id,
-            _uid: `trp-${x.id}`, // ✅ Standardized UID
-            // _uid: `reg-${x.id}`
-            // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
-            // tr_participation_id: x.id,
-            // training: tr.id,
-            // _uid: `trp-${x.id}`,
-          }));
+              ...x,
+              id: x.id, // Primary Key of TRTrainer
+              training: tr.id,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+              // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
+              // tr_participation_id: x.id,
+              // training: tr.id,
+              // _uid: `trp-${x.id}`,
+            }));
 
       setParticipantCache((old) => ({
         ...old,
@@ -1059,42 +1059,72 @@ function BatchSubmitSection({
   //   }
   // }
   const navigate = useNavigate();
+  function validateAllBatches() {
+    const totalParticipantsList =
+      trainingReq.training_type === "BENEFICIARY"
+        ? trainingReq?.beneficiary_registrations || []
+        : trainingReq?.trainer_registrations || [];
+
+    const totalIds = totalParticipantsList.map((p) => Number(p.id));
+
+    let allSelectedIds = [];
+
+    for (let i = 0; i < batches.length; i++) {
+      const b = batches[i];
+      const perBatchSel = participantSelections[b.key] || {};
+
+      const selectedIds = Object.values(perBatchSel)
+        .flat()
+        .map((p) => Number(typeof p === "object" ? p.id : p))
+        .filter(Boolean);
+
+      console.log(`Batch ${b.title} selected IDs:`, selectedIds);
+
+      // ❌ Batch empty
+      if (selectedIds.length < 1) {
+        alert(`"${b.title}" must have at least 1 participant`);
+        return false;
+      }
+
+      allSelectedIds.push(...selectedIds);
+    }
+
+    const uniqueSelectedIds = [...new Set(allSelectedIds)];
+
+    console.log("Total IDs:", totalIds);
+    console.log("All Selected:", uniqueSelectedIds);
+
+    // ❌ Missing participants
+    // if (uniqueSelectedIds.length !== totalIds.length) {
+    //   const missing = totalIds.filter((id) => !uniqueSelectedIds.includes(id));
+
+    //   alert(`Missing participants: ${missing.join(", ")}`);
+    //   return false;
+    // }
+
+    // return true;
+    if (uniqueSelectedIds.length !== totalIds.length) {
+      const missingCount = totalIds.filter(
+        (id) => !uniqueSelectedIds.includes(id),
+      ).length;
+
+      alert(
+        `${missingCount} participant${
+          missingCount > 1 ? "s" : ""
+        } left to select`,
+      );
+
+      return false;
+    }
+  }
   async function execute() {
     console.log("EXECUTE STARTED");
     setSubmitting(true);
 
     try {
-      // ✅ TOTAL participants from original TR
-      const totalParticipants =
-        trainingReq.training_type === "BENEFICIARY"
-          ? trainingReq?.beneficiary_registrations?.length || 0
-          : trainingReq?.trainer_registrations?.length || 0;
-
-      console.log("Total participants in TR:", totalParticipants);
-
-      // 🔒 HARD VALIDATION: EACH BATCH MUST HAVE ALL PARTICIPANTS
-      for (let i = 0; i < batches.length; i++) {
-        const b = batches[i];
-        const perBatchSel = participantSelections[b.key] || {};
-        const selectedCount = Object.values(perBatchSel).flat().length;
-
-        console.log(`Batch ${b.title} selected:`, selectedCount);
-
-        // ❌ Case 1: No participant
-        if (selectedCount < 1) {
-          alert(`"${b.title}" must have at least 1 participant`);
-          setSubmitting(false);
-          return;
-        }
-
-        // ❌ Case 2: Not all participants selected
-        if (selectedCount !== totalParticipants) {
-          alert(
-            `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
-          );
-          setSubmitting(false);
-          return;
-        }
+      if (!validateAllBatches()) {
+        setSubmitting(false);
+        return;
       }
 
       // 🔁 REVIEW MODE CLEANUP
@@ -1211,34 +1241,35 @@ function BatchSubmitSection({
         disabled={disabled}
         onClick={() => {
           //  TOTAL participants in TR
-          const totalParticipants =
-            trainingReq.training_type === "BENEFICIARY"
-              ? trainingReq?.beneficiary_registrations?.length || 0
-              : trainingReq?.trainer_registrations?.length || 0;
+          // const totalParticipants =
+          //   trainingReq.training_type === "BENEFICIARY"
+          //     ? trainingReq?.beneficiary_registrations?.length || 0
+          //     : trainingReq?.trainer_registrations?.length || 0;
 
-          for (let i = 0; i < batches.length; i++) {
-            const b = batches[i];
-            const perBatchSel = participantSelections[b.key] || {};
-            const selectedCount = Object.values(perBatchSel).flat().length;
+          // for (let i = 0; i < batches.length; i++) {
+          //   const b = batches[i];
+          //   const perBatchSel = participantSelections[b.key] || {};
+          //   const selectedCount = Object.values(perBatchSel).flat().length;
 
-            console.log(`Batch ${b.title} selected:`, selectedCount);
-            console.log(`Total participants:`, totalParticipants);
+          //   console.log(`Batch ${b.title} selected:`, selectedCount);
+          //   console.log(`Total participants:`, totalParticipants);
 
-            //  No participants
-            if (selectedCount < 1) {
-              alert(`"${b.title}" must have at least 1 participant`);
-              return;
-            }
+          //   //  No participants
+          //   if (selectedCount < 1) {
+          //     alert(`"${b.title}" must have at least 1 participant`);
+          //     return;
+          //   }
 
-            //  Not all selected
-            if (selectedCount !== totalParticipants) {
-              alert(
-                `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
-              );
-              return;
-            }
-          }
+          //   //  Not all selected
+          //   if (selectedCount !== totalParticipants) {
+          //     alert(
+          //       `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
+          //     );
+          //     return;
+          //   }
+          // }
 
+          if (!validateAllBatches()) return;
           //  Only opens preview if validation passes
           const p = buildPayload();
           setPayload(p);
@@ -1340,28 +1371,28 @@ export default function TpCreateBatch() {
         const list =
           r.data.training_type === "BENEFICIARY"
             ? r.data.beneficiary_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary key of TRBeneficiary
-              training: requestId,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.beneficiary,
-              // tr_participation_id: x.id,
-              // training: requestId,
-              // // _uid: `${requestId}-${x.beneficiary}`,
-              // _uid: `trp-${x.id}`
-            }))
+                ...x,
+                id: x.id, // Primary key of TRBeneficiary
+                training: requestId,
+                _uid: `trp-${x.id}`, // ✅ Standardized UID
+                // _uid: `reg-${x.id}`
+                // id: x.beneficiary,
+                // tr_participation_id: x.id,
+                // training: requestId,
+                // // _uid: `${requestId}-${x.beneficiary}`,
+                // _uid: `trp-${x.id}`
+              }))
             : r.data.trainer_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary key of TRTrainer
-              training: requestId,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.trainer,
-              // tr_participation_id: x.id,
-              // training: requestId,
-              // _uid: `${requestId}-${x.trainer}`,
-            }));
+                ...x,
+                id: x.id, // Primary key of TRTrainer
+                training: requestId,
+                _uid: `trp-${x.id}`, // ✅ Standardized UID
+                // _uid: `reg-${x.id}`
+                // id: x.trainer,
+                // tr_participation_id: x.id,
+                // training: requestId,
+                // _uid: `${requestId}-${x.trainer}`,
+              }));
 
         seed[`tr-${requestId}`] = {
           list,
@@ -2047,9 +2078,9 @@ export default function TpCreateBatch() {
 
                               const ed = trainingReq?.training_plan?.no_of_days
                                 ? calcEndDate(
-                                  sd,
-                                  trainingReq.training_plan.no_of_days,
-                                )
+                                    sd,
+                                    trainingReq.training_plan.no_of_days,
+                                  )
                                 : "";
 
                               updateBatch(
