@@ -383,10 +383,23 @@ export default function CRPForm() {
               </label>
               <input
                 type="text"
-                placeholder="Enter Nodal Sub Category of CRP (Optional)"
+                placeholder="Enter Sub Category of CRP (Optional)"
                 value={subcat}
                 onChange={(e) => setSubCat(e.target.value)}
               />
+            </div>
+            {/* Alt Number */}
+            <div className="crp-input-group">
+                <label>
+                  <FaPhoneAlt />  Alternate Mobile Number 
+                </label>
+
+                <input
+                  type="tel"
+                  maxLength="10"
+                  pattern="[6-9]{1}[0-9]{9}"
+                  placeholder="Enter mobile number of CRP"
+                />
             </div>
           </div>
           <div className="crp-password-box">

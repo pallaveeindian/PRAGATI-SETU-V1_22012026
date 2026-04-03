@@ -71,9 +71,19 @@ export default function PanchayatsList({ crpData, blockId }) {
 
     if (alreadyAssigned[id]) return;
 
-    if (selected.find((x) => (x.id || x.panchayat_id) === id)) return;
+    const exists = selected.find(
+      (x) => (x.id || x.panchayat_id) === id
+    );
 
-    setSelected((prev) => [...prev, p]);
+    // ❌ Block if already 7
+    if (!exists && selected.length >= 7) {
+      alert("❌ Maximum 7 Panchayats allowed");
+      return;
+    }
+
+    if (!exists) {
+      setSelected((prev) => [...prev, p]);
+    }
   }
 
   function remove(id) {
@@ -81,7 +91,17 @@ export default function PanchayatsList({ crpData, blockId }) {
   }
 
   async function assign() {
-    if (!selected.length) return;
+    // ❌ MIN validation
+    if (selected.length < 4) {
+      alert("⚠️ Please select at least 4 Panchayats");
+      return;
+    }
+
+    // ❌ MAX safety (extra safety)
+    if (selected.length > 7) {
+      alert("❌ Maximum 7 Panchayats allowed");
+      return;
+    }
 
     setShowModal(true);
     setModalState("loading");
@@ -91,8 +111,6 @@ export default function PanchayatsList({ crpData, blockId }) {
         crp_id: crpData.crp.master_user.id,
         allocated_panchayats: selected.map((x) => x.panchayat_id),
       };
-
-      console.log("CRP Panchayat Payload:", payload);
 
       await EPSAKHI_API.crpPanchayatBulk(payload);
 
@@ -154,24 +172,50 @@ export default function PanchayatsList({ crpData, blockId }) {
       )}
 
       <div className="panchayat-list">
-        {filteredPanchayats.map((p) => (
-          <div
-            key={p.id || p.panchayat_id || p.panchayat_name_en}
-            className={`panchayat-item ${alreadyAssigned[p.id || p.panchayat_id] ? "assigned" : ""}`}
-            onClick={() => toggle(p)}
-            title={
-              alreadyAssigned[p.id || p.panchayat_id]
-                ? "Already assigned to another CRP"
-                : ""
-            }
-          >
-            {p.panchayat_name_en}
+        {filteredPanchayats.map((p) => {
+          const id = p.id || p.panchayat_id;
 
-            {alreadyAssigned[p.id || p.panchayat_id] && (
-              <span className="assigned-tag">Assigned</span>
-            )}
-          </div>
-        ))}
+          const isAssigned = alreadyAssigned[id];
+          const isSelected = selected.find(
+            (x) => (x.id || x.panchayat_id) === id
+          );
+
+          const isDisabled =
+            isAssigned ||
+            (selected.length >= 7 && !isSelected);
+
+          return (
+            <div
+              key={id || p.panchayat_name_en}
+              className={`panchayat-item 
+                ${isAssigned ? "assigned" : ""} 
+                ${isDisabled ? "disabled" : ""}
+                ${isSelected ? "selected" : ""}
+              `}
+              onClick={() => {
+                if (isDisabled) return;
+                toggle(p);
+              }}
+              title={
+                isAssigned
+                  ? "Already assigned to another CRP"
+                  : isDisabled
+                  ? "Maximum 7 Panchayats allowed"
+                  : ""
+              }
+            >
+              {p.panchayat_name_en}
+
+              {isAssigned && (
+                <span className="assigned-tag">Assigned</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+
+      <div style={{ marginTop: "10px", fontWeight: "600" }}>
+        Selected: {selected.length} / 7 (Min 4 required)
       </div>
 
       {/* SECTION 4 SELECTED */}
@@ -193,7 +237,7 @@ export default function PanchayatsList({ crpData, blockId }) {
       <button
         className="assign-btn"
         onClick={assign}
-        disabled={assigning || !selected.length}
+        disabled={assigning || selected.length < 4}
       >
         {assigning ? (
           <>
@@ -293,6 +337,18 @@ export default function PanchayatsList({ crpData, blockId }) {
         color:white;
         padding:2px 6px;
         border-radius:4px;
+        }
+
+        .panchayat-item.disabled {
+          opacity: 0.5;
+          cursor: not-allowed;
+          pointer-events: none;
+        }
+
+        .panchayat-item.selected {
+          background: #d1fae5; /* light green */
+          border-color: var(--epsms-green);
+          box-shadow: 0 0 0 1px var(--epsms-green);
         }
 
         .selected-badges{
