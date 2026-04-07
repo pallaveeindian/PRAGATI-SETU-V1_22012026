@@ -9,6 +9,44 @@ import {
   getUser,
 } from "../utils/storage";
 
+import CryptoJS from "crypto-js";
+const API_ENCRYPTION_KEY = import.meta.env.VITE_API_ENCRYPTION_KEY;
+
+// ------------------------
+// Decryption Algorithm (VUN:14 Patch fix)
+// ------------------------
+
+function decryptPayload(responseData) {
+  // If it doesn't match our {iv, data} payload shape, return it as-is
+  if (
+    !responseData ||
+    typeof responseData !== "object" ||
+    !responseData.iv ||
+    !responseData.data
+  ) {
+    return responseData;
+  }
+
+  try {
+    const key = CryptoJS.enc.Utf8.parse(API_ENCRYPTION_KEY);
+    const iv = CryptoJS.enc.Base64.parse(responseData.iv);
+    const ciphertext = CryptoJS.enc.Base64.parse(responseData.data);
+
+    const cipherParams = CryptoJS.lib.CipherParams.create({ ciphertext });
+    const decrypted = CryptoJS.AES.decrypt(cipherParams, key, {
+      iv: iv,
+      mode: CryptoJS.mode.CBC,
+      padding: CryptoJS.pad.Pkcs7,
+    });
+
+    const decryptedString = decrypted.toString(CryptoJS.enc.Utf8);
+    return JSON.parse(decryptedString);
+  } catch (error) {
+    console.error("API Decryption failed:", error);
+    return responseData;
+  }
+}
+
 // ------------------------
 // Axios instance
 // ------------------------
@@ -136,8 +174,19 @@ async function performRefresh() {
 }
 
 api.interceptors.response.use(
-  (response) => response,
+  (response) => {
+    // 1. Decrypt Successful Responses
+    if (response.data) {
+      response.data = decryptPayload(response.data);
+    }
+    return response;
+  },
   async (error) => {
+    // 2. Decrypt Error Responses (Backend encrypts 400/401/500 errors too)
+    if (error.response && error.response.data) {
+      error.response.data = decryptPayload(error.response.data);
+    }
+
     const originalConfig = error?.config;
 
     if (!originalConfig) {
