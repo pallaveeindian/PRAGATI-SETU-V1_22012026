@@ -1,0 +1,54 @@
+.container {
+    padding: 20px;
+    font-family: Arial;
+}
+
+h2 {
+    margin-bottom: 15px;
+}
+
+select,
+input {
+    padding: 8px;
+    margin: 5px;
+}
+
+.filters {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin: 15px 0;
+}
+
+.actions {
+    margin: 15px 0;
+}
+
+button {
+    padding: 10px 15px;
+    margin-right: 10px;
+    background-color: #061b46;
+    color: white;
+    border: none;
+    cursor: pointer;
+}
+
+/* button:hover {
+    background-color: #061b46;
+} */
+
+/* .table-container {
+    overflow-x: auto;
+}
+
+table {
+    border-collapse: collapse;
+    width: 100%;
+} */
+
+
+
+.loader {
+    margin-top: 20px;
+    font-weight: bold;
+}

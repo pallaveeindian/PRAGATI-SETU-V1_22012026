@@ -120,7 +120,7 @@ const MENU = {
         },
       ],
     },
-    { label: "Reports", to: "#", icon: FaClipboardCheck },
+    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
   ],
   training_partner: [
     {

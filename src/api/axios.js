@@ -16,7 +16,7 @@ const API_ENCRYPTION_KEY = import.meta.env.VITE_API_ENCRYPTION_KEY;
 // Decryption Algorithm (VUN:14 Patch fix)
 // ------------------------
 
-function decryptPayload(responseData) {
+export const decryptPayload = (responseData) => {
   // If it doesn't match our {iv, data} payload shape, return it as-is
   if (
     !responseData ||

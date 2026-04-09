@@ -73,6 +73,7 @@ import SupportBucketList from "./pages/LDMS/Support Map/record_support_list";
 import RecordSupportDetail from "./pages/LDMS/Support Map/record_support_detail";
 import DmmuLdmsApprove from "./pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
+import TrainingReport from "./pages/TMS/TrainingReport/trainingReport";
 
 // tiny placeholder landing for /tms
 function TmsLanding() {
@@ -127,6 +128,10 @@ export default function App() {
 
         {/* ----- TMS Routes ----- */}
         <Route path="/tms" element={<TmsLanding />} />
+        <Route
+          path="/tms/training-report"
+          element={<TrainingReport />}
+        />
 
         {/* SMMU Routes */}
         <Route element={<ProtectedRoute allowedRoles="smmu" />}>
