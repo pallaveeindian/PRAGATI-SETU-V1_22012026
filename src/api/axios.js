@@ -321,8 +321,12 @@ export const LOOKUP_API = {
     api.get(`/lookups/blocks/${encodeURIComponent(districtId)}/`),
   block_detail: makeCrud("/lookups/blocks/detail/"),
   panchayats: makeCrud("/lookups/panchayats/"),
+  panchayatsByBlock: (blockId) =>
+    api.get(`/lookups/panchayats/${encodeURIComponent(blockId)}/`),
   panchayat_detail: makeCrud("/lookups/panchayats/detail/"),
   villages: makeCrud("/lookups/villages/"),
+  villagesByPanchayat: (panchayatId) =>
+    api.get(`/lookups/villages/${encodeURIComponent(panchayatId)}/`),
   village_detail: makeCrud("/lookups/villages/detail/"),
   users: makeCrud("/lookups/users/"),
 
