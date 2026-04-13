@@ -76,9 +76,24 @@ function fmtDate(iso) {
 
 function normalizeMediaUrl(url) {
   if (!url) return "";
-  if (url.startsWith("http://72.61.255.170/")) {
-    return url.replace("http://72.61.255.170/", "http://72.61.255.170:8080/");
+
+  // If the URL already starts with a relative path like /media/, it's perfect.
+  if (url.startsWith("/media/")) {
+    return url;
   }
+
+  // If it's an absolute URL (http:// or https://), strip the domain completely
+  if (url.startsWith("http")) {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.pathname; // Extracts ONLY the path (e.g., "/media/uploads/file.jpg")
+    } catch (error) {
+      console.warn("Invalid media URL:", url);
+      return url;
+    }
+  }
+
+  // Fallback for any weird edge cases
   return url;
 }
 
