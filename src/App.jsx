@@ -73,7 +73,7 @@ import SupportBucketList from "./pages/LDMS/Support Map/record_support_list";
 import RecordSupportDetail from "./pages/LDMS/Support Map/record_support_detail";
 import DmmuLdmsApprove from "./pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
-import TrainingReport from "./pages/TMS/TrainingReport/trainingReport";
+import TrainingReport from "./pages/TMS/TrainingReport/TrainingReport";
 
 // tiny placeholder landing for /tms
 function TmsLanding() {
