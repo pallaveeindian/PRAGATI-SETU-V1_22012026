@@ -601,10 +601,21 @@ function CombinedParticipantSelector({
 
   useEffect(() => {
     if (!districtId) return;
+
     setLoadingBlocks(true);
-    LOOKUP_API.blocks
-      .retrieve(districtId, { page_size: 100 })
-      .then((r) => setBlocks(r?.data?.results || []))
+
+    LOOKUP_API.blocksByDistrict(districtId)
+      .then((r) => {
+        const data = r?.data;
+
+        if (Array.isArray(data)) {
+          setBlocks(data);
+        } else if (Array.isArray(data?.results)) {
+          setBlocks(data.results);
+        } else {
+          setBlocks([]);
+        }
+      })
       .finally(() => setLoadingBlocks(false));
   }, [districtId]);
 
@@ -692,27 +703,27 @@ function CombinedParticipantSelector({
       const list =
         trainingReq.training_type === "BENEFICIARY"
           ? resp.data.beneficiary_registrations.map((x) => ({
-            ...x,
-            // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
-            // tr_participation_id: x.id,
-            // training: tr.id,
-            // _uid: `trp-${x.id}`,
-            id: x.id, // Primary Key of TRBeneficiary
-            training: tr.id,
-            _uid: `trp-${x.id}`, // ✅ Standardized UID
-            // _uid: `reg-${x.id}`
-          }))
+              ...x,
+              // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
+              // tr_participation_id: x.id,
+              // training: tr.id,
+              // _uid: `trp-${x.id}`,
+              id: x.id, // Primary Key of TRBeneficiary
+              training: tr.id,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+            }))
           : resp.data.trainer_registrations.map((x) => ({
-            ...x,
-            id: x.id, // Primary Key of TRTrainer
-            training: tr.id,
-            _uid: `trp-${x.id}`, // ✅ Standardized UID
-            // _uid: `reg-${x.id}`
-            // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
-            // tr_participation_id: x.id,
-            // training: tr.id,
-            // _uid: `trp-${x.id}`,
-          }));
+              ...x,
+              id: x.id, // Primary Key of TRTrainer
+              training: tr.id,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+              // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
+              // tr_participation_id: x.id,
+              // training: tr.id,
+              // _uid: `trp-${x.id}`,
+            }));
 
       setParticipantCache((old) => ({
         ...old,
@@ -774,7 +785,6 @@ function CombinedParticipantSelector({
               <tr>
                 <th>TR ID</th>
                 <th>Block</th>
-                <th>Participants</th>
                 <th />
               </tr>
             </thead>
@@ -782,12 +792,7 @@ function CombinedParticipantSelector({
               {blockTRs.map((tr) => (
                 <tr key={tr.id}>
                   <td>{tr.id}</td>
-                  <td>{tr.block?.block_name_en}</td>
-                  <td>
-                    {baseType === "BENEFICIARY"
-                      ? tr.beneficiary_count
-                      : tr.trainer_count}
-                  </td>
+                  <td>{tr.block_name_en}</td>
                   <td>
                     <button
                       className="btn-sm"
@@ -1118,16 +1123,17 @@ function BatchSubmitSection({
     // }
 
     // return true;
-    if (uniqueSelectedIds.length !== totalIds.length) {
-      const missingCount = totalIds.filter(
-        (id) => !uniqueSelectedIds.includes(id),
-      ).length;
+    const missingCount = totalIds.filter(
+      (id) => !uniqueSelectedIds.includes(id),
+    ).length;
 
+    // Only fail if there are ACTUALLY missing participants from the base TR
+    if (missingCount > 0) {
       alert(
-        `${missingCount} participant${missingCount > 1 ? "s" : ""
+        `${missingCount} participant${
+          missingCount > 1 ? "s" : ""
         } left to select`,
       );
-
       return false;
     }
 
@@ -1387,28 +1393,28 @@ export default function TpCreateBatch() {
         const list =
           r.data.training_type === "BENEFICIARY"
             ? r.data.beneficiary_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary key of TRBeneficiary
-              training: requestId,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.beneficiary,
-              // tr_participation_id: x.id,
-              // training: requestId,
-              // // _uid: `${requestId}-${x.beneficiary}`,
-              // _uid: `trp-${x.id}`
-            }))
+                ...x,
+                id: x.id, // Primary key of TRBeneficiary
+                training: requestId,
+                _uid: `trp-${x.id}`, // ✅ Standardized UID
+                // _uid: `reg-${x.id}`
+                // id: x.beneficiary,
+                // tr_participation_id: x.id,
+                // training: requestId,
+                // // _uid: `${requestId}-${x.beneficiary}`,
+                // _uid: `trp-${x.id}`
+              }))
             : r.data.trainer_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary key of TRTrainer
-              training: requestId,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.trainer,
-              // tr_participation_id: x.id,
-              // training: requestId,
-              // _uid: `${requestId}-${x.trainer}`,
-            }));
+                ...x,
+                id: x.id, // Primary key of TRTrainer
+                training: requestId,
+                _uid: `trp-${x.id}`, // ✅ Standardized UID
+                // _uid: `reg-${x.id}`
+                // id: x.trainer,
+                // tr_participation_id: x.id,
+                // training: requestId,
+                // _uid: `${requestId}-${x.trainer}`,
+              }));
 
         seed[`tr-${requestId}`] = {
           list,
@@ -1920,7 +1926,20 @@ export default function TpCreateBatch() {
                           isReviewMode={isReviewMode}
                           usedUidsAcrossBatches={usedUidsAcrossBatches}
                         />
-
+                        {batch.batchType === "COMBINED" && (
+                          <CombinedParticipantSelector
+                            trainingReq={trainingReq}
+                            participantCache={participantCache}
+                            setParticipantCache={setParticipantCache}
+                            selectedParticipants={participantSelections}
+                            setSelectedParticipants={setParticipantSelections}
+                            batchKey={batch.key}
+                            blockNamesCache={blockNamesCache}
+                            setBlockNamesCache={setBlockNamesCache}
+                            markBatchTouched={markBatchTouched}
+                            usedUidsAcrossBatches={usedUidsAcrossBatches}
+                          />
+                        )}
                         {/* SELECTED PARTICIPANTS */}
                         {selectedList.length > 0 && (
                           <div
@@ -2094,9 +2113,9 @@ export default function TpCreateBatch() {
 
                               const ed = trainingReq?.training_plan?.no_of_days
                                 ? calcEndDate(
-                                  sd,
-                                  trainingReq.training_plan.no_of_days,
-                                )
+                                    sd,
+                                    trainingReq.training_plan.no_of_days,
+                                  )
                                 : "";
 
                               updateBatch(

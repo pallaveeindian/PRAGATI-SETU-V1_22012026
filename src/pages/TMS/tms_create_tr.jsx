@@ -108,8 +108,8 @@ const TrainerRow = React.memo(function TrainerRow({
       </td>
       <td>{row.full_name || row.name || "-"}</td>
       <td>{row.designation || "-"}</td>
-      <td>{row.empanel_block || "-"}</td>
-      <td>{row.empanel_district || "-"}</td>
+      <td>{row.block_name_en || "-"}</td>
+      <td>{row.district_name_en || "-"}</td>
       <td>{row.mobile_no || "-"}</td>
     </tr>
   );
@@ -164,8 +164,11 @@ const MasterTrainerList = React.memo(function MasterTrainerList({
       if (filters.block && String(t.empanel_block) !== String(filters.block))
         return false;
       if (s.length > 0) {
-        const hay =
-          `${t.full_name || t.name || ""} ${t.mobile_no || ""} ${t.TH_urid || ""}`.toLowerCase();
+        const hay = `${t.full_name || t.name || ""} 
+          ${t.mobile_no || ""} 
+          ${t.TH_urid || ""} 
+          ${t.block_name_en || ""} 
+          ${t.district_name_en || ""}`.toLowerCase();
         if (!hay.includes(s)) return false;
       }
       return true;
@@ -216,7 +219,7 @@ const MasterTrainerList = React.memo(function MasterTrainerList({
       <div className="filters-row" style={{ gap: 8 }}>
         <input
           className="input"
-          placeholder="Search name / mobile"
+          placeholder="Search"
           value={search}
           onChange={(e) => {
             setSearch(e.target.value || "");
@@ -230,6 +233,10 @@ const MasterTrainerList = React.memo(function MasterTrainerList({
             padding: 6,
           }}
         />
+        <p style={{ marginLeft: 10, fontSize: 12, color: "#6c757d" }}>
+          You can search for trainers by name, mobile, empanelled block or
+          district.
+        </p>
         <select
           className="input"
           value={designation}
@@ -695,11 +702,11 @@ export default function CreateTrainingRequest() {
     setPreloading(true);
     try {
       // Build single call params
-      const baseParams = { limit: 500 };
+      const baseParams = { page_size: 5000 };
       const params = { ...baseParams };
-      if (effectiveDistrict) {
-        params.empanel_district = effectiveDistrict;
-      }
+      // if (effectiveDistrict) {
+      //   params.empanel_district = effectiveDistrict;
+      // }
 
       // Single API call (filtered if district available; unfiltered otherwise)
       let resp;
@@ -723,9 +730,11 @@ export default function CreateTrainingRequest() {
       const payload = resp?.data ?? resp ?? {};
       const items = Array.isArray(payload.results)
         ? payload.results
-        : Array.isArray(payload)
-          ? payload
-          : payload.data || [];
+        : Array.isArray(payload.data)
+          ? payload.data
+          : Array.isArray(payload)
+            ? payload
+            : [];
 
       // Save to state and cache (cache district_id: effectiveDistrict or null)
       setPreloadedTrainers(items || []);
@@ -860,12 +869,13 @@ export default function CreateTrainingRequest() {
   }, [step]);
 
   /* ---------- handlers ---------- */
-
-  // When a plan is selected, also try to auto-resolve partner (via partner-targets) for BMMU users.
   async function handlePlanSelect(plan) {
     setSelectedPlan(plan);
     setSelectedTheme(null);
     setAutoPartnerAssigned(false);
+
+    // 1. We must resolve the actual Theme NAME to query Priority 2, since plan.theme is just an ID.
+    let resolvedThemeName = plan?.theme_name || null;
 
     // fetch theme detail (if present) from preloaded themes first
     if (plan?.theme) {
@@ -875,31 +885,78 @@ export default function CreateTrainingRequest() {
         );
         if (cachedTheme) {
           setSelectedTheme(cachedTheme);
+          resolvedThemeName =
+            resolvedThemeName || cachedTheme.theme_name || cachedTheme.name;
         } else {
           const resp = await TMS_API.trainingThemes.retrieve(plan.theme);
           const t = resp?.data ?? resp ?? null;
           setSelectedTheme(t);
+          resolvedThemeName = resolvedThemeName || t?.theme_name || t?.name;
         }
       } catch (e) {
         setSelectedTheme(null);
       }
     }
 
-    // If BMMU, attempt to find partner via partner targets for this plan
-    if (roleKey === "bmmu" && plan?.id) {
+    // Attempt to find partner via partner targets based on Priority
+    if (plan?.id) {
       try {
-        const resp = await TMS_API.trainingPartnerTargets.list({
-          training_plan: plan.id,
-          limit: 1,
-        });
-        const payload = resp?.data ?? resp ?? {};
-        const results = payload.results || payload.data || [];
-        if (Array.isArray(results) && results.length > 0) {
-          const partnerId = results[0].partner;
-          if (partnerId) {
-            setForm((f) => ({ ...f, partner: String(partnerId) }));
-            setAutoPartnerAssigned(true);
+        let foundPartner = null;
+
+        // Extract the current user's district
+        const currentDistrict =
+          districtId ??
+          geoscopeCached?.districts?.[0] ??
+          geoscopeCached?.district_id ??
+          user?.district_id ??
+          null;
+
+        // Priority 1: DISTRICT
+        if (currentDistrict) {
+          const respD = await TMS_API.trainingPartnerTargets.list({
+            district: currentDistrict,
+            target_type: "DISTRICT",
+            limit: 1,
+          });
+          const payloadD = respD?.data ?? respD ?? {};
+          const resD = payloadD.results || payloadD.data || [];
+          if (Array.isArray(resD) && resD.length > 0 && resD[0].partner) {
+            foundPartner = resD[0].partner;
           }
+        }
+
+        // Priority 2: THEME (Using the resolvedThemeName, e.g., "Farm LH")
+        if (!foundPartner && resolvedThemeName) {
+          const respT = await TMS_API.trainingPartnerTargets.list({
+            theme: resolvedThemeName,
+            target_type: "THEME",
+            limit: 1,
+          });
+          const payloadT = respT?.data ?? respT ?? {};
+          const resT = payloadT.results || payloadT.data || [];
+          if (Array.isArray(resT) && resT.length > 0 && resT[0].partner) {
+            foundPartner = resT[0].partner;
+          }
+        }
+
+        // Priority 3: MODULE (Training Plan)
+        if (!foundPartner) {
+          const respM = await TMS_API.trainingPartnerTargets.list({
+            training_plan: plan.id,
+            target_type: "MODULE",
+            limit: 1,
+          });
+          const payloadM = respM?.data ?? respM ?? {};
+          const resM = payloadM.results || payloadM.data || [];
+          if (Array.isArray(resM) && resM.length > 0 && resM[0].partner) {
+            foundPartner = resM[0].partner;
+          }
+        }
+
+        // Apply whichever partner was found via priority
+        if (foundPartner) {
+          setForm((f) => ({ ...f, partner: String(foundPartner) }));
+          setAutoPartnerAssigned(true);
         } else {
           setAutoPartnerAssigned(false);
         }
@@ -1963,19 +2020,73 @@ export default function CreateTrainingRequest() {
                                       setParticipantSubStep(1); // go to SHG step
                                     }}
                                     style={{
-                                      padding: "12px 14px",
-                                      borderRadius: 8,
-                                      border: "1px solid #e5e7eb",
+                                      padding: "14px 16px",
+                                      borderRadius: 12,
+                                      border:
+                                        selectedBlockForShg?.block_id ===
+                                        b.block_id
+                                          ? "2px solid #2563eb"
+                                          : "1px solid #e5e7eb",
                                       cursor: "pointer",
-                                      background: "#fff",
-                                      transition: "all 0.15s ease",
+                                      background:
+                                        selectedBlockForShg?.block_id ===
+                                        b.block_id
+                                          ? "linear-gradient(135deg, #dbeafe, #eff6ff)"
+                                          : "#ffffff",
+                                      boxShadow:
+                                        selectedBlockForShg?.block_id ===
+                                        b.block_id
+                                          ? "0 6px 18px rgba(37, 99, 235, 0.25)"
+                                          : "0 2px 6px rgba(0,0,0,0.06)",
+                                      transition: "all 0.25s ease",
+                                      transform:
+                                        hover === b.block_id
+                                          ? "translateY(-4px) scale(1.02)"
+                                          : "none",
                                     }}
+                                    onMouseEnter={() => setHover(b.block_id)}
+                                    onMouseLeave={() => setHover(null)}
                                   >
-                                    <strong>{b.block_name || b.name}</strong>
                                     <div
-                                      style={{ fontSize: 12, color: "#6c757d" }}
+                                      style={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "center",
+                                      }}
                                     >
-                                      {b.block_id}: {b.block_name_en || b.name}
+                                      <div>
+                                        <div
+                                          style={{
+                                            fontWeight: 700,
+                                            fontSize: 15,
+                                            color: "#1e293b",
+                                          }}
+                                        >
+                                          {b.block_name_en || b.name}
+                                        </div>
+                                        <div
+                                          style={{
+                                            fontSize: 12,
+                                            color: "#64748b",
+                                            marginTop: 2,
+                                          }}
+                                        >
+                                          Block ID: {b.block_id}
+                                        </div>
+                                      </div>
+
+                                      <div
+                                        style={{
+                                          fontSize: 11,
+                                          padding: "4px 8px",
+                                          borderRadius: 999,
+                                          background: "#e0f2fe",
+                                          color: "#0369a1",
+                                          fontWeight: 600,
+                                        }}
+                                      >
+                                        SELECT
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -2108,7 +2219,7 @@ export default function CreateTrainingRequest() {
                       <div>
                         {/* MasterTrainerList expects parent to have fetched trainers by district */}
                         <MasterTrainerList
-                          filters={{ district: districtId }}
+                          // filters={{ district: districtId }}
                           onToggleTrainer={onToggleTrainer}
                           selectedIds={selectedTrainerIds}
                           preloadedTrainers={preloadedTrainers}
@@ -2190,23 +2301,57 @@ export default function CreateTrainingRequest() {
                           )?.name || `Partner ID ${form.partner}`}
                         </div>
                       ) : (
-                        <select
-                          name="partner"
-                          value={form.partner}
-                          onChange={(e) =>
-                            setForm({ ...form, partner: e.target.value })
-                          }
-                          className="input"
-                          disabled={roleKey === "bmmu" && autoPartnerAssigned}
-                          style={{ outline: "2px solid #3d6ba6" }}
+                        <div style={{ marginTop: 10 }}>
+                          <label style={{ fontWeight: 700 }}>
+                            Training Partner
+                          </label>
+
+                          {form.partner ? (
+                            <div
+                              style={{
+                                marginTop: 6,
+                                padding: "10px 12px",
+                                borderRadius: 8,
+                                background:
+                                  "linear-gradient(135deg, #ecfeff, #cffafe)",
+                                border: "1px solid #06b6d4",
+                                fontWeight: 600,
+                                color: "#0c4a6e",
+                              }}
+                            >
+                              {partners.find(
+                                (p) => String(p.id) === String(form.partner),
+                              )?.name || `Partner ID: ${form.partner}`}
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                marginTop: 6,
+                                padding: "10px 12px",
+                                borderRadius: 8,
+                                background: "#fef2f2",
+                                border: "1px solid #dc2626",
+                                color: "#dc2626",
+                                fontWeight: 600,
+                              }}
+                            >
+                              No Training Partner has been assigned a target for
+                              this training plan.
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      {!autoPartnerAssigned && (
+                        <div
+                          style={{
+                            marginTop: 6,
+                            fontSize: 13,
+                            color: "#dc2626",
+                            fontWeight: 600,
+                          }}
                         >
-                          <option value="">-- select partner --</option>
-                          {partners.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
-                        </select>
+                          Please wait till all training partners are assigned their targets by State.
+                        </div>
                       )}
                     </div>
 

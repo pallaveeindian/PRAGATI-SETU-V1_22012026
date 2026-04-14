@@ -128,10 +128,7 @@ export default function App() {
 
         {/* ----- TMS Routes ----- */}
         <Route path="/tms" element={<TmsLanding />} />
-        <Route
-          path="/tms/training-report"
-          element={<TrainingReport />}
-        />
+        <Route path="/tms/training-report" element={<TrainingReport />} />
 
         {/* SMMU Routes */}
         <Route element={<ProtectedRoute allowedRoles="smmu" />}>
@@ -242,10 +239,6 @@ export default function App() {
             path="/tms/batches-list/:id/"
             element={<TrainingBatchList />}
           />
-          <Route
-            path="/tms/batch-detail/:id"
-            element={<TrainingBatchDetail />}
-          />
         </Route>
 
         <Route
@@ -254,6 +247,26 @@ export default function App() {
           <Route
             path="/tms/batch-certificate/:id"
             element={<BatchCertificate />}
+          />
+        </Route>
+
+        {/* Batch Detail Permissions */}
+        <Route
+          element={
+            <ProtectedRoute
+              allowedRoles={[
+                "smmu",
+                "dmmu",
+                "bmmu",
+                "training_partner",
+                "tp_contact_person",
+              ]}
+            />
+          }
+        >
+          <Route
+            path="/tms/batch-detail/:id"
+            element={<TrainingBatchDetail />}
           />
         </Route>
 

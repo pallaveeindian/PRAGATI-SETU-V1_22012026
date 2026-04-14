@@ -139,6 +139,9 @@ export default function DmmuTrReview() {
   const mtInFlightRef = useRef(false);
   const [navCollapsed, setNavCollapsed] = useState(false);
 
+  // Master Trainer Search
+  const [mtSearch, setMtSearch] = useState("");
+
   /* ---------------- TR detail fetch (reusing training_req_detail cache style) ---------------- */
 
   function loadTrCache(id) {
@@ -371,6 +374,19 @@ export default function DmmuTrReview() {
     () => Math.max(1, Math.ceil(mtTotal / mtPageSize)),
     [mtTotal, mtPageSize],
   );
+
+  const filteredMtList = useMemo(() => {
+    if (!mtSearch.trim()) return mtList;
+
+    const q = mtSearch.toLowerCase();
+
+    return mtList.filter((mt) => {
+      const name = (mt.full_name || "").toLowerCase();
+      const mobile = (mt.mobile_no || "").toLowerCase();
+
+      return name.includes(q) || mobile.includes(q);
+    });
+  }, [mtList, mtSearch]);
 
   /* ---------------- approve / revert logic ---------------- */
 
@@ -655,6 +671,17 @@ export default function DmmuTrReview() {
           </button>
         </div>
 
+        <div style={{ marginBottom: 10, display: "flex", gap: 8 }}>
+          <input
+            type="text"
+            placeholder="Search by name or mobile number..."
+            className="input"
+            value={mtSearch}
+            onChange={(e) => setMtSearch(e.target.value)}
+            style={{ flex: 1 }}
+          />
+        </div>
+
         {mtLoadingList ? (
           <div
             style={{
@@ -665,8 +692,8 @@ export default function DmmuTrReview() {
           >
             Loading master trainers…
           </div>
-        ) : mtList.length === 0 ? (
-          <div style={{ padding: 12 }}>No master trainers found.</div>
+        ) : filteredMtList.length === 0 ? (
+          <div style={{ padding: 12 }}>No matching master trainers found.</div>
         ) : (
           <div style={{ maxHeight: 360, overflow: "auto" }}>
             <table className="table table-compact">
@@ -680,7 +707,7 @@ export default function DmmuTrReview() {
                 </tr>
               </thead>
               <tbody>
-                {mtList.map((mt) => {
+                {filteredMtList.map((mt) => {
                   const isSelected = selectedForBatch.some(
                     (t) => t.id === mt.id,
                   );
