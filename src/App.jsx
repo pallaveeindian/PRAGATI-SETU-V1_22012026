@@ -74,6 +74,7 @@ import RecordSupportDetail from "./pages/LDMS/Support Map/record_support_detail"
 import DmmuLdmsApprove from "./pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
 import TrainingReport from "./pages/TMS/TrainingReport/TrainingReport";
+import SmmuTargetAchievement from "./pages/TMS/SMMU/smmu_tp_tva";
 
 // tiny placeholder landing for /tms
 function TmsLanding() {
@@ -138,6 +139,7 @@ export default function App() {
             path="/tms/smmu/partner-targets"
             element={<SmmuCreatePartnerTargets />}
           />
+          <Route path="/tms/smmu/tp-TvA" element={<SmmuTargetAchievement />} />
         </Route>
 
         {/* DMMU Routes */}

@@ -19,6 +19,7 @@ import {
   FaChalkboardTeacher,
   FaUserCheck,
   FaUserEdit,
+  FaChalkboard,
 } from "react-icons/fa";
 
 /**
@@ -104,11 +105,11 @@ const MENU = {
       to: "/tms/training-requests",
       icon: FaChartBar,
     },
-    // {
-    //   label: "Training Batches",
-    //   to: "/tms/batches-list/",
-    //   icon: FaBook,
-    // },
+    {
+      label: "Targets vs Achievement",
+      to: "/tms/smmu/tp-TvA",
+      icon: FaChalkboard,
+    },
 
     {
       label: "Training Batches",
