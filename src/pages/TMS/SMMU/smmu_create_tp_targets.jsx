@@ -499,9 +499,17 @@ export default function SmmuCreatePartnerTargets() {
     setMessage(null);
 
     if (!form.partner_id)
-      return setMessage({ type: "error", text: "Select partner" });
-    if (!form.target_type)
-      return setMessage({ type: "error", text: "Select target type" });
+      return setMessage({
+        type: "error",
+        text: "Training Partner CANNOT BE EMPTY",
+      });
+    if (!form.training_plan_id)
+      return setMessage({
+        type: "error",
+        text: "Module / Training Plan SHOULD BE SELECTED",
+      });
+    if (!form.district_id)
+      return setMessage({ type: "error", text: "District CANNOT be empty" });
     if (!form.financial_year)
       return setMessage({ type: "error", text: "Select financial year" });
     if (
@@ -511,23 +519,7 @@ export default function SmmuCreatePartnerTargets() {
     )
       return setMessage({ type: "error", text: "Enter valid batch count" });
 
-    if (form.target_type === "MODULE") {
-      if (!form.training_plan_id)
-        return setMessage({
-          type: "error",
-          text: "Select module for MODULE target",
-        });
-      if (!form.district_id)
-        return setMessage({
-          type: "error",
-          text: "Select district for MODULE target",
-        });
-    }
-    if (form.target_type === "DISTRICT" && !form.district_id)
-      return setMessage({
-        type: "error",
-        text: "Select district for DISTRICT target",
-      });
+    setSaving(true);
 
     setSaving(true);
     try {
@@ -900,31 +892,6 @@ export default function SmmuCreatePartnerTargets() {
                     </select>
                   </div>
 
-                  <div style={{ marginBottom: 12 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: 6,
-                      }}
-                      className="palette-label"
-                    >
-                      Target type
-                    </label>
-                    <select
-                      name="target_type"
-                      value={form.target_type}
-                      onChange={handleChange}
-                      style={styles.formSelect}
-                      required
-                      className="palette-input"
-                    >
-                      <option value="MODULE">Module (module + district)</option>
-                      <option value="DISTRICT">District (district only)</option>
-                      <option value="THEME">Theme (theme-wise)</option>
-                    </select>
-                  </div>
-
                   {showModuleRow && (
                     <div style={{ marginBottom: 12 }}>
                       <label
@@ -943,6 +910,7 @@ export default function SmmuCreatePartnerTargets() {
                         onChange={handleChange}
                         style={styles.formSelect}
                         className="palette-input"
+                        required
                       >
                         <option value="">-- select module --</option>
                         {plans.map((m) => {
@@ -997,6 +965,7 @@ export default function SmmuCreatePartnerTargets() {
                         onChange={handleChange}
                         style={styles.formSelect}
                         className="palette-input"
+                        required
                       >
                         <option value="">-- select district --</option>
                         {districts.length ? (
@@ -1092,11 +1061,9 @@ export default function SmmuCreatePartnerTargets() {
                       className="palette-input"
                     >
                       <option value="">-- select financial year --</option>
-                      <option>2021-22</option>
-                      <option>2022-23</option>
-                      <option>2023-24</option>
                       <option>2024-25</option>
                       <option>2025-26</option>
+                      <option>2026-27</option>
                     </select>
                   </div>
 
