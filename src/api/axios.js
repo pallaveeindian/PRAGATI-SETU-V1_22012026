@@ -634,7 +634,7 @@ export const TMS_API = {
   tpBatchCostBreakups: makeCrud("/tms/tp-batch-cost-breakups/"),
   batchCosts: makeCrud("/tms/batch-costs/"),
   batchMedia: makeCrud("/tms/batch-media/"),
-  batchClosureRequests: makeCrud("/tms/batch-closure-requests/"),
+  batchClosureRequest: makeCrud("/tms/batch-closure-request/"),
   trClosures: makeCrud("/tms/tr-closures/"),
   batchParticipantCertificates: makeCrud(
     "/tms/batch-participant-certificates/",

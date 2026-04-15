@@ -446,9 +446,9 @@ export default function DmmuTrReview() {
         }
       }
 
-      // 2) Update training request status → ONGOING
+      // 2) Update training request status → COMPLETED
       await TMS_API.trainingRequests.partialUpdate(requestId, {
-        status: "ONGOING",
+        status: "COMPLETED",
       });
 
       // 3) Update each batch status based on start_date

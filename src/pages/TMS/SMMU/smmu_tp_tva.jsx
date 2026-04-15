@@ -26,6 +26,7 @@ export default function SmmuTargetAchievement() {
   // Dropdown Options State
   const [districts, setDistricts] = useState([]);
   const [plans, setPlans] = useState([]);
+  const [userThemes, setUserThemes] = useState(null);
 
   // Pagination States
   const [currentPage, setCurrentPage] = useState(1);
@@ -77,6 +78,7 @@ export default function SmmuTargetAchievement() {
         .list({ expert, limit: 200 })
         .then(async (themesResp) => {
           const themeResults = themesResp?.data?.results || [];
+          setUserThemes(themeResults.map((th) => th.theme_name));
           const collected = [];
           for (const th of themeResults) {
             try {
@@ -137,6 +139,11 @@ export default function SmmuTargetAchievement() {
     const q = searchPartner.trim().toLowerCase();
     return processedData.filter((r) => {
       if (q && !r.partnerName.toLowerCase().includes(q)) return false;
+      // SURGICAL ADDITION: Ensure SMMU experts ONLY see their themes
+      if (roleKey === "smmu") {
+        if (userThemes === null) return false; // Prevent flickering before themes load
+        if (!userThemes.includes(r.theme)) return false;
+      }
       return true;
     });
   }, [processedData, searchPartner]);

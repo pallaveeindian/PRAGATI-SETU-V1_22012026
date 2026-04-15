@@ -795,18 +795,6 @@ export default function TrainingRequestDetail() {
                         </div>
                       )}
 
-                    {isDmmu && (tr.status || "").toUpperCase() === "REVIEW" && (
-                      <div className="action-box">
-                        <strong>Note:</strong> Request is under REVIEW.
-                        <button
-                          className="btn-primary"
-                          onClick={() => navigate(`/tms/dmmu/tr-closure/${id}`)}
-                        >
-                          Go to DMMU Closure
-                        </button>
-                      </div>
-                    )}
-
                     {isTP && (tr.status || "").toUpperCase() === "REJECTED" && (
                       <div className="action-box">
                         <strong>Note:</strong> Request is REJECTED.
@@ -827,15 +815,6 @@ export default function TrainingRequestDetail() {
                         onClick={() => navigate(`/tms/tp/batches/create/${id}`)}
                       >
                         Create Batches
-                      </button>
-                    )}
-
-                    {isTP && (tr.status || "").toUpperCase() === "REVIEW" && (
-                      <button
-                        className="btn-primary"
-                        onClick={() => navigate(`/tms/tp/tr-closure/${id}`)}
-                      >
-                        Close Training Request
                       </button>
                     )}
 

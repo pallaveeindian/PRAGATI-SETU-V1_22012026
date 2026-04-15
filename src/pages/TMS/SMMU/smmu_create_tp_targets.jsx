@@ -339,6 +339,7 @@ export default function SmmuCreatePartnerTargets() {
       const offset = (page - 1) * pageSize;
       const res = await TMS_API.trainingPartnerTargets.list({
         limit: pageSize,
+        created_by: effectiveUserId,
         offset,
       });
       const data = res?.data ?? res;

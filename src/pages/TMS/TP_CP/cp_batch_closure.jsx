@@ -53,24 +53,6 @@ export default function CpBatchClosure() {
   const [submitting, setSubmitting] = useState(false);
   const [submitMsg, setSubmitMsg] = useState("Submitting closure request…");
 
-  // costing form
-  const [centreCost, setCentreCost] = useState("");
-  const [hostelCost, setHostelCost] = useState("");
-  const [foodingCost, setFoodingCost] = useState("");
-  const [dressesCost, setDressesCost] = useState("");
-  const [studyMaterialCost, setStudyMaterialCost] = useState("");
-
-  const totalCost = useMemo(() => {
-    const n = (v) => (v ? parseFloat(v) || 0 : 0);
-    const sum =
-      n(centreCost) +
-      n(hostelCost) +
-      n(foodingCost) +
-      n(dressesCost) +
-      n(studyMaterialCost);
-    return sum.toFixed(2);
-  }, [centreCost, hostelCost, foodingCost, dressesCost, studyMaterialCost]);
-
   // compute date list from batch start_date to end_date
   const dateList = useMemo(() => {
     if (!batch?.start_date || !batch?.end_date) return [];
@@ -121,24 +103,22 @@ export default function CpBatchClosure() {
     }
   }
 
-  // check if closure request already exists for this batch
+  // check if media already exists for this batch
   async function checkExistingClosure() {
     if (!batchId) return;
     setCheckingClosure(true);
     try {
-      const resp = await api.get(
-        `/tms/batch-closure-requests/?batch=${batchId}`,
-      );
+      // SURGICAL CHANGE: Now we check if media was uploaded
+      const resp = await api.get(`/tms/batch-media/?batch=${batchId}`);
       const results = resp?.data?.results || [];
       setClosureExists(results.length > 0);
     } catch (e) {
-      console.error("cp batch closure: check existing closure failed", e);
+      console.error("cp batch closure: check existing media failed", e);
       setClosureExists(false);
     } finally {
       setCheckingClosure(false);
     }
   }
-
   useEffect(() => {
     fetchBatch();
     checkExistingClosure();
@@ -187,21 +167,13 @@ export default function CpBatchClosure() {
     e.preventDefault();
     if (!batchId || !user?.id) return;
 
-    // simple validation: at least one media row with file OR some costing
+    // simple validation: at least one media row with file
     const hasAnyFile = Object.values(mediaByDate || {})
       .flat()
       .some((r) => r.file);
-    const hasAnyCost =
-      centreCost ||
-      hostelCost ||
-      foodingCost ||
-      dressesCost ||
-      studyMaterialCost;
 
-    if (!hasAnyFile && !hasAnyCost) {
-      alert(
-        "Please upload at least one media file or enter costing details before submitting.",
-      );
+    if (!hasAnyFile) {
+      alert("Please upload at least one media file before submitting.");
       return;
     }
 
@@ -221,7 +193,6 @@ export default function CpBatchClosure() {
           formData.append("category", r.category || "OTHER");
           formData.append("file", r.file);
           if (r.notes) formData.append("notes", r.notes);
-          // NEW fields
           formData.append("created_by", String(user.id));
           formData.append("is_active", "1");
           mediaPayloads.push(formData);
@@ -232,54 +203,18 @@ export default function CpBatchClosure() {
         await api.post("/tms/batch-media/", fd);
       }
 
-      // 2) POST costing (even if all zeros, if user touched costing)
-      setSubmitMsg("Saving batch costing…");
+      // SURGICAL CHANGE: Removed steps 2 (Costing) and 3 (Closure Request)
 
-      const n = (v) => (v ? parseFloat(v) || 0 : 0);
-      const payloadCost = {
-        batch: batchId,
-        centre_cost: n(centreCost).toFixed(2),
-        hostel_cost: n(hostelCost).toFixed(2),
-        fooding_cost: n(foodingCost).toFixed(2),
-        dresses_cost: n(dressesCost).toFixed(2),
-        study_material_cost: n(studyMaterialCost).toFixed(2),
-        total_cost: parseFloat(totalCost || "0").toFixed(2),
-        // NEW fields
-        created_by: user.id,
-        is_active: 1,
-      };
-
-      const costResp = await api.post(
-        "/tms/tp-batch-cost-breakups/",
-        payloadCost,
+      alert(
+        "Batch media uploaded successfully. Your Training Partner Org will now process the closure.",
       );
-      const costId = costResp?.data?.id;
-      if (!costId) {
-        throw new Error("Could not create batch costing record.");
-      }
-
-      // 3) POST closure request
-      setSubmitMsg("Creating closure request…");
-
-      await api.post("/tms/batch-closure-requests/", {
-        batch: batchId,
-        batch_costing: costId,
-        certificates_issued: false,
-        // NEW fields
-        created_by: user.id,
-        is_active: 1,
-      });
-
-      alert("Batch closure request submitted successfully.");
       navigate(-1);
     } catch (e) {
-      console.error("cp batch closure submit failed", e);
-      alert(
-        "Failed to submit batch closure request. Please check inputs and try again.",
-      );
+      console.error("cp batch media submit failed", e);
+      alert("Failed to upload batch media. Please try again.");
     } finally {
       setSubmitting(false);
-      setSubmitMsg("Submitting closure request…");
+      setSubmitMsg("Uploading media…");
     }
   }
 
@@ -336,8 +271,8 @@ export default function CpBatchClosure() {
                   fontSize: 14,
                 }}
               >
-                A closure request has already been submitted for this batch. You
-                cannot send another closure request from this screen.
+                Media has already been uploaded. This batch is now under the
+                closure process by your Training Partner Org.
               </div>
             ) : (
               <form onSubmit={handleSubmit}>
@@ -556,147 +491,6 @@ export default function CpBatchClosure() {
                   )}
                 </div>
 
-                {/* 2. Batch Costing section */}
-                <div
-                  style={{
-                    marginBottom: 20,
-                    padding: 16,
-                    borderRadius: 8,
-                    background: "#ffffff",
-                    border: "1px solid #e5e7eb",
-                  }}
-                >
-                  <h3 style={{ marginTop: 0 }}>Batch Costing</h3>
-                  <p className="muted" style={{ fontSize: 13 }}>
-                    Enter the total cost for each head. The total batch cost is
-                    calculated automatically.
-                  </p>
-
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(220px, 1fr))",
-                      gap: 12,
-                      marginBottom: 8,
-                    }}
-                  >
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginBottom: 4,
-                          display: "block",
-                        }}
-                      >
-                        Total Centre Maintenance Cost
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={centreCost}
-                        onChange={(e) => setCentreCost(e.target.value)}
-                        className="form-control"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginBottom: 4,
-                          display: "block",
-                        }}
-                      >
-                        Hostel Charges
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={hostelCost}
-                        onChange={(e) => setHostelCost(e.target.value)}
-                        className="form-control"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginBottom: 4,
-                          display: "block",
-                        }}
-                      >
-                        Total Fooding Cost
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={foodingCost}
-                        onChange={(e) => setFoodingCost(e.target.value)}
-                        className="form-control"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginBottom: 4,
-                          display: "block",
-                        }}
-                      >
-                        Total Dresses Cost
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={dressesCost}
-                        onChange={(e) => setDressesCost(e.target.value)}
-                        className="form-control"
-                      />
-                    </div>
-                    <div>
-                      <label
-                        style={{
-                          fontSize: 12,
-                          fontWeight: 600,
-                          marginBottom: 4,
-                          display: "block",
-                        }}
-                      >
-                        Study Material Charges
-                      </label>
-                      <input
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        value={studyMaterialCost}
-                        onChange={(e) => setStudyMaterialCost(e.target.value)}
-                        className="form-control"
-                      />
-                    </div>
-                  </div>
-
-                  <div
-                    style={{
-                      marginTop: 8,
-                      paddingTop: 8,
-                      borderTop: "1px solid #e5e7eb",
-                    }}
-                  >
-                    <strong>Total Batch Cost:</strong>{" "}
-                    <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
-                      ₹ {totalCost}
-                    </span>
-                  </div>
-                </div>
-
                 {/* Submit */}
                 <div
                   style={{
@@ -720,7 +514,7 @@ export default function CpBatchClosure() {
                   >
                     {submitting
                       ? submitMsg || "Submitting closure request…"
-                      : "Submit Closure Request"}
+                      : "Upload Batch Media"}
                   </button>
                 </div>
               </form>
