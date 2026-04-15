@@ -766,16 +766,37 @@ export default function TrainingBatchList() {
                             View
                           </button>
 
-                          {String(b.status).toUpperCase() === "COMPLETED" && (
-                            <button
-                              className="btn-sm btn-flat"
-                              onClick={() =>
-                                navigate(`/tms/batch-certificate/${b.id}`)
-                              }
-                            >
-                              Closure
-                            </button>
-                          )}
+                          {/* ── TRAINING PARTNER → TP closure form ── */}
+                          {role === "training_partner" &&
+                            ["COMPLETED", "REVIEW"].includes(
+                              String(b.status).toUpperCase(),
+                            ) && (
+                              <button
+                                className="btn-sm btn-flat"
+                                onClick={() =>
+                                  navigate(`/tms/tp/tr-closure/${b.id}`)
+                                }
+                              >
+                                Closure
+                              </button>
+                            )}
+
+                          {/* ── BMMU / DMMU / SMMU → certificates page ── */}
+                          {["bmmu", "dmmu", "smmu"].includes(role) &&
+                            ["COMPLETED", "REVIEW", "CLOSED"].includes(
+                              String(b.status).toUpperCase(),
+                            ) && (
+                              <button
+                                className="btn-sm btn-flat"
+                                onClick={() =>
+                                  navigate(`/tms/batch-certificate/${b.id}`)
+                                }
+                              >
+                                Closure
+                              </button>
+                            )}
+
+                          {/* all other roles: no Closure button */}
                         </td>
                       </tr>
                     ))

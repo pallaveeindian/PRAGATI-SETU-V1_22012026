@@ -1,10 +1,25 @@
 // src/pages/TMS/TP/tp_tr_closure.jsx
-import React, { useContext, useEffect, useRef, useState } from "react";
+import React, { useContext, useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
-import { getCanonicalRole } from "../../../utils/roleUtils";
+import { getCanonicalRole, ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils";
+
+/* ─── tiny helpers ─────────────────────────────────────────── */
+function InfoItem({ label, value, children }) {
+  return (
+    <div className="info-item">
+      <span className="info-label">{label}</span>
+      <span className="info-value">{children ?? value ?? "—"}</span>
+    </div>
+  );
+}
+
+function fmt(val) {
+  const n = parseFloat(val);
+  return isNaN(n) ? "0.00" : n.toFixed(2);
+}
 
 function fmtDate(iso) {
   try {
@@ -16,415 +31,827 @@ function fmtDate(iso) {
   }
 }
 
+function normalizeMediaUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("/media/")) return url;
+  if (url.startsWith("http")) {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.pathname;
+    } catch (e) {
+      return url;
+    }
+  }
+  return url;
+}
+
+/* ═══════════════════════════════════════════════════════════ */
+
 export default function TpTrainingRequestClosure() {
   const { user } = useContext(AuthContext) || {};
-  const { id: requestId } = useParams();
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Batch Closure";
+  const { id: batchId } = useParams();
   const navigate = useNavigate();
-  const role = getCanonicalRole(user || {});
-  
+
+  /* ── layout ── */
   const [navCollapsed, setNavCollapsed] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [batches, setBatches] = useState([]);
-  const [trInfo, setTrInfo] = useState(null);
-  
-  // State for tracking closures submitted
-  const [closures, setClosures] = useState({});
-  const [submittingBatch, setSubmittingBatch] = useState(null);
 
-  // Dynamic form state per batch
-  const [costForms, setCostForms] = useState({});
+  /* ── async states ── */
+  const [loading, setLoading] = useState(true);
+  const [submitting, setSubmitting] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [submitError, setSubmitError] = useState(null);
+  const [submitSuccess, setSubmitSuccess] = useState(false);
+  const [mediaPreviewSrc, setMediaPreviewSrc] = useState(null);
 
-  const inFlightRef = useRef(false);
+  /* ── data ── */
+  const [batch, setBatch] = useState(null);
 
-  /* ---------------- 1. Fetch TR Info ---------------- */
-  useEffect(() => {
-    async function fetchTr() {
-      if (!requestId) return;
-      try {
-        const resp = await api.get(`/tms/training-requests/${requestId}/detail/`);
-        setTrInfo(resp?.data || null);
-      } catch (e) {
-        console.error("fetch training request failed", e);
-      }
-    }
-    fetchTr();
-  }, [requestId]);
+  /* ── form state ── */
+  const [isExposureVisit, setIsExposureVisit] = useState(false);
+  const [exposureVisitCost, setExposureVisitCost] = useState("");
+  const [isFieldVisit, setIsFieldVisit] = useState(false);
+  const [fieldVisitCost, setFieldVisitCost] = useState("");
 
-  /* ---------------- 2. Fetch Batches & Closures ---------------- */
-  async function fetchData() {
-    if (!requestId || !user?.id) return;
-    if (inFlightRef.current) return;
+  // { [batchParticipantRowId]: { hra: string, ta_da: string, total_cost: string } }
+  const [costs, setCosts] = useState({});
 
-    inFlightRef.current = true;
+  const initializedRef = useRef(false);
+
+  /* ═══════════════════════════════════════════════════════════
+     FETCH
+  ═══════════════════════════════════════════════════════════ */
+  async function fetchBatch(redirectIfClosed = true) {
     setLoading(true);
+    setFetchError(null);
     try {
-      // Fetch Batches
-      const bResp = await TMS_API.batches.list({ request: requestId, page_size: 500 });
-      const batchList = bResp?.data?.results || bResp?.data || [];
-      setBatches(batchList);
+      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      const data = resp?.data;
 
-      // Fetch Closure Requests to lock UI
-      const cResp = await api.get(`/tms/batch-closure-requests/?batch__request=${requestId}`);
-      const closureList = cResp?.data?.results || cResp?.data || [];
-      const closureMap = {};
-      closureList.forEach(c => {
-        closureMap[c.batch] = c; // Maps batch ID to its closure request
-      });
-      setClosures(closureMap);
+      if (!data) throw new Error("Empty response");
 
-      // Initialize Cost Forms for Batches without closures
-      const initialForms = {};
-      batchList.forEach(b => {
-        if (!closureMap[b.id]) {
-          const parts = {};
-          
-          // Successful Beneficiaries
-          (b.beneficiary_participations || []).forEach(p => {
-            if (p.attended) parts[`BENEFICIARY_${p.id}`] = { hra: "", tada: "", type: "BENEFICIARY", obj: p };
-          });
-          
-          // Successful Trainers
-          (b.trainer_participations || []).forEach(p => {
-            if (p.attended) parts[`TRAINER_${p.id}`] = { hra: "", tada: "", type: "TRAINER", obj: p };
-          });
+      setBatch(data);
 
-          initialForms[b.id] = {
-            participants: parts,
-            visits: { is_exposure: false, exp_cost: "", is_field: false, field_cost: "" }
-          };
-        }
-      });
-      setCostForms(prev => ({ ...prev, ...initialForms }));
+      // ── redirect if already closed ──
+      if (redirectIfClosed && data?.status === "CLOSED") {
+        navigate(`/tms/batch-certificate/${batchId}`, { replace: true });
+        return null;
+      }
 
-    } catch (e) {
-      console.error("fetch batches/closures failed", e);
+      // ── pre-fill visit toggles from existing BatchCost ──
+      if (data?.batch_costing) {
+        const bc = data.batch_costing;
+        setIsExposureVisit(!!bc.is_exposure_visit);
+        setExposureVisitCost(String(bc.exposure_visit_cost ?? "0"));
+        setIsFieldVisit(!!bc.is_field_visit);
+        setFieldVisitCost(String(bc.field_visit_cost ?? "0"));
+      }
+
+      // ── pre-fill per-participant costs from existing TPBatchCostBreakup rows ──
+      if (data?.participant_costs?.length) {
+        const map = {};
+        data.participant_costs.forEach((pc) => {
+          // batch_beneficiary / batch_trainer are IDs of the through-table rows
+          const key = pc.batch_beneficiary ?? pc.batch_trainer;
+          if (key != null) {
+            map[key] = {
+              hra: String(pc.hra ?? "0"),
+              ta_da: String(pc.ta_da ?? "0"),
+              total_cost: String(pc.total_cost ?? "0"),
+            };
+          }
+        });
+        setCosts(map);
+      }
+
+      return data;
+    } catch {
+      setFetchError("Failed to load batch details. Please refresh the page.");
+      return null;
     } finally {
       setLoading(false);
-      inFlightRef.current = false;
     }
   }
 
   useEffect(() => {
-    fetchData();
+    fetchBatch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestId]);
+  }, [batchId]);
 
+  /* ═══════════════════════════════════════════════════════════
+     DERIVED DATA EXTRACTIONS
+  ═══════════════════════════════════════════════════════════ */
+  const trainingType = batch?.request?.training_type; // 'BENEFICIARY' | 'TRAINER'
+  const alreadySubmitted = Boolean(batch?.batch_closing);
+  const tp = batch?.request?.training_plan || {};
+  const req = batch?.request || {};
+  const centre = batch?.centre || {};
 
-  /* ---------------- Form Handlers ---------------- */
-  const handlePartCostChange = (batchId, partKey, field, val) => {
-    setCostForms(prev => ({
-      ...prev,
-      [batchId]: {
-        ...prev[batchId],
-        participants: {
-          ...prev[batchId].participants,
-          [partKey]: {
-            ...prev[batchId].participants[partKey],
-            [field]: val
-          }
-        }
+  const successfulParticipants = useMemo(() => {
+    if (!batch) return [];
+    
+    // Map Beneficiaries
+    if (trainingType === "BENEFICIARY") {
+      return (batch.beneficiary_participations || []).filter(bb => {
+        if (!bb.is_active) return false;
+        // Lookup summary using the through-table ID
+        const summary = (batch.beneficiary_summaries || []).find(s => s.batch_beneficiary === bb.id);
+        return summary?.is_successful === true;
+      }).map(bb => {
+        // Resolve full beneficiary info from array
+        const fullBen = (batch.beneficiary || []).find(b => b.id === bb.beneficiary) || {};
+        const summary = (batch.beneficiary_summaries || []).find(s => s.batch_beneficiary === bb.id);
+        return { 
+          ...bb, 
+          display_name: fullBen.member_name || `Beneficiary #${bb.beneficiary}`,
+          attendance_pct: summary?.attendance_percentage || "0.00"
+        };
+      });
+    }
+
+    // Map Trainers
+    if (trainingType === "TRAINER") {
+      return (batch.trainer_participations || []).filter(bt => bt.is_active && bt.attended === true).map(bt => {
+        const fullTr = (batch.trainer || []).find(t => t.id === bt.trainer) || {};
+        return { 
+          ...bt, 
+          display_name: fullTr.full_name || `Trainer #${bt.trainer}`,
+          attendance_pct: "100.00" 
+        };
+      });
+    }
+    return [];
+  }, [batch, trainingType]);
+
+  /* ── initialize empty cost rows (edit mode only, runs once) ── */
+  useEffect(() => {
+    if (alreadySubmitted) return;
+    if (initializedRef.current) return;
+    if (successfulParticipants.length === 0) return;
+
+    initializedRef.current = true;
+    const init = {};
+    successfulParticipants.forEach((p) => {
+      init[p.id] = { hra: "", ta_da: "", total_cost: "" };
+    });
+    setCosts(init);
+  }, [successfulParticipants, alreadySubmitted]);
+
+  /* ═══════════════════════════════════════════════════════════
+     COST HANDLERS
+  ═══════════════════════════════════════════════════════════ */
+  function handleCostChange(pid, field, raw) {
+    const value = raw.replace(/[^0-9.]/g, "");
+    setCosts((prev) => {
+      const row = {
+        ...(prev[pid] || { hra: "", ta_da: "", total_cost: "" }),
+        [field]: value,
+      };
+      const hra = parseFloat(row.hra) || 0;
+      const taDa = parseFloat(row.ta_da) || 0;
+      row.total_cost = (hra + taDa).toFixed(2);
+      return { ...prev, [pid]: row };
+    });
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     COMPUTED TOTALS
+  ═══════════════════════════════════════════════════════════ */
+  const participantSubtotal = useMemo(() => {
+    let t = 0;
+    Object.values(costs).forEach((c) => {
+      t += parseFloat(c.total_cost) || 0;
+    });
+    return t.toFixed(2);
+  }, [costs]);
+
+  const grandTotal = useMemo(() => {
+    let t = parseFloat(participantSubtotal) || 0;
+    if (isExposureVisit) t += parseFloat(exposureVisitCost) || 0;
+    if (isFieldVisit) t += parseFloat(fieldVisitCost) || 0;
+    return t.toFixed(2);
+  }, [participantSubtotal, isExposureVisit, exposureVisitCost, isFieldVisit, fieldVisitCost]);
+
+  /* ═══════════════════════════════════════════════════════════
+     SUBMIT
+  ═══════════════════════════════════════════════════════════ */
+  async function handleSubmit() {
+    setSubmitError(null);
+
+    // ── validations ──
+    if (successfulParticipants.length === 0) {
+      setSubmitError("No successful participants found for this batch.");
+      return;
+    }
+
+    for (const p of successfulParticipants) {
+      const c = costs[p.id] || {};
+      if (c.hra === "" || c.ta_da === "") {
+        setSubmitError("Please fill in HRA and TA/DA for every participant before submitting.");
+        return;
       }
-    }));
-  };
+    }
 
-  const handleVisitChange = (batchId, field, val) => {
-    setCostForms(prev => ({
-      ...prev,
-      [batchId]: {
-        ...prev[batchId],
-        visits: {
-          ...prev[batchId].visits,
-          [field]: val
-        }
-      }
-    }));
-  };
+    if (isExposureVisit && (exposureVisitCost === "" || parseFloat(exposureVisitCost) <= 0)) {
+      setSubmitError("Please enter a valid Exposure Visit Cost (must be > 0).");
+      return;
+    }
+    if (isFieldVisit && (fieldVisitCost === "" || parseFloat(fieldVisitCost) <= 0)) {
+      setSubmitError("Please enter a valid Field Visit Cost (must be > 0).");
+      return;
+    }
 
-  /* ---------------- Submit Batch Closure ---------------- */
-  const submitBatchClosure = async (batchId) => {
-    const form = costForms[batchId];
-    if (!form) return;
+    const trainingRequestId = batch?.request?.id;
+    if (!trainingRequestId) {
+      setSubmitError("Could not determine Training Request ID. Please contact admin.");
+      return;
+    }
 
-    if (!window.confirm("Are you sure you want to submit the closure request for this batch? This action cannot be undone.")) return;
-
-    setSubmittingBatch(batchId);
+    setSubmitting(true);
     try {
-      // 1. Submit Line-Item Costs (TPBatchCostBreakup)
-      const partKeys = Object.keys(form.participants);
-      for (const key of partKeys) {
-        const pData = form.participants[key];
-        const hraAmt = parseFloat(pData.hra) || 0;
-        const tadaAmt = parseFloat(pData.tada) || 0;
-        
+      // 1. Submit Line-Item Costs
+      for (const p of successfulParticipants) {
+        const c = costs[p.id] || { hra: "0", ta_da: "0" };
         await api.post('/tms/tp-batch-cost-breakups/', {
-          batch: batchId,
-          batch_beneficiary: pData.type === 'BENEFICIARY' ? pData.obj.id : null,
-          batch_trainer: pData.type === 'TRAINER' ? pData.obj.id : null,
-          participant_type: pData.type,
-          hra: hraAmt,
-          ta_da: tadaAmt,
+          batch: parseInt(batchId, 10),
+          batch_beneficiary: trainingType === 'BENEFICIARY' ? p.id : null,
+          batch_trainer: trainingType === 'TRAINER' ? p.id : null,
+          participant_type: trainingType,
+          hra: parseFloat(c.hra || 0),
+          ta_da: parseFloat(c.ta_da || 0),
           is_active: 1,
           created_by: user.id
         });
       }
 
-      // 2. Submit Master Invoice (BatchCost)
+      // 2. Submit Master Invoice (Backend auto-calculates grand_total)
       const costResp = await api.post('/tms/batch-costs/', {
-        batch: batchId,
-        training: requestId,
-        is_exposure_visit: form.visits.is_exposure,
-        exposure_visit_cost: form.visits.is_exposure ? (parseFloat(form.visits.exp_cost) || 0) : 0,
-        is_field_visit: form.visits.is_field,
-        field_visit_cost: form.visits.is_field ? (parseFloat(form.visits.field_cost) || 0) : 0,
+        batch: parseInt(batchId, 10),
+        training: trainingRequestId,
+        is_exposure_visit: isExposureVisit,
+        exposure_visit_cost: isExposureVisit ? parseFloat(exposureVisitCost || 0) : 0,
+        is_field_visit: isFieldVisit,
+        field_visit_cost: isFieldVisit ? parseFloat(fieldVisitCost || 0) : 0,
         is_active: 1,
         created_by: user.id
       });
-      
       const masterCostId = costResp.data.id;
 
       // 3. Submit Closure Request
       await api.post('/tms/batch-closure-requests/', {
-        batch: batchId,
+        batch: parseInt(batchId, 10),
         batch_costing: masterCostId,
         certificates_issued: false,
         is_active: 1,
         created_by: user.id
       });
 
-      alert(`Closure request for Batch #${batchId} submitted successfully.`);
-      fetchData(); // Refresh UI to lock the batch
+      // 4. Update Batch Status to REVIEW
+      await api.patch(`/tms/batches/${batchId}/`, {
+        status: "REVIEW",
+        updated_by: user.id
+      });
+
+      setSubmitSuccess(true);
+      
+      // Re-fetch to lock UI into read-only
+      const freshData = await fetchBatch(false);
+      if (freshData?.status === "CLOSED") {
+        navigate(`/tms/batch-certificate/${batchId}`, { replace: true });
+      }
     } catch (e) {
-      console.error("Batch closure submit failed", e);
-      alert("An error occurred while submitting the closure request. Please try again.");
+      const d = e?.response?.data;
+      const msg = d?.non_field_errors?.[0] || d?.detail || (typeof d === "object" ? Object.values(d).flat().join(" | ") : null) || "Submission failed. Please try again.";
+      setSubmitError(msg);
     } finally {
-      setSubmittingBatch(null);
+      setSubmitting(false);
     }
-  };
+  }
 
-  /* ---------------- Calculation Helpers ---------------- */
-  const getBatchGrandTotal = (batchId) => {
-    const form = costForms[batchId];
-    if (!form) return 0;
-    
-    let sum = 0;
-    Object.values(form.participants).forEach(p => {
-      sum += (parseFloat(p.hra) || 0) + (parseFloat(p.tada) || 0);
-    });
-    
-    if (form.visits.is_exposure) sum += parseFloat(form.visits.exp_cost) || 0;
-    if (form.visits.is_field) sum += parseFloat(form.visits.field_cost) || 0;
+  /* ═══════════════════════════════════════════════════════════
+     LOADING / ERROR SCREENS
+  ═══════════════════════════════════════════════════════════ */
+  if (loading) {
+    return (
+      <div className="app-shell">
+        <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} />
+        <div className="main-area" style={{ padding: 40, color: "#2b4e72" }}>
+          <div className="spinner-wrap">
+            <div className="spinner" />
+            <span>Loading comprehensive batch details…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
-    return sum.toFixed(2);
-  };
+  if (fetchError) {
+    return (
+      <div className="app-shell">
+        <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} />
+        <div className="main-area" style={{ padding: 40 }}>
+          <div className="alert alert-error">{fetchError}</div>
+        </div>
+      </div>
+    );
+  }
 
-  /* ---------------- Render ---------------- */
+  /* ═══════════════════════════════════════════════════════════
+     MAIN RENDER
+  ═══════════════════════════════════════════════════════════ */
   return (
     <div className="app-shell">
       <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} />
+
       <div className="main-area">
+        <div className="dashboard-header">
+          <h2 className="dashboard-title">{roleMessage}</h2>
+        </div>
+
         <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1200, margin: "20px auto" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
             
-            {/* Header */}
-            <div style={{ display: "flex", alignItems: "center", marginBottom: 20, gap: 8 }}>
-              <h2 style={{ margin: 0 }}>Batch Closures — TR #{requestId}</h2>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button className="btn btn-outline" onClick={() => navigate(-1)}>Back</button>
+            {/* ════════ STATUS BANNERS ════════ */}
+            {alreadySubmitted && !submitSuccess && (
+              <div className="alert alert-info">
+                ✅ Closure has already been submitted. Batch is under DMMU review. The data below is read-only.
+              </div>
+            )}
+            {submitSuccess && (
+              <div className="alert alert-success">
+                🎉 Batch closure submitted successfully! The batch is now under DMMU review.
+              </div>
+            )}
+
+            {/* ════════ BATCH & TRAINING PLAN DETAILS ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">📖 Training & Batch Overview</div>
+              <div className="info-grid">
+                <InfoItem label="Batch Code" value={batch?.code || `#${batchId}`} />
+                <InfoItem label="Status">
+                  <span className={`status-badge status-${String(batch?.status || "").toLowerCase()}`}>
+                    {batch?.status}
+                  </span>
+                </InfoItem>
+                <InfoItem label="Participant Type" value={trainingType} />
+                <InfoItem label="Batch Type" value={batch?.batch_type} />
+                <InfoItem label="Start Date" value={fmtDate(batch?.start_date)} />
+                <InfoItem label="End Date" value={fmtDate(batch?.end_date)} />
+                
+                <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2e8f0", margin: "8px 0" }} />
+                
+                <InfoItem label="Training Plan" value={tp?.training_name} />
+                <InfoItem label="Training Level" value={tp?.level_of_training} />
+                <InfoItem label="Training Type" value={tp?.type_of_training} />
+                <InfoItem label="No. of Days" value={tp?.no_of_days} />
+                <InfoItem label="District" value={req?.district?.district_name_en} />
+                <InfoItem label="Block" value={req?.block?.block_name_en} />
               </div>
             </div>
 
-            {/* TR Info Card */}
-            <div style={{ marginBottom: 20, padding: 16, borderRadius: 8, background: "#f8fafc", border: "1px solid #e2e8f0" }}>
-              {trInfo ? (
-                <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))", gap: 12 }}>
-                  <div><strong>Plan:</strong> {trInfo.training_plan?.training_name || "-"}</div>
-                  <div><strong>Type:</strong> {trInfo.training_type || "-"}</div>
-                  <div><strong>Status:</strong> <span style={{ fontWeight: 700, color: "#1d4ed8" }}>{trInfo.status || "-"}</span></div>
-                  <div><strong>District:</strong> {trInfo.district?.district_name_en || "-"}</div>
-                  <div><strong>Block:</strong> {trInfo.block?.block_name_en || "-"}</div>
+            {/* ════════ CENTRE DETAILS ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">🏢 Centre & Facilities</div>
+              <div className="info-grid">
+                <InfoItem label="Venue Name" value={centre?.venue_name} />
+                <InfoItem label="Centre Type" value={centre?.centre_type} />
+                <InfoItem label="Address" value={centre?.venue_address} />
+                <InfoItem label="Training Halls" value={`${centre?.training_hall_count || 0} (Capacity: ${centre?.training_hall_capacity || 0})`} />
+                <InfoItem label="Toilets / Bathrooms" value={centre?.toilets_bathrooms} />
+                <InfoItem label="Power & Water" value={centre?.power_water_facility} />
+              </div>
+              <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
+                <span className={`facility-badge ${centre?.medical_kit ? "yes" : "no"}`}>Medical Kit</span>
+                <span className={`facility-badge ${centre?.open_space ? "yes" : "no"}`}>Open Space</span>
+                <span className={`facility-badge ${centre?.field_visit_facility ? "yes" : "no"}`}>Field Visit</span>
+                <span className={`facility-badge ${centre?.transport_facility ? "yes" : "no"}`}>Transport</span>
+                <span className={`facility-badge ${centre?.dining_facility ? "yes" : "no"}`}>Dining Room</span>
+              </div>
+            </div>
+
+            {/* ════════ MASTER TRAINERS & SCHEDULES ════════ */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 20 }}>
+              <div className="cl-card">
+                <div className="cl-card-title">🧑‍🏫 Master Trainers</div>
+                {batch?.master_trainers?.length > 0 ? (
+                  <table className="table">
+                    <thead><tr><th>Name</th><th>Designation</th><th>Mobile</th></tr></thead>
+                    <tbody>
+                      {batch.master_trainers.map(mt => (
+                        <tr key={mt.id}>
+                          <td style={{fontWeight: 500}}>{mt.full_name}</td>
+                          <td>{mt.designation}</td>
+                          <td>{mt.mobile_no}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : <div className="empty-msg">No master trainers assigned.</div>}
+              </div>
+
+              <div className="cl-card">
+                <div className="cl-card-title">📅 Batch Schedules</div>
+                {batch?.schedules?.length > 0 ? (
+                  <table className="table">
+                    <thead><tr><th>Date</th><th>Start Time</th><th>Remarks</th></tr></thead>
+                    <tbody>
+                      {batch.schedules.map(s => (
+                        <tr key={s.id}>
+                          <td style={{fontWeight: 500}}>{fmtDate(s.schedule_date)}</td>
+                          <td>{s.start_time || "—"}</td>
+                          <td>{s.remarks || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : <div className="empty-msg">No schedules found.</div>}
+              </div>
+            </div>
+
+            {/* ════════ ATTENDANCE CSVs ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">📝 Daily Attendance Records</div>
+              {batch?.attendances?.length > 0 ? (
+                <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                  {batch.attendances.map(att => (
+                    <div key={att.id} style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: 12, background: "#f8fafc", minWidth: 160 }}>
+                      <div style={{ fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>Day: {fmtDate(att.date)}</div>
+                      {att.csv_upload ? (
+                        <a href={normalizeMediaUrl(att.csv_upload)} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#2563eb", textDecoration: "none", fontWeight: 500 }}>
+                          📥 Download CSV
+                        </a>
+                      ) : (
+                        <span style={{ fontSize: 13, color: "#94a3b8" }}>No CSV Uploaded</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : <div className="empty-msg">No attendance recorded.</div>}
+            </div>
+
+            {/* ════════ BATCH MEDIA GALLERY ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">📸 Batch Media (Photos & Docs)</div>
+              {batch?.batch_pictures?.length > 0 ? (
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                  {batch.batch_pictures.map(m => {
+                    const src = normalizeMediaUrl(m.file);
+                    const isImage = src && !src.toLowerCase().endsWith(".pdf");
+                    return (
+                      <div key={m.id} style={{ width: 140, background: "#f1f5f9", borderRadius: 8, overflow: "hidden", border: "1px solid #cbd5e1" }}>
+                        {isImage ? (
+                          <img src={src} alt={m.category} onClick={() => setMediaPreviewSrc(src)} style={{ width: "100%", height: 100, objectFit: "cover", cursor: "zoom-in" }} />
+                        ) : (
+                          <div onClick={() => window.open(src, "_blank")} style={{ height: 100, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "#e2e8f0" }}>
+                            <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>View PDF</span>
+                          </div>
+                        )}
+                        <div style={{ padding: "8px", fontSize: 12, textAlign: "center", fontWeight: 600, color: "#475569" }}>
+                          {m.category}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : <div className="empty-msg">No media uploaded by Contact Person.</div>}
+            </div>
+
+            {/* ════════ PARTICIPANTS COST TABLE ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">
+                💰 Successful Participants — Cost Breakup
+                <span className="count-badge">{successfulParticipants.length}</span>
+              </div>
+
+              {successfulParticipants.length === 0 ? (
+                <div className="empty-msg">
+                  No successful participants found (must have ≥80% attendance & not dropped out).
                 </div>
               ) : (
-                <div className="muted">Loading training request details...</div>
+                <div style={{ overflowX: "auto" }}>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Participant Name</th>
+                        <th>Attendance %</th>
+                        <th>HRA (₹)</th>
+                        <th>TA / DA (₹)</th>
+                        <th>Row Total (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {successfulParticipants.map((p, i) => {
+                        const c = costs[p.id] || { hra: "", ta_da: "", total_cost: "" };
+                        return (
+                          <tr key={p.id}>
+                            <td>{i + 1}</td>
+                            <td style={{ fontWeight: 600, color: "#0f172a" }}>{p.display_name}</td>
+                            <td>
+                              <span style={{ background: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: 20, fontSize: 12, fontWeight: "bold" }}>
+                                {p.attendance_pct}%
+                              </span>
+                            </td>
+                            {alreadySubmitted ? (
+                              /* ── READ-ONLY ── */
+                              <>
+                                <td>₹{fmt(c.hra)}</td>
+                                <td>₹{fmt(c.ta_da)}</td>
+                                <td><strong style={{color: "#1e40af"}}>₹{fmt(c.total_cost)}</strong></td>
+                              </>
+                            ) : (
+                              /* ── EDITABLE ── */
+                              <>
+                                <td>
+                                  <input
+                                    className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
+                                    value={c.hra} onChange={(e) => handleCostChange(p.id, "hra", e.target.value)}
+                                  />
+                                </td>
+                                <td>
+                                  <input
+                                    className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
+                                    value={c.ta_da} onChange={(e) => handleCostChange(p.id, "ta_da", e.target.value)}
+                                  />
+                                </td>
+                                <td>
+                                  <span className={parseFloat(c.total_cost) > 0 ? "computed-total computed-total--active" : "computed-total"}>
+                                    ₹{fmt(c.total_cost)}
+                                  </span>
+                                </td>
+                              </>
+                            )}
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td colSpan={5} style={{ textAlign: "right", fontWeight: 700, color: "#2b4e72", padding: "10px" }}>
+                          Participant Subtotal:
+                        </td>
+                        <td style={{ fontWeight: 700, color: "#2b4e72", padding: "10px", fontSize: 16 }}>
+                          ₹{fmt(participantSubtotal)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
               )}
             </div>
 
-            {/* Batches Loop */}
-            {loading ? (
-              <div className="table-spinner">Loading batches...</div>
-            ) : batches.length === 0 ? (
-              <div className="muted">No batches found for this training request.</div>
-            ) : (
-              batches.map(batch => {
-                const isClosed = !!closures[batch.id];
-                const form = costForms[batch.id];
-                const isCompleted = (batch.status || "").toUpperCase() === "COMPLETED";
-
-                return (
-                  <div key={batch.id} style={{ background: "#fff", border: "2px solid #e2e8f0", borderRadius: 10, padding: 20, marginBottom: 24, boxShadow: "0 4px 10px rgba(0,0,0,0.03)" }}>
-                    
-                    {/* Batch Header */}
-                    <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 16, borderBottom: "1px solid #e2e8f0", paddingBottom: 12 }}>
-                      <h3 style={{ margin: 0, color: "#0f172a" }}>
-                        Batch #{batch.id} {batch.code ? `(${batch.code})` : ""}
-                      </h3>
-                      <div style={{ display: "flex", gap: 12, alignItems: "center" }}>
-                        <div style={{ fontSize: 13, background: "#f1f5f9", padding: "4px 10px", borderRadius: 20 }}>
-                          Status: <strong>{batch.status}</strong>
-                        </div>
-                        {isClosed && (
-                          <div style={{ fontSize: 13, background: "#dcfce7", color: "#166534", padding: "4px 10px", borderRadius: 20, fontWeight: "bold" }}>
-                            ✅ Closure Submitted
-                          </div>
-                        )}
-                      </div>
+            {/* ════════ VISIT COSTS ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">🚙 Additional Visit Costs</div>
+              <div className="visit-grid">
+                <div className="visit-row">
+                  <label className="toggle-label">
+                    <input
+                      type="checkbox" checked={isExposureVisit} disabled={alreadySubmitted}
+                      onChange={(e) => {
+                        setIsExposureVisit(e.target.checked);
+                        if (!e.target.checked) setExposureVisitCost("");
+                      }}
+                    />
+                    <span>Exposure Visit Included</span>
+                  </label>
+                  {isExposureVisit && (
+                    <div className="visit-cost-field">
+                      <span className="visit-cost-label">Cost (₹):</span>
+                      {alreadySubmitted ? (
+                        <span className="computed-total computed-total--active">₹{fmt(exposureVisitCost)}</span>
+                      ) : (
+                        <input
+                          className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
+                          value={exposureVisitCost} onChange={(e) => setExposureVisitCost(e.target.value)}
+                        />
+                      )}
                     </div>
+                  )}
+                </div>
 
-                    {!isCompleted ? (
-                      <div style={{ padding: 16, background: "#fffbeb", color: "#b45309", borderRadius: 8, border: "1px solid #fde68a" }}>
-                        <strong>Note:</strong> This batch must be marked as COMPLETED before you can submit a closure request.
-                      </div>
-                    ) : isClosed ? (
-                      <div className="muted" style={{ padding: "20px 0", textAlign: "center" }}>
-                        The closure request for this batch has been submitted to the DMMU for review.
-                      </div>
-                    ) : form ? (
-                      <div>
-                        {/* Section 1: Participant Costs */}
-                        <h4 style={{ color: "#334155", marginBottom: 12 }}>1. Successful Participants Cost Breakup</h4>
-                        {Object.keys(form.participants).length === 0 ? (
-                          <div className="muted" style={{ padding: 12, background: "#f8fafc", borderRadius: 6 }}>
-                            No successful participants found for this batch.
-                          </div>
-                        ) : (
-                          <div style={{ overflowX: "auto", marginBottom: 24, border: "1px solid #e2e8f0", borderRadius: 8 }}>
-                            <table className="table table-compact" style={{ width: "100%", textAlign: "left", borderCollapse: "collapse" }}>
-                              <thead style={{ background: "#f1f5f9" }}>
-                                <tr>
-                                  <th style={{ padding: 10, borderBottom: "2px solid #cbd5e1" }}>Participant Name</th>
-                                  <th style={{ padding: 10, borderBottom: "2px solid #cbd5e1" }}>Role</th>
-                                  <th style={{ padding: 10, borderBottom: "2px solid #cbd5e1" }}>HRA Amount (₹)</th>
-                                  <th style={{ padding: 10, borderBottom: "2px solid #cbd5e1" }}>TA/DA Amount (₹)</th>
-                                  <th style={{ padding: 10, borderBottom: "2px solid #cbd5e1" }}>Total (₹)</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {Object.keys(form.participants).map(key => {
-                                  const pData = form.participants[key];
-                                  const name = pData.type === 'BENEFICIARY' ? pData.obj.beneficiary?.member_name : pData.obj.trainer?.full_name;
-                                  const rowTotal = (parseFloat(pData.hra) || 0) + (parseFloat(pData.tada) || 0);
+                <div className="visit-row">
+                  <label className="toggle-label">
+                    <input
+                      type="checkbox" checked={isFieldVisit} disabled={alreadySubmitted}
+                      onChange={(e) => {
+                        setIsFieldVisit(e.target.checked);
+                        if (!e.target.checked) setFieldVisitCost("");
+                      }}
+                    />
+                    <span>Field Visit Included</span>
+                  </label>
+                  {isFieldVisit && (
+                    <div className="visit-cost-field">
+                      <span className="visit-cost-label">Cost (₹):</span>
+                      {alreadySubmitted ? (
+                        <span className="computed-total computed-total--active">₹{fmt(fieldVisitCost)}</span>
+                      ) : (
+                        <input
+                          className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
+                          value={fieldVisitCost} onChange={(e) => setFieldVisitCost(e.target.value)}
+                        />
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
 
-                                  return (
-                                    <tr key={key} style={{ borderBottom: "1px solid #e2e8f0" }}>
-                                      <td style={{ padding: 10, fontWeight: 500 }}>{name || "-"}</td>
-                                      <td style={{ padding: 10 }}>{pData.type === 'BENEFICIARY' ? 'Trainee' : 'Trainer'}</td>
-                                      <td style={{ padding: 10 }}>
-                                        <input 
-                                          type="number" min="0" step="0.01" className="form-control" placeholder="0.00"
-                                          value={pData.hra} onChange={(e) => handlePartCostChange(batch.id, key, 'hra', e.target.value)}
-                                        />
-                                      </td>
-                                      <td style={{ padding: 10 }}>
-                                        <input 
-                                          type="number" min="0" step="0.01" className="form-control" placeholder="0.00"
-                                          value={pData.tada} onChange={(e) => handlePartCostChange(batch.id, key, 'tada', e.target.value)}
-                                        />
-                                      </td>
-                                      <td style={{ padding: 10, fontWeight: "bold", color: "#0f172a" }}>
-                                        ₹ {rowTotal.toFixed(2)}
-                                      </td>
-                                    </tr>
-                                  );
-                                })}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
+            {/* ════════ GRAND TOTAL CARD ════════ */}
+            <div className="grand-total-card">
+              <div className="grand-total-title">Master Invoice Summary</div>
 
-                        {/* Section 2: Visit Costs */}
-                        <h4 style={{ color: "#334155", marginBottom: 12 }}>2. Additional Batch Visit Costs</h4>
-                        <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))", gap: 16, marginBottom: 24 }}>
-                          
-                          {/* Exposure Visit */}
-                          <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8, background: form.visits.is_exposure ? "#eff6ff" : "#fff" }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, cursor: "pointer", marginBottom: form.visits.is_exposure ? 12 : 0 }}>
-                              <input 
-                                type="checkbox" 
-                                checked={form.visits.is_exposure} 
-                                onChange={(e) => handleVisitChange(batch.id, 'is_exposure', e.target.checked)}
-                                style={{ width: 16, height: 16 }}
-                              />
-                              Did this batch include an Exposure Visit?
-                            </label>
-                            {form.visits.is_exposure && (
-                              <div>
-                                <label style={{ fontSize: 13, color: "#64748b", display: "block", marginBottom: 4 }}>Exposure Visit Cost (₹)</label>
-                                <input 
-                                  type="number" min="0" step="0.01" className="form-control" placeholder="0.00" style={{ width: "100%" }}
-                                  value={form.visits.exp_cost} onChange={(e) => handleVisitChange(batch.id, 'exp_cost', e.target.value)}
-                                />
-                              </div>
-                            )}
-                          </div>
+              <div className="grand-total-row">
+                <span>Participant Costs ({successfulParticipants.length} participants)</span>
+                <span>₹{fmt(participantSubtotal)}</span>
+              </div>
 
-                          {/* Field Visit */}
-                          <div style={{ padding: 16, border: "1px solid #e2e8f0", borderRadius: 8, background: form.visits.is_field ? "#eff6ff" : "#fff" }}>
-                            <label style={{ display: "flex", alignItems: "center", gap: 8, fontWeight: 600, cursor: "pointer", marginBottom: form.visits.is_field ? 12 : 0 }}>
-                              <input 
-                                type="checkbox" 
-                                checked={form.visits.is_field} 
-                                onChange={(e) => handleVisitChange(batch.id, 'is_field', e.target.checked)}
-                                style={{ width: 16, height: 16 }}
-                              />
-                              Did this batch include a Field Visit?
-                            </label>
-                            {form.visits.is_field && (
-                              <div>
-                                <label style={{ fontSize: 13, color: "#64748b", display: "block", marginBottom: 4 }}>Field Visit Cost (₹)</label>
-                                <input 
-                                  type="number" min="0" step="0.01" className="form-control" placeholder="0.00" style={{ width: "100%" }}
-                                  value={form.visits.field_cost} onChange={(e) => handleVisitChange(batch.id, 'field_cost', e.target.value)}
-                                />
-                              </div>
-                            )}
-                          </div>
+              {isExposureVisit && (
+                <div className="grand-total-row">
+                  <span>Exposure Visit Cost</span>
+                  <span>₹{fmt(exposureVisitCost || 0)}</span>
+                </div>
+              )}
 
-                        </div>
+              {isFieldVisit && (
+                <div className="grand-total-row">
+                  <span>Field Visit Cost</span>
+                  <span>₹{fmt(fieldVisitCost || 0)}</span>
+                </div>
+              )}
 
-                        {/* Grand Total & Submit */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", padding: 16, background: "#f8fafc", borderRadius: 8, border: "1px solid #e2e8f0" }}>
-                          <div style={{ fontSize: 18 }}>
-                            Master Invoice Total: <strong style={{ color: "#1d4ed8" }}>₹ {getBatchGrandTotal(batch.id)}</strong>
-                          </div>
-                          <button 
-                            className="btn btn-primary" 
-                            style={{ padding: "10px 24px", fontSize: 15 }}
-                            disabled={submittingBatch === batch.id}
-                            onClick={() => submitBatchClosure(batch.id)}
-                          >
-                            {submittingBatch === batch.id ? "Submitting..." : "Submit Batch Closure"}
-                          </button>
-                        </div>
-                      </div>
-                    ) : null}
-                  </div>
-                );
-              })
+              <div className="grand-total-divider" />
+
+              <div className="grand-total-row grand-total-final">
+                <span>Grand Total</span>
+                <span>₹{fmt(grandTotal)}</span>
+              </div>
+            </div>
+
+            {/* ════════ SUBMIT ERROR ════════ */}
+            {submitError && (
+              <div className="alert alert-error">{submitError}</div>
             )}
 
+            {/* ════════ SUBMIT BUTTON ════════ */}
+            {!alreadySubmitted && (
+              <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24, marginBottom: 32 }}>
+                <button className="btn btn-outline" onClick={() => navigate(-1)} disabled={submitting}>
+                  ← Back
+                </button>
+                <button
+                  className="btn btn-primary btn-lg"
+                  onClick={handleSubmit}
+                  disabled={submitting || successfulParticipants.length === 0}
+                >
+                  {submitting ? "Submitting securely…" : "Submit Closure Request →"}
+                </button>
+              </div>
+            )}
+
+            {alreadySubmitted && (
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24, marginBottom: 32 }}>
+                <button className="btn btn-outline" onClick={() => navigate(-1)}>
+                  ← Back to Batches
+                </button>
+              </div>
+            )}
           </div>
         </main>
       </div>
 
+      {/* Lightbox for media preview */}
+      {mediaPreviewSrc && (
+        <div onClick={() => setMediaPreviewSrc(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 4000, cursor: "zoom-out" }}>
+          <img src={mediaPreviewSrc} alt="Preview" style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 6 }} />
+        </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════
+         STYLES
+      ════════════════════════════════════════════════════════ */}
       <style>{`
-        .form-control { border: 1px solid #cbd5e1; border-radius: 6px; padding: 8px 12px; transition: border-color 0.2s; }
-        .form-control:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        .btn { border-radius: 6px; padding: 6px 12px; font-weight: 500; cursor: pointer; border: none; transition: opacity 0.2s; }
-        .btn:hover:not(:disabled) { opacity: 0.9; }
-        .btn:disabled { cursor: not-allowed; opacity: 0.6; }
-        .btn-primary { background: #2563eb; color: #fff; }
-        .btn-outline { background: transparent; border: 1px solid #cbd5e1; color: #475569; }
-        .muted { color: #64748b; }
-        .table-spinner { padding: 20px; text-align: center; color: #64748b; }
+/* ── LAYOUT ── */
+.dashboard-header { display: flex; align-items: center; margin-bottom: 16px; }
+.dashboard-title { margin-top: 25px; margin-left: 30px; color: #2b4e72; }
+
+/* ── CARDS ── */
+.cl-card {
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.cl-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+/* ── INFO GRID ── */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.info-item { display: flex; flex-direction: column; gap: 3px; }
+.info-label { font-size: 12px; font-weight: 600; color: #64748b; }
+.info-value { font-size: 14px; color: #0f172a; font-weight: 500; }
+
+.facility-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
+.facility-badge.yes { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.facility-badge.no { background: #fee2e2; color: #991b1b; border-color: #fecaca; text-decoration: line-through; }
+
+/* ── COUNT BADGE ── */
+.count-badge { background: #3b82f6; color: #fff; border-radius: 12px; padding: 2px 10px; font-size: 13px; font-weight: 600; }
+
+/* ── TABLE ── */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table thead { background: #f1f5f9; color: #334155; }
+.table th { padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1; white-space: nowrap; }
+.table td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+.table tbody tr:hover { background: #f8fafc; }
+
+/* ── COST INPUT ── */
+.cost-input { width: 110px; padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-size: 14px; transition: all .2s; }
+.cost-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+.cost-input::-webkit-inner-spin-button, .cost-input::-webkit-outer-spin-button { opacity: 1; }
+
+/* ── COMPUTED TOTAL CHIP ── */
+.computed-total { display: inline-block; padding: 5px 10px; border-radius: 6px; background: #f1f5f9; color: #475569; font-weight: 600; font-size: 14px; min-width: 90px; text-align: right; }
+.computed-total--active { background: #dcfce7; color: #166534; }
+
+/* ── VISIT SECTION ── */
+.visit-grid { display: flex; flex-direction: column; gap: 14px; }
+.visit-row { display: flex; align-items: center; gap: 20px; flex-wrap: wrap; }
+.toggle-label { display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600; color: #334155; font-size: 14px; user-select: none; }
+.toggle-label input[type="checkbox"] { width: 16px; height: 16px; accent-color: #3b82f6; cursor: pointer; }
+.toggle-label input[type="checkbox"]:disabled { cursor: not-allowed; }
+.visit-cost-field { display: flex; align-items: center; gap: 10px; animation: fadeIn .2s ease; }
+.visit-cost-label { font-size: 13px; color: #64748b; font-weight: 600; }
+@keyframes fadeIn { from { opacity: 0; transform: translateX(-6px); } to { opacity: 1; transform: translateX(0); } }
+
+/* ── GRAND TOTAL CARD ── */
+.grand-total-card { background: linear-gradient(135deg, #1e293b, #334155); border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; color: #f8fafc; }
+.grand-total-title { font-size: 14px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+.grand-total-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 15px; opacity: 0.9; }
+.grand-total-divider { border-top: 1px solid rgba(255,255,255,0.2); margin: 10px 0; }
+.grand-total-final { font-size: 20px; font-weight: 800; opacity: 1; color: #fff; }
+
+/* ── ALERTS ── */
+.alert { padding: 14px 18px; border-radius: 8px; margin-bottom: 16px; font-weight: 500; font-size: 14px; }
+.alert-info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.alert-success { background: #ecfdf5; color: #15803d; border: 1px solid #bbf7d0; }
+.alert-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+/* ── BUTTONS ── */
+.btn { padding: 9px 18px; border-radius: 7px; cursor: pointer; border: none; font-weight: 600; font-size: 14px; transition: all .22s ease; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary { background: #2563eb; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(37,99,235,0.2); }
+.btn-outline { background: #fff; color: #475569; border: 1px solid #cbd5e1; }
+.btn-outline:hover:not(:disabled) { background: #f8fafc; }
+.btn-lg { padding: 11px 26px; font-size: 15px; }
+
+/* ── STATUS BADGES ── */
+.status-badge { padding: 3px 8px; border-radius: 5px; font-weight: 600; font-size: 12px; }
+.status-draft { background: #fef08a; color: #92400e; }
+.status-pending { background: #fecaca; color: #991b1b; }
+.status-ongoing { background: #fef08a; color: #92400e; }
+.status-scheduled { background: #bae6fd; color: #075985; }
+.status-completed { background: #dcfce7; color: #166534; }
+.status-review { background: #fed7aa; color: #9a3412; }
+.status-closed { background: #e2e8f0; color: #334155; }
+.status-rejected { background: #fecaca; color: #991b1b; }
+
+/* ── EMPTY STATE ── */
+.empty-msg { padding: 20px; color: #64748b; font-style: italic; text-align: center; }
+
+/* ── LOADING SPINNER ── */
+.spinner-wrap { display: flex; align-items: center; gap: 14px; font-size: 16px; color: #334155; font-weight: 600; }
+.spinner { width: 28px; height: 28px; border: 3px solid #cbd5e1; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .info-grid { grid-template-columns: repeat(2, 1fr); }
+  .cost-input { width: 85px; }
+  .grand-total-final { font-size: 17px; }
+}
+@media (max-width: 480px) {
+  .info-grid { grid-template-columns: 1fr; }
+  .visit-row { flex-direction: column; align-items: flex-start; }
+}
       `}</style>
     </div>
   );
