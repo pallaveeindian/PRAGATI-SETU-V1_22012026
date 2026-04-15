@@ -23,7 +23,7 @@ function loadJson(key) {
 function saveJson(key, payload) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch { }
+  } catch {}
 }
 
 function fmtDate(iso) {
@@ -502,7 +502,7 @@ export default function CpAdPerBatchEkyc() {
                       );
                       localStorage.removeItem(SCHEDULE_CACHE_PREFIX + batchId);
                       localStorage.removeItem(EKYC_CACHE_PREFIX + batchId);
-                    } catch { }
+                    } catch {}
                     setEkycRows([]);
                     fetchBatch(true);
                   }}
@@ -558,302 +558,333 @@ export default function CpAdPerBatchEkyc() {
                       </span>
                     </div>
                   </div>
-
-                  {/* Day 1 schedule */}
-                  <div
-                    style={{
-                      padding: 12,
-                      borderRadius: 6,
-                      background: "#eff6ff",
-                      marginBottom: 16,
-                    }}
-                  >
-                    <h4 style={{ marginTop: 0 }}>Day 1 Setup</h4>
-                    <div style={{ fontSize: 13, color: "#6b7280" }}>
-                      Today: <strong>{today}</strong>. Set the batch start time
-                      once. This time will be reused for all training days.
+                  {(batch.status || "").toUpperCase() === "SCHEDULED" ? (
+                    <div
+                      style={{
+                        padding: 16,
+                        background: "#fffbeb",
+                        color: "#b45309",
+                        borderRadius: 8,
+                        border: "1px solid #fde68a",
+                      }}
+                    >
+                      <h4 style={{ margin: "0 0 8px 0" }}>Batch Not Started</h4>
+                      <p style={{ margin: 0, fontSize: 14 }}>
+                        This batch is currently scheduled. Schedule setup and
+                        E-KYC verification will be available once the batch
+                        officially starts.
+                      </p>
                     </div>
-
-                    {loadingSchedule ? (
-                      <div className="table-spinner">
-                        Loading batch schedule…
-                      </div>
-                    ) : hasSchedule ? (
-                      <div style={{ marginTop: 8 }}>
-                        <div>
-                          <strong>Schedule Date:</strong>{" "}
-                          {schedule.schedule_date}
+                  ) : (
+                    <>
+                      {/* Day 1 schedule */}
+                      <div
+                        style={{
+                          padding: 12,
+                          borderRadius: 6,
+                          background: "#eff6ff",
+                          marginBottom: 16,
+                        }}
+                      >
+                        <h4 style={{ marginTop: 0 }}>Day 1 Setup</h4>
+                        <div style={{ fontSize: 13, color: "#6b7280" }}>
+                          Today: <strong>{today}</strong>. Set the batch start
+                          time once. This time will be reused for all training
+                          days.
                         </div>
-                        {/* <div>
+
+                        {loadingSchedule ? (
+                          <div className="table-spinner">
+                            Loading batch schedule…
+                          </div>
+                        ) : hasSchedule ? (
+                          <div style={{ marginTop: 8 }}>
+                            <div>
+                              <strong>Schedule Date:</strong>{" "}
+                              {schedule.schedule_date}
+                            </div>
+                            {/* <div>
                           <strong>Start Time:</strong>{" "}
                           {schedule.start_time?.slice(0, 5) || "—"} (24-hour)
                         </div> */}
 
-                        <div>
-                          <strong>Start Time:</strong>{" "}
-                          {formatTo12Hour(schedule.start_time)}
-                        </div>
-                        {schedule.remarks && (
-                          <div>
-                            <strong>Remarks:</strong> {schedule.remarks}
+                            <div>
+                              <strong>Start Time:</strong>{" "}
+                              {formatTo12Hour(schedule.start_time)}
+                            </div>
+                            {schedule.remarks && (
+                              <div>
+                                <strong>Remarks:</strong> {schedule.remarks}
+                              </div>
+                            )}
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 10 }}>
+                            <div
+                              style={{
+                                display: "flex",
+                                flexWrap: "wrap",
+                                gap: 8,
+                                marginBottom: 8,
+                                alignItems: "center",
+                              }}
+                            >
+                              <span style={{ fontWeight: 600 }}>
+                                Batch Start Time:
+                              </span>
+                              <input
+                                type="number"
+                                min={1}
+                                max={12}
+                                className="input"
+                                style={{ width: 80 }}
+                                placeholder="HH"
+                                value={startHour}
+                                onChange={(e) =>
+                                  setStartHour(e.target.value.slice(0, 2))
+                                }
+                              />
+                              <span>:</span>
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                className="input"
+                                style={{ width: 80 }}
+                                placeholder="MM"
+                                value={startMinute}
+                                onChange={(e) =>
+                                  setStartMinute(e.target.value.slice(0, 2))
+                                }
+                              />
+                              <select
+                                className="input"
+                                value={startAmPm}
+                                onChange={(e) => setStartAmPm(e.target.value)}
+                              >
+                                <option value="AM">AM</option>
+                                <option value="PM">PM</option>
+                              </select>
+                            </div>
+                            <div style={{ marginBottom: 8 }}>
+                              <textarea
+                                className="input"
+                                rows={2}
+                                placeholder="Remarks (optional)…"
+                                value={scheduleRemarks}
+                                onChange={(e) =>
+                                  setScheduleRemarks(e.target.value)
+                                }
+                                style={{ width: "100%" }}
+                              />
+                            </div>
+                            <button
+                              className="btn"
+                              onClick={handleSaveSchedule}
+                              disabled={savingSchedule}
+                            >
+                              {savingSchedule ? "Saving…" : "Save Start Time"}
+                            </button>
                           </div>
                         )}
                       </div>
-                    ) : (
-                      <div style={{ marginTop: 10 }}>
-                        <div
-                          style={{
-                            display: "flex",
-                            flexWrap: "wrap",
-                            gap: 8,
-                            marginBottom: 8,
-                            alignItems: "center",
-                          }}
-                        >
-                          <span style={{ fontWeight: 600 }}>
-                            Batch Start Time:
-                          </span>
-                          <input
-                            type="number"
-                            min={1}
-                            max={12}
-                            className="input"
-                            style={{ width: 80 }}
-                            placeholder="HH"
-                            value={startHour}
-                            onChange={(e) =>
-                              setStartHour(e.target.value.slice(0, 2))
-                            }
-                          />
-                          <span>:</span>
-                          <input
-                            type="number"
-                            min={0}
-                            max={59}
-                            className="input"
-                            style={{ width: 80 }}
-                            placeholder="MM"
-                            value={startMinute}
-                            onChange={(e) =>
-                              setStartMinute(e.target.value.slice(0, 2))
-                            }
-                          />
-                          <select
-                            className="input"
-                            value={startAmPm}
-                            onChange={(e) => setStartAmPm(e.target.value)}
-                          >
-                            <option value="AM">AM</option>
-                            <option value="PM">PM</option>
-                          </select>
-                        </div>
-                        <div style={{ marginBottom: 8 }}>
-                          <textarea
-                            className="input"
-                            rows={2}
-                            placeholder="Remarks (optional)…"
-                            value={scheduleRemarks}
-                            onChange={(e) => setScheduleRemarks(e.target.value)}
-                            style={{ width: "100%" }}
-                          />
-                        </div>
-                        <button
-                          className="btn"
-                          onClick={handleSaveSchedule}
-                          disabled={savingSchedule}
-                        >
-                          {savingSchedule ? "Saving…" : "Save Start Time"}
-                        </button>
-                      </div>
-                    )}
-                  </div>
 
-                  {/* EKYC section */}
-                  <div
-                    style={{
-                      padding: 12,
-                      borderRadius: 6,
-                      background: "#f9fafb",
-                    }}
-                  >
-                    <h4 style={{ marginTop: 0 }}>
-                      Day 1 E-KYC — Fingerprint Verification
-                    </h4>
-                    <p style={{ fontSize: 13, color: "#6b7280" }}>
-                      Plug in your fingerprint scanner (or mobile reader), test
-                      the device connection, then record fingerprint and verify
-                      for each participant.
-                    </p>
-
-                    {/* Test connection block */}
-                    <div
-                      id="ekyc_instructions"
-                      style={{
-                        padding: 10,
-                        borderRadius: 6,
-                        background: "#e5f3ff",
-                        marginBottom: 8,
-                      }}
-                    >
-                      <div className="notice" style={{ fontSize: 13 }}>
-                        Plugin your fingerprint scanner or device and click{" "}
-                        <strong>Test connection</strong>.
-                      </div>
-                      <div style={{ marginTop: 8, display: "flex", gap: 8 }}>
-                        <button
-                          id="testConnectionBtn"
-                          className="btn btn-outline"
-                          type="button"
-                          onClick={handleTestConnection}
-                          disabled={testingConn}
-                        >
-                          {testingConn ? "Testing..." : "Test connection"}
-                        </button>
-                        <span
-                          id="testStatus"
-                          style={{
-                            marginLeft: 4,
-                            fontSize: 12,
-                            color:
-                              connStatus === "ok"
-                                ? "#15803d"
-                                : connStatus === "failed"
-                                  ? "#b91c1c"
-                                  : "#6b7280",
-                          }}
-                        >
-                          {connStatus === "testing" && (
-                            <>
-                              Testing connection...{" "}
-                              <span id="connSpinner">⏳</span>
-                            </>
-                          )}
-                          {connStatus === "ok" && connMessage}
-                          {connStatus === "idle" && connMessage}
-                        </span>
-                      </div>
-                    </div>
-
-                    {/* participants table */}
-                    <div style={{ marginTop: 12 }}>
-                      {loadingEkyc ? (
-                        <div className="table-spinner">
-                          Loading EKYC records...
-                        </div>
-                      ) : !ekycRows.length ? (
-                        <div className="muted">
-                          No participants found for EKYC.
-                        </div>
-                      ) : (
-                        <div style={{ maxHeight: 420, overflow: "auto" }}>
-                          <table
-                            className="table table-striped align-middle table-sm"
-                            id="ekyc_table"
-                          >
-                            <thead>
-                              <tr>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>EKYC Status</th>
-                                <th>Action</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {ekycRows.map((row) => {
-                                const disp = getRowDisplay(row);
-                                const status = (
-                                  row.ekyc_status || "PENDING"
-                                ).toUpperCase();
-                                const isVerified = status === "VERIFIED";
-                                const recording = recordingFor === disp.key;
-                                const verifying = verifyingFor === disp.key;
-
-                                return (
-                                  <tr
-                                    key={`${row.participant_role}-${row.participant_id}`}
-                                    data-participant-id={row.participant_id}
-                                    data-participant-role={row.participant_role}
-                                  >
-                                    <td>{disp.name}</td>
-                                    <td>{disp.roleLabel}</td>
-                                    <td className="ekyc-status">
-                                      {status.charAt(0) +
-                                        status.slice(1).toLowerCase()}
-                                    </td>
-                                    <td className="ekyc-actions">
-                                      <div className="d-flex gap-2 align-items-center">
-                                        <button
-                                          className="btn btn-sm btn-outline-secondary recordBtn"
-                                          type="button"
-                                          disabled={isVerified || recording}
-                                          onClick={() => handleRecord(row)}
-                                        >
-                                          {recording
-                                            ? "Recording..."
-                                            : "Record Fingerprint"}
-                                        </button>
-                                        <button
-                                          className="btn btn-sm btn-primary verifyBtn"
-                                          type="button"
-                                          disabled={
-                                            isVerified ||
-                                            verifying ||
-                                            !hasSchedule
-                                          }
-                                          onClick={() => handleVerify(row)}
-                                        >
-                                          {verifying
-                                            ? "Verifying..."
-                                            : "Verify!"}
-                                        </button>
-                                        <span
-                                          className="small text-muted ml-2 actionStatus"
-                                          style={{ fontSize: 11 }}
-                                        >
-                                          {recording && "Fingerprint recorded."}
-                                          {verifying && "Verifying match..."}
-                                          {isVerified &&
-                                            "Verified successfully."}
-                                        </span>
-                                      </div>
-                                    </td>
-                                  </tr>
-                                );
-                              })}
-                            </tbody>
-                          </table>
-                        </div>
-                      )}
-                    </div>
-
-                    {allParticipantsVerified && (
+                      {/* EKYC section */}
                       <div
-                        id="ekyc_done_msg"
                         style={{
-                          marginTop: 12,
-                          padding: 10,
+                          padding: 12,
                           borderRadius: 6,
-                          background: "#dcfce7",
-                          color: "#166534",
-                          fontSize: 13,
+                          background: "#f9fafb",
                         }}
                       >
-                        All participants verified — redirect to today's
-                        attendance when ready.
-                        <div style={{ marginTop: 8 }}>
-                          <button
-                            className="btn btn-primary"
-                            type="button"
-                            onClick={() =>
-                              navigate(`/tms/cp/batch-attendance/${batchId}`)
-                            }
+                        <h4 style={{ marginTop: 0 }}>
+                          Day 1 E-KYC — Fingerprint Verification
+                        </h4>
+                        <p style={{ fontSize: 13, color: "#6b7280" }}>
+                          Plug in your fingerprint scanner (or mobile reader),
+                          test the device connection, then record fingerprint
+                          and verify for each participant.
+                        </p>
+
+                        {/* Test connection block */}
+                        <div
+                          id="ekyc_instructions"
+                          style={{
+                            padding: 10,
+                            borderRadius: 6,
+                            background: "#e5f3ff",
+                            marginBottom: 8,
+                          }}
+                        >
+                          <div className="notice" style={{ fontSize: 13 }}>
+                            Plugin your fingerprint scanner or device and click{" "}
+                            <strong>Test connection</strong>.
+                          </div>
+                          <div
+                            style={{ marginTop: 8, display: "flex", gap: 8 }}
                           >
-                            Go to Attendance Screen
-                          </button>
+                            <button
+                              id="testConnectionBtn"
+                              className="btn btn-outline"
+                              type="button"
+                              onClick={handleTestConnection}
+                              disabled={testingConn}
+                            >
+                              {testingConn ? "Testing..." : "Test connection"}
+                            </button>
+                            <span
+                              id="testStatus"
+                              style={{
+                                marginLeft: 4,
+                                fontSize: 12,
+                                color:
+                                  connStatus === "ok"
+                                    ? "#15803d"
+                                    : connStatus === "failed"
+                                      ? "#b91c1c"
+                                      : "#6b7280",
+                              }}
+                            >
+                              {connStatus === "testing" && (
+                                <>
+                                  Testing connection...{" "}
+                                  <span id="connSpinner">⏳</span>
+                                </>
+                              )}
+                              {connStatus === "ok" && connMessage}
+                              {connStatus === "idle" && connMessage}
+                            </span>
+                          </div>
                         </div>
+
+                        {/* participants table */}
+                        <div style={{ marginTop: 12 }}>
+                          {loadingEkyc ? (
+                            <div className="table-spinner">
+                              Loading EKYC records...
+                            </div>
+                          ) : !ekycRows.length ? (
+                            <div className="muted">
+                              No participants found for EKYC.
+                            </div>
+                          ) : (
+                            <div style={{ maxHeight: 420, overflow: "auto" }}>
+                              <table
+                                className="table table-striped align-middle table-sm"
+                                id="ekyc_table"
+                              >
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>EKYC Status</th>
+                                    <th>Action</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {ekycRows.map((row) => {
+                                    const disp = getRowDisplay(row);
+                                    const status = (
+                                      row.ekyc_status || "PENDING"
+                                    ).toUpperCase();
+                                    const isVerified = status === "VERIFIED";
+                                    const recording = recordingFor === disp.key;
+                                    const verifying = verifyingFor === disp.key;
+
+                                    return (
+                                      <tr
+                                        key={`${row.participant_role}-${row.participant_id}`}
+                                        data-participant-id={row.participant_id}
+                                        data-participant-role={
+                                          row.participant_role
+                                        }
+                                      >
+                                        <td>{disp.name}</td>
+                                        <td>{disp.roleLabel}</td>
+                                        <td className="ekyc-status">
+                                          {status.charAt(0) +
+                                            status.slice(1).toLowerCase()}
+                                        </td>
+                                        <td className="ekyc-actions">
+                                          <div className="d-flex gap-2 align-items-center">
+                                            <button
+                                              className="btn btn-sm btn-outline-secondary recordBtn"
+                                              type="button"
+                                              disabled={isVerified || recording}
+                                              onClick={() => handleRecord(row)}
+                                            >
+                                              {recording
+                                                ? "Recording..."
+                                                : "Record Fingerprint"}
+                                            </button>
+                                            <button
+                                              className="btn btn-sm btn-primary verifyBtn"
+                                              type="button"
+                                              disabled={
+                                                isVerified ||
+                                                verifying ||
+                                                !hasSchedule
+                                              }
+                                              onClick={() => handleVerify(row)}
+                                            >
+                                              {verifying
+                                                ? "Verifying..."
+                                                : "Verify!"}
+                                            </button>
+                                            <span
+                                              className="small text-muted ml-2 actionStatus"
+                                              style={{ fontSize: 11 }}
+                                            >
+                                              {recording &&
+                                                "Fingerprint recorded."}
+                                              {verifying &&
+                                                "Verifying match..."}
+                                              {isVerified &&
+                                                "Verified successfully."}
+                                            </span>
+                                          </div>
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+
+                        {allParticipantsVerified && (
+                          <div
+                            id="ekyc_done_msg"
+                            style={{
+                              marginTop: 12,
+                              padding: 10,
+                              borderRadius: 6,
+                              background: "#dcfce7",
+                              color: "#166534",
+                              fontSize: 13,
+                            }}
+                          >
+                            All participants verified — redirect to today's
+                            attendance when ready.
+                            <div style={{ marginTop: 8 }}>
+                              <button
+                                className="btn btn-primary"
+                                type="button"
+                                onClick={() =>
+                                  navigate(
+                                    `/tms/cp/batch-attendance/${batchId}`,
+                                  )
+                                }
+                              >
+                                Go to Attendance Screen
+                              </button>
+                            </div>
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </div>
+                    </>
+                  )}
                 </>
               )}
             </div>
