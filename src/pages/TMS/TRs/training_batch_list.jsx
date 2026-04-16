@@ -781,20 +781,36 @@ export default function TrainingBatchList() {
                               </button>
                             )}
 
-                          {/* ── BMMU / DMMU / SMMU → certificates page ── */}
-                          {["bmmu", "dmmu", "smmu"].includes(role) &&
-                            ["COMPLETED", "REVIEW", "CLOSED"].includes(
-                              String(b.status).toUpperCase(),
-                            ) && (
-                              <button
-                                className="btn-sm btn-flat"
-                                onClick={() =>
-                                  navigate(`/tms/batch-certificate/${b.id}`)
-                                }
-                              >
-                                Closure
-                              </button>
-                            )}
+                          {/* ── STATUS + ROLE BASED ROUTING ── */}
+                          {["bmmu", "dmmu", "smmu"].includes(role) && (
+                            <>
+                              {String(b.status).toUpperCase() === "REVIEW" && (
+                                <button
+                                  className="btn-sm btn-flat"
+                                  onClick={() =>
+                                    role === "dmmu"
+                                      ? navigate(`/tms/dmmu/tr-closure/${b.id}`)
+                                      : navigate(
+                                          `/tms/batch-certificate/${b.id}`,
+                                        )
+                                  }
+                                >
+                                  {role === "dmmu" ? "Closure" : "Certificate"}
+                                </button>
+                              )}
+
+                              {String(b.status).toUpperCase() === "CLOSED" && (
+                                <button
+                                  className="btn-sm btn-flat"
+                                  onClick={() =>
+                                    navigate(`/tms/batch-certificate/${b.id}`)
+                                  }
+                                >
+                                  Certificate
+                                </button>
+                              )}
+                            </>
+                          )}
 
                           {/* all other roles: no Closure button */}
                         </td>

@@ -1,73 +1,27 @@
 // src/pages/TMS/DMMU/dmmu_request_closure.jsx
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api from "../../../api/axios";
+import {
+  getCanonicalRole,
+  ROLE_WELCOME_MESSAGES,
+} from "../../../utils/roleUtils";
 
-/* ---------- small modal + helpers ---------- */
-
-function Modal({ open, onClose, title, children, width = "min(1200px,96%)" }) {
-  if (!open) return null;
+/* ─── tiny helpers ─────────────────────────────────────────── */
+function InfoItem({ label, value, children }) {
   return (
-    <div
-      role="dialog"
-      aria-modal="true"
-      onClick={onClose}
-      style={{
-        position: "fixed",
-        inset: 0,
-        zIndex: 3000,
-        background: "rgba(15,23,42,0.55)",
-        display: "flex",
-        alignItems: "center",
-        justifyContent: "center",
-        backdropFilter: "blur(3px)",
-        padding: 16,
-      }}
-    >
-      <div
-        onClick={(e) => e.stopPropagation()}
-        style={{
-          width,
-          maxHeight: "92vh",
-          overflow: "auto",
-          background: "#fff",
-          borderRadius: 10,
-          padding: 18,
-          boxShadow: "0 18px 45px rgba(15,23,42,0.45)",
-        }}
-      >
-        <div
-          style={{
-            display: "flex",
-            alignItems: "center",
-            marginBottom: 12,
-            gap: 8,
-          }}
-        >
-          <h3 style={{ margin: 0, fontSize: 18 }}>{title}</h3>
-          <div style={{ marginLeft: "auto" }}>
-            <button className="btn btn-outline" onClick={onClose}>
-              Close
-            </button>
-          </div>
-        </div>
-        <div>{children}</div>
-      </div>
+    <div className="info-item">
+      <span className="info-label">{label}</span>
+      <span className="info-value">{children ?? value ?? "—"}</span>
     </div>
   );
 }
 
-function fmtDateTime(iso) {
-  try {
-    if (!iso) return "-";
-    const d = new Date(iso);
-    return d.toLocaleString("en-IN");
-  } catch {
-    return iso || "-";
-  }
+function fmt(val) {
+  const n = parseFloat(val);
+  return isNaN(n) ? "0.00" : n.toFixed(2);
 }
 
 function fmtDate(iso) {
@@ -82,342 +36,303 @@ function fmtDate(iso) {
 
 function normalizeMediaUrl(url) {
   if (!url) return "";
-
-  // If the URL already starts with a relative path like /media/, it's perfect.
-  if (url.startsWith("/media/")) {
-    return url;
-  }
-
-  // If it's an absolute URL (http:// or https://), strip the domain completely
+  if (url.startsWith("/media/")) return url;
   if (url.startsWith("http")) {
     try {
       const parsedUrl = new URL(url);
-      return parsedUrl.pathname; // Extracts ONLY the path (e.g., "/media/uploads/file.jpg")
-    } catch (error) {
-      console.warn("Invalid media URL:", url);
+      return parsedUrl.pathname;
+    } catch (e) {
       return url;
     }
   }
-
-  // Fallback for any weird edge cases
   return url;
 }
-/* ========================================================= */
-/* ======================= MAIN PAGE ======================= */
-/* ========================================================= */
 
-export default function DmmuRequestClosure() {
+/* ═══════════════════════════════════════════════════════════ */
+
+export default function DmmuBatchClosureReview() {
   const { user } = useContext(AuthContext) || {};
-  const { id: requestId } = useParams(); // training request id
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "DMMU Dashboard";
+
+  // Note: We are using the parameter 'id' from your route, but it now represents the BATCH ID.
+  const { id: batchId } = useParams();
   const navigate = useNavigate();
 
-  const [trDetail, setTrDetail] = useState(null);
-  const [loadingTrDetail, setLoadingTrDetail] = useState(false);
-
-  const [batches, setBatches] = useState([]);
-  const [loadingBatches, setLoadingBatches] = useState(false);
-
-  const [batchDetailModalOpen, setBatchDetailModalOpen] = useState(false);
-  const [selectedBatchId, setSelectedBatchId] = useState(null);
-
-  const [batchCosts, setBatchCosts] = useState({}); // batchId -> /detail payload
-  const [loadingBatchCosts, setLoadingBatchCosts] = useState({});
-
-  const [hraFile, setHraFile] = useState(null);
-  const [tadaFile, setTadaFile] = useState(null);
-  const [savingClosureFiles, setSavingClosureFiles] = useState(false);
-
-  const [trClosure, setTrClosure] = useState(null);
-  const [loadingTrClosure, setLoadingTrClosure] = useState(false);
-  const [updatingTrStatus, setUpdatingTrStatus] = useState(false);
-
-  const [breakupModalOpen, setBreakupModalOpen] = useState(false);
-  const [breakupBatchId, setBreakupBatchId] = useState(null);
+  /* ── layout ── */
   const [navCollapsed, setNavCollapsed] = useState(false);
 
-  const refreshTokenRef = useRef(0);
+  /* ── async states ── */
+  const [loading, setLoading] = useState(true);
+  const [actionLoading, setActionLoading] = useState(false);
+  const [fetchError, setFetchError] = useState(null);
+  const [mediaPreviewSrc, setMediaPreviewSrc] = useState(null);
 
-  /* ---------- fetch TR detail ---------- */
+  /* ── data ── */
+  const [batch, setBatch] = useState(null);
 
-  async function fetchTrainingRequest() {
-    if (!requestId) return;
-    setLoadingTrDetail(true);
+  /* ── reject modal state ── */
+  const [rejectModalOpen, setRejectModalOpen] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
+
+  const inFlightRef = useRef(false);
+
+  /* ═══════════════════════════════════════════════════════════
+     FETCH
+  ═══════════════════════════════════════════════════════════ */
+  async function fetchBatch(redirectIfClosed = true) {
+    setLoading(true);
+    setFetchError(null);
     try {
-      const resp = await api.get(`/tms/training-requests/${requestId}/detail/`);
-      setTrDetail(resp?.data || null);
-    } catch (e) {
-      console.error("dmmu_request_closure: fetch TR detail failed", e);
-      setTrDetail(null);
+      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      const data = resp?.data;
+
+      if (!data) throw new Error("Empty response");
+
+      setBatch(data);
+
+      // ── redirect if already closed ──
+      if (redirectIfClosed && data?.status === "CLOSED") {
+        navigate(`/tms/batch-certificate/${batchId}`, { replace: true });
+        return null;
+      }
+
+      return data;
+    } catch {
+      setFetchError("Failed to load batch details. Please refresh the page.");
+      return null;
     } finally {
-      setLoadingTrDetail(false);
+      setLoading(false);
     }
   }
-
-  /* ---------- fetch batches ---------- */
-
-  async function fetchBatches() {
-    if (!requestId) return;
-    setLoadingBatches(true);
-    try {
-      const resp = await api.get(
-        `/tms/batches/?request=${requestId}&page_size=500`,
-      );
-      const data = resp?.data ?? resp ?? {};
-      const results = data.results || data || [];
-      setBatches(results);
-    } catch (e) {
-      console.error("dmmu_request_closure: fetch batches failed", e);
-      setBatches([]);
-    } finally {
-      setLoadingBatches(false);
-    }
-  }
-
-  /* ---------- fetch TR closure row ---------- */
-
-  async function fetchTrClosure() {
-    if (!requestId) return;
-    setLoadingTrClosure(true);
-    try {
-      const resp = await api.get(`/tms/tr-closures/?training=${requestId}`);
-      const data = resp?.data ?? resp ?? {};
-      const list = data.results || data || [];
-      setTrClosure(list[0] || null);
-    } catch (e) {
-      console.error("dmmu_request_closure: fetch tr-closure failed", e);
-      setTrClosure(null);
-    } finally {
-      setLoadingTrClosure(false);
-    }
-  }
-
-  /* ---------- fetch batch-cost detail (id is batch-cost id in example) ---------- */
-
-  async function fetchBatchCostDetail(batchId) {
-    if (!batchId) return;
-    setLoadingBatchCosts((m) => ({ ...m, [batchId]: true }));
-    try {
-      const resp = await api.get(`/tms/batch-costs/${batchId}/detail/`);
-      const data = resp?.data || resp || null;
-      setBatchCosts((m) => ({ ...m, [batchId]: data || null }));
-    } catch (e) {
-      console.error("dmmu_request_closure: fetch batch-cost detail failed", e);
-      setBatchCosts((m) => ({ ...m, [batchId]: null }));
-    } finally {
-      setLoadingBatchCosts((m) => ({ ...m, [batchId]: false }));
-    }
-  }
-
-  /* ---------- initial + refresh ---------- */
 
   useEffect(() => {
-    if (!requestId) {
-      navigate("/tms/training-requests");
-      return;
-    }
-    fetchTrainingRequest();
-    fetchBatches();
-    fetchTrClosure();
+    fetchBatch(true);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [requestId, refreshTokenRef.current]);
+  }, [batchId]);
 
-  function handleRefreshAll() {
-    refreshTokenRef.current += 1;
-    fetchTrainingRequest();
-    fetchBatches();
-    fetchTrClosure();
-    setBatchCosts({});
-  }
+  /* ═══════════════════════════════════════════════════════════
+     DERIVED DATA EXTRACTIONS
+  ═══════════════════════════════════════════════════════════ */
+  const trainingType = batch?.request?.training_type; // 'BENEFICIARY' | 'TRAINER'
+  const tp = batch?.request?.training_plan || {};
+  const req = batch?.request || {};
+  const centre = batch?.centre || {};
+  const batchCosting = batch?.batch_costing || {};
+  const isReviewStatus = batch?.status === "REVIEW";
 
-  /* ---------- batch modal ---------- */
+  const successfulParticipants = useMemo(() => {
+    if (!batch) return [];
 
-  function openBatchDetail(batchId) {
-    setSelectedBatchId(batchId);
-    setBatchDetailModalOpen(true);
-  }
+    // Map Beneficiaries
+    if (trainingType === "BENEFICIARY") {
+      return (batch.beneficiary_participations || [])
+        .filter((bb) => {
+          if (!bb.is_active) return false;
+          const summary = (batch.beneficiary_summaries || []).find(
+            (s) => s.batch_beneficiary === bb.id,
+          );
+          return summary?.is_successful === true;
+        })
+        .map((bb) => {
+          const fullBen =
+            (batch.beneficiary || []).find((b) => b.id === bb.beneficiary) ||
+            {};
+          const summary = (batch.beneficiary_summaries || []).find(
+            (s) => s.batch_beneficiary === bb.id,
+          );
+          // Find line item cost
+          const costLine =
+            (batch.participant_costs || []).find(
+              (c) => c.batch_beneficiary === bb.id,
+            ) || {};
 
-  function closeBatchDetail() {
-    setBatchDetailModalOpen(false);
-    setSelectedBatchId(null);
-  }
+          return {
+            ...bb,
+            display_name:
+              fullBen.member_name || `Beneficiary #${bb.beneficiary}`,
+            attendance_pct: summary?.attendance_percentage || "0.00",
+            hra: costLine.hra || 0,
+            ta_da: costLine.ta_da || 0,
+            total_cost: costLine.total_cost || 0,
+            age: fullBen.age || "-",
+            gender: fullBen.gender || "-",
+            category: fullBen.social_category || "-",
+            mobile: fullBen.mobile || "-",
+          };
+        });
+    }
 
-  /* ---------- breakup modal ---------- */
+    // Map Trainers
+    if (trainingType === "TRAINER") {
+      return (batch.trainer_participations || [])
+        .filter((bt) => bt.is_active && bt.attended === true)
+        .map((bt) => {
+          const fullTr =
+            (batch.trainer || []).find((t) => t.id === bt.trainer) || {};
+          const costLine =
+            (batch.participant_costs || []).find(
+              (c) => c.batch_trainer === bt.id,
+            ) || {};
+          return {
+            ...bt,
+            display_name: fullTr.full_name || `Trainer #${bt.trainer}`,
+            attendance_pct: "100.00",
+            hra: costLine.hra || 0,
+            ta_da: costLine.ta_da || 0,
+            total_cost: costLine.total_cost || 0,
+            age: fullTr.date_of_birth ? `DOB: ${fullTr.date_of_birth}` : "-",
+            gender: fullTr.gender || "-",
+            category: fullTr.social_category || "-",
+            mobile: fullTr.mobile_no || "-",
+          };
+        });
+    }
+    return [];
+  }, [batch, trainingType]);
 
-  function openBreakupModal(batchId) {
-    setBreakupBatchId(batchId);
-    setBreakupModalOpen(true);
-  }
+  const participantSubtotal = useMemo(() => {
+    return successfulParticipants.reduce(
+      (sum, p) => sum + parseFloat(p.total_cost || 0),
+      0,
+    );
+  }, [successfulParticipants]);
 
-  function closeBreakupModal() {
-    setBreakupModalOpen(false);
-    setBreakupBatchId(null);
-  }
+  /* ═══════════════════════════════════════════════════════════
+     ACTIONS (APPROVE / REJECT)
+  ═══════════════════════════════════════════════════════════ */
+  async function handleApprove() {
+    if (
+      !window.confirm(
+        "Are you sure you want to APPROVE this batch? This will close the batch and make it elligible for Certificate generation.",
+      )
+    )
+      return;
 
-  /* ---------- computed grand totals ---------- */
-
-  const batchCostSummary = useMemo(() => {
-    let totalAll = 0;
-    const rows = (batches || []).map((b) => {
-      const cost = batchCosts[b.id];
-      if (!cost || !cost.batch_expenses) {
-        return { batchId: b.id, total: 0 };
-      }
-      const be = cost.batch_expenses;
-      const base = parseFloat(be.total_cost || "0") || 0;
-      const trainer = parseFloat(cost.trainer_part_cost || "0") || 0;
-      const tp = parseFloat(cost.tp_part_cost || "0") || 0;
-      const total = base + trainer + tp;
-      totalAll += total;
-      return { batchId: b.id, total };
-    });
-    return { rows, totalAll };
-  }, [batches, batchCosts]);
-
-  const getGrandTotalForBatch = (batchId) => {
-    const row = batchCostSummary.rows.find((r) => r.batchId === batchId);
-    return row ? row.total : 0;
-  };
-
-  /* ---------- upload hra / ta-da and update TRClosure ---------- */
-
-  async function handleSaveClosureDocs() {
-    if (!requestId || !trClosure || !user?.id) {
-      alert("TR closure row not found or user missing.");
+    if (!batch?.batch_closing?.id) {
+      alert(
+        "Error: Batch Closure Request object missing. The TP might not have submitted properly.",
+      );
       return;
     }
-    if (!hraFile && !tadaFile) {
-      alert("Please select at least one document (HRA or TA/DA) to upload.");
-      return;
-    }
 
-    setSavingClosureFiles(true);
+    setActionLoading(true);
     try {
-      const formData = new FormData();
-      if (hraFile) {
-        formData.append("hra", hraFile);
-      }
-      if (tadaFile) {
-        formData.append("ta_da", tadaFile);
-      }
-      formData.append("updated_by", String(user.id));
-
-      await api.patch(`/tms/tr-closures/${trClosure.id}/`, formData, {
-        headers: { "Content-Type": "multipart/form-data" },
-      });
-
-      alert("HRA / TA-DA documents uploaded successfully.");
-      setHraFile(null);
-      setTadaFile(null);
-      fetchTrClosure();
-    } catch (e) {
-      console.error("dmmu_request_closure: update TRClosure files failed", e);
-      alert("Failed to upload documents. Please try again.");
-    } finally {
-      setSavingClosureFiles(false);
-    }
-  }
-
-  /* ---------- mark training request completed ---------- */
-
-  async function handleMarkTrainingCompleted() {
-    if (!requestId || !user?.id) return;
-    if (!window.confirm("Mark this training request as COMPLETED?")) return;
-
-    setUpdatingTrStatus(true);
-    try {
-      const payload = {
-        status: "COMPLETED",
+      // 1. Mark batch as CLOSED
+      await api.patch(`/tms/batches/${batchId}/`, {
+        status: "CLOSED",
         updated_by: user.id,
-      };
-      await api.patch(`/tms/training-requests/${requestId}/`, payload);
-      alert("Training request marked as COMPLETED.");
-      fetchTrainingRequest();
-    } catch (e) {
-      console.error("dmmu_request_closure: update TR status failed", e);
-      alert("Failed to mark training as COMPLETED.");
-    } finally {
-      setUpdatingTrStatus(false);
-    }
-  }
-
-  const isAllBatchCostValid = () => {
-    if (!batches.length) return false;
-
-    for (let b of batches) {
-      const cost = batchCosts[b.id];
-
-      // ❌ cost load hi nahi hua
-      if (!cost) return false;
-
-      const base = parseFloat(cost?.batch_expenses?.total_cost || "0") || 0;
-      const trainer = parseFloat(cost?.trainer_part_cost || "0") || 0;
-      const tp = parseFloat(cost?.tp_part_cost || "0") || 0;
-
-      // ❌ agar sab zero hai → invalid
-      if (base === 0 && trainer === 0 && tp === 0) {
-        return false;
-      }
-    }
-
-    return true;
-  };
-
-  async function updateBatchCost(batchId, updatedFields) {
-    try {
-      const formData = new FormData();
-
-      Object.keys(updatedFields).forEach((key) => {
-        formData.append(key, updatedFields[key]);
       });
 
-      const resp = await api.patch(
-        `/tms/batch-costs/${batchId}/`,
-        formData
+      // 2. Flip certificates_issued to True (Triggers Backend Generation)
+      await api.patch(
+        `/tms/batch-closure-requests/${batch.batch_closing.id}/`,
+        {
+          certificates_issued: true,
+          updated_by: user.id,
+        },
       );
 
-      const updated = resp?.data || resp;
-
-      // 🔁 Update local state (IMPORTANT)
-      setBatchCosts((m) => ({
-        ...m,
-        [batchId]: updated,
-      }));
-
+      alert("Batch Approved and Closed Successfully!");
+      navigate(`/tms/batch-certificate/${batchId}`, { replace: true });
     } catch (e) {
-      console.error("Batch cost update failed", e);
-      alert("Failed to update batch cost");
+      console.error("Batch approval failed", e);
+      alert("An error occurred while approving the batch.");
+      setActionLoading(false);
     }
   }
 
+  async function handleReject() {
+    if (!rejectionReason.trim()) {
+      alert("Please provide a reason for rejection.");
+      return;
+    }
 
-  /* ========================================================= */
-  /* =========================== UI ========================== */
-  /* ========================================================= */
+    setActionLoading(true);
+    try {
+      // Mark batch as REJECTED with reason
+      await api.patch(`/tms/batches/${batchId}/`, {
+        status: "REJECTED",
+        rejection_reason: rejectionReason,
+        updated_by: user.id,
+      });
 
+      alert("Batch has been REJECTED and returned to the Training Partner.");
+      setRejectModalOpen(false);
+      navigate(-1);
+    } catch (e) {
+      console.error("Batch rejection failed", e);
+      alert("An error occurred while rejecting the batch.");
+      setActionLoading(false);
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     LOADING / ERROR SCREENS
+  ═══════════════════════════════════════════════════════════ */
+  if (loading) {
+    return (
+      <div className="app-shell">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area" style={{ padding: 40, color: "#2b4e72" }}>
+          <div className="spinner-wrap">
+            <div className="spinner" />
+            <span>Loading comprehensive batch details…</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="app-shell">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area" style={{ padding: 40 }}>
+          <div className="alert alert-error">{fetchError}</div>
+        </div>
+      </div>
+    );
+  }
+
+  /* ═══════════════════════════════════════════════════════════
+     MAIN RENDER
+  ═══════════════════════════════════════════════════════════ */
   return (
     <div className="app-shell">
-      <LeftNav />
+      <LeftNav
+        collapsed={navCollapsed}
+        onToggle={() => setNavCollapsed((v) => !v)}
+      />
+
       <div className="main-area">
-        {/* <TopNav
-          left={
-            <div className="app-title">Pragati Setu — DMMU Request Closure</div>
-          }
-        /> */}
+        <div className="dashboard-header">
+          <h2 className="dashboard-title">{roleMessage}</h2>
+        </div>
+
         <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1100, margin: "20px auto" }}>
+          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+            {/* Header */}
             <div
               style={{
                 display: "flex",
                 alignItems: "center",
-                marginBottom: 12,
+                marginBottom: 20,
                 gap: 8,
               }}
             >
-              <h2 style={{ margin: 0 }}>
-                DMMU — Training Request Closure #{requestId}
-              </h2>
+              <h2 style={{ margin: 0 }}>DMMU Review — Batch #{batchId}</h2>
               <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button className="btn" onClick={handleRefreshAll}>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => fetchBatch(false)}
+                >
                   Refresh
                 </button>
                 <button
@@ -429,1235 +344,377 @@ export default function DmmuRequestClosure() {
               </div>
             </div>
 
-            {/* Training request detail */}
-            <section
-              style={{
-                background: "#fff",
-                padding: 18,
-                borderRadius: 8,
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: 10,
-                  gap: 8,
-                }}
-              >
-                <h3 style={{ margin: 0 }}>Training Request Detail</h3>
-                <button
-                  className="btn-sm btn-flat"
-                  style={{ marginLeft: "auto" }}
-                  onClick={fetchTrainingRequest}
-                >
-                  {loadingTrDetail ? "Loading…" : "Refresh"}
-                </button>
+            {/* ════════ STATUS BANNERS ════════ */}
+            {isReviewStatus && (
+              <div className="alert alert-info">
+                <strong>Attention:</strong> This batch has been submitted for
+                closure by the Training Partner. Please review the costs and
+                media below, then Approve or Reject.
               </div>
+            )}
+            {batch?.status === "REJECTED" && (
+              <div className="alert alert-error">
+                <strong>Status:</strong> This batch was rejected. <br />
+                <strong>Reason:</strong>{" "}
+                {batch.rejection_reason || "No reason provided."}
+              </div>
+            )}
 
-              {loadingTrDetail ? (
-                <div className="table-spinner">Loading training request…</div>
-              ) : !trDetail ? (
-                <div className="muted">
-                  Training request details not available.
-                </div>
-              ) : (
-                <>
-                  <div
-                    style={{
-                      display: "grid",
-                      gridTemplateColumns:
-                        "repeat(auto-fit, minmax(230px, 1fr))",
-                      gap: 10,
-                      fontSize: 14,
-                      marginBottom: 12,
-                    }}
+            {/* ════════ BATCH & TRAINING PLAN DETAILS ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">📖 Training & Batch Overview</div>
+              <div className="info-grid">
+                <InfoItem
+                  label="Batch Code"
+                  value={batch?.code || `#${batchId}`}
+                />
+                <InfoItem label="Status">
+                  <span
+                    className={`status-badge status-${String(batch?.status || "").toLowerCase()}`}
                   >
-                    <div>
-                      <strong>Plan:</strong>{" "}
-                      {trDetail.training_plan?.training_name || "-"}
-                    </div>
-                    <div>
-                      <strong>Type:</strong> {trDetail.training_type || "-"}
-                    </div>
-                    <div>
-                      <strong>Level:</strong> {trDetail.level || "-"}
-                    </div>
-                    <div>
-                      <strong>Status:</strong>{" "}
-                      <span style={{ fontWeight: 700 }}>
-                        {trDetail.status || "-"}
-                      </span>
-                    </div>
-                    <div>
-                      <strong>District:</strong>{" "}
-                      {trDetail.district?.district_name_en || "-"}
-                    </div>
-                    <div>
-                      <strong>Block:</strong>{" "}
-                      {trDetail.block?.block_name_en || "-"}
-                    </div>
-                    <div>
-                      <strong>Partner:</strong> {trDetail.partner?.name || "-"}
-                    </div>
-                    <div>
-                      <strong>Created On:</strong>{" "}
-                      {fmtDateTime(trDetail.created_at)}
-                    </div>
-                    <div>
-                      <strong>Updated On:</strong>{" "}
-                      {fmtDateTime(trDetail.updated_at)}
-                    </div>
-                    <div>
-                      <strong>Created By:</strong>{" "}
-                      {trDetail.created_by?.username || trDetail.created_by?.id}
-                    </div>
-                    <div>
-                      <strong>Updated By:</strong>{" "}
-                      {trDetail.updated_by?.username || trDetail.updated_by?.id}
-                    </div>
-                  </div>
+                    {batch?.status}
+                  </span>
+                </InfoItem>
+                <InfoItem label="Participant Type" value={trainingType} />
+                <InfoItem label="Batch Type" value={batch?.batch_type} />
+                <InfoItem
+                  label="Start Date"
+                  value={fmtDate(batch?.start_date)}
+                />
+                <InfoItem label="End Date" value={fmtDate(batch?.end_date)} />
 
-                  {/* Beneficiary registrations table */}
-                  <div style={{ marginTop: 10 }}>
-                    <h4
-                      style={{
-                        margin: "0 0 8px 0",
-                        fontSize: 15,
-                      }}
-                    >
-                      Beneficiary Registrations (
-                      {trDetail.beneficiary_registrations?.length || 0})
-                    </h4>
-                    <div style={{ maxHeight: 260, overflow: "auto" }}>
-                      <table className="table table-compact">
-                        <thead>
-                          <tr>
-                            <th>S.No.</th>
-                            <th>Name</th>
-                            <th>Gender</th>
-                            <th>Age</th>
-                            <th>Mobile</th>
-                            <th>PLD</th>
-                            <th>Social Category</th>
-                            <th>Religion</th>
-                            <th>Education</th>
-                            <th>Address</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {trDetail.beneficiary_registrations?.length ? (
-                            trDetail.beneficiary_registrations.map((m, idx) => (
-                              <tr key={m.id}>
-                                <td>{idx + 1}</td>
-                                <td>{m.member_name}</td>
-                                <td>{m.gender}</td>
-                                <td>{m.age}</td>
-                                <td>{m.mobile || "-"}</td>
-                                <td>{m.pld_status}</td>
-                                <td>{m.social_category}</td>
-                                <td>{m.religion}</td>
-                                <td>{m.education}</td>
-                                <td
-                                  style={{
-                                    maxWidth: 200,
-                                    whiteSpace: "nowrap",
-                                    overflow: "hidden",
-                                    textOverflow: "ellipsis",
-                                  }}
-                                >
-                                  {m.address}
-                                </td>
-                              </tr>
-                            ))
-                          ) : (
-                            <tr>
-                              <td colSpan={10}>
-                                No beneficiary registrations.
-                              </td>
-                            </tr>
-                          )}
-                        </tbody>
-                      </table>
-                    </div>
-                  </div>
-                </>
-              )}
-            </section>
-
-            {/* Batches list with modal view */}
-            <section
-              style={{
-                background: "#fff",
-                padding: 18,
-                borderRadius: 8,
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <h3 style={{ margin: 0 }}>Batches under this Training</h3>
-                <button
-                  className="btn-sm btn-flat"
-                  style={{ marginLeft: "auto" }}
-                  onClick={fetchBatches}
-                >
-                  {loadingBatches ? "Loading…" : "Refresh"}
-                </button>
-              </div>
-
-              <div style={{ maxHeight: 260, overflow: "auto" }}>
-                <table className="table table-compact">
-                  <thead>
-                    <tr>
-                      <th>S.No.</th>
-                      <th>Batch Code</th>
-                      <th>Type</th>
-                      <th>Status</th>
-                      <th>Start Date</th>
-                      <th>End Date</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {loadingBatches ? (
-                      <tr>
-                        <td colSpan={7} style={{ textAlign: "center" }}>
-                          Loading batches…
-                        </td>
-                      </tr>
-                    ) : batches.length === 0 ? (
-                      <tr>
-                        <td colSpan={7}>
-                          No batches found for this training request.
-                        </td>
-                      </tr>
-                    ) : (
-                      batches.map((b, idx) => (
-                        <tr key={b.id}>
-                          <td>{idx + 1}</td>
-                          <td>{b.code}</td>
-                          <td>{b.batch_type}</td>
-                          <td>{b.status}</td>
-                          <td>{fmtDate(b.start_date)}</td>
-                          <td>{fmtDate(b.end_date)}</td>
-                          <td>
-                            <button
-                              className="btn-sm btn-primary"
-                              onClick={() => openBatchDetail(b.id)}
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
-            </section>
-
-            {/* Batch costing summary */}
-            <section
-              style={{
-                background: "#fff",
-                padding: 18,
-                borderRadius: 8,
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <h3 style={{ margin: 0 }}>Batch-wise Costing</h3>
-              </div>
-
-              <div style={{ maxHeight: 260, overflow: "auto" }}>
-                <table className="table table-compact">
-                  <thead>
-                    <tr>
-                      <th>S.No.</th>
-                      <th>Batch Code</th>
-                      <th>Base Total</th>
-                      <th>Trainer Part Cost</th>
-                      <th>TP Part Cost</th>
-                      <th>Grand Total (Batch)</th>
-                      <th>Load</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {batches.length === 0 ? (
-                      <tr>
-                        <td colSpan={7}>No batches found.</td>
-                      </tr>
-                    ) : (
-                      batches.map((b, idx) => {
-                        const cost = batchCosts[b.id];
-                        const loadingCost = loadingBatchCosts[b.id];
-                        const base =
-                          parseFloat(cost?.batch_expenses?.total_cost || "0") ||
-                          0;
-                        const trainer =
-                          parseFloat(cost?.trainer_part_cost || "0") || 0;
-                        const tp = parseFloat(cost?.tp_part_cost || "0") || 0;
-                        const total = base + trainer + tp;
-
-                        return (
-                          <tr key={b.id}>
-                            <td>{idx + 1}</td>
-                            <td>{b.code}</td>
-                            <td>
-                              {cost ? (
-                                <button
-                                  type="button"
-                                  className="btn-sm btn-flat"
-                                  onClick={() => openBreakupModal(b.id)}
-                                  title="View breakups"
-                                >
-                                  ₹ {cost.batch_expenses?.total_cost || "0.00"}
-                                </button>
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-                            {/* <td>
-                              {cost ? `₹ ${cost.trainer_part_cost}` : "-"}
-                            </td>
-                            <td>{cost ? `₹ ${cost.tp_part_cost}` : "-"}</td> */}
-                            <td>
-                              {cost ? (
-                                <input
-                                  type="number"
-                                  value={cost.trainer_part_cost || ""}
-                                  style={{ width: 80 }}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-
-                                    // UI update (instant feel)
-                                    setBatchCosts((m) => ({
-                                      ...m,
-                                      [b.id]: {
-                                        ...m[b.id],
-                                        trainer_part_cost: val,
-                                      },
-                                    }));
-                                  }}
-                                  // onBlur={(e) => {
-                                  //   updateBatchCost(cost.id, {
-                                  //     trainer_part_cost: e.target.value,
-                                  //   });
-                                  // }}
-                                  onBlur={(e) => {
-                                    const newValue = e.target.value;
-                                    const oldValue = cost.trainer_part_cost;
-
-                                    // Agar value change hi nahi hui → kuch mat karo
-                                    if (newValue === oldValue) return;
-
-                                    const confirmUpdate = window.confirm(
-                                      "Are you sure you want to update the costing?"
-                                    );
-
-                                    if (!confirmUpdate) {
-                                      //  Revert UI back to old value
-                                      setBatchCosts((m) => ({
-                                        ...m,
-                                        [b.id]: {
-                                          ...m[b.id],
-                                          trainer_part_cost: oldValue,
-                                        },
-                                      }));
-                                      return;
-                                    }
-
-                                    //  Call API
-                                    updateBatchCost(cost.id, {
-                                      trainer_part_cost: newValue,
-                                    });
-                                  }}
-                                />
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-
-                            <td>
-                              {cost ? (
-                                <input
-                                  type="number"
-                                  value={cost.tp_part_cost || ""}
-                                  style={{ width: 80 }}
-                                  onChange={(e) => {
-                                    const val = e.target.value;
-
-                                    setBatchCosts((m) => ({
-                                      ...m,
-                                      [b.id]: {
-                                        ...m[b.id],
-                                        tp_part_cost: val,
-                                      },
-                                    }));
-                                  }}
-                                  // onBlur={(e) => {
-                                  //   updateBatchCost(cost.id, {
-                                  //     tp_part_cost: e.target.value,
-                                  //   });
-                                  // }}
-                                  onBlur={(e) => {
-                                    const newValue = e.target.value;
-                                    const oldValue = cost.trainer_part_cost;
-
-                                    // Agar value change hi nahi hui → kuch mat karo
-                                    if (newValue === oldValue) return;
-
-                                    const confirmUpdate = window.confirm(
-                                      "Are you sure you want to update the costing?"
-                                    );
-
-                                    if (!confirmUpdate) {
-                                      //  Revert UI back to old value
-                                      setBatchCosts((m) => ({
-                                        ...m,
-                                        [b.id]: {
-                                          ...m[b.id],
-                                          trainer_part_cost: oldValue,
-                                        },
-                                      }));
-                                      return;
-                                    }
-                                    //  Call API
-                                    updateBatchCost(cost.id, {
-                                      trainer_part_cost: newValue,
-                                    });
-                                  }}
-                                />
-                              ) : (
-                                "-"
-                              )}
-                            </td>
-                            <td>{cost ? `₹ ${total.toFixed(2)}` : "-"}</td>
-                            <td>
-                              <button
-                                className="btn-sm btn-flat"
-                                onClick={() => fetchBatchCostDetail(b.id)}
-                                disabled={loadingCost}
-                              >
-                                {loadingCost ? "…" : "Load"}
-                              </button>
-                            </td>
-                          </tr>
-                        );
-                      })
-                    )}
-                  </tbody>
-                  {batches.length > 0 && (
-                    <tfoot>
-                      <tr>
-                        <td colSpan={5} style={{ textAlign: "right" }}>
-                          <strong>Total Training Cost:</strong>
-                        </td>
-                        <td colSpan={2}>
-                          <strong>
-                            ₹ {batchCostSummary.totalAll.toFixed(2)}
-                          </strong>
-                        </td>
-                      </tr>
-                    </tfoot>
-                  )}
-                </table>
-              </div>
-            </section>
-
-            {/* HRA / TA-DA upload and mark completed */}
-            <section
-              style={{
-                background: "#fff",
-                padding: 18,
-                borderRadius: 8,
-                marginBottom: 16,
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <h3 style={{ margin: 0 }}>Closure Documents & Status</h3>
-                <button
-                  className="btn-sm btn-flat"
-                  style={{ marginLeft: "auto" }}
-                  onClick={fetchTrClosure}
-                >
-                  {loadingTrClosure ? "Loading…" : "Refresh TR-Closure"}
-                </button>
-              </div>
-
-              {trClosure ? (
                 <div
                   style={{
-                    marginBottom: 10,
-                    padding: 10,
-                    borderRadius: 6,
-                    background: "#ecfdf5",
-                    border: "1px solid #bbf7d0",
-                    color: "#166534",
-                    fontSize: 13,
+                    gridColumn: "1 / -1",
+                    borderTop: "1px solid #e2e8f0",
+                    margin: "8px 0",
                   }}
-                >
-                  <div>
-                    TR-Closure row exists for this training (ID: {trClosure.id}
-                    ). Attach HRA and TA/DA documents and then mark training as
-                    completed.
-                  </div>
-                  <div style={{ marginTop: 6, fontSize: 12 }}>
-                    Existing HRA:{" "}
-                    {trClosure.hra ? (
-                      <a
-                        href={normalizeMediaUrl(trClosure.hra)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View
-                      </a>
-                    ) : (
-                      "Not uploaded"
-                    )}
-                    {" | "}
-                    Existing TA/DA:{" "}
-                    {trClosure.ta_da ? (
-                      <a
-                        href={normalizeMediaUrl(trClosure.ta_da)}
-                        target="_blank"
-                        rel="noreferrer"
-                      >
-                        View
-                      </a>
-                    ) : (
-                      "Not uploaded"
-                    )}
-                  </div>
-                </div>
-              ) : (
-                <div
-                  style={{
-                    marginBottom: 10,
-                    padding: 10,
-                    borderRadius: 6,
-                    background: "#fffbeb",
-                    border: "1px solid #facc15",
-                    color: "#854d0e",
-                    fontSize: 13,
-                  }}
-                >
-                  TR-Closure row not found for this training. DMMU can only
-                  upload HRA / TA-DA once TP has created TR-closure from their
-                  panel.
-                </div>
-              )}
+                />
 
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))",
-                  gap: 16,
-                  marginTop: 10,
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: 4,
-                      fontWeight: 600,
-                    }}
-                  >
-                    HRA Document (PDF / JPG / DOC)
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    onChange={(e) => setHraFile(e.target.files[0] || null)}
-                  />
-                  {hraFile && (
-                    <div style={{ fontSize: 12, marginTop: 4 }}>
-                      Selected: {hraFile.name}
-                    </div>
-                  )}
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      marginBottom: 4,
-                      fontWeight: 600,
-                    }}
-                  >
-                    TA/DA Document (PDF / JPG / DOC)
-                  </label>
-                  <input
-                    type="file"
-                    accept=".pdf,.jpg,.jpeg,.png,.doc,.docx"
-                    onChange={(e) => setTadaFile(e.target.files[0] || null)}
-                  />
-                  {tadaFile && (
-                    <div style={{ fontSize: 12, marginTop: 4 }}>
-                      Selected: {tadaFile.name}
-                    </div>
-                  )}
-                </div>
+                <InfoItem label="Training Plan" value={tp?.training_name} />
+                <InfoItem
+                  label="Training Level"
+                  value={tp?.level_of_training}
+                />
+                <InfoItem label="Training Type" value={tp?.type_of_training} />
+                <InfoItem label="No. of Days" value={tp?.no_of_days} />
+                <InfoItem
+                  label="District"
+                  value={req?.district?.district_name_en}
+                />
+                <InfoItem label="Block" value={req?.block?.block_name_en} />
               </div>
+            </div>
 
+            {/* ════════ CENTRE DETAILS ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">🏢 Centre & Facilities</div>
+              <div className="info-grid">
+                <InfoItem label="Venue Name" value={centre?.venue_name} />
+                <InfoItem label="Centre Type" value={centre?.centre_type} />
+                <InfoItem label="Address" value={centre?.venue_address} />
+                <InfoItem
+                  label="Training Halls"
+                  value={`${centre?.training_hall_count || 0} (Capacity: ${centre?.training_hall_capacity || 0})`}
+                />
+                <InfoItem
+                  label="Toilets / Bathrooms"
+                  value={centre?.toilets_bathrooms}
+                />
+                <InfoItem
+                  label="Power & Water"
+                  value={centre?.power_water_facility}
+                />
+              </div>
               <div
                 style={{
                   display: "flex",
                   gap: 12,
                   marginTop: 16,
-                  alignItems: "center",
+                  flexWrap: "wrap",
                 }}
               >
-                <button
-                  className="btn btn-primary"
-                  disabled={savingClosureFiles || !trClosure}
-                  onClick={handleSaveClosureDocs}
+                <span
+                  className={`facility-badge ${centre?.medical_kit ? "yes" : "no"}`}
                 >
-                  {savingClosureFiles
-                    ? "Uploading Documents…"
-                    : "Upload / Update HRA & TA/DA"}
-                </button>
-
-                <button
-                  className="btn btn-success"
-                  disabled={updatingTrStatus || !isAllBatchCostValid()}
-                  onClick={handleMarkTrainingCompleted}
+                  Medical Kit
+                </span>
+                <span
+                  className={`facility-badge ${centre?.open_space ? "yes" : "no"}`}
                 >
-                  {updatingTrStatus
-                    ? "Marking COMPLETED…"
-                    : "Mark Training as COMPLETED"}
-                </button>
-
-                {trDetail?.status === "COMPLETED" && (
-                  <span
-                    style={{
-                      marginLeft: "auto",
-                      fontSize: 13,
-                      color: "#16a34a",
-                      fontWeight: 600,
-                    }}
-                  >
-                    Current Status: COMPLETED
-                  </span>
-                )}
+                  Open Space
+                </span>
+                <span
+                  className={`facility-badge ${centre?.field_visit_facility ? "yes" : "no"}`}
+                >
+                  Field Visit
+                </span>
+                <span
+                  className={`facility-badge ${centre?.transport_facility ? "yes" : "no"}`}
+                >
+                  Transport
+                </span>
+                <span
+                  className={`facility-badge ${centre?.dining_facility ? "yes" : "no"}`}
+                >
+                  Dining Room
+                </span>
               </div>
-            </section>
-          </div>
-        </main>
-      </div>
-
-      {/* Batch detail modal using rich detail component */}
-      <Modal
-        open={batchDetailModalOpen && !!selectedBatchId}
-        onClose={closeBatchDetail}
-        title={
-          selectedBatchId
-            ? `Batch Detail — Batch #${selectedBatchId}`
-            : "Batch Detail"
-        }
-      >
-        {selectedBatchId && <BatchDetailForDmmu batchId={selectedBatchId} />}
-      </Modal>
-
-      {/* Breakup modal for base total */}
-      <Modal
-        open={breakupModalOpen && !!breakupBatchId}
-        onClose={closeBreakupModal}
-        title={
-          breakupBatchId
-            ? `Cost Breakup — Batch #${breakupBatchId}`
-            : "Cost Breakup"
-        }
-        width="min(700px,96%)"
-      >
-        {breakupBatchId && (
-          <BreakupDetailForDmmu
-            batchId={breakupBatchId}
-            cost={batchCosts[breakupBatchId]}
-            grandTotal={getGrandTotalForBatch(breakupBatchId)}
-          />
-        )}
-      </Modal>
-    </div>
-  );
-}
-
-/* ========================================================= */
-/* ============ DMMU Batch Detail (modal content) ========== */
-/* ====== Inspired by src/pages/TMS/TRs/training_batch_detail.jsx ===== */
-/* ========================================================= */
-
-const DETAIL_CACHE_PREFIX = "tms_batch_detail_cache_v1::";
-
-function loadCache(id) {
-  try {
-    const raw = localStorage.getItem(DETAIL_CACHE_PREFIX + id);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function saveCache(id, payload) {
-  try {
-    localStorage.setItem(
-      DETAIL_CACHE_PREFIX + id,
-      JSON.stringify({ ts: Date.now(), payload }),
-    );
-  } catch { }
-}
-
-function BatchDetailForDmmu({ batchId }) {
-  const [loadingAll, setLoadingAll] = useState(false);
-  const [batchData, setBatchData] = useState(null);
-  const [trainingRequestDetail, setTrainingRequestDetail] = useState(null);
-  const [participants, setParticipants] = useState([]);
-  const [masterTrainers, setMasterTrainers] = useState([]);
-  const [centreDetail, setCentreDetail] = useState(null);
-
-  const [attendanceList, setAttendanceList] = useState([]);
-  const [loadingAttendance, setLoadingAttendance] = useState(false);
-
-  const [selectedAttendanceDate, setSelectedAttendanceDate] = useState(null);
-  const [selectedAttendanceRecords, setSelectedAttendanceRecords] = useState(
-    [],
-  );
-  const [loadingSelectedAttendance, setLoadingSelectedAttendance] =
-    useState(false);
-
-  const [closureRequest, setClosureRequest] = useState(null);
-  const [batchMedia, setBatchMedia] = useState([]);
-  const [loadingClosureInfo, setLoadingClosureInfo] = useState(false);
-  const [selectedMediaDate, setSelectedMediaDate] = useState(null);
-  const [mediaPreviewSrc, setMediaPreviewSrc] = useState(null);
-
-  const [refreshToken, setRefreshToken] = useState(0);
-  const inFlightRef = useRef(false);
-
-  const mediaByDate = useMemo(() => {
-    const grouped = {};
-    (batchMedia || []).forEach((m) => {
-      const dt = m.date || "";
-      if (!grouped[dt]) grouped[dt] = [];
-      grouped[dt].push(m);
-    });
-    return grouped;
-  }, [batchMedia]);
-
-  async function fetchAll(force = false) {
-    if (!batchId) return;
-    if (inFlightRef.current && !force) return;
-
-    inFlightRef.current = true;
-    setLoadingAll(true);
-
-    let trDetail = null;
-    let fullCentreData = null;
-    let attendances = [];
-
-    try {
-      if (!force) {
-        const cached = loadCache(batchId);
-        if (cached?.payload?.batchData) {
-          setBatchData(cached.payload.batchData);
-          setTrainingRequestDetail(
-            cached.payload.trainingRequestDetail || null,
-          );
-          setParticipants(cached.payload.participants || []);
-          setMasterTrainers(cached.payload.masterTrainers || []);
-          setCentreDetail(cached.payload.centreDetail || null);
-          setAttendanceList(cached.payload.attendanceList || []);
-          setLoadingAll(false);
-          inFlightRef.current = false;
-          return;
-        }
-      }
-
-      const batchResp = await api.get(`/tms/batches/${batchId}/detail/`);
-      const batchResponse = batchResp?.data || null;
-      setBatchData(batchResponse);
-
-      const requestId = batchResponse?.request?.id;
-      setParticipants(batchResponse?.beneficiary || []);
-      setMasterTrainers(batchResponse?.master_trainers || []);
-
-      if (requestId) {
-        const trResp = await api.get(
-          `/tms/training-requests/${requestId}/detail/`,
-        );
-        trDetail = trResp?.data || null;
-        setTrainingRequestDetail(trDetail);
-      }
-
-      if (batchResponse?.centre?.id) {
-        const centreId = batchResponse.centre.id;
-        const centreResp = await api.get(
-          `/tms/training-partner-centres/${centreId}/detail/`,
-        );
-        fullCentreData = centreResp?.data || batchResponse.centre;
-        setCentreDetail(fullCentreData);
-      }
-
-      try {
-        setLoadingAttendance(true);
-        const attResp = await api.get(
-          `/tms/batch-attendance/?batch=${batchId}`,
-        );
-        const attData = attResp?.data ?? attResp ?? {};
-        attendances = attData.results || attData || [];
-        attendances.sort((a, b) => (a.date || "").localeCompare(b.date || ""));
-        setAttendanceList(attendances);
-      } catch (e) {
-        console.error("dmmu_request_closure: attendance list failed", e);
-        setAttendanceList([]);
-      } finally {
-        setLoadingAttendance(false);
-      }
-
-      saveCache(batchId, {
-        batchData: batchResponse,
-        trainingRequestDetail: trDetail,
-        participants: batchResponse?.beneficiary || [],
-        masterTrainers: batchResponse?.master_trainers || [],
-        centreDetail: fullCentreData,
-        attendanceList: attendances,
-      });
-    } catch (e) {
-      console.error("dmmu_request_closure: fetchAll batch detail failed", e);
-    } finally {
-      setLoadingAll(false);
-      inFlightRef.current = false;
-    }
-  }
-
-  async function fetchClosureInfo() {
-    if (!batchId) return;
-    try {
-      setLoadingClosureInfo(true);
-      const crResp = await api.get(
-        `/tms/batch-closure-requests/?batch=${batchId}`,
-      );
-      const crData = crResp?.data ?? crResp ?? {};
-      const crList = crData.results || crData || [];
-      setClosureRequest(crList[0] || null);
-
-      const mediaResp = await api.get(
-        `/tms/batch-media/?batch=${batchId}&page_size=500`,
-      );
-      const mData = mediaResp?.data ?? mediaResp ?? {};
-      const mList = mData.results || mData || [];
-      setBatchMedia(mList);
-    } catch (e) {
-      console.error("dmmu_request_closure: fetchClosureInfo failed", e);
-      setClosureRequest(null);
-      setBatchMedia([]);
-    } finally {
-      setLoadingClosureInfo(false);
-    }
-  }
-
-  useEffect(() => {
-    fetchAll(refreshToken > 0);
-    fetchClosureInfo();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [batchId, refreshToken]);
-
-  function handleRefresh() {
-    try {
-      localStorage.removeItem(DETAIL_CACHE_PREFIX + batchId);
-    } catch { }
-    setSelectedAttendanceDate(null);
-    setSelectedAttendanceRecords([]);
-    setSelectedMediaDate(null);
-    setMediaPreviewSrc(null);
-    setRefreshToken((t) => t + 1);
-  }
-
-  const hasMasterTrainers = masterTrainers && masterTrainers.length > 0;
-  const firstMasterTrainer = hasMasterTrainers ? masterTrainers[0] : null;
-
-  async function fetchAttendanceParticipantsForDate(dateStr) {
-    if (!batchId || !dateStr) return;
-    setLoadingSelectedAttendance(true);
-    setSelectedAttendanceDate(dateStr);
-    setSelectedAttendanceRecords([]);
-    setSelectedMediaDate(dateStr);
-
-    try {
-      const attResp = await api.get(
-        `/tms/batch-attendance/?batch=${batchId}&date=${dateStr}`,
-      );
-      const attData = attResp?.data ?? attResp ?? {};
-      const attendance = (attData.results || attData || [])[0];
-      if (!attendance?.id) {
-        setSelectedAttendanceRecords([]);
-        return;
-      }
-
-      const recResp = await api.get(
-        `/tms/participant-attendance/?attendance=${attendance.id}`,
-      );
-      const recData = recResp?.data ?? recResp ?? {};
-      const recs = recData.results || recData || [];
-      setSelectedAttendanceRecords(recs);
-    } catch (e) {
-      console.error(
-        "dmmu_request_closure: fetchAttendanceParticipantsForDate failed",
-        e,
-      );
-      setSelectedAttendanceRecords([]);
-    } finally {
-      setLoadingSelectedAttendance(false);
-    }
-  }
-
-  if (loadingAll && !batchData) {
-    return <div className="table-spinner">Loading batch details…</div>;
-  }
-
-  return (
-    <div style={{ fontSize: 14 }}>
-      <div
-        style={{
-          display: "flex",
-          gap: 8,
-          marginBottom: 12,
-          alignItems: "center",
-        }}
-      >
-        <h3 style={{ margin: 0 }}>
-          Batch #{batchId} {batchData?.code ? `(${batchData.code})` : ""}
-        </h3>
-        <button
-          className="btn btn-sm"
-          style={{ marginLeft: "auto" }}
-          onClick={handleRefresh}
-        >
-          Refresh
-        </button>
-      </div>
-
-      {loadingClosureInfo ? (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: 10,
-            borderRadius: 6,
-            background: "#f9fafb",
-            border: "1px dashed #e5e7eb",
-            fontSize: 13,
-          }}
-        >
-          Checking batch closure status…
-        </div>
-      ) : closureRequest ? (
-        <div
-          style={{
-            marginBottom: 12,
-            padding: 12,
-            borderRadius: 8,
-            background: "#ecfdf5",
-            border: "1px solid #bbf7d0",
-            color: "#166534",
-            fontSize: 14,
-          }}
-        >
-          <strong>This batch is now closed.</strong> A closure request has been
-          submitted for this batch and is under review / processing.
-        </div>
-      ) : null}
-
-      <div style={{ background: "#fff", padding: 16, borderRadius: 8 }}>
-        {!batchData ? (
-          <div className="muted">
-            Batch not found.{" "}
-            <button className="btn-sm" onClick={handleRefresh}>
-              Retry
-            </button>
-          </div>
-        ) : (
-          <>
-            {/* Training details */}
-            <div style={{ marginBottom: 20 }}>
-              <h4
-                style={{
-                  margin: "0 0 12px 0",
-                  color: "#1a1a1a",
-                }}
-              >
-                📋 Training Details
-              </h4>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <strong>Type:</strong>{" "}
-                  {trainingRequestDetail?.training_type ||
-                    batchData?.request?.training_type ||
-                    "-"}
-                </div>
-                <div>
-                  <strong>Level:</strong>{" "}
-                  {trainingRequestDetail?.level ||
-                    batchData?.request?.level ||
-                    "-"}
-                </div>
-                <div>
-                  <strong>Status:</strong>{" "}
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: "#0b5cff",
-                    }}
-                  >
-                    {trainingRequestDetail?.status ||
-                      batchData?.request?.status ||
-                      "-"}
-                  </span>
-                </div>
-                <div>
-                  <strong>Training Name:</strong>{" "}
-                  {trainingRequestDetail?.training_plan?.training_name || "-"}
-                </div>
-                <div>
-                  <strong>Type of Training:</strong>{" "}
-                  {trainingRequestDetail?.training_plan?.type_of_training ||
-                    "-"}
-                </div>
-                <div>
-                  <strong>Level of Training:</strong>{" "}
-                  {trainingRequestDetail?.training_plan?.level_of_training ||
-                    "-"}
-                </div>
-                <div>
-                  <strong>No. of Days:</strong>{" "}
-                  {trainingRequestDetail?.training_plan?.no_of_days || "-"}
-                </div>
-                <div>
-                  <strong>District:</strong>{" "}
-                  {trainingRequestDetail?.district?.district_name_en || "-"}
-                </div>
-                <div>
-                  <strong>Block:</strong>{" "}
-                  {trainingRequestDetail?.block?.block_name_en || "-"}
-                </div>
-              </div>
-            </div>
-
-            {/* Batch details */}
-            <div style={{ marginBottom: 20 }}>
-              <h4
-                style={{
-                  margin: "0 0 12px 0",
-                  color: "#1a1a1a",
-                }}
-              >
-                🎯 Batch Details
-              </h4>
-              <div
-                style={{
-                  display: "grid",
-                  gridTemplateColumns: "repeat(auto-fit, minmax(200px, 1fr))",
-                  gap: 12,
-                }}
-              >
-                <div>
-                  <strong>Batch Code:</strong>{" "}
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: "#1976d2",
-                    }}
-                  >
-                    {batchData.code || "-"}
-                  </span>
-                </div>
-                <div>
-                  <strong>Batch Type:</strong> {batchData.batch_type || "-"}
-                </div>
-                <div>
-                  <strong>Status:</strong>{" "}
-                  <span
-                    style={{
-                      fontWeight: 700,
-                      color: "#0b5cff",
-                    }}
-                  >
-                    {batchData.status || "-"}
-                  </span>
-                </div>
-                <div>
-                  <strong>Start Date:</strong> {fmtDate(batchData.start_date)}
-                </div>
-                <div>
-                  <strong>End Date:</strong> {fmtDate(batchData.end_date)}
-                </div>
-                <div>
-                  <strong>Time:</strong> {batchData.time_of_training || "-"}
-                </div>
-              </div>
-            </div>
-
-            {/* Attendance + media */}
-            <div style={{ marginBottom: 20 }}>
-              <h4
-                style={{
-                  margin: "0 0 12px 0",
-                  color: "#1a1a1a",
-                }}
-              >
-                📅 Attendance (All Dates)
-              </h4>
-              {loadingAttendance ? (
-                <div className="table-spinner">Loading attendance…</div>
-              ) : attendanceList.length === 0 ? (
-                <div className="muted">
-                  No attendance records found for this batch.
-                </div>
-              ) : (
-                <>
-                  <div style={{ maxHeight: 220, overflow: "auto" }}>
-                    <table className="table table-compact">
-                      <thead>
-                        <tr>
-                          <th>Date</th>
-                          <th>Created At</th>
-                          <th>CSV Uploaded</th>
+              {/* Nested Centre Rooms */}
+              {centre?.rooms?.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <h5 style={{ margin: "0 0 10px 0", color: "#334155" }}>
+                    Training Halls / Rooms
+                  </h5>
+                  <table className="table" style={{ maxWidth: 400 }}>
+                    <thead style={{ background: "#f8fafc" }}>
+                      <tr>
+                        <th style={{ padding: "6px 10px" }}>Room Name</th>
+                        <th style={{ padding: "6px 10px" }}>Capacity</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {centre.rooms.map((r) => (
+                        <tr key={r.id}>
+                          <td style={{ padding: "6px 10px" }}>{r.room_name}</td>
+                          <td style={{ padding: "6px 10px" }}>
+                            {r.room_capacity}
+                          </td>
                         </tr>
-                      </thead>
-                      <tbody>
-                        {attendanceList.map((att) => (
-                          <tr key={att.id}>
-                            <td>
-                              <button
-                                type="button"
-                                className={
-                                  selectedAttendanceDate === att.date
-                                    ? "btn-sm btn-flat active"
-                                    : "btn-sm btn-flat"
-                                }
-                                onClick={() =>
-                                  fetchAttendanceParticipantsForDate(att.date)
-                                }
-                              >
-                                {fmtDate(att.date)}
-                              </button>
-                            </td>
-                            <td>{fmtDate(att.created_at)}</td>
-                            <td>
-                              {att.csv_upload ? (
-                                <span
-                                  style={{
-                                    fontSize: 12,
-                                    padding: "2px 8px",
-                                    borderRadius: 999,
-                                    background: "#e0f2fe",
-                                    color: "#0369a1",
-                                  }}
-                                >
-                                  Yes
-                                </span>
-                              ) : (
-                                <span
-                                  style={{
-                                    fontSize: 12,
-                                    padding: "2px 8px",
-                                    borderRadius: 999,
-                                    background: "#f3f4f6",
-                                    color: "#4b5563",
-                                  }}
-                                >
-                                  No
-                                </span>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
 
-                  {selectedAttendanceDate && (
-                    <div
-                      style={{
-                        marginTop: 12,
-                        paddingTop: 10,
-                        borderTop: "1px solid #e5e7eb",
-                      }}
-                    >
-                      <h5>Attendance on {fmtDate(selectedAttendanceDate)}</h5>
-                      {loadingSelectedAttendance ? (
-                        <div className="table-spinner">
-                          Loading participant records…
-                        </div>
-                      ) : selectedAttendanceRecords.length === 0 ? (
-                        <div className="muted">
-                          No participant attendance records for this date.
-                        </div>
-                      ) : (
+              {/* Nested Centre Pictures */}
+              {centre?.submissions?.length > 0 && (
+                <div style={{ marginTop: 20 }}>
+                  <h5 style={{ margin: "0 0 10px 0", color: "#334155" }}>
+                    Centre Media / Documents
+                  </h5>
+                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                    {centre.submissions.map((sub) => {
+                      const src = normalizeMediaUrl(sub.file);
+                      const isImage =
+                        src && !src.toLowerCase().endsWith(".pdf");
+                      return (
                         <div
+                          key={sub.id}
                           style={{
-                            maxHeight: 260,
-                            overflow: "auto",
-                            marginTop: 6,
+                            border: "1px solid #cbd5e1",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            width: 120,
                           }}
                         >
-                          <table className="table table-compact">
-                            <thead>
+                          {isImage ? (
+                            <img
+                              src={src}
+                              alt="Centre Media"
+                              style={{
+                                width: "100%",
+                                height: 80,
+                                objectFit: "cover",
+                                cursor: "zoom-in",
+                              }}
+                              onClick={() => setMediaPreviewSrc(src)}
+                            />
+                          ) : (
+                            <div
+                              onClick={() => window.open(src, "_blank")}
+                              style={{
+                                height: 80,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                                background: "#e2e8f0",
+                              }}
+                            >
+                              <span style={{ fontSize: 11, fontWeight: 600 }}>
+                                View PDF
+                              </span>
+                            </div>
+                          )}
+                          <div
+                            style={{
+                              padding: "4px",
+                              fontSize: "10px",
+                              textAlign: "center",
+                              background: "#f8fafc",
+                              fontWeight: 600,
+                              color: "#475569",
+                            }}
+                          >
+                            {sub.category}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* ════════ MASTER TRAINERS & SCHEDULES ════════ */}
+            <div
+              style={{
+                display: "grid",
+                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+                gap: 20,
+              }}
+            >
+              <div className="cl-card">
+                <div className="cl-card-title">🧑‍🏫 Master Trainers</div>
+                {batch?.master_trainers?.length > 0 ? (
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Name</th>
+                        <th>Designation</th>
+                        <th>Mobile</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batch.master_trainers.map((mt) => (
+                        <tr key={mt.id}>
+                          <td style={{ fontWeight: 500 }}>{mt.full_name}</td>
+                          <td>{mt.designation}</td>
+                          <td>{mt.mobile_no}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="empty-msg">No master trainers assigned.</div>
+                )}
+              </div>
+
+              <div className="cl-card">
+                <div className="cl-card-title">📅 Batch Schedules</div>
+                {batch?.schedules?.length > 0 ? (
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Start Time</th>
+                        <th>Remarks</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {batch.schedules.map((s) => (
+                        <tr key={s.id}>
+                          <td style={{ fontWeight: 500 }}>
+                            {fmtDate(s.schedule_date)}
+                          </td>
+                          <td>{s.start_time || "—"}</td>
+                          <td>{s.remarks || "—"}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                ) : (
+                  <div className="empty-msg">No schedules found.</div>
+                )}
+              </div>
+            </div>
+
+            {/* ════════ DAILY ATTENDANCE RECORDS ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">📝 Daily Attendance Records</div>
+              {batch?.attendances?.length > 0 ? (
+                <div
+                  style={{ display: "flex", flexDirection: "column", gap: 16 }}
+                >
+                  {batch.attendances.map((att) => (
+                    <div
+                      key={att.id}
+                      style={{
+                        border: "1px solid #cbd5e1",
+                        borderRadius: 8,
+                        background: "#f8fafc",
+                        overflow: "hidden",
+                      }}
+                    >
+                      <div
+                        style={{
+                          padding: "12px 16px",
+                          background: "#e2e8f0",
+                          display: "flex",
+                          justifyContent: "space-between",
+                          alignItems: "center",
+                        }}
+                      >
+                        <div style={{ fontWeight: 600, color: "#1e293b" }}>
+                          Day: {fmtDate(att.date)}
+                        </div>
+                        {att.csv_upload ? (
+                          <a
+                            href={normalizeMediaUrl(att.csv_upload)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              fontSize: 13,
+                              color: "#2563eb",
+                              textDecoration: "none",
+                              fontWeight: 600,
+                            }}
+                          >
+                            📥 Download CSV
+                          </a>
+                        ) : (
+                          <span style={{ fontSize: 13, color: "#94a3b8" }}>
+                            No CSV Uploaded
+                          </span>
+                        )}
+                      </div>
+
+                      {/* Participant Records Table */}
+                      {att.participant_records?.length > 0 ? (
+                        <div
+                          style={{
+                            padding: 12,
+                            overflowX: "auto",
+                            maxHeight: 200,
+                            background: "#fff",
+                          }}
+                        >
+                          <table className="table" style={{ fontSize: 13 }}>
+                            <thead style={{ background: "#f1f5f9" }}>
                               <tr>
-                                <th>Name</th>
-                                <th>Role</th>
-                                <th>Status</th>
+                                <th style={{ padding: "6px 10px" }}>
+                                  Participant Name
+                                </th>
+                                <th style={{ padding: "6px 10px" }}>Role</th>
+                                <th style={{ padding: "6px 10px" }}>Status</th>
                               </tr>
                             </thead>
                             <tbody>
-                              {selectedAttendanceRecords.map((r) => (
-                                <tr key={r.id}>
-                                  <td>{r.participant_name}</td>
-                                  <td>
-                                    {r.participant_role === "trainer"
-                                      ? "Trainer"
-                                      : "Trainee"}
+                              {att.participant_records.map((pr) => (
+                                <tr key={pr.id}>
+                                  <td style={{ padding: "6px 10px" }}>
+                                    {pr.participant_name}
                                   </td>
-                                  <td>
+                                  <td style={{ padding: "6px 10px" }}>
+                                    {pr.participant_role}
+                                  </td>
+                                  <td style={{ padding: "6px 10px" }}>
                                     <span
                                       style={{
-                                        fontSize: 12,
                                         padding: "2px 8px",
-                                        borderRadius: 999,
-                                        background: r.present
+                                        borderRadius: 12,
+                                        fontSize: 11,
+                                        fontWeight: "bold",
+                                        background: pr.present
                                           ? "#dcfce7"
                                           : "#fee2e2",
-                                        color: r.present
+                                        color: pr.present
                                           ? "#166534"
-                                          : "#b91c1c",
+                                          : "#991b1b",
                                       }}
                                     >
-                                      {r.present ? "Present" : "Absent"}
+                                      {pr.present ? "Present" : "Absent"}
                                     </span>
                                   </td>
                                 </tr>
@@ -1665,423 +722,272 @@ function BatchDetailForDmmu({ batchId }) {
                             </tbody>
                           </table>
                         </div>
-                      )}
-
-                      {selectedMediaDate &&
-                        mediaByDate[selectedMediaDate] &&
-                        mediaByDate[selectedMediaDate].length > 0 && (
-                          <div
-                            style={{
-                              marginTop: 16,
-                              paddingTop: 8,
-                              borderTop: "1px dashed #e5e7eb",
-                            }}
-                          >
-                            <h5>Media on {fmtDate(selectedMediaDate)}</h5>
-                            <div
-                              style={{
-                                display: "flex",
-                                flexWrap: "wrap",
-                                gap: 12,
-                              }}
-                            >
-                              {mediaByDate[selectedMediaDate].map((m) => {
-                                const src = normalizeMediaUrl(m.file);
-                                const isImage =
-                                  src && !src.toLowerCase().endsWith(".pdf");
-                                return (
-                                  <div
-                                    key={m.id}
-                                    style={{
-                                      width: 150,
-                                      borderRadius: 6,
-                                      border: "1px solid #e5e7eb",
-                                      padding: 8,
-                                      background: "#fff",
-                                      fontSize: 12,
-                                    }}
-                                  >
-                                    {isImage ? (
-                                      <img
-                                        src={src}
-                                        alt={m.category}
-                                        style={{
-                                          width: "100%",
-                                          height: 90,
-                                          objectFit: "cover",
-                                          borderRadius: 4,
-                                          cursor: "pointer",
-                                        }}
-                                        onClick={() => setMediaPreviewSrc(src)}
-                                      />
-                                    ) : (
-                                      <div
-                                        style={{
-                                          height: 90,
-                                          display: "flex",
-                                          alignItems: "center",
-                                          justifyContent: "center",
-                                          background: "#f9fafb",
-                                          borderRadius: 4,
-                                          cursor: "pointer",
-                                        }}
-                                        onClick={() =>
-                                          window.open(src, "_blank")
-                                        }
-                                      >
-                                        View PDF
-                                      </div>
-                                    )}
-                                    <div
-                                      style={{
-                                        marginTop: 4,
-                                        fontWeight: 600,
-                                      }}
-                                    >
-                                      {m.category}
-                                    </div>
-                                    {m.notes && (
-                                      <div
-                                        style={{
-                                          marginTop: 2,
-                                          color: "#4b5563",
-                                        }}
-                                      >
-                                        {m.notes}
-                                      </div>
-                                    )}
-                                  </div>
-                                );
-                              })}
-                            </div>
-                          </div>
-                        )}
-                    </div>
-                  )}
-                </>
-              )}
-            </div>
-
-            {/* Centre details */}
-            {centreDetail && (
-              <div style={{ marginBottom: 20 }}>
-                <h4
-                  style={{
-                    margin: "0 0 12px 0",
-                    color: "#1a1a1a",
-                  }}
-                >
-                  🏢 Centre Details
-                </h4>
-                <div
-                  style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit, minmax(300px, 1fr))",
-                    gap: 16,
-                  }}
-                >
-                  <div>
-                    <div
-                      style={{
-                        fontWeight: 700,
-                        marginBottom: 8,
-                        fontSize: 18,
-                      }}
-                    >
-                      {centreDetail.venue_name}
-                    </div>
-                    <div style={{ color: "#666", marginBottom: 12 }}>
-                      {centreDetail.venue_address}
-                    </div>
-                    <div>
-                      <strong>Serial:</strong>{" "}
-                      {centreDetail.serial_number || "-"}
-                    </div>
-                    <div>
-                      <strong>Type:</strong> {centreDetail.centre_type || "-"}
-                    </div>
-                    <div>
-                      <strong>Halls:</strong>{" "}
-                      {centreDetail.training_hall_count || 0} (Capacity:{" "}
-                      {centreDetail.training_hall_capacity || 0})
-                    </div>
-
-                    {centreDetail.rooms && centreDetail.rooms.length > 0 && (
-                      <div style={{ marginTop: 12 }}>
-                        <h5
+                      ) : (
+                        <div
                           style={{
-                            margin: "8px 0",
-                            fontSize: 14,
+                            padding: 12,
+                            fontSize: 13,
+                            color: "#64748b",
+                            background: "#fff",
                           }}
                         >
-                          Training Halls
-                        </h5>
-                        <table
-                          style={{
-                            width: "100%",
-                            borderCollapse: "collapse",
-                          }}
-                        >
-                          <thead>
-                            <tr style={{ background: "#f5f5f5" }}>
-                              <th
-                                style={{
-                                  padding: "8px",
-                                  border: "1px solid #ddd",
-                                  textAlign: "left",
-                                }}
-                              >
-                                Name
-                              </th>
-                              <th
-                                style={{
-                                  padding: "8px",
-                                  border: "1px solid #ddd",
-                                  textAlign: "left",
-                                }}
-                              >
-                                Capacity
-                              </th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {centreDetail.rooms.map((room) => (
-                              <tr key={room.id}>
-                                <td
-                                  style={{
-                                    padding: "8px",
-                                    border: "1px solid #ddd",
-                                  }}
-                                >
-                                  {room.room_name}
-                                </td>
-                                <td
-                                  style={{
-                                    padding: "8px",
-                                    border: "1px solid #ddd",
-                                  }}
-                                >
-                                  {room.room_capacity}
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                  </div>
-
-                  <div>
-                    <div>
-                      <strong>Security:</strong>{" "}
-                      {centreDetail.security_arrangements || "-"}
-                    </div>
-                    <div>
-                      <strong>Toilets:</strong>{" "}
-                      {centreDetail.toilets_bathrooms || "-"}
-                    </div>
-                    <div>
-                      <strong>Power/Water:</strong>{" "}
-                      {centreDetail.power_water_facility || "-"}
-                    </div>
-                    <div>
-                      <strong>Medical Kit:</strong>{" "}
-                      {centreDetail.medical_kit ? "Yes" : "No"}
-                    </div>
-                    <div>
-                      <strong>Open Space:</strong>{" "}
-                      {centreDetail.open_space ? "Yes" : "No"}
-                    </div>
-                    <div>
-                      <strong>Field Visit:</strong>{" "}
-                      {centreDetail.field_visit_facility ? "Yes" : "No"}
-                    </div>
-                    <div>
-                      <strong>Transport:</strong>{" "}
-                      {centreDetail.transport_facility ? "Yes" : "No"}
-                    </div>
-                    <div>
-                      <strong>Dining:</strong>{" "}
-                      {centreDetail.dining_facility ? "Yes" : "No"}
-                    </div>
-                    <div style={{ marginTop: 8 }}>
-                      <strong>Other:</strong>{" "}
-                      {centreDetail.other_details || "-"}
-                    </div>
-
-                    {centreDetail.submissions &&
-                      centreDetail.submissions.length > 0 && (
-                        <div style={{ marginTop: 16 }}>
-                          <h5
-                            style={{
-                              margin: "8px 0",
-                              fontSize: 14,
-                            }}
-                          >
-                            Centre Media
-                          </h5>
-                          <div
-                            style={{
-                              display: "flex",
-                              flexWrap: "wrap",
-                              gap: 12,
-                            }}
-                          >
-                            {centreDetail.submissions.map((submission) => {
-                              const src = normalizeMediaUrl(submission.file);
-                              return (
-                                <div
-                                  key={submission.id}
-                                  style={{
-                                    textAlign: "center",
-                                    border: "1px solid #eee",
-                                    padding: 8,
-                                    borderRadius: 4,
-                                  }}
-                                >
-                                  <img
-                                    src={src}
-                                    alt={submission.category}
-                                    style={{
-                                      height: 80,
-                                      width: 80,
-                                      objectFit: "cover",
-                                      borderRadius: 4,
-                                      cursor: "pointer",
-                                    }}
-                                    onClick={() => window.open(src, "_blank")}
-                                  />
-                                  <div
-                                    style={{
-                                      fontSize: 12,
-                                      marginTop: 4,
-                                    }}
-                                  >
-                                    {submission.category}
-                                  </div>
-                                </div>
-                              );
-                            })}
-                          </div>
+                          No participant records found for this day.
                         </div>
                       )}
-                  </div>
+                    </div>
+                  ))}
                 </div>
+              ) : (
+                <div className="empty-msg">No attendance recorded.</div>
+              )}
+            </div>
+
+            {/* ════════ BATCH MEDIA GALLERY ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">
+                📸 Batch Media (Photos & Docs)
               </div>
-            )}
+              {batch?.batch_pictures?.length > 0 ? (
+                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                  {batch.batch_pictures.map((m) => {
+                    const src = normalizeMediaUrl(m.file);
+                    const isImage = src && !src.toLowerCase().endsWith(".pdf");
+                    return (
+                      <div
+                        key={m.id}
+                        style={{
+                          width: 140,
+                          background: "#f1f5f9",
+                          borderRadius: 8,
+                          overflow: "hidden",
+                          border: "1px solid #cbd5e1",
+                        }}
+                      >
+                        {isImage ? (
+                          <img
+                            src={src}
+                            alt={m.category}
+                            onClick={() => setMediaPreviewSrc(src)}
+                            style={{
+                              width: "100%",
+                              height: 100,
+                              objectFit: "cover",
+                              cursor: "zoom-in",
+                            }}
+                          />
+                        ) : (
+                          <div
+                            onClick={() => window.open(src, "_blank")}
+                            style={{
+                              height: 100,
+                              display: "flex",
+                              alignItems: "center",
+                              justifyContent: "center",
+                              cursor: "pointer",
+                              background: "#e2e8f0",
+                            }}
+                          >
+                            <span
+                              style={{
+                                fontSize: 13,
+                                fontWeight: 600,
+                                color: "#334155",
+                              }}
+                            >
+                              View PDF
+                            </span>
+                          </div>
+                        )}
+                        <div
+                          style={{
+                            padding: "8px",
+                            fontSize: 12,
+                            textAlign: "center",
+                            fontWeight: 600,
+                            color: "#475569",
+                          }}
+                        >
+                          {m.category}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="empty-msg">
+                  No media uploaded by Contact Person.
+                </div>
+              )}
+            </div>
 
-            {/* Participants */}
-            <div>
-              <h4
-                style={{
-                  margin: "0 0 12px 0",
-                  color: "#1a1a1a",
-                }}
-              >
-                👥 Participants ({participants.length})
-              </h4>
+            {/* ════════ PARTICIPANTS COST TABLE (READ-ONLY) ════════ */}
+            <div className="cl-card">
+              <div className="cl-card-title">
+                💰 Successful Participants — Cost Breakup
+                <span className="count-badge">
+                  {successfulParticipants.length}
+                </span>
+              </div>
 
-              {hasMasterTrainers && firstMasterTrainer && (
-                <div
-                  style={{
-                    background: "#e3f2fd",
-                    border: "2px solid #2196f3",
-                    borderRadius: 8,
-                    padding: 16,
-                    marginBottom: 16,
-                  }}
-                >
-                  <div
-                    style={{
-                      fontWeight: 700,
-                      fontSize: 16,
-                      marginBottom: 8,
-                      color: "#1976d2",
-                    }}
-                  >
-                    Master Trainer
-                  </div>
-                  <div style={{ display: "flex", gap: 16 }}>
-                    <div>
-                      <strong>Name:</strong>{" "}
-                      {firstMasterTrainer.full_name ||
-                        firstMasterTrainer.name ||
-                        "-"}
-                    </div>
-                    <div>
-                      <strong>Mobile:</strong>{" "}
-                      {firstMasterTrainer.mobile_no ||
-                        firstMasterTrainer.mobile ||
-                        "-"}
-                    </div>
-                  </div>
+              {successfulParticipants.length === 0 ? (
+                <div className="empty-msg">
+                  No successful participants found (must have ≥80% attendance &
+                  not dropped out).
+                </div>
+              ) : (
+                <div style={{ overflowX: "auto" }}>
+                  <table className="table">
+                    <thead>
+                      <tr>
+                        <th>#</th>
+                        <th>Participant Name</th>
+                        <th>Gender</th>
+                        <th>Age</th>
+                        <th>Category</th>
+                        <th>Mobile</th>
+                        <th>Attendance %</th>
+                        <th>HRA (₹)</th>
+                        <th>TA / DA (₹)</th>
+                        <th>Row Total (₹)</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {successfulParticipants.map((p, i) => (
+                        <tr key={p.id}>
+                          <td>{i + 1}</td>
+                          <td style={{ fontWeight: 600, color: "#0f172a" }}>
+                            {p.display_name}
+                          </td>
+                          <td>{p.gender}</td>
+                          <td>{p.age}</td>
+                          <td>{p.category}</td>
+                          <td>{p.mobile}</td>
+                          <td>
+                            <span
+                              style={{
+                                background: "#dcfce7",
+                                color: "#166534",
+                                padding: "3px 8px",
+                                borderRadius: 20,
+                                fontSize: 12,
+                                fontWeight: "bold",
+                              }}
+                            >
+                              {p.attendance_pct}%
+                            </span>
+                          </td>
+                          <td>₹{fmt(p.hra)}</td>
+                          <td>₹{fmt(p.ta_da)}</td>
+                          <td>
+                            <strong style={{ color: "#1e40af" }}>
+                              ₹{fmt(p.total_cost)}
+                            </strong>
+                          </td>
+                        </tr>
+                      ))}
+                    </tbody>
+                    <tfoot>
+                      <tr>
+                        <td
+                          colSpan={5}
+                          style={{
+                            textAlign: "right",
+                            fontWeight: 700,
+                            color: "#2b4e72",
+                            padding: "10px",
+                          }}
+                        >
+                          Participant Subtotal:
+                        </td>
+                        <td
+                          style={{
+                            fontWeight: 700,
+                            color: "#2b4e72",
+                            padding: "10px",
+                            fontSize: 16,
+                          }}
+                        >
+                          ₹{fmt(participantSubtotal)}
+                        </td>
+                      </tr>
+                    </tfoot>
+                  </table>
+                </div>
+              )}
+            </div>
+
+            {/* ════════ GRAND TOTAL CARD (READ-ONLY) ════════ */}
+            <div className="grand-total-card">
+              <div className="grand-total-title">Master Invoice Summary</div>
+
+              <div className="grand-total-row">
+                <span>
+                  Participant Costs ({successfulParticipants.length}{" "}
+                  participants)
+                </span>
+                <span>₹{fmt(participantSubtotal)}</span>
+              </div>
+
+              {batchCosting?.is_exposure_visit && (
+                <div className="grand-total-row">
+                  <span>Exposure Visit Cost</span>
+                  <span>₹{fmt(batchCosting.exposure_visit_cost || 0)}</span>
                 </div>
               )}
 
-              <div style={{ maxHeight: 300, overflow: "auto" }}>
-                <table className="table table-compact">
-                  <thead>
-                    <tr>
-                      <th>S.No.</th>
-                      <th>Member Name</th>
-                      <th>Age</th>
-                      <th>Gender</th>
-                      <th>PLD Status</th>
-                      <th>Social Category</th>
-                      <th>Religion</th>
-                      <th>Mobile</th>
-                      <th>Education</th>
-                      <th>Address</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {participants.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={10}
-                          style={{
-                            textAlign: "center",
-                            padding: 20,
-                          }}
-                        >
-                          No participants assigned.
-                        </td>
-                      </tr>
-                    ) : (
-                      participants.map((p, idx) => (
-                        <tr key={p.id || `p-${idx}`}>
-                          <td>{idx + 1}</td>
-                          <td style={{ fontWeight: 500 }}>
-                            {p.member_name || "-"}
-                          </td>
-                          <td>{p.age || "-"}</td>
-                          <td>{p.gender || "-"}</td>
-                          <td>{p.pld_status || "-"}</td>
-                          <td>{p.social_category || "-"}</td>
-                          <td>{p.religion || "-"}</td>
-                          <td>{p.mobile || "-"}</td>
-                          <td>{p.education || "-"}</td>
-                          <td
-                            style={{
-                              maxWidth: 200,
-                              whiteSpace: "nowrap",
-                              overflow: "hidden",
-                              textOverflow: "ellipsis",
-                            }}
-                          >
-                            {p.address || "-"}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+              {batchCosting?.is_field_visit && (
+                <div className="grand-total-row">
+                  <span>Field Visit Cost</span>
+                  <span>₹{fmt(batchCosting.field_visit_cost || 0)}</span>
+                </div>
+              )}
+
+              <div className="grand-total-divider" />
+
+              <div className="grand-total-row grand-total-final">
+                <span>Grand Total Requested by TP</span>
+                <span>₹{fmt(batchCosting?.grand_total_cost || 0)}</span>
               </div>
             </div>
-          </>
-        )}
+
+            {/* ════════ APPROVE / REJECT ACTION BAR ════════ */}
+            {isReviewStatus && (
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  gap: 12,
+                  marginTop: 24,
+                  marginBottom: 32,
+                }}
+              >
+                <button
+                  className="btn btn-outline"
+                  style={{
+                    borderColor: "#ef4444",
+                    color: "#b91c1c",
+                    fontWeight: "bold",
+                  }}
+                  disabled={actionLoading}
+                  onClick={() => setRejectModalOpen(true)}
+                >
+                  Reject Batch
+                </button>
+                <button
+                  className="btn btn-primary btn-lg"
+                  style={{ background: "#10b981", borderColor: "#10b981" }}
+                  onClick={handleApprove}
+                  disabled={actionLoading}
+                >
+                  {actionLoading ? "Processing…" : "Approve and Close Batch"}
+                </button>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
 
+      {/* Lightbox for media preview */}
       {mediaPreviewSrc && (
         <div
           onClick={() => setMediaPreviewSrc(null)}
@@ -2099,75 +1005,178 @@ function BatchDetailForDmmu({ batchId }) {
           <img
             src={mediaPreviewSrc}
             alt="Preview"
-            style={{
-              maxWidth: "90%",
-              maxHeight: "90%",
-              borderRadius: 6,
-            }}
+            style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 6 }}
           />
         </div>
       )}
-    </div>
-  );
-}
 
-/* ========================================================= */
-/* ============ Breakup detail (base total click) ========== */
-/* ========================================================= */
-
-function BreakupDetailForDmmu({ batchId, cost, grandTotal }) {
-  if (!cost || !cost.batch_expenses) {
-    return <div className="muted">Cost breakup not loaded for this batch.</div>;
-  }
-  const be = cost.batch_expenses;
-
-  return (
-    <div style={{ fontSize: 14 }}>
-      <div style={{ marginBottom: 10 }}>
-        <strong>Batch ID:</strong> {batchId}
-      </div>
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "repeat(auto-fit, minmax(220px, 1fr))",
-          gap: 10,
-        }}
-      >
-        <div>
-          <strong>Centre Cost:</strong> ₹ {be.centre_cost}
-        </div>
-        <div>
-          <strong>Hostel Cost:</strong> ₹ {be.hostel_cost}
-        </div>
-        <div>
-          <strong>Fooding Cost:</strong> ₹ {be.fooding_cost}
-        </div>
-        <div>
-          <strong>Dresses Cost:</strong> ₹ {be.dresses_cost}
-        </div>
-        <div>
-          <strong>Study Material Cost:</strong> ₹ {be.study_material_cost}
-        </div>
-        <div>
-          <strong>Base Total:</strong> ₹ {be.total_cost}
-        </div>
-        <div>
-          <strong>Trainer Part Cost:</strong> ₹ {cost.trainer_part_cost}
-        </div>
-        <div>
-          <strong>TP Part Cost:</strong> ₹ {cost.tp_part_cost}
-        </div>
+      {/* Reject Modal */}
+      {rejectModalOpen && (
         <div
           style={{
-            gridColumn: "1 / -1",
-            marginTop: 8,
-            paddingTop: 8,
-            borderTop: "1px solid #e5e7eb",
+            position: "fixed",
+            inset: 0,
+            background: "rgba(0,0,0,0.5)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 4000,
           }}
         >
-          <strong>Grand Total for this Batch:</strong> ₹ {grandTotal.toFixed(2)}
+          <div
+            style={{
+              background: "#fff",
+              width: 500,
+              padding: 24,
+              borderRadius: 10,
+              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
+            }}
+          >
+            <h3 style={{ margin: "0 0 16px 0", color: "#b91c1c" }}>
+              Reject Batch Closure
+            </h3>
+            <p style={{ fontSize: 14, color: "#475569", marginBottom: 12 }}>
+              Please provide a reason for rejecting this batch. It will be sent
+              back to the Training Partner.
+            </p>
+            <textarea
+              className="cost-input"
+              style={{ width: "100%", height: 100, marginBottom: 16 }}
+              placeholder="Reason for rejection..."
+              value={rejectionReason}
+              onChange={(e) => setRejectionReason(e.target.value)}
+              disabled={actionLoading}
+            />
+            <div
+              style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}
+            >
+              <button
+                className="btn btn-outline"
+                onClick={() => setRejectModalOpen(false)}
+                disabled={actionLoading}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn btn-primary"
+                style={{ background: "#ef4444" }}
+                onClick={handleReject}
+                disabled={actionLoading}
+              >
+                {actionLoading ? "Rejecting..." : "Confirm Rejection"}
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
+      )}
+
+      {/* ════════════════════════════════════════════════════════
+         STYLES
+      ════════════════════════════════════════════════════════ */}
+      <style>{`
+/* ── LAYOUT ── */
+.dashboard-header { display: flex; align-items: center; margin-bottom: 16px; }
+.dashboard-title { margin-top: 25px; margin-left: 30px; color: #2b4e72; }
+
+/* ── CARDS ── */
+.cl-card {
+  background: #fff;
+  border: 2px solid #e2e8f0;
+  border-radius: 10px;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.03);
+  padding: 20px;
+  margin-bottom: 20px;
+}
+.cl-card-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #1e293b;
+  margin-bottom: 16px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border-bottom: 1px solid #e2e8f0;
+  padding-bottom: 10px;
+}
+
+/* ── INFO GRID ── */
+.info-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.info-item { display: flex; flex-direction: column; gap: 3px; }
+.info-label { font-size: 12px; font-weight: 600; color: #64748b; }
+.info-value { font-size: 14px; color: #0f172a; font-weight: 500; }
+
+.facility-badge { padding: 4px 10px; border-radius: 20px; font-size: 12px; font-weight: 600; border: 1px solid transparent; }
+.facility-badge.yes { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+.facility-badge.no { background: #fee2e2; color: #991b1b; border-color: #fecaca; text-decoration: line-through; }
+
+/* ── COUNT BADGE ── */
+.count-badge { background: #3b82f6; color: #fff; border-radius: 12px; padding: 2px 10px; font-size: 13px; font-weight: 600; }
+
+/* ── TABLE ── */
+.table { width: 100%; border-collapse: collapse; font-size: 14px; }
+.table thead { background: #f1f5f9; color: #334155; }
+.table th { padding: 10px; text-align: left; border-bottom: 2px solid #cbd5e1; white-space: nowrap; }
+.table td { padding: 9px 10px; border-bottom: 1px solid #e2e8f0; vertical-align: middle; }
+.table tbody tr:hover { background: #f8fafc; }
+
+/* ── COST INPUT ── */
+.cost-input { padding: 6px 8px; border: 1px solid #cbd5e1; border-radius: 6px; background: #fff; font-size: 14px; transition: all .2s; }
+.cost-input:focus { outline: none; border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.15); }
+
+/* ── GRAND TOTAL CARD ── */
+.grand-total-card { background: linear-gradient(135deg, #1e293b, #334155); border-radius: 12px; padding: 22px 24px; margin-bottom: 20px; color: #f8fafc; }
+.grand-total-title { font-size: 14px; font-weight: 700; opacity: 0.8; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 14px; }
+.grand-total-row { display: flex; justify-content: space-between; align-items: center; padding: 6px 0; font-size: 15px; opacity: 0.9; }
+.grand-total-divider { border-top: 1px solid rgba(255,255,255,0.2); margin: 10px 0; }
+.grand-total-final { font-size: 20px; font-weight: 800; opacity: 1; color: #fff; }
+
+/* ── ALERTS ── */
+.alert { padding: 14px 18px; border-radius: 8px; margin-bottom: 16px; font-weight: 500; font-size: 14px; }
+.alert-info { background: #eff6ff; color: #1d4ed8; border: 1px solid #bfdbfe; }
+.alert-success { background: #ecfdf5; color: #15803d; border: 1px solid #bbf7d0; }
+.alert-error { background: #fef2f2; color: #b91c1c; border: 1px solid #fecaca; }
+
+/* ── BUTTONS ── */
+.btn { padding: 9px 18px; border-radius: 7px; cursor: pointer; border: none; font-weight: 600; font-size: 14px; transition: all .22s ease; }
+.btn:disabled { opacity: 0.55; cursor: not-allowed; }
+.btn-primary { background: #2563eb; color: #fff; }
+.btn-primary:hover:not(:disabled) { background: #1d4ed8; transform: translateY(-2px); box-shadow: 0 6px 14px rgba(37,99,235,0.2); }
+.btn-outline { background: #fff; color: #475569; border: 1px solid #cbd5e1; }
+.btn-outline:hover:not(:disabled) { background: #f8fafc; }
+.btn-lg { padding: 11px 26px; font-size: 15px; }
+
+/* ── STATUS BADGES ── */
+.status-badge { padding: 3px 8px; border-radius: 5px; font-weight: 600; font-size: 12px; }
+.status-draft { background: #fef08a; color: #92400e; }
+.status-pending { background: #fecaca; color: #991b1b; }
+.status-ongoing { background: #fef08a; color: #92400e; }
+.status-scheduled { background: #bae6fd; color: #075985; }
+.status-completed { background: #dcfce7; color: #166534; }
+.status-review { background: #fed7aa; color: #9a3412; }
+.status-closed { background: #e2e8f0; color: #334155; }
+.status-rejected { background: #fecaca; color: #991b1b; }
+
+/* ── EMPTY STATE ── */
+.empty-msg { padding: 20px; color: #64748b; font-style: italic; text-align: center; }
+
+/* ── LOADING SPINNER ── */
+.spinner-wrap { display: flex; align-items: center; gap: 14px; font-size: 16px; color: #334155; font-weight: 600; }
+.spinner { width: 28px; height: 28px; border: 3px solid #cbd5e1; border-top-color: #3b82f6; border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+
+/* ── RESPONSIVE ── */
+@media (max-width: 768px) {
+  .info-grid { grid-template-columns: repeat(2, 1fr); }
+  .grand-total-final { font-size: 17px; }
+}
+@media (max-width: 480px) {
+  .info-grid { grid-template-columns: 1fr; }
+}
+      `}</style>
     </div>
   );
 }

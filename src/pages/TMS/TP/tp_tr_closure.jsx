@@ -88,6 +88,7 @@ export default function TpTrainingRequestClosure() {
     try {
       const resp = await api.get(`/tms/batches/${batchId}/detail/`);
       const data = resp?.data;
+      console.log("Fetched batch detail:", data);
 
       if (!data) throw new Error("Empty response");
 
