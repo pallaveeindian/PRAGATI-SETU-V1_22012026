@@ -249,7 +249,7 @@ export default function TpTrainingRequestClosure() {
     for (const p of successfulParticipants) {
       const c = costs[p.id] || {};
       if (c.hra === "" || c.ta_da === "") {
-        setSubmitError("Please fill in HRA and TA/DA for every participant before submitting.");
+        setSubmitError("Please fill in TA and DA for every participant before submitting.");
         return;
       }
     }
@@ -537,8 +537,8 @@ export default function TpTrainingRequestClosure() {
                         <th>#</th>
                         <th>Participant Name</th>
                         <th>Attendance %</th>
-                        <th>HRA (₹)</th>
-                        <th>TA / DA (₹)</th>
+                        <th>TA (₹)</th>
+                        <th>DA (₹)</th>
                         <th>Row Total (₹)</th>
                       </tr>
                     </thead>

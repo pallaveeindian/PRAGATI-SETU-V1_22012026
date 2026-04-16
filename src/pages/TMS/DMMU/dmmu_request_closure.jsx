@@ -233,6 +233,13 @@ export default function DmmuBatchClosureReview() {
         },
       );
 
+      // 3. Create a blank Batch Report so the certificate screen works instantly
+      await api.post("/tms/batch-reports/", {
+        batch: batchId,
+        status: "DRAFT",
+        created_by: user.id,
+      });
+
       alert("Batch Approved and Closed Successfully!");
       navigate(`/tms/batch-certificate/${batchId}`, { replace: true });
     } catch (e) {
@@ -846,8 +853,8 @@ export default function DmmuBatchClosureReview() {
                         <th>Category</th>
                         <th>Mobile</th>
                         <th>Attendance %</th>
-                        <th>HRA (₹)</th>
-                        <th>TA / DA (₹)</th>
+                        <th>TA (₹)</th>
+                        <th>DA (₹)</th>
                         <th>Row Total (₹)</th>
                       </tr>
                     </thead>

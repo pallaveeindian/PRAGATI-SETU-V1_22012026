@@ -1,13 +1,11 @@
 // src/pages/TMS/TRs/batch_certificate.jsx
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
+import api from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
-import JSZip from "jszip";
-import { Document, Packer, Paragraph, TextRun } from "docx";
+
 const CERT_CACHE_KEY = "tms_batch_certificate_cache_v1";
 
 function getCacheKey(batchId) {
@@ -20,7 +18,7 @@ function saveCache(batchId, payload) {
       getCacheKey(batchId),
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch { }
+  } catch {}
 }
 
 function loadCache(batchId) {
@@ -32,36 +30,77 @@ function loadCache(batchId) {
   }
 }
 
+function normalizeMediaUrl(url) {
+  if (!url) return "";
+  if (url.startsWith("/media/")) return url;
+  if (url.startsWith("http")) {
+    try {
+      const parsedUrl = new URL(url);
+      return parsedUrl.pathname;
+    } catch (e) {
+      return url;
+    }
+  }
+  return url;
+}
+
+function buildMediaUrl(url) {
+  if (!url) return null;
+
+  try {
+    const normalizedPath = normalizeMediaUrl(url);
+
+    let base = api?.defaults?.baseURL;
+
+    // fallback if baseURL is invalid
+    if (!base || !base.startsWith("http")) {
+      base = window.location.origin; // fallback to current origin
+    }
+
+    const apiBase = new URL(base);
+
+    return `${apiBase.protocol}//${apiBase.host}${normalizedPath}`;
+  } catch (e) {
+    console.error("buildMediaUrl failed:", url, e);
+    return url; // fallback: at least don't crash UI
+  }
+}
+
 export default function BatchCertificate() {
   const { user } = useContext(AuthContext) || {};
   const { id: batchId } = useParams();
   const role = getCanonicalRole(user || {});
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
+
   const [loading, setLoading] = useState(true);
   const [batchDetail, setBatchDetail] = useState(null);
   const [closureRow, setClosureRow] = useState(null);
   const [reportRow, setReportRow] = useState(null);
+
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState("");
   const [refreshToken, setRefreshToken] = useState(0);
+
   const [showFinancialModal, setShowFinancialModal] = useState(false);
   const [showPreviewModal, setShowPreviewModal] = useState(false);
   const [financialYear, setFinancialYear] = useState("2025-26");
-  const [certificateData, setCertificateData] = useState(null);
+
+  // NEW: State to hold the PDF Blob URL from the backend
+  const [pdfUrl, setPdfUrl] = useState(null);
   const [generating, setGenerating] = useState(false);
-  const printRef = useRef(null);
+
   const didRunRef = useRef(false);
 
   const requestLevel = batchDetail?.request?.level || null;
   const isBMMU = role === "bmmu";
   const isDMMU = role === "dmmu";
   const isSMMU = role === "smmu";
-  const hasCertificatesIssued = !!closureRow?.certificates_issued;
-  const canGenerateAtBlock =
-    isBMMU && requestLevel === "BLOCK" && !hasCertificatesIssued;
-  const canGenerateAtDistrict =
-    isDMMU && requestLevel === "DISTRICT" && !hasCertificatesIssued;
+  const isBatchClosed = batchDetail?.status === "CLOSED";
+  const canGenerate =
+    isBatchClosed &&
+    ((isBMMU && requestLevel === "BLOCK") ||
+      (isDMMU && requestLevel === "DISTRICT"));
 
   /* ---------------- fetchers ---------------- */
 
@@ -102,349 +141,43 @@ export default function BatchCertificate() {
     }
   }
 
-  async function fetchTrainingPlan(trainingPlanId) {
-    if (!trainingPlanId) return null;
-    try {
-      const resp = await api.get(
-        `/tms/training-plans/${trainingPlanId}/detail/`,
-      );
-      return resp?.data || null;
-    } catch (e) {
-      console.error("fetch training plan failed", e);
-      return null;
-    }
-  }
-
-  async function fetchUserGeoscope(userId) {
-    if (!userId) return null;
-    try {
-      const resp = await api.get(`/lookups/user-geoscope/${userId}`);
-      return resp?.data || null;
-    } catch (e) {
-      console.error("fetch user geoscope failed", e);
-      return null;
-    }
-  }
-
-  async function fetchBlock(blockId) {
-    if (!blockId) return null;
-    try {
-      const resp = await LOOKUP_API.blocks.list({
-        search: blockId,
-        page_size: 1,
-      });
-      return resp?.data?.results?.[0] || null;
-    } catch (e) {
-      console.error("fetch block failed", e);
-      return null;
-    }
-  }
-
-  async function fetchDistrict(districtId) {
-    if (!districtId) return null;
-    try {
-      const resp = await LOOKUP_API.districts.list({
-        search: districtId,
-        page_size: 1,
-      });
-      return resp?.data?.results?.[0] || null;
-    } catch (e) {
-      console.error("fetch district failed", e);
-      return null;
-    }
-  }
-
-  async function fetchDMMUser(districtId) {
-    if (!districtId) return null;
-    try {
-      const resp = await api.get(
-        `/lookups/user-geoscope/?district_id=${districtId}&block_id=null`,
-      );
-      const userIds = resp?.data?.user_ids || [];
-      if (userIds.length >= 2) {
-        const dmmUserId = userIds[1];
-        return await fetchUserGeoscope(dmmUserId);
-      }
-      return null;
-    } catch (e) {
-      console.error("fetch DMM user failed", e);
-      return null;
-    }
-  }
-
-  async function fetchExpertUser(expertId) {
-    if (!expertId) return null;
-    try {
-      const resp = await LOOKUP_API.users.detail(expertId);
-      return resp?.data || null;
-    } catch (e) {
-      console.error("fetch expert user failed", e);
-      return null;
-    }
-  }
-
-  /* ==================== FIXED: Word XML content replacement ==================== */
-  async function downloadCertificateDocx() {
-    if (!certificateData) return;
-
-    try {
-      // Vite src/assets path
-      const templatePath =
-        requestLevel === "BLOCK"
-          ? `/src/assets/TMS/BlockBatchCertificateFormat.docx`
-          : `/src/assets/TMS/DistrictBatchCertificateFormat.docx`;
-
-      console.log("Fetching template:", templatePath);
-
-      const response = await fetch(templatePath);
-      if (!response.ok) {
-        throw new Error(
-          `HTTP ${response.status}: Template not found at ${templatePath}`,
-        );
-      }
-
-      const arrayBuffer = await response.arrayBuffer();
-      console.log("Template size:", arrayBuffer.byteLength, "bytes");
-
-      if (arrayBuffer.byteLength < 1000) {
-        throw new Error("File too small - not a valid DOCX");
-      }
-
-      // Validate DOCX
-      const uint8Array = new Uint8Array(arrayBuffer, 0, 4);
-      const magicBytes = Array.from(uint8Array)
-        .map((b) => b.toString(16).padStart(2, "0"))
-        .join("");
-      if (magicBytes !== "504b0304") {
-        throw new Error("Invalid DOCX - missing ZIP signature");
-      }
-
-      const zip = new JSZip();
-      await zip.loadAsync(arrayBuffer);
-
-      const docXmlPath = "word/document.xml";
-      if (!zip.file(docXmlPath)) {
-        throw new Error("Invalid DOCX template - missing word/document.xml");
-      }
-
-      let docXml = await zip.file(docXmlPath).async("text");
-      console.log("Original document.xml length:", docXml.length);
-
-      // ✅ FIXED: Replace TEXT CONTENT ONLY (inside <w:t> tags)
-      // Preserve Word XML structure - replace only text nodes
-      const replacements = [
-        { from: /<username>/g, to: escapeXml(certificateData.username) },
-        { from: /<today_date>/g, to: escapeXml(certificateData.today_date) },
-        {
-          from: /<financial_year>/g,
-          to: escapeXml(certificateData.financial_year),
-        },
-        {
-          from: /<training_plan__theme__theme_name>/g,
-          to: escapeXml(certificateData.training_plan__theme__theme_name),
-        },
-        {
-          from: /<training_request__training_type>/g,
-          to: escapeXml(certificateData.training_request__training_type),
-        },
-        {
-          from: /<training_plan__no_of_days>/g,
-          to: escapeXml(certificateData.training_plan__no_of_days),
-        },
-        {
-          from: /<training_plan__type_of_training>/g,
-          to: escapeXml(certificateData.training_plan__type_of_training),
-        },
-        {
-          from: /<batch__start_date>/g,
-          to: escapeXml(certificateData.batch__start_date),
-        },
-        {
-          from: /<batch__end_date>/g,
-          to: escapeXml(certificateData.batch__end_date),
-        },
-        {
-          from: /<training_request__level>/g,
-          to: escapeXml(certificateData.training_request__level),
-        },
-        {
-          from: /<count_BatchBeneficiary>/g,
-          to: `${certificateData.count_BatchBeneficiary || 0}`,
-        },
-        {
-          from: /<count_BatchTrainer>/g,
-          to: `${certificateData.count_BatchTrainer || 0}`,
-        },
-        {
-          from: /<BatchMasterTrainer_name>/g,
-          to: escapeXml(certificateData.BatchMasterTrainer_name),
-        },
-        {
-          from: /<block_name_en>/g,
-          to: escapeXml(certificateData.block_name_en),
-        },
-        {
-          from: /<district_name_en>/g,
-          to: escapeXml(certificateData.district_name_en),
-        },
-        { from: /<dist_user>/g, to: escapeXml(certificateData.dist_user) },
-        { from: /<expert_name>/g, to: escapeXml(certificateData.expert_name) },
-        { from: /<theme_name>/g, to: escapeXml(certificateData.theme_name) },
-        {
-          from: /<training_plan__name>/g,
-          to: escapeXml(certificateData.training_plan__name),
-        },
-      ];
-
-      // Apply replacements
-      let updatedXml = docXml;
-      replacements.forEach(({ from, to }) => {
-        updatedXml = updatedXml.replace(from, to);
-      });
-
-      // Log replacement verification
-      console.log("Replacements applied:", {
-        username: certificateData.username,
-        today_date: certificateData.today_date,
-        financial_year: certificateData.financial_year,
-        count_BatchBeneficiary: certificateData.count_BatchBeneficiary,
-      });
-
-      // Verify replacements worked
-      if (
-        updatedXml.includes("<username>") ||
-        updatedXml.includes("<today_date>")
-      ) {
-        console.warn("⚠️ Some placeholders still present in final XML");
-      }
-
-      zip.file(docXmlPath, updatedXml);
-
-      const modifiedArrayBuffer = await zip.generateAsync({
-        type: "arraybuffer",
-        compression: "DEFLATE",
-      });
-
-      const blob = new Blob([modifiedArrayBuffer], {
-        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
-      });
-
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `Batch_Certificate_${batchId}_${requestLevel}_${new Date().toISOString().slice(0, 10)}.docx`;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      URL.revokeObjectURL(url);
-
-      console.log("✅ DOCX with filled data downloaded successfully");
-      alert("✅ Certificate downloaded with filled data!");
-    } catch (e) {
-      console.error("download docx failed:", e);
-      alert(`❌ Download failed:\n${e.message}`);
-    }
-  }
-
-  // ✅ XML escape helper
-  function escapeXml(unsafe) {
-    if (unsafe == null || unsafe === undefined || unsafe === "") {
-      return "";
-    }
-    const str = String(unsafe);
-    return str
-      .replace(/&/g, "&amp;")
-      .replace(/</g, "&lt;")
-      .replace(/>/g, "&gt;")
-      .replace(/"/g, "&quot;")
-      .replace(/'/g, "&apos;");
-  }
-  /* ---------------- generate certificate data ---------------- */
-
-  async function generateCertificateData() {
+  /* ---------------- generate certificate (BACKEND API) ---------------- */
+  async function fetchCertificatePdf() {
     if (!batchDetail) return;
 
     setGenerating(true);
     try {
-      const trainingPlanId = batchDetail.request?.training_plan;
-      const trainingPlan = await fetchTrainingPlan(trainingPlanId);
-
-      const countBatchBeneficiary =
-        batchDetail.beneficiary_participations?.length || 0;
-      const countBatchTrainer = batchDetail.trainer_participations?.length || 0;
-
-      const masterTrainerNames =
-        batchDetail.master_trainers
-          ?.map((mt) => mt.full_name)
-          ?.filter(Boolean)
-          ?.join(", ") || "-";
-
-      const reqCreatedById = batchDetail.request?.created_by;
-      const reqCreatorGeo = await fetchUserGeoscope(reqCreatedById);
-      const username = reqCreatorGeo?.username || "-";
-
-      let blockInfo = null,
-        districtInfo = null,
-        distUser = null,
-        expertUser = null,
-        themeName = null;
-
-      if (requestLevel === "BLOCK") {
-        const blockId = reqCreatorGeo?.blocks?.[0];
-        blockInfo = await fetchBlock(blockId);
-        const districtId = blockInfo?.district_id;
-        districtInfo = await fetchDistrict(districtId);
-        distUser = await fetchDMMUser(districtId);
-      } else if (requestLevel === "DISTRICT") {
-        const districtId = reqCreatorGeo?.districts?.[0];
-        districtInfo = await fetchDistrict(districtId);
-        themeName = trainingPlan?.theme?.theme_name || "-";
-        const expertId = trainingPlan?.theme?.expert;
-        expertUser = await fetchExpertUser(expertId);
-      }
-
-      const todayDate = new Date().toLocaleDateString("hi-IN", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
+      const resp = await api.get(`/tms/batches/${batchId}/gen-cert/`, {
+        params: { financial_year: financialYear },
+        responseType: "blob", // Crucial for receiving PDF
       });
 
-      const data = {
-        username,
-        today_date: todayDate,
-        financial_year: financialYear,
-        training_plan__theme__theme_name:
-          trainingPlan?.theme?.theme_name || "-",
-        training_request__training_type:
-          batchDetail.request?.training_type || "-",
-        training_plan__no_of_days: trainingPlan?.no_of_days || "-",
-        training_plan__type_of_training: trainingPlan?.type_of_training || "-",
-        training_plan__name: trainingPlan?.training_name || "-",
-        batch__start_date: batchDetail.start_date || "-",
-        batch__end_date: batchDetail.end_date || "-",
-        training_request__level: requestLevel || "-",
-        count_BatchBeneficiary: countBatchBeneficiary,
-        count_BatchTrainer: countBatchTrainer,
-        BatchMasterTrainer_name: masterTrainerNames,
-        block_name_en: blockInfo?.block_name_en || "-",
-        district_name_en: districtInfo?.district_name_en || "-",
-        dist_user: distUser?.username || "-",
-        expert_name: expertUser?.full_name || expertUser?.username || "-",
-        theme_name: themeName || "-",
-      };
+      const blob = new Blob([resp.data], { type: "application/pdf" });
+      const url = URL.createObjectURL(blob);
 
-      setCertificateData(data);
+      setPdfUrl(url);
       setShowFinancialModal(false);
       setShowPreviewModal(true);
     } catch (e) {
-      console.error("generate certificate data failed", e);
-      alert("Failed to generate certificate data");
+      console.error("fetch certificate pdf failed", e);
+      let msg =
+        "Failed to generate certificate. Please ensure the batch is CLOSED and certificates are issued.";
+
+      // Attempt to parse JSON error message from Blob response
+      if (e.response && e.response.data && e.response.data instanceof Blob) {
+        try {
+          const text = await e.response.data.text();
+          const json = JSON.parse(text);
+          if (json.detail) msg = json.detail;
+        } catch (err) {}
+      }
+      alert(msg);
     } finally {
       setGenerating(false);
     }
   }
 
-  /* ---------------- FIXED loadAll ---------------- */
+  /* ---------------- loadAll ---------------- */
   async function loadAll() {
     if (!batchId || !user?.id) {
       setLoading(false);
@@ -571,32 +304,10 @@ export default function BatchCertificate() {
   }
 
   function renderReportTable() {
-    if (!reportRow) return <div>No report available.</div>;
-
-    const status = reportRow.status || "DRAFT";
-    const fileUrl = (() => {
-      if (!reportRow?.report_file) return null;
-
-      try {
-        const raw = reportRow.report_file.trim();
-
-        // Extract protocol + host + port from API baseURL
-        const apiBase = new URL(api.defaults.baseURL);
-        const mediaOrigin = `${apiBase.protocol}//${apiBase.host}`;
-
-        // If backend returned relative path (/media/...)
-        if (raw.startsWith("/")) {
-          return `${mediaOrigin}${raw}`;
-        }
-
-        // If backend returned absolute URL → keep only pathname
-        const parsed = new URL(raw);
-        return `${mediaOrigin}${parsed.pathname}`;
-      } catch (e) {
-        console.error("Invalid report_file:", reportRow.report_file);
-        return null;
-      }
-    })();
+    const status = reportRow?.status || "DRAFT";
+    const fileUrl = reportRow?.report_file
+      ? buildMediaUrl(reportRow.report_file)
+      : null;
     const canUpload =
       (isBMMU && !["DMM_SIGNED", "SMM_SIGNED"].includes(status)) ||
       (isDMMU && status !== "SMM_SIGNED") ||
@@ -633,369 +344,14 @@ export default function BatchCertificate() {
     );
   }
 
-  /* ==================== CERTIFICATE PREVIEW (HTML) ==================== */
-  function renderCertificatePreview() {
-    if (!certificateData) return null;
-
-    const isBlockLevel = requestLevel === "BLOCK";
-
-    return (
-      <div
-        style={{
-          fontFamily: '"Noto Sans Devanagari", Georgia, serif',
-          fontSize: 14,
-          lineHeight: 1.8,
-          color: "#000",
-          backgroundColor: "#f9f9f9",
-          padding: 40,
-          margin: 0,
-          minHeight: "1000px",
-          position: "relative",
-        }}
-      >
-        {/* Watermark Effect */}
-        <div
-          style={{
-            position: "absolute",
-            top: "50%",
-            left: "50%",
-            transform: "translate(-50%, -50%) rotate(-45deg)",
-            fontSize: 120,
-            fontWeight: "bold",
-            color: "rgba(0,0,0,0.03)",
-            pointerEvents: "none",
-            zIndex: 0,
-            whiteSpace: "nowrap",
-          }}
-        >
-          PRAGATI SETU
-        </div>
-
-        <div style={{ position: "relative", zIndex: 1 }}>
-          {/* Header */}
-          <div
-            style={{
-              textAlign: "center",
-              marginBottom: 30,
-              borderBottom: "2px solid #000",
-              paddingBottom: 15,
-            }}
-          >
-            <div style={{ fontSize: 20, fontWeight: "bold", marginBottom: 8 }}>
-              प्रमाण पत्र
-            </div>
-            <div style={{ fontSize: 12, color: "#666" }}>
-              Pragati Setu - Training Management System
-            </div>
-          </div>
-
-          {/* From Section */}
-          <div style={{ marginBottom: 20 }}>
-            <div style={{ fontWeight: "bold", marginBottom: 5 }}>प्रेषक,</div>
-            <div style={{ marginLeft: 20 }}>
-              <div>{certificateData.username}</div>
-              <div>
-                {isBlockLevel
-                  ? certificateData.block_name_en
-                  : certificateData.district_name_en}
-                ।
-              </div>
-            </div>
-          </div>
-
-          {/* Date */}
-          <div style={{ marginBottom: 20 }}>
-            <strong>दिनांक :</strong> {certificateData.today_date}
-          </div>
-
-          {/* Subject */}
-          <div
-            style={{
-              marginBottom: 25,
-              textAlign: "justify",
-              fontWeight: "500",
-            }}
-          >
-            <strong>विषय :</strong> वित्तीय वर्ष{" "}
-            {certificateData.financial_year} के अन्तर्गत{" "}
-            {certificateData.training_plan__theme__theme_name} (
-            {certificateData.training_request__training_type}) प्रशिक्षण कराये
-            गये के सम्बन्ध में।
-          </div>
-
-          {/* Certificate Body */}
-          <div style={{ textAlign: "justify", marginBottom: 25 }}>
-            <p>
-              यह प्रमाणित किया जाता है कि संबंधित प्रतिभागीयों ने{" "}
-              <strong>
-                {certificateData.training_plan__theme__theme_name} (
-                {certificateData.training_request__training_type})
-              </strong>{" "}
-              शीर्षक{" "}
-              <strong>
-                {certificateData.training_plan__no_of_days} दिवसीय{" "}
-                {certificateData.training_plan__type_of_training}
-              </strong>{" "}
-              प्रशिक्षण कार्यक्रम में वित्तीय वर्ष{" "}
-              <strong>{certificateData.financial_year}</strong> के अंतर्गत
-              सफलतापूर्वक सहभागिता की है।
-            </p>
-
-            <p>
-              उक्त प्रशिक्षण कार्यक्रम का आयोजन दिनांक{" "}
-              <strong>{certificateData.batch__start_date}</strong> से{" "}
-              <strong>{certificateData.batch__end_date}</strong> तक{" "}
-              <strong>
-                {certificateData.training_request__level} –{" "}
-                {isBlockLevel
-                  ? certificateData.block_name_en
-                  : certificateData.district_name_en}
-              </strong>{" "}
-              में किया गया।
-            </p>
-
-            <p>
-              यह प्रशिक्षण उ०प्र० राज्य ग्रामीण आजीविका मिशन (UPSRLM) के
-              दिशा-निर्देशों के अंतर्गत आयोजित किया गया, जिसमें{" "}
-              <strong>{certificateData.training_plan__name}</strong>, नेतृत्व
-              क्षमता विकास, संस्थागत सुदृढ़ीकरण एवं सामुदायिक विकास से संबंधित
-              विषयों पर प्रशिक्षण प्रदान किया गया।
-            </p>
-
-            <p>
-              प्रशिक्षण के दौरान प्रतिभागीयों द्वारा संतोषजनक सहभागिता एवं
-              सक्रिय योगदान किया गया।
-            </p>
-
-            <p>
-              यह प्रमाण पत्र प्रशिक्षण में सफल सहभागिता के उपरांत निर्गत किया जा
-              रहा है।
-            </p>
-          </div>
-
-          {/* Counts and Trainers */}
-          <div
-            style={{
-              marginBottom: 30,
-              padding: 15,
-              backgroundColor: "#f0f0f0",
-              borderRadius: 4,
-            }}
-          >
-            <div style={{ marginBottom: 10 }}>
-              <strong>कुल प्रतिभागियों की संख्या :</strong>{" "}
-              {certificateData.count_BatchBeneficiary} /{" "}
-              {certificateData.count_BatchTrainer}
-            </div>
-            <div>
-              <strong>प्रशिक्षण बैच के मास्टर ट्रेनर :</strong>{" "}
-              {certificateData.BatchMasterTrainer_name}
-            </div>
-          </div>
-
-          {/* Signatories - Block Level */}
-          {isBlockLevel && (
-            <>
-              <div style={{ marginBottom: 40, marginTop: 50 }}>
-                <div style={{ marginBottom: 25 }}>
-                  <div
-                    style={{
-                      textDecoration: "underline",
-                      fontWeight: "bold",
-                      marginBottom: 10,
-                    }}
-                  >
-                    प्रथम जारीकर्ता (BLOCK LEVEL)
-                  </div>
-                  <table style={{ width: "100%", fontSize: 13 }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ width: "40%", fontWeight: "bold" }}>
-                          जारीकर्ता पदनाम
-                        </td>
-                        <td>{certificateData.username}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>कार्यालय</td>
-                        <td>{certificateData.block_name_en}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>निर्गमन तिथि</td>
-                        <td>{certificateData.today_date}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>
-                          अधिकृत हस्ताक्षरकर्ता
-                        </td>
-                        <td>
-                          अधिकृत अधिकारी
-                          <br />
-                          UPSRLM / जिला प्रशासन
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      textDecoration: "underline",
-                      fontWeight: "bold",
-                      marginBottom: 10,
-                    }}
-                  >
-                    द्वितीय जारीकर्ता (DISTRICT LEVEL)
-                  </div>
-                  <table style={{ width: "100%", fontSize: 13 }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ width: "40%", fontWeight: "bold" }}>
-                          जारीकर्ता पदनाम
-                        </td>
-                        <td>{certificateData.dist_user}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>कार्यालय</td>
-                        <td>{certificateData.district_name_en}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>निर्गमन तिथि</td>
-                        <td>{certificateData.today_date}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>
-                          अधिकृत हस्ताक्षरकर्ता
-                        </td>
-                        <td>
-                          अधिकृत अधिकारी
-                          <br />
-                          UPSRLM / जिला प्रशासन
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Signatories - District Level */}
-          {!isBlockLevel && (
-            <>
-              <div style={{ marginBottom: 40, marginTop: 50 }}>
-                <div style={{ marginBottom: 25 }}>
-                  <div
-                    style={{
-                      textDecoration: "underline",
-                      fontWeight: "bold",
-                      marginBottom: 10,
-                    }}
-                  >
-                    प्रथम जारीकर्ता (DISTRICT LEVEL)
-                  </div>
-                  <table style={{ width: "100%", fontSize: 13 }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ width: "40%", fontWeight: "bold" }}>
-                          जारीकर्ता पदनाम
-                        </td>
-                        <td>{certificateData.username}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>कार्यालय</td>
-                        <td>{certificateData.district_name_en}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>निर्गमन तिथि</td>
-                        <td>{certificateData.today_date}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>
-                          अधिकृत हस्ताक्षरकर्ता
-                        </td>
-                        <td>
-                          अधिकृत अधिकारी
-                          <br />
-                          UPSRLM / जिला प्रशासन
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-
-                <div>
-                  <div
-                    style={{
-                      textDecoration: "underline",
-                      fontWeight: "bold",
-                      marginBottom: 10,
-                    }}
-                  >
-                    द्वितीय जारीकर्ता (STATE LEVEL)
-                  </div>
-                  <table style={{ width: "100%", fontSize: 13 }}>
-                    <tbody>
-                      <tr>
-                        <td style={{ width: "40%", fontWeight: "bold" }}>
-                          जारीकर्ता पदनाम
-                        </td>
-                        <td>{certificateData.expert_name}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>कार्यालय</td>
-                        <td>{certificateData.theme_name}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>निर्गमन तिथि</td>
-                        <td>{certificateData.today_date}</td>
-                      </tr>
-                      <tr>
-                        <td style={{ fontWeight: "bold" }}>
-                          अधिकृत हस्ताक्षरकर्ता
-                        </td>
-                        <td>
-                          अधिकृत अधिकारी
-                          <br />
-                          UPSRLM / जिला प्रशासन
-                        </td>
-                      </tr>
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            </>
-          )}
-
-          {/* Footer */}
-          <div
-            style={{
-              marginTop: 50,
-              paddingTop: 20,
-              borderTop: "1px solid #ccc",
-              textAlign: "center",
-              fontSize: 11,
-              color: "#666",
-            }}
-          >
-            <div>Generated by Pragati Setu - Training Management System</div>
-            <div>
-              PRERNA Initiative, Uttar Pradesh State Rural Livelihoods Mission
-              (UPSRLM)
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
   /* ---------------- main UI ---------------- */
   const headerTitle = batchDetail?.code
     ? `Batch Certificate — ${batchDetail.code}`
     : "Batch Certificate";
 
   const isTrainingCompleted =
-    batchDetail?.training_request?.status === "COMPLETED"
+    batchDetail?.status === "CLOSED" || batchDetail?.status === "COMPLETED";
+
   return (
     <div className="app-shell">
       <LeftNav
@@ -1003,11 +359,6 @@ export default function BatchCertificate() {
         onToggle={() => setNavCollapsed((v) => !v)}
       />
       <div className="main-area">
-        {/* <TopNav
-          left={
-            <div className="app-title">Pragati Setu — Batch Certificate</div>
-          }
-        /> */}
         <main style={{ padding: 18 }}>
           <div style={{ maxWidth: 1000, margin: "20px auto" }}>
             <div
@@ -1070,75 +421,56 @@ export default function BatchCertificate() {
                 >
                   <h3>Batch Closure Certificate</h3>
 
-                  {hasCertificatesIssued ? (
-                    renderReportTable()
-                  ) : isSMMU ? (
-                    <div>
-                      Signed certificates will be available soon. Contact
-                      appropriate authorities.
-                    </div>
-                  ) : canGenerateAtBlock || canGenerateAtDistrict ? (
-                    <div>
-                      {/* <button
-                        className="btn"
-                        onClick={() => setShowFinancialModal(true)}
-                        disabled={generating}
-                        style={{ marginBottom: 12 }}
-                      >
-                        {generating
-                          ? "Generating..."
-                          : "Generate Batch Certificate"}
-                      </button> */}
-                      <button
-                        className="btn"
-                        onClick={() => setShowFinancialModal(true)}
-                        disabled={generating || !isTrainingCompleted}
-                        style={{ marginBottom: 12 }}
-                      >
-                        {generating
-                          ? "Generating..."
-                          : "Generate Batch Certificate"}
-                      </button>
-
-                      {/*  Show message if not completed */}
-                      {!isTrainingCompleted && (
-                        <div style={{ color: "#dc2626", fontSize: 13, marginBottom: 10 }}>
-                          Training not completed. Certificate generation is disabled.
-                        </div>
-                      )}
-
-                      {/* {renderUploadButton()} */}
-                      {isTrainingCompleted ? (
-                        renderUploadButton()
-                      ) : (
-                        <div style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}>
-                          Upload disabled until training is completed.
-                        </div>
-                      )}
-                    </div>
-                    // ) : (
-                    //   <div>
-                    //     Signed certificates will be available soon. Contact
-                    //     appropriate authorities.
-                    //   </div>
-                    // )}
-
-                  ) : !isTrainingCompleted ? (
-                    <div style={{ color: "#dc2626" }}>
-                      Training not completed. Certificate actions are disabled.
+                  {!isBatchClosed ? (
+                    <div
+                      style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}
+                    >
+                      Batch is not CLOSED yet. Certificate generation and
+                      uploads are disabled.
                     </div>
                   ) : (
                     <div>
-                      Signed certificates will be available soon. Contact
-                      appropriate authorities.
-                    </div>
-                  )}
+                      {/* 1. Generate Button (Only visible to the assigned authority) */}
+                      {canGenerate && (
+                        <button
+                          className="btn"
+                          onClick={() => setShowFinancialModal(true)}
+                          disabled={generating}
+                          style={{ marginBottom: 20 }}
+                        >
+                          {generating
+                            ? "Generating..."
+                            : "Generate Batch Certificate (PDF)"}
+                        </button>
+                      )}
 
-                  {uploadError && (
-                    <div
-                      style={{ color: "#dc2626", marginTop: 12, fontSize: 13 }}
-                    >
-                      {uploadError}
+                      {isSMMU && !canGenerate && (
+                        <div
+                          style={{
+                            marginBottom: 16,
+                            fontSize: 13,
+                            color: "#475569",
+                          }}
+                        >
+                          Signed certificates will be generated and uploaded by
+                          the respective authorities.
+                        </div>
+                      )}
+
+                      {/* 2. Upload & Status Table (Always visible if CLOSED) */}
+                      {renderReportTable()}
+
+                      {uploadError && (
+                        <div
+                          style={{
+                            color: "#dc2626",
+                            marginTop: 12,
+                            fontSize: 13,
+                          }}
+                        >
+                          {uploadError}
+                        </div>
+                      )}
                     </div>
                   )}
                 </div>
@@ -1203,7 +535,7 @@ export default function BatchCertificate() {
                     </button>
                     <button
                       className="btn"
-                      onClick={generateCertificateData}
+                      onClick={fetchCertificatePdf}
                       disabled={generating}
                     >
                       {generating ? "Generating..." : "Generate Certificate"}
@@ -1214,7 +546,7 @@ export default function BatchCertificate() {
             )}
 
             {/* Certificate Preview Modal */}
-            {showPreviewModal && certificateData && (
+            {showPreviewModal && pdfUrl && (
               <div
                 style={{
                   position: "fixed",
@@ -1225,19 +557,20 @@ export default function BatchCertificate() {
                   background: "rgba(0,0,0,0.7)",
                   zIndex: 1000,
                   display: "flex",
-                  alignItems: "flex-start",
+                  alignItems: "center",
                   justifyContent: "center",
-                  overflow: "auto",
-                  paddingTop: 20,
-                  paddingBottom: 20,
+                  padding: 20,
                 }}
               >
                 <div
                   style={{
                     background: "#fff",
                     borderRadius: 8,
-                    maxWidth: 900,
+                    maxWidth: 1000,
                     width: "95%",
+                    height: "90vh",
+                    display: "flex",
+                    flexDirection: "column",
                     boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
                   }}
                 >
@@ -1247,25 +580,31 @@ export default function BatchCertificate() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      padding: 20,
+                      padding: "16px 20px",
                       borderBottom: "1px solid #e5e7eb",
-                      position: "sticky",
-                      top: 0,
                       background: "#fff",
-                      zIndex: 10,
+                      borderRadius: "8px 8px 0 0",
                     }}
                   >
                     <h3 style={{ margin: 0 }}>Batch Certificate Preview</h3>
-                    <div style={{ display: "flex", gap: 8 }}>
+                    <div style={{ display: "flex", gap: 12 }}>
+                      <a
+                        className="btn"
+                        href={pdfUrl}
+                        download={`Certificate_Batch_${batchDetail.code}_${financialYear}.pdf`}
+                        style={{
+                          textDecoration: "none",
+                          display: "inline-flex",
+                          alignItems: "center",
+                        }}
+                      >
+                        📥 Download PDF
+                      </a>
                       <button
                         className="btn"
-                        onClick={() => downloadCertificateDocx()}
-                        style={{ marginRight: 8 }}
+                        onClick={() => window.open(pdfUrl, "_blank")}
                       >
-                        📥 Download DOCX
-                      </button>
-                      <button className="btn" onClick={() => window.print()}>
-                        🖨️ Print / Save as PDF
+                        🖨️ Print PDF
                       </button>
                       <button
                         className="btn-secondary"
@@ -1276,15 +615,13 @@ export default function BatchCertificate() {
                     </div>
                   </div>
 
-                  {/* Certificate Content */}
-                  <div
-                    ref={printRef}
-                    className="print-certificate"
-                    style={{
-                      padding: 0,
-                    }}
-                  >
-                    {renderCertificatePreview()}
+                  {/* Certificate Content (PDF Iframe) */}
+                  <div style={{ flex: 1, padding: 0, background: "#e2e8f0" }}>
+                    <iframe
+                      src={`${pdfUrl}#toolbar=0`}
+                      style={{ width: "100%", height: "100%", border: "none" }}
+                      title="Certificate PDF"
+                    />
                   </div>
                 </div>
               </div>
@@ -1292,53 +629,6 @@ export default function BatchCertificate() {
           </div>
         </main>
       </div>
-      <style>
-        {`
-        @media print {
-
-          @page {
-            size: A4;
-            margin: 20mm;
-          }
-
-          /* Hide everything by visibility (NOT display) */
-          body * {
-            visibility: hidden !important;
-          }
-
-          /* Show certificate */
-          .print-certificate,
-          .print-certificate * {
-            visibility: visible !important;
-          }
-
-          /* Reposition certificate at top of page */
-          .print-certificate {
-            position: absolute !important;
-            left: 0;
-            top: 0;
-            width: 100% !important;
-            background: #fff !important;
-          }
-
-          /* Remove modal overlays */
-          div[style*="rgba(0,0,0"] {
-            background: transparent !important;
-          }
-
-          /* Neutralize fixed positioning */
-          div[style*="position: fixed"] {
-            position: static !important;
-          }
-
-          /* Preserve watermark & colors */
-          * {
-            -webkit-print-color-adjust: exact !important;
-            print-color-adjust: exact !important;
-          }
-        }
-      `}
-      </style>
     </div>
   );
 }
