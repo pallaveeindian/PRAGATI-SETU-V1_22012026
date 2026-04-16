@@ -590,7 +590,7 @@ export default function TpTrainingRequestClosure() {
                     <tfoot>
                       <tr>
                         <td colSpan={5} style={{ textAlign: "right", fontWeight: 700, color: "#2b4e72", padding: "10px" }}>
-                          Participant Subtotal:
+                          Subtotal:
                         </td>
                         <td style={{ fontWeight: 700, color: "#2b4e72", padding: "10px", fontSize: 16 }}>
                           ₹{fmt(participantSubtotal)}
@@ -606,7 +606,7 @@ export default function TpTrainingRequestClosure() {
             <div className="cl-card">
               <div className="cl-card-title">🚙 Additional Visit Costs</div>
               <div className="visit-grid">
-                <div className="visit-row">
+                {/* <div className="visit-row">
                   <label className="toggle-label">
                     <input
                       type="checkbox" checked={isExposureVisit} disabled={alreadySubmitted}
@@ -615,7 +615,7 @@ export default function TpTrainingRequestClosure() {
                         if (!e.target.checked) setExposureVisitCost("");
                       }}
                     />
-                    <span>Exposure Visit Included</span>
+                    <span>Have the participants of this batch attended an exposure visit?</span>
                   </label>
                   {isExposureVisit && (
                     <div className="visit-cost-field">
@@ -630,7 +630,7 @@ export default function TpTrainingRequestClosure() {
                       )}
                     </div>
                   )}
-                </div>
+                </div> */}
 
                 <div className="visit-row">
                   <label className="toggle-label">
@@ -641,7 +641,7 @@ export default function TpTrainingRequestClosure() {
                         if (!e.target.checked) setFieldVisitCost("");
                       }}
                     />
-                    <span>Field Visit Included</span>
+                    <span>Have the participants of this batch attended a Field Visit?</span>
                   </label>
                   {isFieldVisit && (
                     <div className="visit-cost-field">

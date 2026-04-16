@@ -904,7 +904,7 @@ export default function DmmuBatchClosureReview() {
                             padding: "10px",
                           }}
                         >
-                          Participant Subtotal:
+                          Subtotal:
                         </td>
                         <td
                           style={{

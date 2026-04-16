@@ -369,13 +369,12 @@ export default function CpAdPerBatch() {
 
   async function markBatchCompletedIfNeeded() {
     try {
-      if (!batch || !batchId) return;
-      // if (!batch.end_date || batch.end_date !== today) return;
-      if (
-        !batch.end_date ||
-        (batch.end_date !== today && new Date(batch.end_date) < new Date(today))
-      )
-        return;
+      if (!batch || !batchId || !batch.end_date) return;
+
+      // SURGICAL FIX: Only mark as completed if today has reached or passed the end_date.
+      // If today is strictly before the end date, abort.
+      if (today < batch.end_date) return;
+
       if ((batch.status || "").toUpperCase() !== "ONGOING") return;
 
       const resp = await api.patch(`/tms/batches/${batchId}/`, {
