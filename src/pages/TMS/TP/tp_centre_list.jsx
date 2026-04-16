@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
@@ -58,7 +60,7 @@ function saveCache(payload) {
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch {}
+  } catch { }
 }
 
 /* ---------------- partner resolver ---------------- */
@@ -69,7 +71,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch {}
+  } catch { }
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -417,102 +419,106 @@ export default function TpCentreList() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        <main style={{ padding: 18 }}>
-          <div>
-            {/* HEADER BAR */}
-            <div className="tp-toolbar">
-              <h2 className="tp-page-title">
-                <FaEye /> My Training Centres
-              </h2>
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          <main style={{ padding: 18 }}>
+            <div>
+              {/* HEADER BAR */}
+              <div className="tp-toolbar">
+                <h2 className="tp-page-title">
+                  <FaEye /> My Training Centres
+                </h2>
 
-              <div className="tp-toolbar-actions">
-                <div className="tp-search">
-                  <FaSearch />
-                  <input
-                    placeholder="Search centre name..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                  />
+                <div className="tp-toolbar-actions">
+                  <div className="tp-search">
+                    <FaSearch />
+                    <input
+                      placeholder="Search centre name..."
+                      value={search}
+                      onChange={(e) => setSearch(e.target.value)}
+                    />
+                  </div>
+
+                  <button
+                    className="tp-btn-outline"
+                    onClick={() => {
+                      localStorage.removeItem(CACHE_KEY);
+                      setRefreshToken((t) => t + 1);
+                    }}
+                  >
+                    <FaSyncAlt /> Refresh
+                  </button>
+
+                  <button
+                    className="tp-btn"
+                    onClick={() => navigate("/tms/tp/centre/new")}
+                  >
+                    <FaPlus /> Register Centre
+                  </button>
                 </div>
-
-                <button
-                  className="tp-btn-outline"
-                  onClick={() => {
-                    localStorage.removeItem(CACHE_KEY);
-                    setRefreshToken((t) => t + 1);
-                  }}
-                >
-                  <FaSyncAlt /> Refresh
-                </button>
-
-                <button
-                  className="tp-btn"
-                  onClick={() => navigate("/tms/tp/centre/new")}
-                >
-                  <FaPlus /> Register Centre
-                </button>
               </div>
-            </div>
 
-            {/* TABLE */}
-            <table className="tp-table">
-              <thead>
-                <tr>
-                  <th>Serial Number</th>
-                  <th>Centre Name</th>
-                  <th>Type</th>
-                  <th>Training Halls</th>
-                  <th>Action</th>
-                  <th />
-                </tr>
-              </thead>
-              <tbody>
-                {loading ? (
+              {/* TABLE */}
+              <table className="tp-table">
+                <thead>
                   <tr>
-                    <td colSpan={5}>Loading…</td>
+                    <th>Serial Number</th>
+                    <th>Centre Name</th>
+                    <th>Type</th>
+                    <th>Training Halls</th>
+                    <th>Action</th>
+                    <th />
                   </tr>
-                ) : filtered.length === 0 ? (
-                  <tr>
-                    <td colSpan={5}>No centres found</td>
-                  </tr>
-                ) : (
-                  filtered.map((c) => (
-                    <tr key={c.id}>
-                      <td>{c.serial_number}</td>
-                      <td>{c.venue_name}</td>
-                      <td>{c.centre_type}</td>
-                      <td>{c.training_hall_count}</td>
-                      <td>
-                        <div className="tp-action-buttons">
-                          <button
-                            className="tp-btn-outline"
-                            disabled={viewLoadingId === c.id}
-                            onClick={() => handleViewCentre(c.id)}
-                          >
-                            <FaEye />{" "}
-                            {viewLoadingId === c.id ? "Opening..." : "View"}
-                          </button>
-
-                          <button
-                            className="tp-btn-outline"
-                            onClick={() => navigate(`/tms/tp/centre/${c.id}`)}
-                          >
-                            <FaEdit /> Edit
-                          </button>
-                        </div>
-                      </td>
+                </thead>
+                <tbody>
+                  {loading ? (
+                    <tr>
+                      <td colSpan={5}>Loading…</td>
                     </tr>
-                  ))
-                )}
-              </tbody>
-            </table>
-          </div>
-        </main>
+                  ) : filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={5}>No centres found</td>
+                    </tr>
+                  ) : (
+                    filtered.map((c) => (
+                      <tr key={c.id}>
+                        <td>{c.serial_number}</td>
+                        <td>{c.venue_name}</td>
+                        <td>{c.centre_type}</td>
+                        <td>{c.training_hall_count}</td>
+                        <td>
+                          <div className="tp-action-buttons">
+                            <button
+                              className="tp-btn-outline"
+                              disabled={viewLoadingId === c.id}
+                              onClick={() => handleViewCentre(c.id)}
+                            >
+                              <FaEye />{" "}
+                              {viewLoadingId === c.id ? "Opening..." : "View"}
+                            </button>
+
+                            <button
+                              className="tp-btn-outline"
+                              onClick={() => navigate(`/tms/tp/centre/${c.id}`)}
+                            >
+                              <FaEdit /> Edit
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </main>
+          <Footer />
+        </div>
       </div>
 
       <CentreViewModal
@@ -520,6 +526,36 @@ export default function TpCentreList() {
         data={viewData}
         onClose={() => setViewOpen(false)}
       />
+      <style>{`.content-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+  /* ===== SIDEBAR ===== */
+.tms-leftnav {
+  flex-shrink: 0;
+}
+
+/* ===== RIGHT SIDE ===== */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-area main {
+  flex: 1;
+  padding: 18px;
+}
+
+/* ===== FOOTER FIX ===== */
+footer {
+  margin-top: auto;
+  flex-shrink: 0;
+}
+  `}</style>
     </div>
   );
 }

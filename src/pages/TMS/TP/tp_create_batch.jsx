@@ -1143,7 +1143,7 @@ function BatchSubmitSection({
         return;
       }
 
-      // 🔁 REVIEW MODE CLEANUP
+      //  REVIEW MODE CLEANUP
       if (isReviewMode) {
         console.log("Deleting old batches...");
         await deleteAllExistingBatchesAndParticipants(trainingReq);
@@ -1172,7 +1172,6 @@ function BatchSubmitSection({
 
         const batchId = created.data.id;
         console.log("Batch created ID:", batchId);
-
         const ids = participants.map((p) => p.id);
         console.log("Participant IDs:", ids);
 

@@ -100,7 +100,15 @@ export default function TopNav({ left = null, right = null }) {
   display: flex;
   align-items: center;
   gap: 8px;
+  background: #EB5B00; 
 }
+  
+// .logout-btn:hover {
+//   background: #e8f0f8;
+//   color: #061b46;
+//         }
+}
+
 `}
       </style>
     </div>

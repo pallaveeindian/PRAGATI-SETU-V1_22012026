@@ -2,6 +2,8 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import TmsLeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
@@ -50,7 +52,7 @@ function loadJson(key) {
 function saveJson(key, payload) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch {}
+  } catch { }
 }
 
 function fmtDate(iso) {
@@ -634,297 +636,300 @@ export default function CpDashboard() {
 
   return (
     <div className="app-shell">
-      <TmsLeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav /> */}
-        <main
-          style={{
-            padding: 20, // UPDATED UI
-            minHeight: "100vh", // UPDATED UI
-          }}
-        >
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            {/* PAGE TITLE */}
-            <h2
-              style={{
-                marginTop: 8,
-                color: "#2b4e72", // UPDATED UI
-                fontWeight: 700, // UPDATED UI
-              }}
-            >
-              Welcome, {cpName}
-            </h2>
-
-            <div
-              className="muted"
-              style={{
-                marginBottom: 20,
-                color: "#5a8cc2", // UPDATED UI
-              }}
-            >
-              Centre-level coordination for batches, logistics, attendance and
-              media.
-            </div>
-
-            {/* ======================= */}
-            {/* MY CENTRE SECTION */}
-            {/* ======================= */}
-
-            <div
-              className="card"
-              style={{
-                marginBottom: 22,
-                padding: 20, // UPDATED UI
-                borderRadius: 12, // UPDATED UI
-                background: "#fff", // UPDATED UI
-                boxShadow: "0 4px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                borderTop: "4px solid #3d6ba6", // UPDATED UI accent
-              }}
-            >
-              <div
+      <Header />
+      <div className="content-area">
+        <TmsLeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav /> */}
+          <main
+            style={{
+              padding: 20, // UPDATED UI
+              minHeight: "100vh", // UPDATED UI
+            }}
+          >
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              {/* PAGE TITLE */}
+              <h2
                 style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: 12,
-                  gap: 8,
+                  marginTop: 8,
+                  color: "#2b4e72", // UPDATED UI
+                  fontWeight: 700, // UPDATED UI
                 }}
               >
-                <h3
-                  style={{
-                    margin: 0,
-                    color: "#2b4e72", // UPDATED UI
-                  }}
-                >
-                  My Centre
-                </h3>
-
-                <button
-                  className="btn btnPrimary"
-                  style={{
-                    marginLeft: "auto",
-                    background: "#3d6ba6", // UPDATED UI
-                    color: "#fff",
-                    border: "none",
-                    borderRadius: 6,
-                  }}
-                  onClick={handleRefreshCentre}
-                  disabled={loadingCentreChain}
-                >
-                  {loadingCentreChain ? "Refreshing…" : "Refresh"}
-                </button>
-              </div>
-
-              {loadingCentreChain ? (
-                <div className="table-spinner">
-                  Loading your contact person and centre mapping…
-                </div>
-              ) : !cpRecord ? (
-                <div className="muted">
-                  No Contact Person mapping found for this user.
-                </div>
-              ) : !centreLink || !hasCentre ? (
-                <div className="muted">
-                  No centre is currently linked to your Contact Person profile.
-                </div>
-              ) : (
-                <div>
-                  <div style={{ marginBottom: 8 }}>
-                    <strong>Centre Name:</strong> {centre.venue_name}
-                  </div>
-
-                  <div style={{ marginBottom: 6 }}>
-                    <strong>Address:</strong> {centre.venue_address}
-                  </div>
-
-                  <div style={{ marginBottom: 6 }}>
-                    <strong>Type:</strong> {centre.centre_type}
-                    &nbsp;|&nbsp;
-                    <strong>Halls:</strong> {centre.training_hall_count}
-                  </div>
-
-                  <div style={{ marginTop: 10 }}>
-                    <button
-                      className="btn btnPrimary"
-                      style={{
-                        background: "#5a8cc2", // UPDATED UI
-                        color: "#fff",
-                        borderRadius: 6,
-                        border: "none",
-                      }}
-                      onClick={handleViewCentre}
-                      disabled={viewLoading}
-                    >
-                      {viewLoading ? "Opening…" : "View Centre Details"}
-                    </button>
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* ======================= */}
-            {/* BATCH SCHEDULES */}
-            {/* ======================= */}
-
-            <div
-              className="card"
-              style={{
-                padding: 20,
-                borderRadius: 12, // UPDATED UI
-                marginBottom: 20,
-                background: "#fff",
-                boxShadow: "0 4px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                borderTop: "4px solid #5a8cc2", // UPDATED UI
-              }}
-            >
-              <div
-                style={{
-                  display: "flex",
-                  alignItems: "center",
-                  marginBottom: 10,
-                }}
-              >
-                <h3
-                  style={{
-                    margin: 0,
-                    color: "#2b4e72", // UPDATED UI
-                  }}
-                >
-                  Batch Schedules for My Centre
-                </h3>
-
-                <button
-                  className="btn btnPrimary"
-                  style={{
-                    marginLeft: "auto",
-                    background: "#3d6ba6", // UPDATED UI
-                    color: "#fff",
-                    borderRadius: 6,
-                    border: "none",
-                  }}
-                  onClick={() => {
-                    try {
-                      localStorage.removeItem(CP_BATCHES_CACHE_KEY);
-                    } catch {}
-                    fetchBatches(true);
-                  }}
-                  disabled={batchesLoading || !hasCentre}
-                >
-                  {batchesLoading ? "Refreshing…" : "Refresh"}
-                </button>
-              </div>
+                Welcome, {cpName}
+              </h2>
 
               <div
                 className="muted"
                 style={{
-                  marginBottom: 10,
+                  marginBottom: 20,
                   color: "#5a8cc2", // UPDATED UI
                 }}
               >
-                Upcoming and ongoing batches scheduled at your centre.
+                Centre-level coordination for batches, logistics, attendance and
+                media.
               </div>
 
-              {!hasCentre ? (
-                <div className="muted">
-                  Link a centre to your Contact Person profile to see batches.
-                </div>
-              ) : batchesLoading ? (
-                <div className="table-spinner">
-                  Loading batches for your centre…
-                </div>
-              ) : visibleBatches.length === 0 ? (
-                <div className="muted">
-                  No scheduled or ongoing batches found for this centre.
-                </div>
-              ) : (
+              {/* ======================= */}
+              {/* MY CENTRE SECTION */}
+              {/* ======================= */}
+
+              <div
+                className="card"
+                style={{
+                  marginBottom: 22,
+                  padding: 20, // UPDATED UI
+                  borderRadius: 12, // UPDATED UI
+                  background: "#fff", // UPDATED UI
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                  borderTop: "4px solid #3d6ba6", // UPDATED UI accent
+                }}
+              >
                 <div
                   style={{
-                    maxHeight: 420,
-                    overflow: "auto",
-                    border: "1px solid #d6e3f5", // UPDATED UI
-                    borderRadius: 8,
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: 12,
+                    gap: 8,
                   }}
                 >
-                  <table className="table table-compact">
-                    <thead
-                      style={{
-                        background: "#a7c6ed", // UPDATED UI table header
-                        color: "#2b4e72",
-                      }}
-                    >
-                      <tr>
-                        <th>S.No.</th>
-                        <th>Batch Code</th>
-                        <th>Status</th>
-                        <th>Start Date</th>
-                        <th>End Date</th>
-                        <th>Type</th>
-                        <th>Participants</th>
-                        <th>Action</th>
-                      </tr>
-                    </thead>
+                  <h3
+                    style={{
+                      margin: 0,
+                      color: "#2b4e72", // UPDATED UI
+                    }}
+                  >
+                    My Centre
+                  </h3>
 
-                    <tbody>
-                      {visibleBatches.map((b, idx) => (
-                        <tr key={b.id}>
-                          <td>{idx + 1}</td>
-                          <td>{b.code}</td>
-                          <td>{b.status}</td>
-                          <td>{fmtDate(b.start_date)}</td>
-                          <td>{fmtDate(b.end_date)}</td>
-                          <td>{b.batch_type}</td>
+                  <button
+                    className="btn btnPrimary"
+                    style={{
+                      marginLeft: "auto",
+                      background: "#3d6ba6", // UPDATED UI
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                    }}
+                    onClick={handleRefreshCentre}
+                    disabled={loadingCentreChain}
+                  >
+                    {loadingCentreChain ? "Refreshing…" : "Refresh"}
+                  </button>
+                </div>
 
-                          <td>
-                            {Array.isArray(b.beneficiary)
-                              ? b.beneficiary.length
-                              : "-"}
-                          </td>
+                {loadingCentreChain ? (
+                  <div className="table-spinner">
+                    Loading your contact person and centre mapping…
+                  </div>
+                ) : !cpRecord ? (
+                  <div className="muted">
+                    No Contact Person mapping found for this user.
+                  </div>
+                ) : !centreLink || !hasCentre ? (
+                  <div className="muted">
+                    No centre is currently linked to your Contact Person profile.
+                  </div>
+                ) : (
+                  <div>
+                    <div style={{ marginBottom: 8 }}>
+                      <strong>Centre Name:</strong> {centre.venue_name}
+                    </div>
 
-                          <td>
-                            <button
-                              className="btn-sm btn-flat"
-                              style={{
-                                color: "#3d6ba6", // UPDATED UI
-                                fontWeight: 600,
-                              }}
-                              onClick={() =>
-                                navigate(`/tms/cp/batch-detail/${b.id}`)
-                              }
-                            >
-                              View
-                            </button>
-                          </td>
+                    <div style={{ marginBottom: 6 }}>
+                      <strong>Address:</strong> {centre.venue_address}
+                    </div>
+
+                    <div style={{ marginBottom: 6 }}>
+                      <strong>Type:</strong> {centre.centre_type}
+                      &nbsp;|&nbsp;
+                      <strong>Halls:</strong> {centre.training_hall_count}
+                    </div>
+
+                    <div style={{ marginTop: 10 }}>
+                      <button
+                        className="btn btnPrimary"
+                        style={{
+                          background: "#5a8cc2", // UPDATED UI
+                          color: "#fff",
+                          borderRadius: 6,
+                          border: "none",
+                        }}
+                        onClick={handleViewCentre}
+                        disabled={viewLoading}
+                      >
+                        {viewLoading ? "Opening…" : "View Centre Details"}
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ======================= */}
+              {/* BATCH SCHEDULES */}
+              {/* ======================= */}
+
+              <div
+                className="card"
+                style={{
+                  padding: 20,
+                  borderRadius: 12, // UPDATED UI
+                  marginBottom: 20,
+                  background: "#fff",
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                  borderTop: "4px solid #5a8cc2", // UPDATED UI
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    marginBottom: 10,
+                  }}
+                >
+                  <h3
+                    style={{
+                      margin: 0,
+                      color: "#2b4e72", // UPDATED UI
+                    }}
+                  >
+                    Batch Schedules for My Centre
+                  </h3>
+
+                  <button
+                    className="btn btnPrimary"
+                    style={{
+                      marginLeft: "auto",
+                      background: "#3d6ba6", // UPDATED UI
+                      color: "#fff",
+                      borderRadius: 6,
+                      border: "none",
+                    }}
+                    onClick={() => {
+                      try {
+                        localStorage.removeItem(CP_BATCHES_CACHE_KEY);
+                      } catch { }
+                      fetchBatches(true);
+                    }}
+                    disabled={batchesLoading || !hasCentre}
+                  >
+                    {batchesLoading ? "Refreshing…" : "Refresh"}
+                  </button>
+                </div>
+
+                <div
+                  className="muted"
+                  style={{
+                    marginBottom: 10,
+                    color: "#5a8cc2", // UPDATED UI
+                  }}
+                >
+                  Upcoming and ongoing batches scheduled at your centre.
+                </div>
+
+                {!hasCentre ? (
+                  <div className="muted">
+                    Link a centre to your Contact Person profile to see batches.
+                  </div>
+                ) : batchesLoading ? (
+                  <div className="table-spinner">
+                    Loading batches for your centre…
+                  </div>
+                ) : visibleBatches.length === 0 ? (
+                  <div className="muted">
+                    No scheduled or ongoing batches found for this centre.
+                  </div>
+                ) : (
+                  <div
+                    style={{
+                      maxHeight: 420,
+                      overflow: "auto",
+                      border: "1px solid #d6e3f5", // UPDATED UI
+                      borderRadius: 8,
+                    }}
+                  >
+                    <table className="table table-compact">
+                      <thead
+                        style={{
+                          background: "#a7c6ed", // UPDATED UI table header
+                          color: "#2b4e72",
+                        }}
+                      >
+                        <tr>
+                          <th>S.No.</th>
+                          <th>Batch Code</th>
+                          <th>Status</th>
+                          <th>Start Date</th>
+                          <th>End Date</th>
+                          <th>Type</th>
+                          <th>Participants</th>
+                          <th>Action</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              )}
+                      </thead>
 
-              {ongoingBatches.length > 0 && (
-                <div
-                  style={{
-                    marginTop: 12,
-                    padding: 12,
-                    borderRadius: 8,
-                    background: "#e4ecf5", // UPDATED UI
-                    border: "1px solid #a7c6ed", // UPDATED UI
-                    fontSize: 13,
-                    color: "#2b4e72",
-                  }}
-                >
-                  <strong>Note:</strong> You have {ongoingBatches.length}{" "}
-                  ongoing batch(es). Use the View Button to start attendance and
-                  eKYC verification.
-                </div>
-              )}
+                      <tbody>
+                        {visibleBatches.map((b, idx) => (
+                          <tr key={b.id}>
+                            <td>{idx + 1}</td>
+                            <td>{b.code}</td>
+                            <td>{b.status}</td>
+                            <td>{fmtDate(b.start_date)}</td>
+                            <td>{fmtDate(b.end_date)}</td>
+                            <td>{b.batch_type}</td>
+
+                            <td>
+                              {Array.isArray(b.beneficiary)
+                                ? b.beneficiary.length
+                                : "-"}
+                            </td>
+
+                            <td>
+                              <button
+                                className="btn-sm btn-flat"
+                                style={{
+                                  color: "#3d6ba6", // UPDATED UI
+                                  fontWeight: 600,
+                                }}
+                                onClick={() =>
+                                  navigate(`/tms/cp/batch-detail/${b.id}`)
+                                }
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {ongoingBatches.length > 0 && (
+                  <div
+                    style={{
+                      marginTop: 12,
+                      padding: 12,
+                      borderRadius: 8,
+                      background: "#e4ecf5", // UPDATED UI
+                      border: "1px solid #a7c6ed", // UPDATED UI
+                      fontSize: 13,
+                      color: "#2b4e72",
+                    }}
+                  >
+                    <strong>Note:</strong> You have {ongoingBatches.length}{" "}
+                    ongoing batch(es). Use the View Button to start attendance and
+                    eKYC verification.
+                  </div>
+                )}
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
-
       <CentreViewModal
         open={viewOpen}
         data={viewData || centre}
@@ -939,13 +944,15 @@ export default function CpDashboard() {
   cursor:pointer;
   transition:all .25s ease;
 }
-
 .btnPrimary:hover{
   transform:translateY(-3px);
   box-shadow:0 6px 12px rgba(0,0,0,0.15);
 }
-
-
+.content-area {
+  display: flex;
+  flex: 1;              /*  pushes footer down */
+  min-width: 0;         /*  prevents overflow bug */
+}
 `}</style>
     </div>
   );

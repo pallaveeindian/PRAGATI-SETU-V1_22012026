@@ -1,6 +1,8 @@
 // src/pages/TMS/TP/tp_cp_assignment.jsx
 import React, { useContext, useEffect, useState } from "react";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API } from "../../../api/axios";
@@ -293,12 +295,14 @@ export default function TpCpAssignment() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Contact Person Centre Assignment
@@ -306,149 +310,150 @@ export default function TpCpAssignment() {
           }
         /> */}
 
-        <main
-          style={{
-            padding: 18,
-            minHeight: "100vh", // UPDATED UI
-          }}
-        >
-          <div
+          <main
             style={{
-              maxWidth: 1100,
-              margin: "0 auto",
+              padding: 18,
+              minHeight: "100vh", // UPDATED UI
             }}
           >
-            {/* HEADER */}
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 16,
-                flexWrap: "wrap", // UPDATED UI: mobile friendly
-                gap: 10, // UPDATED UI
+                maxWidth: 1100,
+                margin: "0 auto",
               }}
             >
-              <h2
+              {/* HEADER */}
+              <div
                 style={{
-                  margin: 0,
-                  color: "#2b4e72", // UPDATED UI
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 16,
+                  flexWrap: "wrap", // UPDATED UI: mobile friendly
+                  gap: 10, // UPDATED UI
                 }}
               >
-                Centre Assignments
-              </h2>
+                <h2
+                  style={{
+                    margin: 0,
+                    color: "#2b4e72", // UPDATED UI
+                  }}
+                >
+                  Centre Assignments
+                </h2>
 
-              <button
-                className="btn btnPrimary"
+                <button
+                  className="btn btnPrimary"
+                  style={{
+                    marginLeft: "auto",
+                    background: "#3d6ba6", // UPDATED UI
+                    border: "none",
+                    color: "#fff",
+                  }}
+                  onClick={() => {
+                    setEditRow(null);
+                    setModalOpen(true);
+                  }}
+                >
+                  + Assign Centre to Contact Person
+                </button>
+              </div>
+
+              {/* TABLE CARD WRAPPER */}
+              <div
+                className="card"
                 style={{
-                  marginLeft: "auto",
-                  background: "#3d6ba6", // UPDATED UI
-                  border: "none",
-                  color: "#fff",
-                }}
-                onClick={() => {
-                  setEditRow(null);
-                  setModalOpen(true);
+                  background: "#fff", // UPDATED UI
+                  borderRadius: 10, // UPDATED UI
+                  padding: 18, // UPDATED UI
+                  boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                  borderLeft: "6px solid #3d6ba6", // UPDATED UI accent
                 }}
               >
-                + Assign Centre to Contact Person
-              </button>
-            </div>
-
-            {/* TABLE CARD WRAPPER */}
-            <div
-              className="card"
-              style={{
-                background: "#fff", // UPDATED UI
-                borderRadius: 10, // UPDATED UI
-                padding: 18, // UPDATED UI
-                boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                borderLeft: "6px solid #3d6ba6", // UPDATED UI accent
-              }}
-            >
-              <div style={{ overflowX: "auto" }}>
-                {/* UPDATED UI: mobile scroll */}
-                <table className="table table-compact">
-                  <thead
-                    style={{
-                      background: "#f4f8fd", // UPDATED UI
-                    }}
-                  >
-                    <tr>
-                      <th>S.No</th>
-                      <th>Centre</th>
-                      <th>Contact Person</th>
-                      <th>Action</th> {/* UPDATED UI */}
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {loading ? (
+                <div style={{ overflowX: "auto" }}>
+                  {/* UPDATED UI: mobile scroll */}
+                  <table className="table table-compact">
+                    <thead
+                      style={{
+                        background: "#f4f8fd", // UPDATED UI
+                      }}
+                    >
                       <tr>
-                        <td colSpan={4}>Loading assignments…</td>
+                        <th>S.No</th>
+                        <th>Centre</th>
+                        <th>Contact Person</th>
+                        <th>Action</th> {/* UPDATED UI */}
                       </tr>
-                    ) : links.length === 0 ? (
-                      <tr>
-                        <td colSpan={4}>No assignments found</td>
-                      </tr>
-                    ) : (
-                      links.map((l, i) => (
-                        <tr
-                          key={l.id}
-                          style={{
-                            borderBottom: "1px solid #e4ecf5", // UPDATED UI
-                          }}
-                        >
-                          <td>{i + 1}</td>
+                    </thead>
 
-                          <td
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td colSpan={4}>Loading assignments…</td>
+                        </tr>
+                      ) : links.length === 0 ? (
+                        <tr>
+                          <td colSpan={4}>No assignments found</td>
+                        </tr>
+                      ) : (
+                        links.map((l, i) => (
+                          <tr
+                            key={l.id}
                             style={{
-                              color: "#3d6ba6", // UPDATED UI
-                              fontWeight: 500,
+                              borderBottom: "1px solid #e4ecf5", // UPDATED UI
                             }}
                           >
-                            {l.allocated_centre?.venue_name}
-                          </td>
+                            <td>{i + 1}</td>
 
-                          <td>{l.contact_person?.name}</td>
-
-                          <td>
-                            <button
-                              className="btn-sm btn-flat"
+                            <td
                               style={{
                                 color: "#3d6ba6", // UPDATED UI
-                              }}
-                              onClick={() => {
-                                setEditRow(l);
-                                setModalOpen(true);
+                                fontWeight: 500,
                               }}
                             >
-                              Edit
-                            </button>
+                              {l.allocated_centre?.venue_name}
+                            </td>
 
-                            <button
-                              className="btn-sm btnPrimary"
-                              style={{
-                                marginLeft: 8,
-                                background: "#2b4e72", // UPDATED UI
-                                border: "none",
-                                color: "#fff",
-                              }}
-                              onClick={() => handleDelete(l.id)}
-                            >
-                              Delete
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
+                            <td>{l.contact_person?.name}</td>
+
+                            <td>
+                              <button
+                                className="btn-sm btn-flat"
+                                style={{
+                                  color: "#3d6ba6", // UPDATED UI
+                                }}
+                                onClick={() => {
+                                  setEditRow(l);
+                                  setModalOpen(true);
+                                }}
+                              >
+                                Edit
+                              </button>
+
+                              <button
+                                className="btn-sm btnPrimary"
+                                style={{
+                                  marginLeft: 8,
+                                  background: "#2b4e72", // UPDATED UI
+                                  border: "none",
+                                  color: "#fff",
+                                }}
+                                onClick={() => handleDelete(l.id)}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
-
       <AssignModal
         open={modalOpen}
         onClose={() => {
@@ -471,10 +476,14 @@ export default function TpCpAssignment() {
   cursor:pointer;
   transition:all .25s ease;
 }
-
 .btnPrimary:hover{
   transform:translateY(-3px);
   box-shadow:0 6px 12px rgba(0,0,0,0.15);
+}
+.content-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
 }
 `}</style>
     </div>

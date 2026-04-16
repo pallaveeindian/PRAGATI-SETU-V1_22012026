@@ -1,9 +1,10 @@
 // src/pages/TMS/layout/tms_LeftNav.jsx
 import React, { useContext, useState } from "react";
+import { useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../contexts/AuthContext";
 import logo from "../../../assets/TMS/tms_logo.png";
-import TopNav from "./tms_TopNav";
+// import TopNav from "./tms_TopNav";
 import {
   FaTachometerAlt,
   FaUsers,
@@ -238,8 +239,23 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const roleKey = getRoleKey(user);
   const menu = MENU[roleKey] || [];
-  // ✅ NEW
+  const username = user?.username || user?.name || "Guest";
+  const initial = username.charAt(0).toUpperCase();
+  const [showUserPopup, setShowUserPopup] = useState(false);
+  //  NEW
   const [openDropdown, setOpenDropdown] = useState(null);
+
+  useEffect(() => {
+    const handleClick = () => setShowUserPopup(false);
+
+    if (showUserPopup) {
+      document.addEventListener("click", handleClick);
+    }
+
+    return () => {
+      document.removeEventListener("click", handleClick);
+    };
+  }, [showUserPopup]);
   return (
     <>
       <button className="tms-mobile-burger" onClick={() => setMobileOpen(true)}>
@@ -251,10 +267,41 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   ${mobileOpen ? "mobile-open" : ""}`}
       >
         {/* LOGO */}
-        <div className="tms-logo" onClick={() => navigate("/dashboard")}>
-          <img src={logo} alt="TMS" />
-          <span className="logo-text">Training Management System</span>
+
+
+        {/* LEFT: LOGO CLICK ONLY */}
+        <div
+          className="logo-click"
+          onClick={() => navigate("/dashboard")}
+        >
+          {/* agar logo image use karna hai to yahan lagao */}
+          {/* <img src={logo} alt="logo" /> */}
         </div>
+
+        {/* RIGHT: USER SECTION */}
+        <div className="user-wrapper">
+          <button
+            className="user-btn"
+            onClick={(e) => {
+              e.stopPropagation();
+              setShowUserPopup((prev) => !prev);
+            }}
+          >
+            <div className="avatar">{initial}</div>
+            <span className="username-text">{username}</span>
+          </button>
+
+          {showUserPopup && (
+            <div
+              className="user-popup"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {username}
+            </div>
+          )}
+        </div>
+
+
 
         {/* NAV */}
         <nav className="tms-nav">
@@ -275,7 +322,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
           ))} */}
 
           {menu.map((item) => {
-            // ✅ NEW: HANDLE DROPDOWN MENU
+            //  NEW: HANDLE DROPDOWN MENU
             if (item.children) {
               const isOpen = openDropdown === item.label;
 
@@ -337,7 +384,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
               </NavLink>
             );
           })}
-          <TopNav />
+
         </nav>
 
         {/* TOGGLE */}
@@ -349,7 +396,12 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
         <style>{`
 .tms-leftnav {
   width: 220px;
-  background: #ffffff;
+  background: linear-gradient(
+    180deg,
+    #002073 0%,
+    #0167b6 52%,
+    #0093e1 100%
+  );
   border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
@@ -359,6 +411,64 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
 
 .tms-leftnav.collapsed {
   width: 64px;
+}
+
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ff8c00, #ff5e00);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 12px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  width: 100%;          /*  fit inside sidebar */
+  max-width: 100%;
+  overflow: hidden;
+  margin: 6px 0;        /*  remove side overflow */
+}
+
+.username-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;  /* ... */
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: white;
+  color: #ff5e00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.user-popup {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  right: 0;
+  background: white;
+  color: #002073;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 2000;
 }
 
 /* Logo */
@@ -418,7 +528,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   padding: 10px 12px;
   border-radius: 8px;
   text-decoration: none;
-  color: #061b46;
+  color: #ffffff;
   font-size: 14px;
   transition: all 0.2s ease; 
   white-space: nowrap;
@@ -452,10 +562,11 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
 
 .tms-nav-item:hover {
   background: #e8f0f8; 
+  color: #002073;
 }
 
 .tms-nav-item.active {
-  background: #061b46;
+  background: #0093e1;
   color: #ffffff;
   box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
 }
@@ -468,7 +579,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
 .tms-toggle {
   height: 40px;
   border: none;
-  background: #061b46;
+  background: #002073;
   border-top: 1px solid #e5e7eb;
   cursor: pointer;
   font-size: 14px;
@@ -485,8 +596,12 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   align-items: center;
   justify-content: center;
   min-width: 20px;
-  color: #061b46;
+  color:  #ffffff;
   transition: color 0.2s ease;
+}
+
+.tms-nav-item:hover .nav-icon {
+  color: #002073;
 }
 
 .tms-nav-item.active .nav-icon {
@@ -521,6 +636,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   gap: 4px;
   margin-left: 32px; 
   margin-top: 2px;
+
 }
 
 .tms-submenu-item {
@@ -531,16 +647,17 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   font-size: 13px;
   border-radius: 6px;
   text-decoration: none;
-  color: #061b46;
+  color: #ffffff;
   transition: all 0.2s ease; 
 }
 
 .tms-submenu-item:hover {
   background: #f1f5f9; 
+  
 }
 
 .tms-submenu-item.active {
-  background: #061b46;
+  background:  #0093e1;
   color: white;
 }
 

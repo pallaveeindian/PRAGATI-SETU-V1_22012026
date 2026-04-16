@@ -1,6 +1,8 @@
 // src/pages/TMS/SMMU/smmu_create_tp_targets.jsx
 import React, { useEffect, useState, useContext, useMemo } from "react";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
@@ -145,7 +147,7 @@ export default function SmmuCreatePartnerTargets() {
         if (payload) {
           try {
             window.localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-          } catch (e) {}
+          } catch (e) { }
           if (payload.user_id) {
             setEffectiveUserId(payload.user_id);
             return payload.user_id;
@@ -703,641 +705,649 @@ export default function SmmuCreatePartnerTargets() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        <div className="dashboard-header">
-          <h2 className="dashboard-title">{roleMessage}</h2>
-        </div>
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          <div className="dashboard-header">
+            <h2 className="dashboard-title">{roleMessage}</h2>
+          </div>
+          {/* <TopNav
           left={<div className="app-title">Pragati Setu — TMS (SMMU)</div>}
         /> */}
-        <main style={{ padding: 18 }}>
-          <div style={styles.container}>
-            <div
-              style={{
-                display: "flex",
-                gap: 12,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-              className="tms-header-row"
-            >
-              <h3 style={{ margin: 0 }} className="tms-page-title">
-                {editingTarget
-                  ? `Edit Target #${editingTarget.id}`
-                  : "Create Partner Targets"}
-              </h3>
+          <main style={{ padding: 18 }}>
+            <div style={styles.container}>
               <div
                 style={{
-                  marginLeft: "auto",
                   display: "flex",
-                  gap: 8,
+                  gap: 12,
                   alignItems: "center",
+                  marginBottom: 12,
                 }}
-                className="tms-header-actions"
+                className="tms-header-row"
               >
-                <button
-                  className="btn tms-refresh-btn"
-                  onClick={handleRefresh}
-                  disabled={loading.refresh}
-                  style={{ padding: "8px 10px", borderRadius: 6 }}
-                >
-                  {loading.refresh ? "Refreshing…" : "Refresh"}
-                </button>
-              </div>
-            </div>
-
-            <div className="layout-grid">
-              {/* Left: plans */}
-              <div className="plan-card">
-                <div className="plan-muted">
+                <h3 style={{ margin: 0 }} className="tms-page-title">
                   {editingTarget
-                    ? "Editing mode — change fields and Save."
-                    : "Click a module row to prefill the form on the right."}
-                </div>
-
-                <div className="plan-search">
-                  <input
-                    className="plan-search-input"
-                    placeholder="Filter modules by name / type / level"
-                    value={searchQ}
-                    onChange={(e) => setSearchQ(e.target.value)}
-                    aria-label="Search modules"
-                  />
-                </div>
-
+                    ? `Edit Target #${editingTarget.id}`
+                    : "Create Partner Targets"}
+                </h3>
                 <div
-                  className="plan-table-wrapper"
-                  role="table"
-                  aria-label="Training plans"
+                  style={{
+                    marginLeft: "auto",
+                    display: "flex",
+                    gap: 8,
+                    alignItems: "center",
+                  }}
+                  className="tms-header-actions"
                 >
-                  {loading.plans ? (
-                    <div className="plan-empty">Loading modules…</div>
-                  ) : filteredPlans.length ? (
-                    <table className="plan-table">
-                      <thead>
-                        <tr>
-                          <th style={{ width: 70 }}>ID</th>
-                          <th>Training name</th>
-                          <th style={{ width: 120 }}>Type</th>
-                          <th style={{ width: 140 }}>Level</th>
-                          <th style={{ width: 90 }}>Days</th>
-                        </tr>
-                      </thead>
+                  <button
+                    className="btn tms-refresh-btn"
+                    onClick={handleRefresh}
+                    disabled={loading.refresh}
+                    style={{ padding: "8px 10px", borderRadius: 6 }}
+                  >
+                    {loading.refresh ? "Refreshing…" : "Refresh"}
+                  </button>
+                </div>
+              </div>
 
-                      <tbody>
-                        {filteredPlans.map((p) => {
-                          const assigned = assignedPlanMap[p.id];
-                          const isAssigned = Boolean(assigned);
+              <div className="layout-grid">
+                {/* Left: plans */}
+                <div className="plan-card">
+                  <div className="plan-muted">
+                    {editingTarget
+                      ? "Editing mode — change fields and Save."
+                      : "Click a module row to prefill the form on the right."}
+                  </div>
 
-                          const isAssignedToThisEditingTarget =
-                            editingTarget &&
-                            (editingTarget.training_plan === p.id ||
-                              String(editingTarget.training_plan) ===
+                  <div className="plan-search">
+                    <input
+                      className="plan-search-input"
+                      placeholder="Filter modules by name / type / level"
+                      value={searchQ}
+                      onChange={(e) => setSearchQ(e.target.value)}
+                      aria-label="Search modules"
+                    />
+                  </div>
+
+                  <div
+                    className="plan-table-wrapper"
+                    role="table"
+                    aria-label="Training plans"
+                  >
+                    {loading.plans ? (
+                      <div className="plan-empty">Loading modules…</div>
+                    ) : filteredPlans.length ? (
+                      <table className="plan-table">
+                        <thead>
+                          <tr>
+                            <th style={{ width: 70 }}>ID</th>
+                            <th>Training name</th>
+                            <th style={{ width: 120 }}>Type</th>
+                            <th style={{ width: 140 }}>Level</th>
+                            <th style={{ width: 90 }}>Days</th>
+                          </tr>
+                        </thead>
+
+                        <tbody>
+                          {filteredPlans.map((p) => {
+                            const assigned = assignedPlanMap[p.id];
+                            const isAssigned = Boolean(assigned);
+
+                            const isAssignedToThisEditingTarget =
+                              editingTarget &&
+                              (editingTarget.training_plan === p.id ||
+                                String(editingTarget.training_plan) ===
                                 String(p.id));
 
-                          const rowClickable =
-                            !isAssigned || isAssignedToThisEditingTarget;
+                            const rowClickable =
+                              !isAssigned || isAssignedToThisEditingTarget;
 
-                          return (
-                            <tr
-                              key={p.id}
-                              role="row"
-                              tabIndex={0}
-                              onClick={() => rowClickable && onPlanClick(p)}
-                              onKeyDown={(e) =>
-                                (e.key === "Enter" || e.key === " ") &&
-                                rowClickable &&
-                                onPlanClick(p)
-                              }
-                              className={`plan-row 
+                            return (
+                              <tr
+                                key={p.id}
+                                role="row"
+                                tabIndex={0}
+                                onClick={() => rowClickable && onPlanClick(p)}
+                                onKeyDown={(e) =>
+                                  (e.key === "Enter" || e.key === " ") &&
+                                  rowClickable &&
+                                  onPlanClick(p)
+                                }
+                                className={`plan-row 
                   ${rowClickable ? "plan-row-clickable" : "plan-row-blocked"}
                   ${isAssigned && !isAssignedToThisEditingTarget ? "plan-row-disabled" : ""}
                 `}
-                            >
-                              <td className="plan-td plan-td-id">{p.id}</td>
+                              >
+                                <td className="plan-td plan-td-id">{p.id}</td>
 
-                              <td className="plan-td plan-td-training">
-                                <span>{p.training_name}</span>
+                                <td className="plan-td plan-td-training">
+                                  <span>{p.training_name}</span>
 
-                                {isAssigned && (
-                                  <span
-                                    className="plan-badge"
-                                    title={`Assigned to ${
-                                      assigned.partnerName || "partner"
-                                    }`}
-                                  >
-                                    Assigned
-                                    {assigned.partnerName
-                                      ? ` — ${assigned.partnerName}`
-                                      : ""}
-                                  </span>
-                                )}
-                              </td>
+                                  {isAssigned && (
+                                    <span
+                                      className="plan-badge"
+                                      title={`Assigned to ${assigned.partnerName || "partner"
+                                        }`}
+                                    >
+                                      Assigned
+                                      {assigned.partnerName
+                                        ? ` — ${assigned.partnerName}`
+                                        : ""}
+                                    </span>
+                                  )}
+                                </td>
 
-                              <td className="plan-td">
-                                {p.type_of_training || "—"}
-                              </td>
+                                <td className="plan-td">
+                                  {p.type_of_training || "—"}
+                                </td>
 
-                              <td className="plan-td">
-                                {p.level_of_training || "—"}
-                              </td>
+                                <td className="plan-td">
+                                  {p.level_of_training || "—"}
+                                </td>
 
-                              <td className="plan-td">
-                                {p.no_of_days != null ? p.no_of_days : "—"}
-                              </td>
-                            </tr>
-                          );
-                        })}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div className="plan-empty">
-                      {themes.length
-                        ? "No modules found for your assigned themes."
-                        : "No themes found for your SMMU user."}
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* Right: form + assigned list */}
-              <aside style={{ ...styles.card, ...styles.formColumn }}>
-                <div style={styles.smallMuted}>
-                  Choose partner, select target type and scope, enter batch
-                  count and financial year, then Save.
-                </div>
-
-                <form id="targetForm" onSubmit={handleSubmit}>
-                  <div style={{ marginBottom: 12 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: 6,
-                      }}
-                      className="palette-label"
-                    >
-                      Training Partner
-                    </label>
-                    <select
-                      name="partner_id"
-                      value={form.partner_id}
-                      onChange={handleChange}
-                      style={styles.formSelect}
-                      className="palette-input"
-                      required
-                    >
-                      <option value="">-- select partner --</option>
-                      {partners.map((tp) => (
-                        <option key={tp.id} value={tp.id}>
-                          {tp.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div style={{ marginBottom: 12 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: 6,
-                      }}
-                      className="palette-label"
-                    >
-                      Target type
-                    </label>
-                    <select
-                      name="target_type"
-                      value={form.target_type}
-                      onChange={handleChange}
-                      style={styles.formSelect}
-                      required
-                      className="palette-input"
-                    >
-                      <option value="MODULE">Module (module + district)</option>
-                      <option value="DISTRICT">District (district only)</option>
-                      <option value="THEME">Theme (theme-wise)</option>
-                    </select>
-                  </div>
-
-                  {showModuleRow && (
-                    <div style={{ marginBottom: 12 }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontWeight: 600,
-                          marginBottom: 6,
-                        }}
-                        className="palette-label"
-                      >
-                        Module / Training plan
-                      </label>
-                      <select
-                        name="training_plan_id"
-                        value={form.training_plan_id}
-                        onChange={handleChange}
-                        style={styles.formSelect}
-                        className="palette-input"
-                      >
-                        <option value="">-- select module --</option>
-                        {plans.map((m) => {
-                          const assigned = assignedPlanMap[m.id];
-                          const isAssigned = Boolean(assigned);
-                          const isAssignedToThisEditingTarget =
-                            editingTarget &&
-                            (editingTarget.training_plan === m.id ||
-                              String(editingTarget.training_plan) ===
-                                String(m.id));
-                          return (
-                            <option
-                              key={m.id}
-                              value={m.id}
-                              disabled={
-                                isAssigned && !isAssignedToThisEditingTarget
-                              }
-                            >
-                              {m.training_name}
-                              {isAssigned
-                                ? ` — Assigned to ${assigned.partnerName || "partner"}`
-                                : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
-                      <div
-                        style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
-                        className="palette-muted"
-                      >
-                        Tip: click a module row on the left to auto-select it
-                        here.
-                      </div>
-                    </div>
-                  )}
-
-                  {showDistrictRow && (
-                    <div style={{ marginBottom: 12 }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontWeight: 600,
-                          marginBottom: 6,
-                        }}
-                        className="palette-label"
-                      >
-                        District
-                      </label>
-                      <select
-                        name="district_id"
-                        value={form.district_id}
-                        onChange={handleChange}
-                        style={styles.formSelect}
-                        className="palette-input"
-                      >
-                        <option value="">-- select district --</option>
-                        {districts.length ? (
-                          districts.map((d) => (
-                            <option
-                              key={d.district_id || d.id}
-                              value={d.district_id || d.id}
-                            >
-                              {d.district_name_en || d.name}
-                            </option>
-                          ))
-                        ) : (
-                          <option value="">
-                            (No districts loaded — check endpoint)
-                          </option>
-                        )}
-                      </select>
-                    </div>
-                  )}
-
-                  {showThemeRow && (
-                    <div style={{ marginBottom: 12 }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontWeight: 600,
-                          marginBottom: 6,
-                        }}
-                        className="palette-label"
-                      >
-                        Theme (optional)
-                      </label>
-                      <div
-                        style={{
-                          background: "#f8f9fa",
-                          padding: 8,
-                          borderRadius: 4,
-                          border: "1px solid #e9ecef",
-                        }}
-                      >
-                        {form.theme || "(inferred on save)"}
-                      </div>
-                      <div
-                        style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
-                        className="palette-input"
-                      >
-                        For THEME targets, theme will be auto-inferred from your
-                        SMMU assignment or the selected module.
-                      </div>
-                    </div>
-                  )}
-
-                  <div style={{ marginBottom: 12 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: 6,
-                      }}
-                      className="palette-label"
-                    >
-                      Batch count (target)
-                    </label>
-                    <input
-                      type="number"
-                      name="target_count"
-                      min="0"
-                      value={form.target_count}
-                      onChange={handleChange}
-                      style={styles.formControl}
-                      required
-                      className="palette-input"
-                    />
-                  </div>
-
-                  <div style={{ marginBottom: 12 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: 6,
-                      }}
-                      className="palette-label"
-                    >
-                      Financial year
-                    </label>
-                    <select
-                      name="financial_year"
-                      value={form.financial_year}
-                      onChange={handleChange}
-                      style={styles.formSelect}
-                      required
-                      className="palette-input"
-                    >
-                      <option value="">-- select financial year --</option>
-                      <option>2021-22</option>
-                      <option>2022-23</option>
-                      <option>2023-24</option>
-                      <option>2024-25</option>
-                      <option>2025-26</option>
-                    </select>
-                  </div>
-
-                  <div style={{ marginBottom: 12 }}>
-                    <label
-                      style={{
-                        display: "block",
-                        fontWeight: 600,
-                        marginBottom: 6,
-                      }}
-                      className="palette-label"
-                    >
-                      Notes (finance / rationale)
-                    </label>
-                    <textarea
-                      name="notes"
-                      value={form.notes}
-                      onChange={handleChange}
-                      style={{ ...styles.formControl, height: 80 }}
-                      placeholder="Optional notes for finance or rationale"
-                      className="palette-input"
-                    />
-                  </div>
-
-                  <div
-                    style={{ display: "flex", gap: 10 }}
-                    className="tms-btn-group"
-                  >
-                    {" "}
-                    {/* UI CHANGE */}
-                    <button
-                      type="submit"
-                      disabled={saving}
-                      style={{ ...styles.btnPrimary, flex: 1 }}
-                      className="tms-btn-primary" /* UI CHANGE */
-                    >
-                      {saving
-                        ? editingTarget
-                          ? "Updating..."
-                          : "Saving..."
-                        : editingTarget
-                          ? "Update Target"
-                          : "Save Target"}
-                    </button>
-                    <button
-                      type="button"
-                      onClick={resetForm}
-                      style={{ ...styles.btnSecondary, flex: 1 }}
-                      className="tms-btn-secondary" /* UI CHANGE */
-                    >
-                      Reset
-                    </button>
-                  </div>
-
-                  {message && (
-                    <div
-                      style={{
-                        marginTop: 12,
-                        color: message.type === "error" ? "#d9534f" : "#28a745",
-                      }}
-                      className="tms-message" /* UI CHANGE */
-                    >
-                      {message.text}
-                    </div>
-                  )}
-                </form>
-
-                {/* ASSIGNED TARGET LIST */}
-                <div style={styles.assignedList} className="tms-assigned-card">
-                  <h6
-                    style={{ margin: "8px 0", paddingLeft: "8px" }}
-                    className="tms-section-title"
-                  >
-                    Assigned Targets
-                  </h6>
-
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "8px",
-                    }}
-                  >
-                    <div className="tms-muted-text" style={{ fontSize: 13 }}>
-                      Total: {assignedTotal}
-                    </div>
-
-                    <button
-                      className="btn tms-btn-view"
-                      onClick={() => setIsModalOpen(true)}
-                      style={{ padding: "6px 12px", borderRadius: 6 }}
-                    >
-                      View
-                    </button>
-                  </div>
-                </div>
-                {isModalOpen && (
-                  <div className="tms-modal-overlay">
-                    <div className="tms-modal">
-                      {/* HEADER */}
-                      <div className="tms-modal-header">
-                        <h5>Assigned Targets</h5>
-                        <button onClick={() => setIsModalOpen(false)}>✖</button>
-                      </div>
-
-                      {/* BODY */}
-                      <div style={{ maxHeight: 400, overflow: "auto" }}>
-                        {loading.targets ? (
-                          <div style={{ padding: 12 }}>Loading targets…</div>
-                        ) : assignedTargets.length ? (
-                          assignedTargets.map((t) => (
-                            <div
-                              key={t.id}
-                              style={{
-                                padding: 10,
-                                borderBottom: "1px solid #eee",
-                                display: "flex",
-                                justifyContent: "space-between",
-                              }}
-                            >
-                              <div>
-                                <div style={{ fontSize: 13 }}>
-                                  {t.target_type} —{" "}
-                                  {t.training_plan_name ||
-                                    (t.training_plan &&
-                                      t.training_plan.training_name) ||
-                                    t.theme ||
-                                    ""}
-                                </div>
-
-                                <div style={{ fontSize: 12, color: "#666" }}>
-                                  FY: {t.financial_year || "—"}
-                                </div>
-                              </div>
-
-                              <div style={{ textAlign: "right" }}>
-                                <div style={{ fontSize: 13 }}>
-                                  {progressForTarget(t)}
-                                </div>
-
-                                <button
-                                  className="btn tms-btn-edit"
-                                  onClick={() => editAssignedTarget(t)}
-                                  style={{ marginTop: 6 }}
-                                >
-                                  Edit
-                                </button>
-                              </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div style={{ padding: 12 }}>No targets found.</div>
-                        )}
-                      </div>
-
-                      {/* PAGINATION */}
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          alignItems: "center",
-                          padding: 10,
-                        }}
-                      >
-                        <button
-                          onClick={gotoPrevPage}
-                          disabled={assignedPage <= 1}
-                        >
-                          Prev
-                        </button>
-
-                        <span>
-                          Page {assignedPage} /{" "}
-                          {Math.max(
-                            1,
-                            Math.ceil(assignedTotal / assignedPageSize),
-                          )}
-                        </span>
-
-                        <button
-                          onClick={gotoNextPage}
-                          disabled={
-                            assignedPage >=
-                            Math.max(
-                              1,
-                              Math.ceil(assignedTotal / assignedPageSize),
-                            )
-                          }
-                        >
-                          Next
-                        </button>
-
-                        <select
-                          value={assignedPageSize}
-                          onChange={(e) => {
-                            setAssignedPageSize(Number(e.target.value));
-                            setAssignedPage(1);
-                          }}
-                          style={{ marginLeft: "auto" }}
-                        >
-                          <option value={5}>5</option>
-                          <option value={10}>10</option>
-                          <option value={25}>25</option>
-                        </select>
-                      </div>
-                    </div>
-                  </div>
-                )}
-
-                {/* RECENT ACTIVITY */}
-                <div style={{ marginTop: 12 }} className="tms-activity">
-                  {" "}
-                  {/* UI CHANGE */}
-                  <h6 style={{ margin: "8px 0" }} className="tms-section-title">
-                    {" "}
-                    {/* UI CHANGE */}
-                    Recent activity
-                  </h6>
-                  <div className="tms-muted-text" style={{ fontSize: 13 }}>
-                    {" "}
-                    {/* UI CHANGE */}
-                    {recentActivity.length ? (
-                      <ul style={{ marginTop: 6 }}>
-                        {recentActivity.map((r, i) => (
-                          <li key={i} style={{ fontSize: 13 }}>
-                            {r}
-                          </li>
-                        ))}
-                      </ul>
+                                <td className="plan-td">
+                                  {p.no_of_days != null ? p.no_of_days : "—"}
+                                </td>
+                              </tr>
+                            );
+                          })}
+                        </tbody>
+                      </table>
                     ) : (
-                      "No recent actions yet."
+                      <div className="plan-empty">
+                        {themes.length
+                          ? "No modules found for your assigned themes."
+                          : "No themes found for your SMMU user."}
+                      </div>
                     )}
                   </div>
                 </div>
-              </aside>
+
+                {/* Right: form + assigned list */}
+                <aside style={{ ...styles.card, ...styles.formColumn }}>
+                  <div style={styles.smallMuted}>
+                    Choose partner, select target type and scope, enter batch
+                    count and financial year, then Save.
+                  </div>
+
+                  <form id="targetForm" onSubmit={handleSubmit}>
+                    <div style={{ marginBottom: 12 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontWeight: 600,
+                          marginBottom: 6,
+                        }}
+                        className="palette-label"
+                      >
+                        Training Partner
+                      </label>
+                      <select
+                        name="partner_id"
+                        value={form.partner_id}
+                        onChange={handleChange}
+                        style={styles.formSelect}
+                        className="palette-input"
+                        required
+                      >
+                        <option value="">-- select partner --</option>
+                        {partners.map((tp) => (
+                          <option key={tp.id} value={tp.id}>
+                            {tp.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontWeight: 600,
+                          marginBottom: 6,
+                        }}
+                        className="palette-label"
+                      >
+                        Target type
+                      </label>
+                      <select
+                        name="target_type"
+                        value={form.target_type}
+                        onChange={handleChange}
+                        style={styles.formSelect}
+                        required
+                        className="palette-input"
+                      >
+                        <option value="MODULE">Module (module + district)</option>
+                        <option value="DISTRICT">District (district only)</option>
+                        <option value="THEME">Theme (theme-wise)</option>
+                      </select>
+                    </div>
+
+                    {showModuleRow && (
+                      <div style={{ marginBottom: 12 }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontWeight: 600,
+                            marginBottom: 6,
+                          }}
+                          className="palette-label"
+                        >
+                          Module / Training plan
+                        </label>
+                        <select
+                          name="training_plan_id"
+                          value={form.training_plan_id}
+                          onChange={handleChange}
+                          style={styles.formSelect}
+                          className="palette-input"
+                        >
+                          <option value="">-- select module --</option>
+                          {plans.map((m) => {
+                            const assigned = assignedPlanMap[m.id];
+                            const isAssigned = Boolean(assigned);
+                            const isAssignedToThisEditingTarget =
+                              editingTarget &&
+                              (editingTarget.training_plan === m.id ||
+                                String(editingTarget.training_plan) ===
+                                String(m.id));
+                            return (
+                              <option
+                                key={m.id}
+                                value={m.id}
+                                disabled={
+                                  isAssigned && !isAssignedToThisEditingTarget
+                                }
+                              >
+                                {m.training_name}
+                                {isAssigned
+                                  ? ` — Assigned to ${assigned.partnerName || "partner"}`
+                                  : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                        <div
+                          style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
+                          className="palette-muted"
+                        >
+                          Tip: click a module row on the left to auto-select it
+                          here.
+                        </div>
+                      </div>
+                    )}
+
+                    {showDistrictRow && (
+                      <div style={{ marginBottom: 12 }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontWeight: 600,
+                            marginBottom: 6,
+                          }}
+                          className="palette-label"
+                        >
+                          District
+                        </label>
+                        <select
+                          name="district_id"
+                          value={form.district_id}
+                          onChange={handleChange}
+                          style={styles.formSelect}
+                          className="palette-input"
+                        >
+                          <option value="">-- select district --</option>
+                          {districts.length ? (
+                            districts.map((d) => (
+                              <option
+                                key={d.district_id || d.id}
+                                value={d.district_id || d.id}
+                              >
+                                {d.district_name_en || d.name}
+                              </option>
+                            ))
+                          ) : (
+                            <option value="">
+                              (No districts loaded — check endpoint)
+                            </option>
+                          )}
+                        </select>
+                      </div>
+                    )}
+
+                    {showThemeRow && (
+                      <div style={{ marginBottom: 12 }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontWeight: 600,
+                            marginBottom: 6,
+                          }}
+                          className="palette-label"
+                        >
+                          Theme (optional)
+                        </label>
+                        <div
+                          style={{
+                            background: "#f8f9fa",
+                            padding: 8,
+                            borderRadius: 4,
+                            border: "1px solid #e9ecef",
+                          }}
+                        >
+                          {form.theme || "(inferred on save)"}
+                        </div>
+                        <div
+                          style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
+                          className="palette-input"
+                        >
+                          For THEME targets, theme will be auto-inferred from your
+                          SMMU assignment or the selected module.
+                        </div>
+                      </div>
+                    )}
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontWeight: 600,
+                          marginBottom: 6,
+                        }}
+                        className="palette-label"
+                      >
+                        Batch count (target)
+                      </label>
+                      <input
+                        type="number"
+                        name="target_count"
+                        min="0"
+                        value={form.target_count}
+                        onChange={handleChange}
+                        style={styles.formControl}
+                        required
+                        className="palette-input"
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontWeight: 600,
+                          marginBottom: 6,
+                        }}
+                        className="palette-label"
+                      >
+                        Financial year
+                      </label>
+                      <select
+                        name="financial_year"
+                        value={form.financial_year}
+                        onChange={handleChange}
+                        style={styles.formSelect}
+                        required
+                        className="palette-input"
+                      >
+                        <option value="">-- select financial year --</option>
+                        <option>2021-22</option>
+                        <option>2022-23</option>
+                        <option>2023-24</option>
+                        <option>2024-25</option>
+                        <option>2025-26</option>
+                      </select>
+                    </div>
+
+                    <div style={{ marginBottom: 12 }}>
+                      <label
+                        style={{
+                          display: "block",
+                          fontWeight: 600,
+                          marginBottom: 6,
+                        }}
+                        className="palette-label"
+                      >
+                        Notes (finance / rationale)
+                      </label>
+                      <textarea
+                        name="notes"
+                        value={form.notes}
+                        onChange={handleChange}
+                        style={{ ...styles.formControl, height: 80 }}
+                        placeholder="Optional notes for finance or rationale"
+                        className="palette-input"
+                      />
+                    </div>
+
+                    <div
+                      style={{ display: "flex", gap: 10 }}
+                      className="tms-btn-group"
+                    >
+                      {" "}
+                      {/* UI CHANGE */}
+                      <button
+                        type="submit"
+                        disabled={saving}
+                        style={{ ...styles.btnPrimary, flex: 1 }}
+                        className="tms-btn-primary" /* UI CHANGE */
+                      >
+                        {saving
+                          ? editingTarget
+                            ? "Updating..."
+                            : "Saving..."
+                          : editingTarget
+                            ? "Update Target"
+                            : "Save Target"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetForm}
+                        style={{ ...styles.btnSecondary, flex: 1 }}
+                        className="tms-btn-secondary" /* UI CHANGE */
+                      >
+                        Reset
+                      </button>
+                    </div>
+
+                    {message && (
+                      <div
+                        style={{
+                          marginTop: 12,
+                          color: message.type === "error" ? "#d9534f" : "#28a745",
+                        }}
+                        className="tms-message" /* UI CHANGE */
+                      >
+                        {message.text}
+                      </div>
+                    )}
+                  </form>
+
+                  {/* ASSIGNED TARGET LIST */}
+                  <div style={styles.assignedList} className="tms-assigned-card">
+                    <h6
+                      style={{ margin: "8px 0", paddingLeft: "8px" }}
+                      className="tms-section-title"
+                    >
+                      Assigned Targets
+                    </h6>
+
+                    <div
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        padding: "8px",
+                      }}
+                    >
+                      <div className="tms-muted-text" style={{ fontSize: 13 }}>
+                        Total: {assignedTotal}
+                      </div>
+
+                      <button
+                        className="btn tms-btn-view"
+                        onClick={() => setIsModalOpen(true)}
+                        style={{ padding: "6px 12px", borderRadius: 6 }}
+                      >
+                        View
+                      </button>
+                    </div>
+                  </div>
+                  {isModalOpen && (
+                    <div className="tms-modal-overlay">
+                      <div className="tms-modal">
+                        {/* HEADER */}
+                        <div className="tms-modal-header">
+                          <h5>Assigned Targets</h5>
+                          <button onClick={() => setIsModalOpen(false)}>✖</button>
+                        </div>
+
+                        {/* BODY */}
+                        <div style={{ maxHeight: 400, overflow: "auto" }}>
+                          {loading.targets ? (
+                            <div style={{ padding: 12 }}>Loading targets…</div>
+                          ) : assignedTargets.length ? (
+                            assignedTargets.map((t) => (
+                              <div
+                                key={t.id}
+                                style={{
+                                  padding: 10,
+                                  borderBottom: "1px solid #eee",
+                                  display: "flex",
+                                  justifyContent: "space-between",
+                                }}
+                              >
+                                <div>
+                                  <div style={{ fontSize: 13 }}>
+                                    {t.target_type} —{" "}
+                                    {t.training_plan_name ||
+                                      (t.training_plan &&
+                                        t.training_plan.training_name) ||
+                                      t.theme ||
+                                      ""}
+                                  </div>
+
+                                  <div style={{ fontSize: 12, color: "#666" }}>
+                                    FY: {t.financial_year || "—"}
+                                  </div>
+                                </div>
+
+                                <div style={{ textAlign: "right" }}>
+                                  <div style={{ fontSize: 13 }}>
+                                    {progressForTarget(t)}
+                                  </div>
+
+                                  <button
+                                    className="btn tms-btn-edit"
+                                    onClick={() => editAssignedTarget(t)}
+                                    style={{ marginTop: 6 }}
+                                  >
+                                    Edit
+                                  </button>
+                                </div>
+                              </div>
+                            ))
+                          ) : (
+                            <div style={{ padding: 12 }}>No targets found.</div>
+                          )}
+                        </div>
+
+                        {/* PAGINATION */}
+                        <div
+                          style={{
+                            display: "flex",
+                            gap: 8,
+                            alignItems: "center",
+                            padding: 10,
+                          }}
+                        >
+                          <button
+                            onClick={gotoPrevPage}
+                            disabled={assignedPage <= 1}
+                          >
+                            Prev
+                          </button>
+
+                          <span>
+                            Page {assignedPage} /{" "}
+                            {Math.max(
+                              1,
+                              Math.ceil(assignedTotal / assignedPageSize),
+                            )}
+                          </span>
+
+                          <button
+                            onClick={gotoNextPage}
+                            disabled={
+                              assignedPage >=
+                              Math.max(
+                                1,
+                                Math.ceil(assignedTotal / assignedPageSize),
+                              )
+                            }
+                          >
+                            Next
+                          </button>
+
+                          <select
+                            value={assignedPageSize}
+                            onChange={(e) => {
+                              setAssignedPageSize(Number(e.target.value));
+                              setAssignedPage(1);
+                            }}
+                            style={{ marginLeft: "auto" }}
+                          >
+                            <option value={5}>5</option>
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* RECENT ACTIVITY */}
+                  <div style={{ marginTop: 12 }} className="tms-activity">
+                    {" "}
+                    {/* UI CHANGE */}
+                    <h6 style={{ margin: "8px 0" }} className="tms-section-title">
+                      {" "}
+                      {/* UI CHANGE */}
+                      Recent activity
+                    </h6>
+                    <div className="tms-muted-text" style={{ fontSize: 13 }}>
+                      {" "}
+                      {/* UI CHANGE */}
+                      {recentActivity.length ? (
+                        <ul style={{ marginTop: 6 }}>
+                          {recentActivity.map((r, i) => (
+                            <li key={i} style={{ fontSize: 13 }}>
+                              {r}
+                            </li>
+                          ))}
+                        </ul>
+                      ) : (
+                        "No recent actions yet."
+                      )}
+                    </div>
+                  </div>
+                </aside>
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
       <style>{`/* PAGE BACKGROUND */
+
+.content-area {
+  display: flex;
+  flex: 1;
+}
 
 /* CARD */
 .palette-card{

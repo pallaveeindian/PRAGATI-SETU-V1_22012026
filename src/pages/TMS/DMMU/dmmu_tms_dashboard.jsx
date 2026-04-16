@@ -2,6 +2,8 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import TmsLeftNav from "../layout/tms_LeftNav";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
@@ -226,154 +228,188 @@ export default function DmmuTmsDashboard() {
 
   return (
     <div className="app-shell">
-      <TmsLeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+
+      <Header />
+      <div className="content-area">
+        <TmsLeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-wrapper">
+          {/* <TopNav
           left={<div className="app-title">Pragati Setu — TMS (DMMU)</div>}
         /> */}
-        <main className="dmmu-main">
-          <div className="dmmu-container">
-            {/* HEADER */}
-            <div className="dmmu-header">
-              <h2 className="dmmu-title">
-                DMMU Dashboard
-                {districtId && (
-                  <span className="dmmu-district">
-                    — District #{districtId}
-                  </span>
-                )}
-              </h2>
-
-              <div className="dmmu-user">
-                <div className="dmmu-user-text">
-                  {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
-                </div>
-
-                <button
-                  className="btn btn-primary"
-                  onClick={handleRefresh}
-                  disabled={refreshing || !districtId}
-                >
-                  {refreshing
-                    ? "Refreshing…"
-                    : usingCache
-                      ? "Refresh Data"
-                      : "Updated"}
-                </button>
-              </div>
-            </div>
-
-            {/* KPI GRID */}
-            <div className="dmmu-kpi-grid">
-              <div className="dmmu-kpi-card">
-                <div className="dmmu-kpi-number">
-                  {loadingKpis ? "…" : animBeneficiaries}
-                </div>
-                <div className="dmmu-kpi-label">Total Beneficiaries</div>
-                <div className="dmmu-kpi-small">Trained in district</div>
-              </div>
-
-              <div className="dmmu-kpi-card">
-                <div className="dmmu-kpi-number">
-                  {loadingKpis ? "…" : animTrainers}
-                </div>
-                <div className="dmmu-kpi-label">Total Trainers</div>
-                <div className="dmmu-kpi-small">Trained in district</div>
-              </div>
-
-              <div className="dmmu-kpi-card">
-                <div className="dmmu-kpi-number">
-                  {loadingKpis ? "…" : animTrainings}
-                </div>
-                <div className="dmmu-kpi-label">Total Trainings</div>
-                <div className="dmmu-kpi-small">Requests in district</div>
-              </div>
-
-              <div className="dmmu-kpi-card">
-                <div className="dmmu-kpi-number">
-                  {loadingKpis ? "…" : animPlds}
-                </div>
-                <div className="dmmu-kpi-label">PLDs Trained</div>
-                <div className="dmmu-kpi-small">
-                  Potential Lakhpatis trained in your District
-                </div>
-              </div>
-            </div>
-
-            {/* GRID */}
-            <div className="dmmu-grid">
-              {/* LEFT CARD */}
-              <div className="dmmu-card">
-                <div
-                  style={{
-                    display: "flex",
-                    flexWrap: "wrap",
-                    gap: 12,
-                    marginTop: 16,
-                  }}
-                ></div>
-
-                <div className="dmmu-notes">
-                  <h4 className="dmmu-notes-title">Notes</h4>
-
-                  <ul className="dmmu-notes-list">
-                    <li>Review pending training requests from BMMUs</li>
-                    <li>Monitor batch progress across blocks</li>
-                    <li>Verify PLD completion rates</li>
-                    <li>Approve/reject training plans</li>
-                  </ul>
-                </div>
-              </div>
-
-              {/* SIDEBAR */}
-              <div className="dmmu-card">
-                <h4 className="dmmu-overview-title">District Overview</h4>
-
-                <div className="dmmu-overview-text">
-                  District #{districtId || "Loading..."} — {kpis.totalTrainings}{" "}
-                  active trainings
-                  {kpis.totalBeneficiaries > 0 && (
-                    <div className="dmmu-pld-box">
-                      <strong>PLD Coverage:</strong>{" "}
-                      {Math.round(
-                        (kpis.totalPlds / kpis.totalBeneficiaries) * 100,
-                      ) || 0}
-                      %
-                      <div className="dmmu-pld-small">
-                        {kpis.totalPlds}/{kpis.totalBeneficiaries} beneficiaries
-                      </div>
-                    </div>
+          <main className="dmmu-main">
+            <div className="dmmu-container">
+              {/* HEADER */}
+              <div className="dmmu-header">
+                {/* <h2 className="dmmu-title">
+                  DMMU Dashboard
+                  {districtId && (
+                    <span className="dmmu-district">
+                      — District #{districtId}
+                    </span>
                   )}
+                </h2> */}
+
+                <div className="dmmu-user">
+                  <div className="dmmu-user-text">
+                    {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
+                  </div>
+
+                  <button
+                    className="btn btn-primary"
+                    onClick={handleRefresh}
+                    disabled={refreshing || !districtId}
+                  >
+                    {refreshing
+                      ? "Refreshing…"
+                      : usingCache
+                        ? "Refresh Data"
+                        : "Updated"}
+                  </button>
+                </div>
+              </div>
+
+              {/* KPI GRID */}
+              <div className="dmmu-kpi-grid">
+                <div className="dmmu-kpi-card">
+                  <div className="dmmu-kpi-number">
+                    {loadingKpis ? "…" : animBeneficiaries}
+                  </div>
+                  <div className="dmmu-kpi-label">Total Beneficiaries</div>
+                  <div className="dmmu-kpi-small">Trained in district</div>
                 </div>
 
-                <div className="dmmu-links">
-                  <h5 className="dmmu-links-title">Quick Links</h5>
+                <div className="dmmu-kpi-card">
+                  <div className="dmmu-kpi-number">
+                    {loadingKpis ? "…" : animTrainers}
+                  </div>
+                  <div className="dmmu-kpi-label">Total Trainers</div>
+                  <div className="dmmu-kpi-small">Trained in district</div>
+                </div>
 
-                  <div className="dmmu-links-list">
-                    <button
-                      className="btn btn-primary dmmu-link-btn"
-                      onClick={() => navigate("/tms/dmmu/batches")}
-                    >
-                      → View District Batches
-                    </button>
+                <div className="dmmu-kpi-card">
+                  <div className="dmmu-kpi-number">
+                    {loadingKpis ? "…" : animTrainings}
+                  </div>
+                  <div className="dmmu-kpi-label">Total Trainings</div>
+                  <div className="dmmu-kpi-small">Requests in district</div>
+                </div>
 
-                    <button
-                      className="btn btn-primary dmmu-link-btn"
-                      onClick={() => navigate("/tms/training-requests")}
-                    >
-                      → All Training Requests
-                    </button>
+                <div className="dmmu-kpi-card">
+                  <div className="dmmu-kpi-number">
+                    {loadingKpis ? "…" : animPlds}
+                  </div>
+                  <div className="dmmu-kpi-label">PLDs Trained</div>
+                  <div className="dmmu-kpi-small">
+                    Potential Lakhpatis trained in your District
+                  </div>
+                </div>
+              </div>
+
+              {/* GRID */}
+              <div className="dmmu-grid">
+                {/* LEFT CARD */}
+                <div className="dmmu-card">
+                  <div
+                    style={{
+                      display: "flex",
+                      flexWrap: "wrap",
+                      gap: 12,
+                      marginTop: 16,
+                    }}
+                  ></div>
+
+                  <div className="dmmu-notes">
+                    <h4 className="dmmu-notes-title">Notes</h4>
+
+                    <ul className="dmmu-notes-list">
+                      <li>Review pending training requests from BMMUs</li>
+                      <li>Monitor batch progress across blocks</li>
+                      <li>Verify PLD completion rates</li>
+                      <li>Approve/reject training plans</li>
+                    </ul>
+                  </div>
+                </div>
+
+                {/* SIDEBAR */}
+                <div className="dmmu-card">
+                  <h4 className="dmmu-overview-title">District Overview</h4>
+
+                  <div className="dmmu-overview-text">
+                    District #{districtId || "Loading..."} — {kpis.totalTrainings}{" "}
+                    active trainings
+                    {kpis.totalBeneficiaries > 0 && (
+                      <div className="dmmu-pld-box">
+                        <strong>PLD Coverage:</strong>{" "}
+                        {Math.round(
+                          (kpis.totalPlds / kpis.totalBeneficiaries) * 100,
+                        ) || 0}
+                        %
+                        <div className="dmmu-pld-small">
+                          {kpis.totalPlds}/{kpis.totalBeneficiaries} beneficiaries
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="dmmu-links">
+                    <h5 className="dmmu-links-title">Quick Links</h5>
+
+                    <div className="dmmu-links-list">
+                      <button
+                        className="btn btn-primary dmmu-link-btn"
+                        onClick={() => navigate("/tms/dmmu/batches")}
+                      >
+                        → View District Batches
+                      </button>
+
+                      <button
+                        className="btn btn-primary dmmu-link-btn"
+                        onClick={() => navigate("/tms/training-requests")}
+                      >
+                        → All Training Requests
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
       <style>{`/* MAIN */
+  .content-area {
+  display: flex;
+  flex: 1;              /*  pushes footer down */
+  min-width: 0;         /*  prevents overflow bug */
+}
+
+/* SIDEBAR FIX */
+.content-area > *:first-child {
+  flex-shrink: 0;
+}
+
+/* ================= MAIN WRAPPER ================= */
+
+.main-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-width: 0;         /*  IMPORTANT */
+}
+
+/* ================= MAIN CONTENT ================= */
+
+.main-wrapper main {
+  flex: 1;              /*  takes full height */
+  width: 100%;
+  padding: 18px;        /*  FIXED */
+  box-sizing: border-box;
+}
+
 .dmmu-main {
   padding: 18px;
 }
@@ -407,6 +443,7 @@ export default function DmmuTmsDashboard() {
 .dmmu-user {
   margin-left: auto;
   display: flex;
+  justify-content: space-between; /* ✅ correct */
   gap: 12px;
   align-items: center;
   color: #0f766e;
