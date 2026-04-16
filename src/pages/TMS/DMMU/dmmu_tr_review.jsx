@@ -234,7 +234,10 @@ export default function DmmuTrReview() {
   /* ---------------- batches fetch (reusing training_batch_list style) ---------------- */
 
   function loadBatchesCache(requestId) {
-    return loadJson(getBatchesCacheKey(requestId));
+    const cached = loadJson(getBatchesCacheKey(requestId));
+    if (!cached) return null;
+    if (Date.now() - (cached.ts || 0) > 5 * 60 * 1000) return null; // expired
+    return cached;
   }
 
   function saveBatchesCache(requestId, payload) {
@@ -264,7 +267,9 @@ export default function DmmuTrReview() {
         request: requestId,
         page_size: 500,
       });
-      const items = resp?.data?.results || [];
+      const items = (resp?.data?.results || []).filter(
+        (b) => b.is_active !== false,
+      );
       setBatches(items);
       saveBatchesCache(requestId, items);
     } catch (e) {

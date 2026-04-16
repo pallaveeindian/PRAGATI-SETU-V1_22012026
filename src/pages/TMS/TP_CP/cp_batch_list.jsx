@@ -130,7 +130,7 @@ export default function CpBatchList() {
         centre: centre.id,
         page_size: 500,
       });
-      const items = resp?.data?.results || [];
+      const items = (resp?.data?.results || []).filter(b => b.is_active === true);
       setBatches(items);
       saveJson(CP_BATCHES_CACHE_KEY, items);
     } catch (e) {

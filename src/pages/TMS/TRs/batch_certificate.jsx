@@ -83,11 +83,10 @@ export default function BatchCertificate() {
   const [refreshToken, setRefreshToken] = useState(0);
 
   const [showFinancialModal, setShowFinancialModal] = useState(false);
-  const [showPreviewModal, setShowPreviewModal] = useState(false);
+
   const [financialYear, setFinancialYear] = useState("2025-26");
 
   // NEW: State to hold the PDF Blob URL from the backend
-  const [pdfUrl, setPdfUrl] = useState(null);
   const [generating, setGenerating] = useState(false);
 
   const didRunRef = useRef(false);
@@ -155,9 +154,11 @@ export default function BatchCertificate() {
       const blob = new Blob([resp.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
 
-      setPdfUrl(url);
+      // SURGICAL CHANGE: Open directly in the browser's default PDF viewer!
+      // This gives the user native Print and Download buttons automatically.
+      window.open(url, "_blank");
+
       setShowFinancialModal(false);
-      setShowPreviewModal(true);
     } catch (e) {
       console.error("fetch certificate pdf failed", e);
       let msg =
@@ -476,159 +477,83 @@ export default function BatchCertificate() {
                 </div>
               </>
             )}
-
-            {/* Financial Year Modal */}
-            {showFinancialModal && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: "rgba(0,0,0,0.5)",
-                  zIndex: 999,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                }}
-                onClick={() => setShowFinancialModal(false)}
-              >
-                <div
-                  style={{
-                    background: "#fff",
-                    padding: 24,
-                    borderRadius: 8,
-                    minWidth: 400,
-                  }}
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  <h3>Select Financial Year</h3>
-                  <select
-                    value={financialYear}
-                    onChange={(e) => setFinancialYear(e.target.value)}
-                    style={{
-                      width: "100%",
-                      padding: 12,
-                      margin: "12px 0",
-                      borderRadius: 4,
-                      border: "1px solid #d1d5db",
-                    }}
-                  >
-                    <option value="2024-25">2024-25</option>
-                    <option value="2025-26">2025-26</option>
-                    <option value="2026-27">2026-27</option>
-                  </select>
-                  <div
-                    style={{
-                      display: "flex",
-                      gap: 12,
-                      justifyContent: "flex-end",
-                      marginTop: 20,
-                    }}
-                  >
-                    <button
-                      className="btn-secondary"
-                      onClick={() => setShowFinancialModal(false)}
-                    >
-                      Cancel
-                    </button>
-                    <button
-                      className="btn"
-                      onClick={fetchCertificatePdf}
-                      disabled={generating}
-                    >
-                      {generating ? "Generating..." : "Generate Certificate"}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* Certificate Preview Modal */}
-            {showPreviewModal && pdfUrl && (
-              <div
-                style={{
-                  position: "fixed",
-                  top: 0,
-                  left: 0,
-                  right: 0,
-                  bottom: 0,
-                  background: "rgba(0,0,0,0.7)",
-                  zIndex: 1000,
-                  display: "flex",
-                  alignItems: "center",
-                  justifyContent: "center",
-                  padding: 20,
-                }}
-              >
-                <div
-                  style={{
-                    background: "#fff",
-                    borderRadius: 8,
-                    maxWidth: 1000,
-                    width: "95%",
-                    height: "90vh",
-                    display: "flex",
-                    flexDirection: "column",
-                    boxShadow: "0 10px 40px rgba(0,0,0,0.2)",
-                  }}
-                >
-                  {/* Header with Actions */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      padding: "16px 20px",
-                      borderBottom: "1px solid #e5e7eb",
-                      background: "#fff",
-                      borderRadius: "8px 8px 0 0",
-                    }}
-                  >
-                    <h3 style={{ margin: 0 }}>Batch Certificate Preview</h3>
-                    <div style={{ display: "flex", gap: 12 }}>
-                      <a
-                        className="btn"
-                        href={pdfUrl}
-                        download={`Certificate_Batch_${batchDetail.code}_${financialYear}.pdf`}
-                        style={{
-                          textDecoration: "none",
-                          display: "inline-flex",
-                          alignItems: "center",
-                        }}
-                      >
-                        📥 Download PDF
-                      </a>
-                      <button
-                        className="btn"
-                        onClick={() => window.open(pdfUrl, "_blank")}
-                      >
-                        🖨️ Print PDF
-                      </button>
-                      <button
-                        className="btn-secondary"
-                        onClick={() => setShowPreviewModal(false)}
-                      >
-                        Close
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* Certificate Content (PDF Iframe) */}
-                  <div style={{ flex: 1, padding: 0, background: "#e2e8f0" }}>
-                    <iframe
-                      src={`${pdfUrl}#toolbar=0`}
-                      style={{ width: "100%", height: "100%", border: "none" }}
-                      title="Certificate PDF"
-                    />
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
         </main>
       </div>
+
+      {/* ========================================================================
+        MODALS MOVED TO ROOT LEVEL 
+        (Prevents z-index stacking and fixed-positioning layout bugs)
+        ======================================================================== 
+      */}
+
+      {/* Financial Year Modal */}
+      {showFinancialModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: "rgba(0,0,0,0.5)",
+            zIndex: 999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+          }}
+          onClick={() => setShowFinancialModal(false)}
+        >
+          <div
+            style={{
+              background: "#fff",
+              padding: 24,
+              borderRadius: 8,
+              minWidth: 400,
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <h3>Select Financial Year</h3>
+            <select
+              value={financialYear}
+              onChange={(e) => setFinancialYear(e.target.value)}
+              style={{
+                width: "100%",
+                padding: 12,
+                margin: "12px 0",
+                borderRadius: 4,
+                border: "1px solid #d1d5db",
+              }}
+            >
+              <option value="2024-25">2024-25</option>
+              <option value="2025-26">2025-26</option>
+              <option value="2026-27">2026-27</option>
+            </select>
+            <div
+              style={{
+                display: "flex",
+                gap: 12,
+                justifyContent: "flex-end",
+                marginTop: 20,
+              }}
+            >
+              <button
+                className="btn-secondary"
+                onClick={() => setShowFinancialModal(false)}
+              >
+                Cancel
+              </button>
+              <button
+                className="btn"
+                onClick={fetchCertificatePdf}
+                disabled={generating}
+              >
+                {generating ? "Generating..." : "Generate Certificate"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

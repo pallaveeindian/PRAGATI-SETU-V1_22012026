@@ -873,6 +873,7 @@ async function deleteAllExistingBatchesAndParticipants(trainingReq) {
   const resp = await TMS_API.batches.list({
     request: trainingReq.id,
     page_size: 100,
+    _t: Date.now(),
   });
 
   const batches = resp?.data?.results || [];
@@ -926,7 +927,7 @@ function BatchSubmitSection({
       return {
         batch: {
           request: trainingReq?.id || null, // safely handle missing trainingReq
-          centre: b?.centre?.id || null, // safely handle missing centre
+          centre: b?.centre?.id || b?.centre || null, // safely handle missing centre
           batch_type: b?.batchType || "", // empty string fallback
           start_date: b?.startDate || "", // empty string fallback
           end_date: b?.endDate || "", // empty string fallback
@@ -1438,11 +1439,17 @@ export default function TpCreateBatch() {
         const resp = await TMS_API.batches.list({
           request: trainingReq.id,
           page_size: 50,
+          _t: Date.now(),
         });
 
-        const existing = resp?.data?.results || [];
-        if (!existing.length) return;
-
+        const existing = (resp?.data?.results || []).filter(
+          (b) => b.is_active === true,
+        );
+        
+        if (!existing.length) {
+          setBatches([]);
+          return;
+        }
         const batchState = [];
         const participantState = {};
 
@@ -1459,7 +1466,10 @@ export default function TpCreateBatch() {
             id: b.id,
             title: `Batch ${i + 1} (Revised)`,
             batchType: b.batch_type,
-            centre: b.centre,
+            centre:
+              b.centre && typeof b.centre !== "object"
+                ? { id: b.centre }
+                : b.centre,
             startDate: b.start_date,
             endDate: b.end_date,
             expanded: true,
@@ -2036,7 +2046,10 @@ export default function TpCreateBatch() {
                                       <td>
                                         <input
                                           type="radio"
-                                          checked={batch.centre?.id === c.id}
+                                          checked={
+                                            batch.centre?.id === c.id ||
+                                            batch.centre === c.id
+                                          }
                                           onChange={() =>
                                             updateBatch(
                                               batch.key,

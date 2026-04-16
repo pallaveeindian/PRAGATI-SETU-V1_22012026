@@ -119,7 +119,7 @@ export default function CpBatchDetail() {
           return;
         }
       }
-      const planId = batch.request.training_plan;
+      const planId = batch.training_plan.id;
       const resp = (await TMS_API.trainingPlans.retrieve)
         ? await TMS_API.trainingPlans.retrieve(planId)
         : await api.get(`/tms/training-plans/${planId}/`);
