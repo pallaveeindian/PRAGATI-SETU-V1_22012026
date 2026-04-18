@@ -1,85 +1,93 @@
 // src/pages/TrainingMangement.jsx
 
-import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import ps_logo from "../assets/PS_TRANS.png";
+import React, { useEffect, useContext } from "react";
+import { LanguageContext } from "./LanguageContext.jsx";
+
 import up_logo from "../assets/upgov_logo.jpg";
-import nav_logo from "../assets/top_nav_banner.png";
-import HeroLayout from "./HeroComponents/HeroLayout.jsx";
-import Footer from "../components/layout/Footer.jsx";
 import aboutImg from "../assets/training-management.jpeg";
+
 import GovHeader from "./GovHeader.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
+import Footer from "../components/layout/Footer.jsx";
+
 export default function TrainingManagement() {
-  /* ================= FONT SIZE CONTROLS ================= */
+  const { lang } = useContext(LanguageContext);
+
+  /* ================= FONT SIZE ================= */
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
   };
 
   useEffect(() => {
-    // default font scale
     setFontScale(1);
   }, []);
 
+  /* ================= CONTENT ================= */
+  const content = {
+    en: {
+      title1: "Training",
+      title2: " Management",
+
+      p1: `The Training Management System (TMS) is a role-based Management Information System designed to manage the complete lifecycle of trainings under UPSRLM. It supports creation and approval of training plans, training requests and batches, beneficiary and trainer management, registration of training centers, biometric eKYC and daily attendance tracking, processing of training payments, and training closure with report and certificate generation.`,
+
+      p2: `The system accommodates multiple roles, including BMMU, DMMU, SMMU, Training Partners, and Master Trainers, and integrates data from LokOS, SHG/Beneficiary databases, and state-level training frameworks. Roles and permissions are assigned based on responsibilities, ensuring controlled access and streamlined workflows.`,
+
+      p3: `By centralizing training operations, this module enhances governance transparency, prevents unauthorized access, and ensures efficient digital operations across all administrative levels.`,
+    },
+
+    hi: {
+      title1: "प्रशिक्षण",
+      title2: " प्रबंधन",
+
+      p1: `ट्रेनिंग मैनेजमेंट सिस्टम (TMS) एक भूमिका-आधारित मैनेजमेंट इन्फॉर्मेशन सिस्टम है, जिसे UPSRLM के अंतर्गत प्रशिक्षण के पूरे जीवनचक्र को प्रबंधित करने के लिए डिज़ाइन किया गया है। यह प्रशिक्षण योजनाओं के निर्माण और अनुमोदन, प्रशिक्षण अनुरोध और बैच, लाभार्थी एवं प्रशिक्षक प्रबंधन, प्रशिक्षण केंद्र पंजीकरण, बायोमेट्रिक eKYC, दैनिक उपस्थिति ट्रैकिंग, भुगतान प्रसंस्करण तथा प्रमाणपत्र और रिपोर्ट जनरेशन को सक्षम बनाता है।`,
+
+      p2: `यह प्रणाली BMMU, DMMU, SMMU, प्रशिक्षण भागीदार और मास्टर ट्रेनर्स जैसी विभिन्न भूमिकाओं को समर्थन देती है। यह LokOS, SHG/लाभार्थी डेटा और राज्य स्तरीय प्रशिक्षण ढांचे के साथ एकीकृत होती है। प्रत्येक उपयोगकर्ता को उसकी जिम्मेदारियों के अनुसार भूमिका और अनुमतियां दी जाती हैं, जिससे नियंत्रित पहुंच और सुचारु कार्यप्रवाह सुनिश्चित होता है।`,
+
+      p3: `प्रशिक्षण प्रक्रियाओं के केंद्रीकरण से यह मॉड्यूल शासन में पारदर्शिता बढ़ाता है, अनधिकृत पहुंच को रोकता है और सभी प्रशासनिक स्तरों पर कुशल डिजिटल संचालन सुनिश्चित करता है।`,
+    },
+  };
+
+  const t = content[lang] || content.en;
+
   return (
     <div className="home-shell">
-      {/* ================= ACCESSIBILITY HEADER ================= */}
+      {/* HEADER */}
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
         onFontChange={setFontScale}
       />
 
-      {/* ================= TOP NAV ================= */}
       <TopNavigation />
+
       {/* CONTENT */}
       <main className="home-hero">
         <div className="about-section">
           <div className="about-left">
             <h1>
-              <span className="contrast-color-two">Training</span>
-              <span className="contrast-color-one"> Management</span>
+              <span className="contrast-color-two">{t.title1}</span>
+              <span className="contrast-color-one">{t.title2}</span>
             </h1>
+
             <div className="pragati-card">
-              <p>
-                The <strong>Training Management System (TMS)</strong> is a
-                role-based Management Information System designed to manage the
-                complete lifecycle of trainings under <strong>UPSRLM</strong>.
-                It supports creation and approval of training plans, training
-                requests and batches, beneficiary and trainer management,
-                registration of training centers, biometric eKYC and daily
-                attendance tracking, processing of training payments, and
-                training closure with report and certificate generation.
-              </p>
+              <p>{t.p1}</p>
             </div>
+
             <div className="pragati-card">
-              <p>
-                The system accommodates multiple roles, including{" "}
-                <strong>BMMU</strong>, <strong>DMMU</strong>,{" "}
-                <strong>SMMU</strong>, Training Partners, and Master Trainers,
-                and integrates data from <strong>LokOS</strong>, SHG/Beneficiary
-                databases, and state-level training frameworks. Roles and
-                permissions are assigned based on responsibilities, ensuring
-                controlled access and streamlined workflows.
-              </p>
+              <p>{t.p2}</p>
             </div>
+
             <div className="pragati-card">
-              <p>
-                By centralizing training operations, this module enhances
-                governance transparency, prevents unauthorized access, and
-                ensures efficient digital operations across all administrative
-                levels.
-              </p>
+              <p>{t.p3}</p>
             </div>
           </div>
 
-          {/* RIGHT IMAGE */}
+          {/* IMAGE */}
           <div className="about-right">
-            <img src={aboutImg} alt="Pragati Setu Diagram" />
+            <img src={aboutImg} alt="Training Management" />
           </div>
         </div>
       </main>
-
       {/* ================= FOOTER ================= */}
       <footer className="home-footer">
         <Footer />

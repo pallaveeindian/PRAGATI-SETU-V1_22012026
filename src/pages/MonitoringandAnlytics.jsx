@@ -1,72 +1,72 @@
 // src/pages/MonitoringandAnlytics.jsx
 
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import ps_logo from "../assets/PS_TRANS.png";
+import { useLang } from "../pages/LanguageContext"; // ✅ added
 import up_logo from "../assets/upgov_logo.jpg";
-import nav_logo from "../assets/top_nav_banner.png";
-import HeroLayout from "./HeroComponents/HeroLayout.jsx";
 import Footer from "../components/layout/Footer.jsx";
 import aboutImg from "../assets/power-bi.jpeg";
 import GovHeader from "./GovHeader.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
+
 export default function MonitoringandAnlytics() {
-  /* ================= FONT SIZE CONTROLS ================= */
+  const { lang } = useLang(); // ✅ language
+
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
   };
 
   useEffect(() => {
-    // default font scale
     setFontScale(1);
   }, []);
 
+  /* ================= TRANSLATIONS ================= */
+  const content = {
+    en: {
+      title1: "Monitoring and",
+      title2: "Analytics",
+      p1: `The UPSRLM Progress Tracking Dashboard serves as a comprehensive digital monitoring and analytics platform that brings together programme data from districts and blocks into a unified visual interface. It is designed to enhance transparency, consistency, and speed in reviewing mission progress by replacing scattered manual records and informal reporting methods with a structured, technology-driven system.`,
+      p2: `Through real-time indicators, automated validations, and interactive scorecards, the dashboard enables administrators to quickly assess performance trends, detect gaps, and take informed corrective actions. Overall, it strengthens governance efficiency, promotes data reliability, and supports timely, evidence-based decision-making across all administrative levels.`,
+    },
+
+    hi: {
+      title1: "निगरानी एवं",
+      title2: "विश्लेषण",
+      p1: `UPSRLM प्रगति ट्रैकिंग डैशबोर्ड एक व्यापक डिजिटल निगरानी और विश्लेषण प्लेटफॉर्म है, जो जिलों और ब्लॉकों से प्राप्त कार्यक्रम डेटा को एकीकृत दृश्य इंटरफ़ेस में प्रस्तुत करता है। यह पारदर्शिता, निरंतरता और मिशन प्रगति की समीक्षा की गति को बढ़ाने के लिए डिज़ाइन किया गया है।`,
+      p2: `रीयल-टाइम संकेतकों, स्वचालित सत्यापन और इंटरैक्टिव स्कोरकार्ड के माध्यम से, यह डैशबोर्ड प्रशासकों को प्रदर्शन का विश्लेषण करने, कमियों की पहचान करने और समय पर निर्णय लेने में सक्षम बनाता है।`,
+    },
+  };
+
+  const t = content[lang];
+
   return (
     <div className="home-shell">
-      {/* ================= ACCESSIBILITY HEADER ================= */}
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
         onFontChange={setFontScale}
       />
-      {/* ================= TOP NAV ================= */}
 
       <TopNavigation />
 
-      {/* CONTENT */}
       <main className="home-hero">
         <div className="about-section">
           <div className="about-left">
             <h1>
-              <span className="contrast-color-two">Monitoring and</span>
-              <span className="contrast-color-one"> Anlytics</span>
+              <span className="contrast-color-two">{t.title1}</span>{" "}
+              <span className="contrast-color-one">{t.title2}</span>
             </h1>
+
             <div className="pragati-card">
-              <p>
-                The <strong>UPSRLM Progress Tracking Dashboard</strong> serves
-                as a comprehensive digital monitoring and analytics platform
-                that brings together programme data from districts and blocks
-                into a unified visual interface. It is designed to enhance
-                transparency, consistency, and speed in reviewing mission
-                progress by replacing scattered manual records and informal
-                reporting methods with a structured, technology-driven system.
-              </p>
+              <p>{t.p1}</p>
             </div>
+
             <div className="pragati-card">
-              <p>
-                Through real-time indicators, automated validations, and
-                interactive scorecards, the dashboard enables administrators to
-                quickly assess performance trends, detect gaps, and take
-                informed corrective actions. Overall, it strengthens governance
-                efficiency, promotes data reliability, and supports timely,
-                evidence-based decision-making across all administrative levels.
-              </p>
+              <p>{t.p2}</p>
             </div>
           </div>
 
-          {/* RIGHT IMAGE */}
           <div className="about-right">
-            <img src={aboutImg} alt="Pragati Setu Diagram" />
+            <img src={aboutImg} alt="Monitoring & Analytics" />
           </div>
         </div>
       </main>

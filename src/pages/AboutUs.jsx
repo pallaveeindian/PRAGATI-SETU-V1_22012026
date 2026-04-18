@@ -1,47 +1,73 @@
 // src/pages/AboutUs.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import up_logo from "../assets/upgov_logo.jpg";
 import aboutImg from "../assets/Hero/About/ps_diag.png";
 import GovHeader from "./GovHeader.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
 import Footer from "../components/layout/Footer.jsx";
-// import './Pagescss/AboutUsSec.css'
+import { LanguageContext } from "./LanguageContext"; // ✅ ADD THIS
+
 export default function AboutUs() {
+  const { lang } = useContext(LanguageContext); // ✅ USE CONTEXT
+
   /* ================= FONT SIZE CONTROLS ================= */
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
   };
 
   useEffect(() => {
-    // default font scale
     setFontScale(1);
   }, []);
 
+  /* ================= LANGUAGE CONTENT ================= */
+  const content = {
+    en: {
+      title1: "Our",
+      title2: "Mission",
+      subtitle: "A Bridge from Skill to Enterprise, Towards Prosperity",
+      p1: `Pragati Setu is a comprehensive digital governance platform designed to strengthen rural development initiatives under the State Rural Livelihood Mission. The platform connects government departments, field officials, and beneficiaries through a single integrated system to ensure transparency, efficiency, and accountability in service delivery.`,
+      p2: `It enables real-time data collection, monitoring, and analytics for various welfare schemes and livelihood programs. By digitizing manual processes, Pragati Setu reduces delays, improves accuracy, and helps decision-makers track progress effectively across districts and villages.`,
+      p3: `Key features of Pragati Setu include Beneficiary Profiling, Lakhpati Didi Management, Training Management System (TMS), Enterprise Tracking, User Management, and Performance Dashboards.`,
+    },
+    hi: {
+      title1: "हमारा",
+      title2: "मिशन",
+      subtitle: "कौशल से उद्यम तक, समृद्धि की ओर एक सेतु",
+      p1: `प्रगति सेतु एक व्यापक डिजिटल गवर्नेंस प्लेटफॉर्म है, जिसे राज्य ग्रामीण आजीविका मिशन के अंतर्गत ग्रामीण विकास पहलों को मजबूत करने के लिए विकसित किया गया है। यह प्लेटफॉर्म सरकारी विभागों, फील्ड अधिकारियों और लाभार्थियों को एकीकृत प्रणाली के माध्यम से जोड़ता है, जिससे सेवा वितरण में पारदर्शिता, दक्षता और जवाबदेही सुनिश्चित होती है।`,
+      p2: `यह विभिन्न कल्याणकारी योजनाओं और आजीविका कार्यक्रमों के लिए रियल-टाइम डेटा संग्रह, निगरानी और विश्लेषण को सक्षम बनाता है। मैनुअल प्रक्रियाओं को डिजिटाइज़ करके, प्रगति सेतु देरी को कम करता है, सटीकता बढ़ाता है और निर्णय लेने वालों को जिलों और गांवों में प्रगति को प्रभावी ढंग से ट्रैक करने में मदद करता है।`,
+      p3: `प्रगति सेतु की प्रमुख विशेषताओं में लाभार्थी प्रोफाइलिंग, लखपति दीदी प्रबंधन, प्रशिक्षण प्रबंधन प्रणाली (TMS), एंटरप्राइज ट्रैकिंग, यूज़र मैनेजमेंट और प्रदर्शन डैशबोर्ड शामिल हैं।`,
+    },
+  };
+
+  const t = content[lang] || content.en;
+
   return (
     <div className="about-page-shell">
-      {/* ================= ACCESSIBILITY HEADER ================= */}
+      {/* ================= HEADER ================= */}
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
         onFontChange={setFontScale}
       />
 
-      {/* ================= TOP NAV ================= */}
+      {/* ================= NAV ================= */}
       <TopNavigation />
 
-      {/* ================= HERO / ABOUT ================= */}
-      <main className="">
-        <div className="">
-          {/* LEFT TEXT */}
+      {/* ================= HERO ================= */}
+      <main>
+        <div>
           <div className="about-left">
             <h1>
-              <span className="contrast-color-two">Our</span>{" "}
-              <span className="contrast-color-one">Mission</span>
+              <span className="contrast-color-two">{t.title1}</span>{" "}
+              <span className="contrast-color-one">{t.title2}</span>
             </h1>
-            <h3>A Bridge from Skill to Enterprise, Towards Prosperity</h3>
+
+            <h3>{t.subtitle}</h3>
+
             <main className="about-main">
               <div className="about-custom-layout">
+
                 {/* Row 1 */}
                 <div className="row-one">
                   <div className="about-right">
@@ -49,48 +75,24 @@ export default function AboutUs() {
                   </div>
 
                   <div className="pragati-card">
-                    <p>
-                      Pragati Setu is a comprehensive digital governance
-                      platform designed to strengthen rural development
-                      initiatives under the State Rural Livelihood Mission. The
-                      platform connects government departments, field officials,
-                      and beneficiaries through a single integrated system to
-                      ensure transparency, efficiency, and accountability in
-                      service delivery.
-                    </p>
+                    <p>{t.p1}</p>
                   </div>
                 </div>
 
                 {/* Row 2 */}
                 <div className="row-two">
                   <div className="pragati-card">
-                    <p>
-                      It enables real-time data collection, monitoring, and
-                      analytics for various welfare schemes and livelihood
-                      programs. By digitizing manual processes, Pragati Setu
-                      reduces delays, improves accuracy, and helps
-                      decision-makers track progress effectively across
-                      districts and villages.
-                    </p>
+                    <p>{t.p2}</p>
                   </div>
 
                   <div className="pragati-card">
-                    <p>
-                      Key features of Pragati Setu include Beneficiary
-                      Profiling, Lakhpati Didi Management, Training Management
-                      System (TMS), Enterprise Tracking, User Management, and
-                      Performance Dashboards.
-                    </p>
+                    <p>{t.p3}</p>
                   </div>
                 </div>
+
               </div>
             </main>
           </div>
-
-          {/* RIGHT IMAGE */}
-          {/* <div className="about-right">
-            <img src={aboutImg} alt="Pragati Setu Diagram" />
-          </div> */}
         </div>
       </main>
 

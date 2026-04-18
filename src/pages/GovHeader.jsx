@@ -1,6 +1,10 @@
-import React from "react";
+import React, { useContext } from "react";
+import { LanguageContext } from "../pages/LanguageContext"; // ⚠️ path check karo
 
 export default function GovHeader({ logo, title, onFontChange }) {
+
+  const { setLang, lang } = useContext(LanguageContext);
+
   return (
     <header className="gov-header">
       <div className="gov-header-inner">
@@ -18,14 +22,29 @@ export default function GovHeader({ logo, title, onFontChange }) {
 
           <span className="divider">|</span>
 
-          <button className="lang-btn">English</button>
+          {/*  ENGLISH */}
+          <button
+            className="lang-btn"
+            onClick={() => setLang("en")}
+            style={{ fontWeight: lang === "en" ? "700" : "500" }}
+          >
+            English
+          </button>
+
           <span className="divider">|</span>
-          <button className="lang-btn">हिंदी</button>
+
+          {/* ✅ HINDI */}
+          <button
+            className="lang-btn"
+            onClick={() => setLang("hi")}
+            style={{ fontWeight: lang === "hi" ? "700" : "500" }}
+          >
+            हिंदी
+          </button>
         </div>
       </div>
 
       <style>{`
-      
         .gov-header {
           background: #0f172a;
           color: #fff;
@@ -71,7 +90,6 @@ export default function GovHeader({ logo, title, onFontChange }) {
           border: none;
           color: #fff;
           font-size: 14px;
-          font-weight: 600;
           cursor: pointer;
           padding: 4px 6px;
         }
@@ -88,46 +106,38 @@ export default function GovHeader({ logo, title, onFontChange }) {
           font-weight: 500;
         }
 
-        /* ================= MOBILE ================= */
         @media (max-width: 768px) {
+          .gov-header-inner {
+            flex-direction: column;
+            align-items: center;
+            text-align: center;
+          }
 
-  .gov-header-inner {
-    flex-direction: column;
-    align-items: center;        /* center everything */
-    text-align: center;
-    
-  }
+          .gov-header-left {
+            width: 100%;
+            justify-content: center;
+            margin-bottom: 8px;
+          }
 
-  /* TOP SECTION */
-  .gov-header-left {
-    width: 100%;
-    justify-content: center;
-    margin-bottom: 8px;
-  }
+          .gov-text {
+            white-space: normal;
+          }
 
-  .gov-text {
-    white-space: normal;   /* IMPORTANT */
-  }
+          .gov-header-right {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 8px;
+            padding-top: 8px;
+            border-top: 1px solid rgba(255,255,255,0.2);
+          }
 
-  /* BOTTOM SECTION */
-  .gov-header-right {
-    width: 100%;               /* VERY IMPORTANT */
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    flex-wrap: wrap;           /* allow wrapping */
-    gap: 8px;
-    padding-top: 8px;
-    border-top: 1px solid rgba(255,255,255,0.2);
-  }
+          .divider {
+            display: none;
+          }
+        }
 
-  .divider {
-    display: none;  /* remove | on mobile */
-  }
-
-}
-
-        /* ================= SMALL MOBILE ================= */
         @media (max-width: 480px) {
           .gov-logo {
             height: 32px;
@@ -136,10 +146,6 @@ export default function GovHeader({ logo, title, onFontChange }) {
 
           .gov-text {
             font-size: 13px;
-          }
-
-          .gov-header-right {
-            gap: 4px;
           }
 
           .gov-header-right button {
