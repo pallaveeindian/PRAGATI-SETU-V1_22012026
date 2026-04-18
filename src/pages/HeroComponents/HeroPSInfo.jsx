@@ -1,64 +1,59 @@
-import React from "react";
+import React, { useContext } from "react";
 import aboutImg from "../../assets/Hero/About/ps_diag.png";
 import aboutMobImg from "../../assets/ps-diag_mob_screen.png";
+
+// 👇 import your Language Context (same one used in header)
+import { LanguageContext } from "../LanguageContext.jsx";
+
 export default function Info() {
+  const { lang } = useContext(LanguageContext);
+
+  const content = {
+    en: {
+      title: "Purpose of Pragati Setu",
+      subtitle: "Bridging Progress and Prosperity",
+      p1: `Pragati Setu is a comprehensive digital platform developed to strengthen and streamline the management of Self-Help Group (SHG)–related activities across Uttar Pradesh. The platform acts as a digital bridge between rural women, Self Help Groups and government systems, enabling transparent, data-driven, and efficient governance.`,
+      p2: `Designed to support the vision of sustainable livelihoods and women-led development, Pragati Setu enables systematic recording and monitoring of beneficiary profiles, SHG enterprises, financial inclusion activities, and progress indicators at the grassroots level. By replacing fragmented and paper-based processes with a unified digital system, the platform ensures accuracy, accountability, and timely decision-making.`,
+      p3: `Through Pragati Setu, government departments gain a consolidated view of SHG performance and enterprise growth, enabling targeted interventions, effective resource allocation, and improved policy implementation. The platform empowers rural women by connecting their collective efforts to institutional support mechanisms, thereby fostering inclusive growth, economic self-reliance, and long-term prosperity.`,
+      btn: "Know More",
+    },
+
+    hi: {
+      title: "प्रगति सेतु का उद्देश्य",
+      subtitle: "प्रगति और समृद्धि के बीच सेतु",
+      p1: `प्रगति सेतु एक व्यापक डिजिटल प्लेटफ़ॉर्म है, जिसे उत्तर प्रदेश में स्वयं सहायता समूह (SHG) से जुड़ी गतिविधियों के प्रबंधन को मजबूत और सुव्यवस्थित करने के लिए विकसित किया गया है। यह प्लेटफ़ॉर्म ग्रामीण महिलाओं, स्वयं सहायता समूहों और सरकारी तंत्र के बीच एक डिजिटल सेतु का कार्य करता है, जिससे पारदर्शी, डेटा-आधारित और प्रभावी प्रशासन संभव होता है।`,
+      p2: `सतत आजीविका और महिला-नेतृत्व वाले विकास के उद्देश्य को समर्थन देने के लिए डिज़ाइन किया गया यह प्लेटफ़ॉर्म लाभार्थियों की प्रोफाइल, SHG उद्यम, वित्तीय समावेशन गतिविधियों और प्रगति संकेतकों की व्यवस्थित रिकॉर्डिंग और निगरानी को सक्षम बनाता है। यह कागज़ आधारित प्रक्रियाओं को डिजिटल प्रणाली से बदलकर सटीकता, जवाबदेही और समय पर निर्णय सुनिश्चित करता है।`,
+      p3: `प्रगति सेतु के माध्यम से सरकारी विभागों को SHG प्रदर्शन और उद्यम विकास का एक समेकित दृष्टिकोण मिलता है, जिससे लक्षित हस्तक्षेप, संसाधनों का प्रभावी उपयोग और बेहतर नीति कार्यान्वयन संभव होता है। यह प्लेटफ़ॉर्म ग्रामीण महिलाओं को सशक्त बनाता है और उन्हें संस्थागत सहयोग से जोड़कर समावेशी विकास और आर्थिक आत्मनिर्भरता को बढ़ावा देता है।`,
+      btn: "और जानें",
+    },
+  };
+
+  const t = content[lang] || content.en;
+
   return (
     <div className="aboutus-wrapper">
-      {/* LEFT : TEXT */}
+      {/* LEFT */}
       <div className="aboutus-left">
         <h2 className="aboutus-title">
-          Purpose of Pragati Setu <br />
-          <span>Bridging Progress and Prosperity</span>
+          {t.title} <br />
+          <span>{t.subtitle}</span>
         </h2>
 
-        <p className="aboutus-text">
-          Pragati Setu is a comprehensive digital platform developed to
-          strengthen and streamline the management of{" "}
-          <b>Self-Help Group (SHG)–related activities across Uttar Pradesh.</b>{" "}
-          The platform acts as a digital bridge between rural women, Self Help
-          Groups and government systems, enabling transparent, data-driven, and
-          efficient governance.
-        </p>
+        <p className="aboutus-text">{t.p1}</p>
+        <p className="aboutus-text">{t.p2}</p>
+        <p className="aboutus-text">{t.p3}</p>
 
-        <p className="aboutus-text">
-          Designed to support the vision of sustainable livelihoods and
-          women-led development, Pragati Setu enables systematic recording and{" "}
-          <b>
-            monitoring of beneficiary profiles, SHG enterprises, financial
-            inclusion activities, and progress indicators at the grassroots
-            level.
-          </b>{" "}
-          By replacing fragmented and paper-based processes with a unified
-          digital system, the platform ensures accuracy, accountability, and
-          timely decision-making.
-        </p>
-
-        <p className="aboutus-text">
-          Through Pragati Setu, government departments gain a consolidated view
-          of SHG performance and enterprise growth, enabling targeted
-          interventions, effective resource allocation, and improved policy
-          implementation. The platform empowers rural women by connecting their
-          collective efforts to institutional support mechanisms, thereby
-          fostering inclusive growth, economic self-reliance, and long-term
-          prosperity.
-        </p>
-
-        <button className="aboutus-btn">Know More</button>
+        <button className="aboutus-btn">{t.btn}</button>
       </div>
 
-      {/* RIGHT : IMAGE */}
+      {/* RIGHT */}
       <div className="aboutus-right">
-        <img
-          src={aboutImg}
-          alt="Pragati Setu Overview"
-          className="desktop-img"
-        />
-        <img
-          src={aboutMobImg}
-          alt="Pragati Setu Overview Mobile"
-          className="mobile-img"
-        />
+        <img src={aboutImg} alt="Pragati Setu Overview" className="desktop-img" />
+        <img src={aboutMobImg} alt="Pragati Setu Overview Mobile" className="mobile-img" />
       </div>
+
+      {/* STYLES SAME AS YOURS */}
+
 
       {/* ================= STYLES ================= */}
       <style>{`
@@ -73,7 +68,6 @@ export default function Info() {
   width: 100%;
   height: auto;
 }
-
 .mobile-img {
   display: none;
   width: 100%;

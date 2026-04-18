@@ -1,5 +1,4 @@
 // src/pages/WhatsNew.jsx
-
 import React, { useEffect } from "react";
 import { Link } from "react-router-dom";
 import ps_logo from "../assets/PS_TRANS.png";
@@ -10,83 +9,90 @@ import Footer from "../components/layout/Footer.jsx";
 import aboutImg from "../assets/Su-sakhi.png";
 import GovHeader from "./GovHeader.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
+import { useLang } from "./LanguageContext"; //  ADD
+
 export default function WhatsNew() {
-  /* ================= FONT SIZE CONTROLS ================= */
+
+  const { lang } = useLang(); //  LANGUAGE HOOK
+
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
   };
 
   useEffect(() => {
-    // default font scale
     setFontScale(1);
   }, []);
 
   return (
     <div className="home-shell">
-      {/* ================= ACCESSIBILITY HEADER ================= */}
+
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
         onFontChange={setFontScale}
       />
 
-      {/* ================= TOP NAV ================= */}
       <TopNavigation />
 
       {/* CONTENT */}
       <main className="home-hero">
         <div className="about-section">
           <div className="about-left">
+
             <h1>
-              <span className="contrast-color-two">What's</span>
-              <span className="contrast-color-one"> New</span>
+              <span className="contrast-color-two">
+                {lang === "hi" ? "क्या नया है" : "What's"}
+              </span>
+              <span className="contrast-color-one">
+                {lang === "hi" ? " नया" : " New"}
+              </span>
             </h1>
+
+            {/* CARD 1 */}
             <div className="pragati-card">
               <p>
-                We are excited to introduce the upcoming{" "}
-                <strong>Suksham Udyam Sakhi Android Application</strong>, a
-                powerful digital tool designed to strengthen{" "}
-                <strong>
-                  Enterprise Survey and Awareness activities under Pragati Setu
-                </strong>
-                . The application will be available for download in the future
-                through the <strong>Google Play Store</strong>, making it easily
-                accessible for authorized users across the state.
+                {lang === "hi"
+                  ? <>
+                    हम आगामी <strong>सुक्ष्म उद्योग सखी एंड्रॉयड एप्लिकेशन</strong> को प्रस्तुत करने के लिए उत्साहित हैं, जो प्रगति सेतु के तहत <strong>उद्यम सर्वेक्षण और जागरूकता गतिविधियों</strong> को मजबूत करने के लिए एक शक्तिशाली डिजिटल उपकरण है। यह ऐप भविष्य में <strong>Google Play Store</strong> के माध्यम से डाउनलोड के लिए उपलब्ध होगा।
+                  </>
+                  : <>
+                    We are excited to introduce the upcoming{" "}
+                    <strong>Suksham Udyam Sakhi Android Application</strong>, a powerful digital tool designed to strengthen{" "}
+                    <strong>Enterprise Survey and Awareness activities under Pragati Setu</strong>. The application will be available for download in the future through the <strong>Google Play Store</strong>, making it easily accessible for authorized users across the state.
+                  </>}
               </p>
             </div>
+
+            {/* CARD 2 */}
             <div className="pragati-card">
               <p>
-                Suksham Udyam Sakhi is a mobile application created to support{" "}
-                <strong>
-                  enterprise survey, awareness, and livelihood planning
-                </strong>{" "}
-                for Self-Help Group (SHG) members at the village level. It helps
-                field workers and community members collect and manage
-                enterprise information in a simple digital format, replacing
-                paper registers and scattered manual records. This approach
-                makes data collection faster, more accurate, and easier to
-                monitor across administrative levels.
+                {lang === "hi"
+                  ? <>
+                    सुक्ष्म उद्योग सखी एक मोबाइल एप्लिकेशन है जिसे <strong>उद्यम सर्वेक्षण, जागरूकता और आजीविका योजना</strong> को समर्थन देने के लिए बनाया गया है। यह SHG सदस्यों के लिए गांव स्तर पर उद्यम जानकारी को डिजिटल रूप में एकत्र और प्रबंधित करने में मदद करता है।
+                  </>
+                  : <>
+                    Suksham Udyam Sakhi is a mobile application created to support{" "}
+                    <strong>enterprise survey, awareness, and livelihood planning</strong> for Self-Help Group (SHG) members at the village level. It helps field workers and community members collect and manage enterprise information in a simple digital format.
+                  </>}
               </p>
             </div>
+
+            {/* CARD 3 */}
             <div className="pragati-card">
               <p>
-                The app enables users to record details of{" "}
-                <strong>
-                  existing businesses, new enterprise ideas, expansion plans,
-                  financial needs, and skill or training requirements
-                </strong>
-                . It also captures challenges faced by SHG members and helps
-                identify suitable support such as funding linkages or growth
-                guidance. Designed for both{" "}
-                <strong>field-level workers and administrators</strong>, Suksham
-                Udyam Sakhi improves transparency, planning, and monitoring of
-                livelihood initiatives, acting as a digital bridge for
-                sustainable enterprise development and economic empowerment.
+                {lang === "hi"
+                  ? <>
+                    यह ऐप <strong>मौजूदा व्यवसायों, नए उद्यम विचारों, विस्तार योजनाओं, वित्तीय आवश्यकताओं और कौशल/प्रशिक्षण आवश्यकताओं</strong> को रिकॉर्ड करने में सक्षम बनाता है। यह SHG सदस्यों की चुनौतियों को भी दर्ज करता है और उपयुक्त सहायता प्रदान करने में मदद करता है।
+                  </>
+                  : <>
+                    The app enables users to record details of{" "}
+                    <strong>existing businesses, new enterprise ideas, expansion plans, financial needs, and skill or training requirements</strong>. It also captures challenges faced by SHG members and helps identify suitable support.
+                  </>}
               </p>
             </div>
           </div>
 
-          {/* RIGHT IMAGE */}
+          {/* RIGHT IMAGE (UNCHANGED) */}
           <div className="about-right">
             <img src={aboutImg} alt="Pragati Setu Diagram" />
           </div>
@@ -251,8 +257,7 @@ export default function WhatsNew() {
   .pragati-card p {
     font-size: 15px;
   }
-      }
-                         `}
+      }`}
       </style>
     </div>
   );

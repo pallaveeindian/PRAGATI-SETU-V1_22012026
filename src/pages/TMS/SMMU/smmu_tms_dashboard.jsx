@@ -2,6 +2,8 @@
 import React, { useEffect, useState, useContext, useRef } from "react";
 import TmsLeftNav from "../layout/tms_LeftNav";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { useNavigate } from "react-router-dom";
@@ -39,7 +41,7 @@ async function resolveEffectiveUserId(user) {
       if (payload) {
         try {
           window.localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-        } catch (e) {}
+        } catch (e) { }
         if (payload.user_id) return payload.user_id;
       }
     }
@@ -376,211 +378,222 @@ export default function SmmuTmsDashboard() {
 
   return (
     <div className="app-shell">
-      <TmsLeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <TmsLeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={<div className="app-title">Pragati Setu — TMS (SMMU)</div>}
         /> */}
 
-        <main className="dashboard-main">
-          <div className="dashboard-container">
-            {/* HEADER */}
-            <div className="dashboard-header">
-              <h2 className="dashboard-title">{roleMessage}</h2>
+          <main className="dashboard-main">
+            <div className="dashboard-container">
+              {/* HEADER */}
+              <div className="dashboard-header">
+                {/* <h2 className="dashboard-title">{roleMessage}</h2> */}
 
-              <div className="dashboard-user">
-                <div>
-                  {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
-                </div>
-
-                <button
-                  className="btn primary-btn"
-                  onClick={handleRefresh}
-                  disabled={refreshing}
-                >
-                  {refreshing
-                    ? "Refreshing…"
-                    : usingCache
-                      ? "Refresh Dashboard"
-                      : "Refresh"}
-                </button>
-              </div>
-            </div>
-
-            {/* KPI CARDS */}
-            <div className="kpi-grid">
-              <div className="kpi-card">
-                <div className="kpi-number">
-                  {loadingKpis ? "…" : animTargets}
-                </div>
-                <div className="kpi-title">My Partner Targets</div>
-                <div className="kpi-desc">Targets created by you</div>
-              </div>
-
-              <div className="kpi-card">
-                <div className="kpi-number">
-                  {loadingKpis ? "…" : animPlans}
-                </div>
-                <div className="kpi-title">Training Plans</div>
-                <div className="kpi-desc">
-                  Available modules (theme-specific)
-                </div>
-              </div>
-
-              <div className="kpi-card">
-                <div className="kpi-number">
-                  {loadingKpis ? "…" : animThemes}
-                </div>
-                <div className="kpi-title">Training Themes</div>
-                <div className="kpi-desc">Theme categories</div>
-              </div>
-
-              <div className="kpi-card">
-                <div className="kpi-number">
-                  {loadingKpis ? "…" : animPartners}
-                </div>
-                <div className="kpi-title">Training Partners</div>
-                <div className="kpi-desc">Registered partners</div>
-              </div>
-            </div>
-
-            {/* MAIN GRID */}
-            <div className="dashboard-grid">
-              {/* QUICK ACTIONS */}
-              <div className="dashboard-card">
-                <h3>Quick Actions</h3>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  <button
-                    onClick={() => navigate("/tms/smmu/partner-targets")}
-                    className="btn primary-btn"
-                  >
-                    Create Partner Targets
-                  </button>
+                <div className="dashboard-user">
+                  <div>
+                    {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
+                  </div>
 
                   <button
-                    onClick={() => navigate("/tms/batches-list/")}
                     className="btn primary-btn"
+                    onClick={handleRefresh}
+                    disabled={refreshing}
                   >
-                    All Training Batches
+                    {refreshing
+                      ? "Refreshing…"
+                      : usingCache
+                        ? "Refresh Dashboard"
+                        : "Refresh"}
                   </button>
                 </div>
+              </div>
 
-                <div style={{ marginTop: 16 }}>
-                  <h4>Recent activity</h4>
-                  <div className="small-text">
-                    No recent activity tracked yet — use the Create Partner
-                    Targets screen to assign targets to partners.
+              {/* KPI CARDS */}
+              <div className="kpi-grid">
+                <div className="kpi-card">
+                  <div className="kpi-number">
+                    {loadingKpis ? "…" : animTargets}
+                  </div>
+                  <div className="kpi-title">My Partner Targets</div>
+                  <div className="kpi-desc">Targets created by you</div>
+                </div>
+
+                <div className="kpi-card">
+                  <div className="kpi-number">
+                    {loadingKpis ? "…" : animPlans}
+                  </div>
+                  <div className="kpi-title">Training Plans</div>
+                  <div className="kpi-desc">
+                    Available modules (theme-specific)
                   </div>
                 </div>
-              </div>
 
-              {/* TARGET LIST */}
-              <aside className="dashboard-card">
-                <h4>My Assigned Targets</h4>
-
-                <div className="small-text" style={{ marginBottom: 12 }}>
-                  Paginated list of targets created by you (progress = targets
-                  vs achieved).
+                <div className="kpi-card">
+                  <div className="kpi-number">
+                    {loadingKpis ? "…" : animThemes}
+                  </div>
+                  <div className="kpi-title">Training Themes</div>
+                  <div className="kpi-desc">Theme categories</div>
                 </div>
 
-                <div style={{ maxHeight: 360, overflow: "auto" }}>
-                  {loadingTargets ? (
-                    <div className="small-text">Loading targets…</div>
-                  ) : targets.length ? (
-                    <table className="targets-table">
-                      <thead>
-                        <tr>
-                          <th>Partner</th>
-                          <th>Scope</th>
-                          <th style={{ width: 120 }}>FY</th>
-                          <th style={{ width: 140 }}>Progress</th>
-                        </tr>
-                      </thead>
+                <div className="kpi-card">
+                  <div className="kpi-number">
+                    {loadingKpis ? "…" : animPartners}
+                  </div>
+                  <div className="kpi-title">Training Partners</div>
+                  <div className="kpi-desc">Registered partners</div>
+                </div>
+              </div>
 
-                      <tbody>
-                        {targets.map((t) => (
-                          <tr key={t.id}>
-                            <td>{renderPartnerName(t)}</td>
+              {/* MAIN GRID */}
+              <div className="dashboard-grid">
+                {/* QUICK ACTIONS */}
+                <div className="dashboard-card">
+                  <h3>Quick Actions</h3>
 
-                            <td>
-                              {t.target_type}
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    <button
+                      onClick={() => navigate("/tms/smmu/partner-targets")}
+                      className="btn primary-btn"
+                    >
+                      Create Partner Targets
+                    </button>
 
-                              {t.target_type === "MODULE" &&
-                              (t.training_plan_name ||
-                                (plansMap[t.training_plan] &&
-                                  plansMap[t.training_plan].training_name))
-                                ? ` — ${
-                                    t.training_plan_name ||
-                                    plansMap[t.training_plan].training_name
-                                  }`
-                                : t.theme
-                                  ? ` — ${t.theme}`
-                                  : ""}
+                    <button
+                      onClick={() => navigate("/tms/batches-list/")}
+                      className="btn primary-btn"
+                    >
+                      All Training Batches
+                    </button>
+                  </div>
 
-                              {t.target_type === "DISTRICT" && t.district_name
-                                ? ` — ${t.district_name}`
-                                : ""}
-                            </td>
+                  <div style={{ marginTop: 16 }}>
+                    <h4>Recent activity</h4>
+                    <div className="small-text">
+                      No recent activity tracked yet — use the Create Partner
+                      Targets screen to assign targets to partners.
+                    </div>
+                  </div>
+                </div>
 
-                            <td>{t.financial_year || "—"}</td>
+                {/* TARGET LIST */}
+                <aside className="dashboard-card">
+                  <h4>My Assigned Targets</h4>
 
-                            <td>{computeProgress(t)}</td>
+                  <div className="small-text" style={{ marginBottom: 12 }}>
+                    Paginated list of targets created by you (progress = targets
+                    vs achieved).
+                  </div>
+
+                  <div style={{ maxHeight: 360, overflow: "auto" }}>
+                    {loadingTargets ? (
+                      <div className="small-text">Loading targets…</div>
+                    ) : targets.length ? (
+                      <table className="targets-table">
+                        <thead>
+                          <tr>
+                            <th>Partner</th>
+                            <th>Scope</th>
+                            <th style={{ width: 120 }}>FY</th>
+                            <th style={{ width: 140 }}>Progress</th>
                           </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  ) : (
-                    <div className="small-text">No assigned targets.</div>
-                  )}
-                </div>
+                        </thead>
 
-                {/* PAGINATION */}
-                <div className="pagination">
-                  <button
-                    className="btn primary-btn"
-                    onClick={() => setPage((p) => Math.max(1, p - 1))}
-                    disabled={page <= 1}
-                  >
-                    Prev
-                  </button>
+                        <tbody>
+                          {targets.map((t) => (
+                            <tr key={t.id}>
+                              <td>{renderPartnerName(t)}</td>
 
-                  <div className="small-text">
-                    Page {page} / {totalPages}
+                              <td>
+                                {t.target_type}
+
+                                {t.target_type === "MODULE" &&
+                                  (t.training_plan_name ||
+                                    (plansMap[t.training_plan] &&
+                                      plansMap[t.training_plan].training_name))
+                                  ? ` — ${t.training_plan_name ||
+                                  plansMap[t.training_plan].training_name
+                                  }`
+                                  : t.theme
+                                    ? ` — ${t.theme}`
+                                    : ""}
+
+                                {t.target_type === "DISTRICT" && t.district_name
+                                  ? ` — ${t.district_name}`
+                                  : ""}
+                              </td>
+
+                              <td>{t.financial_year || "—"}</td>
+
+                              <td>{computeProgress(t)}</td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    ) : (
+                      <div className="small-text">No assigned targets.</div>
+                    )}
                   </div>
 
-                  <button
-                    className="btn primary-btn"
-                    onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                    disabled={page >= totalPages}
-                  >
-                    Next
-                  </button>
+                  {/* PAGINATION */}
+                  <div className="pagination">
+                    <button
+                      className="btn primary-btn"
+                      onClick={() => setPage((p) => Math.max(1, p - 1))}
+                      disabled={page <= 1}
+                    >
+                      Prev
+                    </button>
 
-                  <select
-                    value={pageSize}
-                    onChange={(e) => {
-                      setPageSize(Number(e.target.value));
-                      setPage(1);
-                    }}
-                    className="input-outline"
-                  >
-                    <option value={5}>5</option>
-                    <option value={10}>10</option>
-                    <option value={25}>25</option>
-                  </select>
-                </div>
-              </aside>
+                    <div className="small-text">
+                      Page {page} / {totalPages}
+                    </div>
+
+                    <button
+                      className="btn primary-btn"
+                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                      disabled={page >= totalPages}
+                    >
+                      Next
+                    </button>
+
+                    <select
+                      value={pageSize}
+                      onChange={(e) => {
+                        setPageSize(Number(e.target.value));
+                        setPage(1);
+                      }}
+                      className="input-outline"
+                    >
+                      <option value={5}>5</option>
+                      <option value={10}>10</option>
+                      <option value={25}>25</option>
+                    </select>
+                  </div>
+                </aside>
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
       <style>{`/* MAIN DASHBOARD */
+
+ .content-area {
+  display: flex;
+  flex: 1;              /*  pushes footer down */
+  min-width: 0;         /*  prevents overflow bug */
+}
+
 .dashboard-main {
   padding: 18px;
+  flex: 1;
 }
 
 .dashboard-container {

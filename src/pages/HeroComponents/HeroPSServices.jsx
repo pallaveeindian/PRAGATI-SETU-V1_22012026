@@ -1,9 +1,8 @@
-import React from "react";
+import React, { useContext } from "react";
+import { LanguageContext } from "../LanguageContext.jsx";
 
 /**
  * HeroPSServices
- * 4 flip cards – Front: Image | Back: Description
- * Hover to flip
  */
 
 import bmsImg from "../../assets/Hero/Services/bms.png";
@@ -17,59 +16,102 @@ import esmLogo from "../../assets/ems_logo.png";
 import ldmsLogo from "../../assets/ldms_logo.png";
 
 export default function HeroPSServices() {
-  const services = [
-    {
-      title: "Beneficiary Management System",
-      image: bmsImg,
-      logo: bmsLogo,
-      description:
-        "Capturing livelihood data to enable skill-based employment and financial inclusion. Empowering SHG women through structured data, targeted training, and continuous livelihood monitoring across the State.",
+  const { lang } = useContext(LanguageContext);
+
+  const content = {
+    en: {
+      heading1: "Our",
+      heading2: "Services",
+      services: [
+        {
+          title: "Beneficiary Management System",
+          image: bmsImg,
+          logo: bmsLogo,
+          description:
+            "Capturing livelihood data to enable skill-based employment and financial inclusion. Empowering SHG women through structured data, targeted training, and continuous livelihood monitoring across the State.",
+        },
+        {
+          title: "Training Management System",
+          image: tmsImg,
+          logo: tmsLogo,
+          description:
+            "Monitoring capacity building at Block, District, and State level. Identifying skill gaps, delivering focused trainings, and tracking outcomes to build resilient rural livelihoods.",
+        },
+        {
+          title: "Enterprise Sakhi Management System",
+          image: esmImg,
+          logo: esmLogo,
+          description:
+            "Enterprise Mapping & Beneficiary Management. Monitoring government support and village-level enterprises, mapping assistance, tracking enterprises, spreading awareness, and encouraging new women-led ventures across rural UP.",
+        },
+        {
+          title: "Lakhpati Didi Management System",
+          image: ldmsImg,
+          logo: ldmsLogo,
+          description:
+            "From Potential to Lakhpati Didi. Tracking growth, income, and enterprise success, supporting SHG women in their journey with real-time progress tracking and outcome-based upliftment.",
+        },
+      ],
     },
-    {
-      title: "Training Management System",
-      image: tmsImg,
-      logo: tmsLogo,
-      description:
-        "Monitoring capacity building at Block, District, and State level. Identifying skill gaps, delivering focused trainings, and tracking outcomes to build resilient rural livelihoods.",
+
+    hi: {
+      heading1: "हमारी",
+      heading2: "सेवाएं",
+      services: [
+        {
+          title: "लाभार्थी प्रबंधन प्रणाली",
+          image: bmsImg,
+          logo: bmsLogo,
+          description:
+            "जीविका से जुड़े डेटा को संकलित कर कौशल आधारित रोजगार और वित्तीय समावेशन को बढ़ावा देना। संरचित डेटा, लक्षित प्रशिक्षण और निरंतर निगरानी के माध्यम से SHG महिलाओं को सशक्त बनाना।",
+        },
+        {
+          title: "प्रशिक्षण प्रबंधन प्रणाली",
+          image: tmsImg,
+          logo: tmsLogo,
+          description:
+            "ब्लॉक, जिला और राज्य स्तर पर क्षमता निर्माण की निगरानी। कौशल अंतर की पहचान, लक्षित प्रशिक्षण और परिणामों का ट्रैकिंग कर ग्रामीण आजीविका को मजबूत बनाना।",
+        },
+        {
+          title: "एंटरप्राइज सखी प्रबंधन प्रणाली",
+          image: esmImg,
+          logo: esmLogo,
+          description:
+            "उद्यम मैपिंग और लाभार्थी प्रबंधन। सरकारी सहायता और गांव स्तर के उद्यमों की निगरानी, समर्थन का मानचित्रण, जागरूकता फैलाना और नए महिला-नेतृत्व वाले उद्यमों को बढ़ावा देना।",
+        },
+        {
+          title: "लखपति दीदी प्रबंधन प्रणाली",
+          image: ldmsImg,
+          logo: ldmsLogo,
+          description:
+            "संभावना से लखपति दीदी तक। आय, विकास और उद्यम की सफलता को ट्रैक करना तथा SHG महिलाओं को उनकी यात्रा में समर्थन देना।",
+        },
+      ],
     },
-    {
-      title: "Enterprise Sakhi Management System",
-      image: esmImg,
-      logo: esmLogo,
-      description:
-        "Enterprise Mapping & Beneficiary Management. Monitoring government support and village-level enterprises, mapping assistance, tracking enterprises, spreading awareness, and encouraging new women-led ventures across rural UP.",
-    },
-    {
-      title: "Lakhpati Didi Management System",
-      image: ldmsImg,
-      logo: ldmsLogo,
-      description:
-        "From Potential to Lakhpati Didi. Tracking growth, income, and enterprise success, supporting SHG women in their journey with real-time progress tracking and outcome-based upliftment.",
-    },
-  ];
+  };
+
+  const t = content[lang] || content.en;
 
   return (
     <div className="ps-services">
       <h2 className="ps-services-heading">
-        <span className="serv-our">Our</span>{" "}
-        <span className="serv-services">Services</span>
+        <span className="serv-our">{t.heading1}</span>{" "}
+        <span className="serv-services">{t.heading2}</span>
       </h2>
 
       <div className="ps-services-grid">
-        {services.map((service, index) => (
+        {t.services.map((service, index) => (
           <div className="card" key={index}>
             <div className="card-inner">
               {/* FRONT */}
               <div className="card-front">
-                {/* LOGO + TITLE STRIP */}
                 <div className="card-header">
-                  <img src={service.logo} alt={`${service.title} Logo`} />
+                  <img src={service.logo} alt="" />
                   <span>{service.title}</span>
                 </div>
 
-                {/* MAIN IMAGE */}
                 <div className="card-image">
-                  <img src={service.image} alt={service.title} />
+                  <img src={service.image} alt="" />
                 </div>
               </div>
 
@@ -81,7 +123,6 @@ export default function HeroPSServices() {
           </div>
         ))}
       </div>
-
       <style>{`
         /* ===== SECTION ===== */
         .ps-services {
@@ -215,6 +256,6 @@ export default function HeroPSServices() {
           }
         }
       `}</style>
-    </div>
+    </div >
   );
 }

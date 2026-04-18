@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
@@ -334,12 +336,14 @@ export default function TpCreateCP() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — {isEditMode ? "Edit" : "Create"} Contact Person
@@ -347,206 +351,214 @@ export default function TpCreateCP() {
           }
         /> */}
 
-        <main style={{ padding: 18 }}>
-          <h2 className="tp-title">
-            {" "}
-            <FaUserEdit /> Contact Persons Detail Section{" "}
-          </h2>
-          <div className="tp-card">
-            {loading ? (
-              <p>Loading contact person…</p>
-            ) : (
-              <>
-                {!isEditMode && (
-                  <div
-                    style={{ display: "flex", alignItems: "center", gap: 12 }}
-                  >
-                    <h3 style={{ margin: 0 }}>Master Users</h3>
-                    <button
-                      type="button"
-                      className="tp-btn"
-                      style={{ padding: "4px 10px", fontSize: 12 }}
-                      onClick={fetchMasterUsers}
-                      disabled={loadingMasters}
+          <main style={{ padding: 18 }}>
+            <h2 className="tp-title">
+              {" "}
+              <FaUserEdit /> Contact Persons Detail Section{" "}
+            </h2>
+            <div className="tp-card">
+              {loading ? (
+                <p>Loading contact person…</p>
+              ) : (
+                <>
+                  {!isEditMode && (
+                    <div
+                      style={{ display: "flex", alignItems: "center", gap: 12 }}
                     >
-                      <FaSyncAlt /> {loadingMasters ? "Refreshing…" : "Refresh"}
-                    </button>
-                  </div>
-                )}
+                      <h3 style={{ margin: 0 }}>Master Users</h3>
+                      <button
+                        type="button"
+                        className="tp-btn"
+                        style={{ padding: "4px 10px", fontSize: 12 }}
+                        onClick={fetchMasterUsers}
+                        disabled={loadingMasters}
+                      >
+                        <FaSyncAlt /> {loadingMasters ? "Refreshing…" : "Refresh"}
+                      </button>
+                    </div>
+                  )}
 
-                {/* ================= MASTER USER LIST ================= */}
-                {!isEditMode && (
-                  <>
-                    {/* <h3>Master Users</h3> */}
+                  {/* ================= MASTER USER LIST ================= */}
+                  {!isEditMode && (
+                    <>
+                      {/* <h3>Master Users</h3> */}
 
-                    {loadingMasters ? (
-                      <p>Loading users…</p>
-                    ) : masterUsers.length === 0 ? (
-                      <p>No users created by you</p>
-                    ) : (
-                      <div style={{ marginBottom: 16 }}>
-                        {masterUsers.map((u) => (
-                          <label
-                            key={u.id}
-                            style={{
-                              display: "flex",
-                              gap: 8,
-                              alignItems: "center",
-                              marginBottom: 6,
-                              cursor: "pointer",
-                            }}
-                          >
-                            <input
-                              // type="checkbox"
-                              type="radio"
-                              name="masterUser"
-                              checked={masterUserId === u.id}
-                              onChange={() => handleMasterSelect(u)}
-                            />
-                            <span>{u.username}</span>
-                          </label>
-                        ))}
-                      </div>
-                    )}
+                      {loadingMasters ? (
+                        <p>Loading users…</p>
+                      ) : masterUsers.length === 0 ? (
+                        <p>No users created by you</p>
+                      ) : (
+                        <div style={{ marginBottom: 16 }}>
+                          {masterUsers.map((u) => (
+                            <label
+                              key={u.id}
+                              style={{
+                                display: "flex",
+                                gap: 8,
+                                alignItems: "center",
+                                marginBottom: 6,
+                                cursor: "pointer",
+                              }}
+                            >
+                              <input
+                                // type="checkbox"
+                                type="radio"
+                                name="masterUser"
+                                checked={masterUserId === u.id}
+                                onChange={() => handleMasterSelect(u)}
+                              />
+                              <span>{u.username}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
 
-                    <hr style={{ margin: "24px 0" }} />
-                  </>
-                )}
+                      <hr style={{ margin: "24px 0" }} />
+                    </>
+                  )}
 
-                <h3>Login Details</h3>
+                  <h3>Login Details</h3>
 
-                <input
-                  className="input"
-                  placeholder="Username"
-                  value={userForm.username}
-                  disabled={isEditMode}
-                  onChange={(e) => {
-                    if (isEditMode) return;
-                    const updated = { ...userForm, username: e.target.value };
-                    setUserForm(updated);
-                    setUserErrors(validateUserForm(updated));
-                  }}
-                />
-                {userErrors.username && (
-                  <div className="error-text">{userErrors.username}</div>
-                )}
+                  <input
+                    className="input"
+                    placeholder="Username"
+                    value={userForm.username}
+                    disabled={isEditMode}
+                    onChange={(e) => {
+                      if (isEditMode) return;
+                      const updated = { ...userForm, username: e.target.value };
+                      setUserForm(updated);
+                      setUserErrors(validateUserForm(updated));
+                    }}
+                  />
+                  {userErrors.username && (
+                    <div className="error-text">{userErrors.username}</div>
+                  )}
 
-                <input
-                  type="text"
-                  className="input"
-                  placeholder={
-                    isEditMode ? "Reset password (optional)" : "Password"
-                  }
-                  value={userForm.password}
-                  onChange={(e) => {
-                    const updated = { ...userForm, password: e.target.value };
-                    setUserForm(updated);
-                    setUserErrors(validateUserForm(updated));
-                  }}
-                  style={{ marginTop: 8 }}
-                />
-                {userErrors.password && (
-                  <div className="error-text">{userErrors.password}</div>
-                )}
-
-                <button
-                  className="tp-btn"
-                  disabled={isUserInvalid}
-                  onClick={handleUserSubmit}
-                >
-                  {masterUserId ? "Update User" : "Create User"}
-                </button>
-
-                <hr style={{ margin: "24px 0" }} />
-
-                <h3>Contact Person Details</h3>
-
-                <input
-                  className="input"
-                  placeholder="Name"
-                  value={cpForm.name}
-                  onChange={(e) => {
-                    const value = e.target.value;
-                    if (!/^[A-Za-z\s]*$/.test(value)) return;
-                    const updated = { ...cpForm, name: e.target.value };
-                    setCpForm(updated);
-                    setCpErrors(validateCPForm(updated));
-                  }}
-                  onPaste={(e) => {
-                    const pastedText = e.clipboardData.getData("text");
-                    if (!/^[A-Za-z\s]+$/.test(pastedText)) {
-                      e.preventDefault();
+                  <input
+                    type="text"
+                    className="input"
+                    placeholder={
+                      isEditMode ? "Reset password (optional)" : "Password"
                     }
-                  }}
-                />
-                {cpErrors.name && (
-                  <div className="error-text">{cpErrors.name}</div>
-                )}
+                    value={userForm.password}
+                    onChange={(e) => {
+                      const updated = { ...userForm, password: e.target.value };
+                      setUserForm(updated);
+                      setUserErrors(validateUserForm(updated));
+                    }}
+                    style={{ marginTop: 8 }}
+                  />
+                  {userErrors.password && (
+                    <div className="error-text">{userErrors.password}</div>
+                  )}
 
-                <input
-                  className="input"
-                  placeholder="Mobile"
-                  inputMode="numeric"
-                  pattern="\d*"
-                  value={cpForm.mobile_number}
-                  onChange={(e) => {
-                    const updated = {
-                      ...cpForm,
-                      mobile_number: e.target.value,
-                    };
-                    setCpForm(updated);
-                    setCpErrors(validateCPForm(updated));
-                  }}
-                />
-                {cpErrors.mobile_number && (
-                  <div className="error-text">{cpErrors.mobile_number}</div>
-                )}
+                  <button
+                    className="tp-btn"
+                    disabled={isUserInvalid}
+                    onClick={handleUserSubmit}
+                  >
+                    {masterUserId ? "Update User" : "Create User"}
+                  </button>
 
-                <input
-                  className="input"
-                  placeholder="Email"
-                  value={cpForm.email}
-                  onChange={(e) => {
-                    const updated = { ...cpForm, email: e.target.value };
-                    setCpForm(updated);
-                    setCpErrors(validateCPForm(updated));
-                  }}
-                />
-                {cpErrors.email && (
-                  <div className="error-text">{cpErrors.email}</div>
-                )}
+                  <hr style={{ margin: "24px 0" }} />
 
-                <textarea
-                  className="input"
-                  placeholder="Address"
-                  value={cpForm.address}
-                  onChange={(e) => {
-                    const updated = { ...cpForm, address: e.target.value };
-                    setCpForm(updated);
-                    setCpErrors(validateCPForm(updated));
-                  }}
-                />
-                {cpErrors.address && (
-                  <div className="error-text">{cpErrors.address}</div>
-                )}
+                  <h3>Contact Person Details</h3>
 
-                <button
-                  className="tp-btn"
-                  disabled={isCPInvalid || !masterUserId}
-                  onClick={handleCPSubmit}
-                >
-                  {isEditMode
-                    ? "Update Contact Person"
-                    : "Create Contact Person"}
-                </button>
-                {status && (
-                  <div style={{ marginTop: 10, fontSize: 13 }}>{status}</div>
-                )}
-              </>
-            )}
-          </div>
-        </main>
+                  <input
+                    className="input"
+                    placeholder="Name"
+                    value={cpForm.name}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      if (!/^[A-Za-z\s]*$/.test(value)) return;
+                      const updated = { ...cpForm, name: e.target.value };
+                      setCpForm(updated);
+                      setCpErrors(validateCPForm(updated));
+                    }}
+                    onPaste={(e) => {
+                      const pastedText = e.clipboardData.getData("text");
+                      if (!/^[A-Za-z\s]+$/.test(pastedText)) {
+                        e.preventDefault();
+                      }
+                    }}
+                  />
+                  {cpErrors.name && (
+                    <div className="error-text">{cpErrors.name}</div>
+                  )}
+
+                  <input
+                    className="input"
+                    placeholder="Mobile"
+                    inputMode="numeric"
+                    pattern="\d*"
+                    value={cpForm.mobile_number}
+                    onChange={(e) => {
+                      const updated = {
+                        ...cpForm,
+                        mobile_number: e.target.value,
+                      };
+                      setCpForm(updated);
+                      setCpErrors(validateCPForm(updated));
+                    }}
+                  />
+                  {cpErrors.mobile_number && (
+                    <div className="error-text">{cpErrors.mobile_number}</div>
+                  )}
+
+                  <input
+                    className="input"
+                    placeholder="Email"
+                    value={cpForm.email}
+                    onChange={(e) => {
+                      const updated = { ...cpForm, email: e.target.value };
+                      setCpForm(updated);
+                      setCpErrors(validateCPForm(updated));
+                    }}
+                  />
+                  {cpErrors.email && (
+                    <div className="error-text">{cpErrors.email}</div>
+                  )}
+
+                  <textarea
+                    className="input"
+                    placeholder="Address"
+                    value={cpForm.address}
+                    onChange={(e) => {
+                      const updated = { ...cpForm, address: e.target.value };
+                      setCpForm(updated);
+                      setCpErrors(validateCPForm(updated));
+                    }}
+                  />
+                  {cpErrors.address && (
+                    <div className="error-text">{cpErrors.address}</div>
+                  )}
+
+                  <button
+                    className="tp-btn"
+                    disabled={isCPInvalid || !masterUserId}
+                    onClick={handleCPSubmit}
+                  >
+                    {isEditMode
+                      ? "Update Contact Person"
+                      : "Create Contact Person"}
+                  </button>
+                  {status && (
+                    <div style={{ marginTop: 10, fontSize: 13 }}>{status}</div>
+                  )}
+                </>
+              )}
+            </div>
+          </main>
+          <Footer />
+        </div>
       </div>
+      <style>{`.content-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+`}</style>
     </div>
   );
 }

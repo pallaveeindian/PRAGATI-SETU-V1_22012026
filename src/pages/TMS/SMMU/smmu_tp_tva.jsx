@@ -1,6 +1,8 @@
 // src/pages/TMS/SMMU/smmu_tp_tva.jsx
 import React, { useContext, useEffect, useMemo, useState } from "react";
 import LeftNav from "../layout/tms_LeftNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 import {
@@ -205,455 +207,457 @@ export default function SmmuTargetAchievement() {
   /* ---------------- UI Render ---------------- */
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        <main
-          style={{
-            padding: 18,
-            minHeight: "100vh",
-          }}
-        >
-          <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div>
-
-          <div
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          <main
             style={{
-              maxWidth: 1200,
-              margin: "20px auto",
+              padding: 18,
+              minHeight: "100vh",
             }}
           >
-            {/* ========================================== */}
-            {/* 1. FILTERS & EXPORT PLACEHOLDER COMPONENT  */}
-            {/* ========================================== */}
+            {/* <div className="dashboard-header">
+              <h2 className="dashboard-title">{roleMessage}</h2>
+            </div> */}
+
             <div
               style={{
-                marginBottom: 14,
-                background: "#fff",
-                padding: "16px",
-                borderRadius: "10px",
-                border: "2px solid #a7c6ed",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                maxWidth: 1200,
+                margin: "20px auto",
               }}
             >
-              <h4 style={{ margin: "0 0 12px 0", color: "#2b4e72" }}>
-                Filters & Export
-              </h4>
-              <form
-                onSubmit={fetchTargetsWithAchievements}
-                style={{
-                  display: "flex",
-                  gap: "12px",
-                  flexWrap: "wrap",
-                  alignItems: "flex-end",
-                }}
-              >
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#2b4e72",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Financial Year
-                  </label>
-                  <select
-                    className="palette-input"
-                    value={financialYear}
-                    onChange={(e) => setFinancialYear(e.target.value)}
-                    style={{
-                      width: "160px",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      border: "1px solid #a7c6ed",
-                    }}
-                  >
-                    <option value="2023-24">2023-24</option>
-                    <option value="2024-25">2024-25</option>
-                    <option value="2025-26">2025-26</option>
-                    <option value="2026-27">2026-27</option>
-                  </select>
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#2b4e72",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    District
-                  </label>
-                  <select
-                    className="palette-input"
-                    value={selectedDistrict}
-                    onChange={(e) => setSelectedDistrict(e.target.value)}
-                    style={{
-                      width: "180px",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      border: "1px solid #a7c6ed",
-                    }}
-                  >
-                    <option value="">-- All Districts --</option>
-                    {districts.map((d) => (
-                      <option
-                        key={d.id || d.district_id}
-                        value={d.id || d.district_id}
-                      >
-                        {d.district_name_en || d.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#2b4e72",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Module / Plan
-                  </label>
-                  <select
-                    className="palette-input"
-                    value={selectedPlan}
-                    onChange={(e) => setSelectedPlan(e.target.value)}
-                    style={{
-                      width: "220px",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      border: "1px solid #a7c6ed",
-                    }}
-                  >
-                    <option value="">-- All Modules --</option>
-                    {plans.map((p) => (
-                      <option key={p.id} value={p.id}>
-                        {p.training_name || p.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-                <div>
-                  <label
-                    style={{
-                      display: "block",
-                      fontSize: "13px",
-                      fontWeight: "600",
-                      color: "#2b4e72",
-                      marginBottom: "4px",
-                    }}
-                  >
-                    Search Partner
-                  </label>
-                  <input
-                    type="text"
-                    className="palette-input"
-                    placeholder="Partner name..."
-                    value={searchPartner}
-                    onChange={(e) => {
-                      setSearchPartner(e.target.value);
-                      setCurrentPage(1);
-                    }}
-                    style={{
-                      width: "220px",
-                      padding: "8px",
-                      borderRadius: "6px",
-                      border: "1px solid #a7c6ed",
-                    }}
-                  />
-                </div>
-
-                <div
-                  style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
-                >
-                  <button
-                    type="submit"
-                    className="btnPrimary"
-                    disabled={loading}
-                  >
-                    {loading ? "Fetching..." : "Fetch Data"}
-                  </button>
-                  <button
-                    type="button"
-                    className="btnView"
-                    onClick={exportToCSV}
-                    style={{ background: "#10b981" }} // Green for export
-                  >
-                    Export CSV
-                  </button>
-                </div>
-              </form>
-            </div>
-
-            {/* HEADER */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 12,
-                borderBottom: "2px solid #a7c6ed",
-                paddingBottom: 8,
-              }}
-            >
-              <h2 style={{ margin: 0, color: "#2b4e72" }}>
-                Training Partners - Targets vs Achievement
-              </h2>
-            </div>
-
-            {/* ========================================== */}
-            {/* 2. DATA TABLE & MOBILE CARDS               */}
-            {/* ========================================== */}
-            <div
-              style={{
-                background: "#fff",
-                padding: 14,
-                borderRadius: 10,
-                border: "2px solid #3d6ba6",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-              }}
-            >
+              {/* ========================================== */}
+              {/* 1. FILTERS & EXPORT PLACEHOLDER COMPONENT  */}
+              {/* ========================================== */}
               <div
                 style={{
-                  maxHeight: 520,
-                  overflow: "auto",
+                  marginBottom: 14,
+                  background: "#fff",
+                  padding: "16px",
+                  borderRadius: "10px",
+                  border: "2px solid #a7c6ed",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
                 }}
               >
-                <table className="training-table">
-                  <thead>
-                    <tr>
-                      <th>Partner</th>
-                      <th>Module / Plan</th>
-                      <th>District</th>
-                      <th>Target</th>
-                      <th>Achieved</th>
-                      <th>Progress</th>
-                    </tr>
-                  </thead>
+                <h4 style={{ margin: "0 0 12px 0", color: "#2b4e72" }}>
+                  Filters & Export
+                </h4>
+                <form
+                  onSubmit={fetchTargetsWithAchievements}
+                  style={{
+                    display: "flex",
+                    gap: "12px",
+                    flexWrap: "wrap",
+                    alignItems: "flex-end",
+                  }}
+                >
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#2b4e72",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Financial Year
+                    </label>
+                    <select
+                      className="palette-input"
+                      value={financialYear}
+                      onChange={(e) => setFinancialYear(e.target.value)}
+                      style={{
+                        width: "160px",
+                        padding: "8px",
+                        borderRadius: "6px",
+                        border: "1px solid #a7c6ed",
+                      }}
+                    >
+                      <option value="2023-24">2023-24</option>
+                      <option value="2024-25">2024-25</option>
+                      <option value="2025-26">2025-26</option>
+                      <option value="2026-27">2026-27</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#2b4e72",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      District
+                    </label>
+                    <select
+                      className="palette-input"
+                      value={selectedDistrict}
+                      onChange={(e) => setSelectedDistrict(e.target.value)}
+                      style={{
+                        width: "180px",
+                        padding: "8px",
+                        borderRadius: "6px",
+                        border: "1px solid #a7c6ed",
+                      }}
+                    >
+                      <option value="">-- All Districts --</option>
+                      {districts.map((d) => (
+                        <option
+                          key={d.id || d.district_id}
+                          value={d.id || d.district_id}
+                        >
+                          {d.district_name_en || d.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
 
-                  <tbody>
-                    {loading ? (
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#2b4e72",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Module / Plan
+                    </label>
+                    <select
+                      className="palette-input"
+                      value={selectedPlan}
+                      onChange={(e) => setSelectedPlan(e.target.value)}
+                      style={{
+                        width: "220px",
+                        padding: "8px",
+                        borderRadius: "6px",
+                        border: "1px solid #a7c6ed",
+                      }}
+                    >
+                      <option value="">-- All Modules --</option>
+                      {plans.map((p) => (
+                        <option key={p.id} value={p.id}>
+                          {p.training_name || p.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#2b4e72",
+                        marginBottom: "4px",
+                      }}
+                    >
+                      Search Partner
+                    </label>
+                    <input
+                      type="text"
+                      className="palette-input"
+                      placeholder="Partner name..."
+                      value={searchPartner}
+                      onChange={(e) => {
+                        setSearchPartner(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      style={{
+                        width: "220px",
+                        padding: "8px",
+                        borderRadius: "6px",
+                        border: "1px solid #a7c6ed",
+                      }}
+                    />
+                  </div>
+
+                  <div
+                    style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
+                  >
+                    <button
+                      type="submit"
+                      className="btnPrimary"
+                      disabled={loading}
+                    >
+                      {loading ? "Fetching..." : "Fetch Data"}
+                    </button>
+                    <button
+                      type="button"
+                      className="btnView"
+                      onClick={exportToCSV}
+                      style={{ background: "#10b981" }} // Green for export
+                    >
+                      Export CSV
+                    </button>
+                  </div>
+                </form>
+              </div>
+
+              {/* HEADER */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  borderBottom: "2px solid #a7c6ed",
+                  paddingBottom: 8,
+                }}
+              >
+                <h2 style={{ margin: 0, color: "#2b4e72" }}>
+                  Training Partners - Targets vs Achievement
+                </h2>
+              </div>
+
+              {/* ========================================== */}
+              {/* 2. DATA TABLE & MOBILE CARDS               */}
+              {/* ========================================== */}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 14,
+                  borderRadius: 10,
+                  border: "2px solid #3d6ba6",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                }}
+              >
+                <div
+                  style={{
+                    maxHeight: 520,
+                    overflow: "auto",
+                  }}
+                >
+                  <table className="training-table">
+                    <thead>
                       <tr>
-                        <td
-                          colSpan={6}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          Loading data...
-                        </td>
+                        <th>Partner</th>
+                        <th>Module / Plan</th>
+                        <th>District</th>
+                        <th>Target</th>
+                        <th>Achieved</th>
+                        <th>Progress</th>
                       </tr>
-                    ) : filteredData.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={6}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          No targets found.
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedData.map((r) => (
-                        <tr key={r.id}>
-                          <td style={{ fontWeight: "600", color: "#1e293b" }}>
-                            {r.partnerName}
-                          </td>
-                          <td>
-                            <div style={{ fontSize: "14px", color: "#0f172a" }}>
-                              {r.planName}
-                            </div>
-                            <div style={{ fontSize: "12px", color: "#64748b" }}>
-                              Theme: {r.theme || "—"}
-                            </div>
-                          </td>
-                          <td>{r.districtName}</td>
-                          <td style={{ fontWeight: "bold", color: "#3d6ba6" }}>
-                            {r.targetCount}
-                          </td>
-                          <td style={{ fontWeight: "bold", color: "#10b981" }}>
-                            {r.achievedCount}
-                          </td>
-                          <td>
-                            <div
-                              style={{
-                                display: "flex",
-                                alignItems: "center",
-                                gap: "8px",
-                              }}
-                            >
-                              <span
-                                style={{
-                                  fontSize: "12px",
-                                  fontWeight: "700",
-                                  padding: "3px 8px",
-                                  borderRadius: "99px",
-                                  background:
-                                    r.progressPct >= 100
-                                      ? "#dcfce7"
-                                      : r.progressPct > 0
-                                        ? "#fef3c7"
-                                        : "#f1f5f9",
-                                  color:
-                                    r.progressPct >= 100
-                                      ? "#166534"
-                                      : r.progressPct > 0
-                                        ? "#92400e"
-                                        : "#475569",
-                                }}
-                              >
-                                {r.progressPct}%
-                              </span>
-                            </div>
+                    </thead>
+
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            style={{ textAlign: "center", padding: "20px" }}
+                          >
+                            Loading data...
                           </td>
                         </tr>
+                      ) : filteredData.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={6}
+                            style={{ textAlign: "center", padding: "20px" }}
+                          >
+                            No targets found.
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedData.map((r) => (
+                          <tr key={r.id}>
+                            <td style={{ fontWeight: "600", color: "#1e293b" }}>
+                              {r.partnerName}
+                            </td>
+                            <td>
+                              <div style={{ fontSize: "14px", color: "#0f172a" }}>
+                                {r.planName}
+                              </div>
+                              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                                Theme: {r.theme || "—"}
+                              </div>
+                            </td>
+                            <td>{r.districtName}</td>
+                            <td style={{ fontWeight: "bold", color: "#3d6ba6" }}>
+                              {r.targetCount}
+                            </td>
+                            <td style={{ fontWeight: "bold", color: "#10b981" }}>
+                              {r.achievedCount}
+                            </td>
+                            <td>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  alignItems: "center",
+                                  gap: "8px",
+                                }}
+                              >
+                                <span
+                                  style={{
+                                    fontSize: "12px",
+                                    fontWeight: "700",
+                                    padding: "3px 8px",
+                                    borderRadius: "99px",
+                                    background:
+                                      r.progressPct >= 100
+                                        ? "#dcfce7"
+                                        : r.progressPct > 0
+                                          ? "#fef3c7"
+                                          : "#f1f5f9",
+                                    color:
+                                      r.progressPct >= 100
+                                        ? "#166534"
+                                        : r.progressPct > 0
+                                          ? "#92400e"
+                                          : "#475569",
+                                  }}
+                                >
+                                  {r.progressPct}%
+                                </span>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+
+                  {/* MOBILE CARD VIEW */}
+                  <div className="mobile-card-list">
+                    {loading ? (
+                      <div
+                        className="mobile-card"
+                        style={{ textAlign: "center" }}
+                      >
+                        Loading...
+                      </div>
+                    ) : filteredData.length === 0 ? (
+                      <div
+                        className="mobile-card"
+                        style={{ textAlign: "center" }}
+                      >
+                        No targets found
+                      </div>
+                    ) : (
+                      paginatedData.map((r) => (
+                        <div key={r.id} className="mobile-card">
+                          <div
+                            style={{
+                              fontSize: "15px",
+                              fontWeight: "bold",
+                              color: "#1e293b",
+                              marginBottom: "8px",
+                            }}
+                          >
+                            {r.partnerName}
+                          </div>
+                          <div>
+                            <strong>Plan:</strong> {r.planName}
+                          </div>
+                          <div>
+                            <strong>District:</strong> {r.districtName}
+                          </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              justifyContent: "space-between",
+                              marginTop: "8px",
+                              paddingTop: "8px",
+                              borderTop: "1px solid #e2e8f0",
+                            }}
+                          >
+                            <div>
+                              <strong>Target:</strong> {r.targetCount}
+                            </div>
+                            <div>
+                              <strong>Achieved:</strong> {r.achievedCount}
+                            </div>
+                            <div>
+                              <strong>Progress:</strong> {r.progressPct}%
+                            </div>
+                          </div>
+                        </div>
                       ))
                     )}
-                  </tbody>
-                </table>
+                  </div>
 
-                {/* MOBILE CARD VIEW */}
-                <div className="mobile-card-list">
-                  {loading ? (
+                  {/* PAGINATION CONTROLS */}
+                  {!loading && filteredData.length > 0 && (
                     <div
-                      className="mobile-card"
-                      style={{ textAlign: "center" }}
+                      style={{
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                        marginTop: 12,
+                      }}
                     >
-                      Loading...
-                    </div>
-                  ) : filteredData.length === 0 ? (
-                    <div
-                      className="mobile-card"
-                      style={{ textAlign: "center" }}
-                    >
-                      No targets found
-                    </div>
-                  ) : (
-                    paginatedData.map((r) => (
-                      <div key={r.id} className="mobile-card">
-                        <div
-                          style={{
-                            fontSize: "15px",
-                            fontWeight: "bold",
-                            color: "#1e293b",
-                            marginBottom: "8px",
-                          }}
-                        >
-                          {r.partnerName}
-                        </div>
-                        <div>
-                          <strong>Plan:</strong> {r.planName}
-                        </div>
-                        <div>
-                          <strong>District:</strong> {r.districtName}
-                        </div>
-                        <div
-                          style={{
-                            display: "flex",
-                            justifyContent: "space-between",
-                            marginTop: "8px",
-                            paddingTop: "8px",
-                            borderTop: "1px solid #e2e8f0",
-                          }}
-                        >
-                          <div>
-                            <strong>Target:</strong> {r.targetCount}
-                          </div>
-                          <div>
-                            <strong>Achieved:</strong> {r.achievedCount}
-                          </div>
-                          <div>
-                            <strong>Progress:</strong> {r.progressPct}%
-                          </div>
-                        </div>
+                      <div style={{ color: "#2b4e72", fontSize: 14 }}>
+                        Page {currentPage} of {totalPages || 1}
                       </div>
-                    ))
+
+                      <div style={{ display: "flex", gap: 6 }}>
+                        <button
+                          className="btnPage"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage((p) => p - 1)}
+                        >
+                          Prev
+                        </button>
+
+                        {/* Display a simplified window of pages if there are many */}
+                        {[...Array(totalPages)].map((_, i) => {
+                          const pageNum = i + 1;
+                          if (
+                            pageNum === 1 ||
+                            pageNum === totalPages ||
+                            (pageNum >= currentPage - 1 &&
+                              pageNum <= currentPage + 1)
+                          ) {
+                            return (
+                              <button
+                                key={pageNum}
+                                className={`btnPage ${currentPage === pageNum ? "activePage" : ""}`}
+                                onClick={() => setCurrentPage(pageNum)}
+                              >
+                                {pageNum}
+                              </button>
+                            );
+                          }
+                          if (
+                            pageNum === currentPage - 2 ||
+                            pageNum === currentPage + 2
+                          ) {
+                            return (
+                              <span
+                                key={pageNum}
+                                style={{ alignSelf: "center", color: "#64748b" }}
+                              >
+                                ...
+                              </span>
+                            );
+                          }
+                          return null;
+                        })}
+
+                        <button
+                          className="btnPage"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage((p) => p + 1)}
+                        >
+                          Next
+                        </button>
+                      </div>
+                    </div>
                   )}
                 </div>
-
-                {/* PAGINATION CONTROLS */}
-                {!loading && filteredData.length > 0 && (
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginTop: 12,
-                    }}
-                  >
-                    <div style={{ color: "#2b4e72", fontSize: 14 }}>
-                      Page {currentPage} of {totalPages || 1}
-                    </div>
-
-                    <div style={{ display: "flex", gap: 6 }}>
-                      <button
-                        className="btnPage"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
-                      >
-                        Prev
-                      </button>
-
-                      {/* Display a simplified window of pages if there are many */}
-                      {[...Array(totalPages)].map((_, i) => {
-                        const pageNum = i + 1;
-                        if (
-                          pageNum === 1 ||
-                          pageNum === totalPages ||
-                          (pageNum >= currentPage - 1 &&
-                            pageNum <= currentPage + 1)
-                        ) {
-                          return (
-                            <button
-                              key={pageNum}
-                              className={`btnPage ${currentPage === pageNum ? "activePage" : ""}`}
-                              onClick={() => setCurrentPage(pageNum)}
-                            >
-                              {pageNum}
-                            </button>
-                          );
-                        }
-                        if (
-                          pageNum === currentPage - 2 ||
-                          pageNum === currentPage + 2
-                        ) {
-                          return (
-                            <span
-                              key={pageNum}
-                              style={{ alignSelf: "center", color: "#64748b" }}
-                            >
-                              ...
-                            </span>
-                          );
-                        }
-                        return null;
-                      })}
-
-                      <button
-                        className="btnPage"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-                )}
               </div>
             </div>
-          </div>
 
-          {/* CSS */}
-          <style>{`
+            {/* CSS */}
+            <style>{`
           /* BUTTON */
           .btnPrimary{
             background:#3d6ba6;
@@ -808,8 +812,14 @@ export default function SmmuTargetAchievement() {
             }
           }
           `}</style>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
+      <style>{`.content-area {
+  display: flex;
+  flex: 1;
+}`}</style>
     </div>
   );
 }

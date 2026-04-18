@@ -1,78 +1,82 @@
 // src/pages/EnterpriseTracking.jsx
+
 import React, { useEffect } from "react";
-import { Link } from "react-router-dom";
-import ps_logo from "../assets/PS_TRANS.png";
+import { useLang } from "../pages/LanguageContext"; // ✅ added
 import up_logo from "../assets/upgov_logo.jpg";
-import nav_logo from "../assets/top_nav_banner.png";
-import HeroLayout from "./HeroComponents/HeroLayout.jsx";
 import Footer from "../components/layout/Footer.jsx";
 import aboutImg from "../assets/Ep-sakhi.jpeg";
 import GovHeader from "./GovHeader.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
+
 export default function EnterpriseTracking() {
-  /* ================= FONT SIZE CONTROLS ================= */
+  const { lang } = useLang(); // ✅ current language
+
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
   };
 
   useEffect(() => {
-    // default font scale
     setFontScale(1);
   }, []);
 
+  /* ================= TRANSLATIONS ================= */
+  const content = {
+    en: {
+      title1: "Enterprise",
+      title2: "Tracking",
+      p1: `The Enterprise Tracking System is designed to streamline and improve the collection, management, and monitoring of enterprise-related data at the village level. It replaces manual registers and fragmented data collection, ensuring accurate, timely, and structured recording of enterprise activities.`,
+      p2: `The system enables tracking of existing enterprises, supports new enterprise planning, captures information on wage-employment interest, identifies challenges faced by entrepreneurs, and facilitates access to financial support through CIF fund linkage.`,
+      p3: `Its purpose is to enhance decision-making, provide reliable data for monitoring and reporting, support Sakhis in their entrepreneurial activities, and ensure effective implementation of livelihood and enterprise development programs.`,
+    },
+
+    hi: {
+      title1: "उद्यम",
+      title2: "ट्रैकिंग",
+      p1: `उद्यम ट्रैकिंग प्रणाली को ग्राम स्तर पर उद्यम से संबंधित डेटा के संग्रह, प्रबंधन और निगरानी को बेहतर और सरल बनाने के लिए डिज़ाइन किया गया है। यह मैनुअल रजिस्टर और बिखरे हुए डेटा संग्रह को हटाकर सटीक, समय पर और संरचित डेटा रिकॉर्डिंग सुनिश्चित करता है।`,
+      p2: `यह प्रणाली मौजूदा उद्यमों की ट्रैकिंग, नए उद्यमों की योजना बनाने, रोजगार में रुचि की जानकारी एकत्र करने, उद्यमियों द्वारा सामना की जाने वाली चुनौतियों की पहचान करने और CIF फंड के माध्यम से वित्तीय सहायता तक पहुँच प्रदान करने में मदद करती है।`,
+      p3: `इसका उद्देश्य निर्णय लेने की क्षमता को मजबूत करना, निगरानी और रिपोर्टिंग के लिए विश्वसनीय डेटा प्रदान करना, सखियों को उनके उद्यमशील कार्यों में सहायता करना और आजीविका एवं उद्यम विकास कार्यक्रमों के प्रभावी कार्यान्वयन को सुनिश्चित करना है।`,
+    },
+  };
+
+  const t = content[lang];
+
   return (
     <div className="home-shell">
-      {/* ================= ACCESSIBILITY HEADER ================= */}
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
         onFontChange={setFontScale}
       />
-      {/* ================= TOP NAV ================= */}
+
       <TopNavigation />
 
-      {/* CONTENT */}
       <main className="home-hero">
         <div className="about-section">
           <div className="about-left">
             <h1>
-              <span className="contrast-color-two">Enterprise</span>
-              <span className="contrast-color-one">Tracking</span>
+              <span className="contrast-color-two">{t.title1}</span>{" "}
+              <span className="contrast-color-one">{t.title2}</span>
             </h1>
+
             <div className="pragati-card">
-              <p>
-                The Enterprise Tracking System is designed to streamline and
-                improve the collection, management, and monitoring of
-                enterprise-related data at the village level. It replaces manual
-                registers and fragmented data collection, ensuring accurate,
-                timely, and structured recording of enterprise activities.
-              </p>
+              <p>{t.p1}</p>
             </div>
+
             <div className="pragati-card">
-              <p>
-                The system enables tracking of existing enterprises, supports
-                new enterprise planning, captures information on wage-employment
-                interest, identifies challenges faced by entrepreneurs, and
-                facilitates access to financial support through CIF fund
-                linkage.
-              </p>
+              <p>{t.p2}</p>
             </div>
+
             <div className="pragati-card">
-              <p>
-                Its purpose is to enhance decision-making, provide reliable data
-                for monitoring and reporting, support Sakhis in their
-                entrepreneurial activities, and ensure effective implementation
-                of livelihood and enterprise development programs.
-              </p>
+              <p>{t.p3}</p>
             </div>
           </div>
 
-          {/* RIGHT IMAGE */}
           <div className="about-right">
-            <img src={aboutImg} alt="Pragati Setu Diagram" />
+            <img src={aboutImg} alt="Enterprise Tracking" />
           </div>
         </div>
       </main>
+
 
       {/* ================= FOOTER ================= */}
       <footer className="home-footer">

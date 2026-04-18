@@ -3,6 +3,8 @@ import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
 import LeftNav from "../layout/tms_LeftNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
@@ -24,7 +26,7 @@ function saveCache(id, payload) {
       DETAIL_CACHE_PREFIX + id,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch (e) {}
+  } catch (e) { }
 }
 
 /* Small, reusable Modal used to show participant/trainer details */
@@ -544,7 +546,7 @@ export default function TrainingRequestDetail() {
   function handleRefresh() {
     try {
       localStorage.removeItem(DETAIL_CACHE_PREFIX + id);
-    } catch (e) {}
+    } catch (e) { }
     setRefreshToken((t) => t + 1);
   }
 
@@ -554,286 +556,290 @@ export default function TrainingRequestDetail() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Training Request Detail
             </div>
           }
         /> */}
-        <main
-          style={{
-            padding: 20,
-            minHeight: "100vh",
-          }}
-        >
-          <div style={{ maxWidth: 1100, margin: "20px auto" }}>
-            {/* HEADER */}
-            <div
-              style={{
-                display: "flex",
-                gap: 10,
-                marginBottom: 16,
-                alignItems: "center",
-                borderBottom: "2px solid #a7c6ed",
-                paddingBottom: 10,
-              }}
-            >
-              <h2 style={{ margin: 0, color: "#2b4e72", fontWeight: 700 }}>
-                Training Request #{id}
-              </h2>
+          <main
+            style={{
+              padding: 20,
+              minHeight: "100vh",
+            }}
+          >
+            <div style={{ maxWidth: 1100, margin: "20px auto" }}>
+              {/* HEADER */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 10,
+                  marginBottom: 16,
+                  alignItems: "center",
+                  borderBottom: "2px solid #a7c6ed",
+                  paddingBottom: 10,
+                }}
+              >
+                <h2 style={{ margin: 0, color: "#2b4e72", fontWeight: 700 }}>
+                  Training Request #{id}
+                </h2>
 
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button className="btn-primary" onClick={handleRefresh}>
-                  Refresh
-                </button>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  <button className="btn-primary" onClick={handleRefresh}>
+                    Refresh
+                  </button>
 
-                <button className="btn-outline" onClick={() => navigate(-1)}>
-                  Back
-                </button>
+                  <button className="btn-outline" onClick={() => navigate(-1)}>
+                    Back
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {/* MAIN CARD */}
-            <div className="card-ui">
-              {loadingAll ? (
-                <div className="table-message">Loading all details…</div>
-              ) : !tr ? (
-                <div className="table-message">Training request not found.</div>
-              ) : (
-                <>
-                  {/* SUMMARY */}
-                  <div className="summary-box">
-                    <div>
-                      <strong>Plan:</strong>{" "}
-                      {trainingPlanObj?.training_name ||
-                        tr.training_plan ||
-                        "-"}
+              {/* MAIN CARD */}
+              <div className="card-ui">
+                {loadingAll ? (
+                  <div className="table-message">Loading all details…</div>
+                ) : !tr ? (
+                  <div className="table-message">Training request not found.</div>
+                ) : (
+                  <>
+                    {/* SUMMARY */}
+                    <div className="summary-box">
+                      <div>
+                        <strong>Plan:</strong>{" "}
+                        {trainingPlanObj?.training_name ||
+                          tr.training_plan ||
+                          "-"}
+                      </div>
+
+                      <div>
+                        <strong>Type:</strong> {tr.training_type || "-"}
+                      </div>
+
+                      <div>
+                        <strong>Level:</strong> {tr.level || "-"}
+                      </div>
+
+                      <div>
+                        <strong>Status:</strong>{" "}
+                        <span className="status-badge">{tr.status || "-"}</span>
+                      </div>
                     </div>
 
-                    <div>
-                      <strong>Type:</strong> {tr.training_type || "-"}
+                    {/* STATUS PANEL */}
+                    <div className="status-panel">
+                      {statusMessage(tr, partner)}
                     </div>
 
-                    <div>
-                      <strong>Level:</strong> {tr.level || "-"}
-                    </div>
+                    {/* PARTICIPANTS */}
+                    <div style={{ marginBottom: 14 }}>
+                      <h4 style={{ color: "#2b4e72", marginBottom: 8 }}>
+                        Participants
+                      </h4>
 
-                    <div>
-                      <strong>Status:</strong>{" "}
-                      <span className="status-badge">{tr.status || "-"}</span>
-                    </div>
-                  </div>
+                      <div className="participant-toolbar">
+                        {(tr.training_type || "").toUpperCase() ===
+                          "BENEFICIARY" && (
+                            <>
+                              <label style={{ fontWeight: 600 }}>PLD Filter</label>
 
-                  {/* STATUS PANEL */}
-                  <div className="status-panel">
-                    {statusMessage(tr, partner)}
-                  </div>
+                              <select
+                                value={pldFilter}
+                                onChange={(e) => setPldFilter(e.target.value)}
+                                className="input-filter"
+                              >
+                                <option value="">All</option>
+                                <option value="YES">YES</option>
+                                <option value="NO">NO</option>
+                              </select>
+                            </>
+                          )}
 
-                  {/* PARTICIPANTS */}
-                  <div style={{ marginBottom: 14 }}>
-                    <h4 style={{ color: "#2b4e72", marginBottom: 8 }}>
-                      Participants
-                    </h4>
+                        <div style={{ marginLeft: "auto", color: "#2b4e72" }}>
+                          {participantLoading
+                            ? "Loading participants…"
+                            : `${paginatedParticipants.length} shown`}
+                        </div>
+                      </div>
 
-                    <div className="participant-toolbar">
-                      {(tr.training_type || "").toUpperCase() ===
-                        "BENEFICIARY" && (
-                        <>
-                          <label style={{ fontWeight: 600 }}>PLD Filter</label>
+                      {participantLoading ? (
+                        <div className="table-message">
+                          Fetching participants…
+                        </div>
+                      ) : visibleParticipants.length === 0 ? (
+                        <div className="table-message">
+                          No participants found.
+                        </div>
+                      ) : (tr.training_type || "").toUpperCase() ===
+                        "BENEFICIARY" ? (
+                        <div className="table-container">
+                          <table className="training-table">
+                            <thead>
+                              <tr>
+                                <th>SHG Code</th>
+                                <th>Member Code</th>
+                                <th>Name</th>
+                                <th>Age</th>
+                                <th>Gender</th>
+                                <th>Social Category</th>
+                                <th>PLD</th>
+                                <th>View</th>
+                              </tr>
+                            </thead>
 
-                          <select
-                            value={pldFilter}
-                            onChange={(e) => setPldFilter(e.target.value)}
-                            className="input-filter"
-                          >
-                            <option value="">All</option>
-                            <option value="YES">YES</option>
-                            <option value="NO">NO</option>
-                          </select>
-                        </>
+                            <tbody>
+                              {paginatedParticipants.map((p) => (
+                                <tr key={p.id}>
+                                  <td>{p.lokos_shg_code}</td>
+                                  <td>{p.lokos_member_code}</td>
+                                  <td>{p.member_name}</td>
+                                  <td>{p.age ?? "-"}</td>
+                                  <td>{p.gender}</td>
+                                  <td>{p.social_category}</td>
+                                  <td>{p.pld_status}</td>
+                                  <td>
+                                    <button
+                                      className="view-btn"
+                                      onClick={() => onViewBeneficiary(p)}
+                                    >
+                                      View
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        <div className="table-container">
+                          <table className="training-table">
+                            <thead>
+                              <tr>
+                                <th>Trainer ID</th>
+                                <th>Full Name</th>
+                                <th>Mobile</th>
+                                <th>View</th>
+                              </tr>
+                            </thead>
+
+                            <tbody>
+                              {visibleParticipants.map((p) => (
+                                <tr key={p.id}>
+                                  <td>{p.trainer || p.id}</td>
+                                  <td>{p.full_name}</td>
+                                  <td>{p.mobile_no}</td>
+                                  <td>
+                                    <button
+                                      className="view-btn"
+                                      onClick={() => onViewTrainer(p)}
+                                    >
+                                      View
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
                       )}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          alignItems: "center",
+                          gap: 8,
+                          marginTop: 12,
+                        }}
+                      >
+                        <button
+                          className="btn-outline"
+                          disabled={currentPage === 1}
+                          onClick={() => setCurrentPage((p) => p - 1)}
+                        >
+                          Prev
+                        </button>
 
-                      <div style={{ marginLeft: "auto", color: "#2b4e72" }}>
-                        {participantLoading
-                          ? "Loading participants…"
-                          : `${paginatedParticipants.length} shown`}
+                        <span style={{ fontWeight: 600 }}>
+                          Page {currentPage} of {totalPages || 1}
+                        </span>
+
+                        <button
+                          className="btn-outline"
+                          disabled={currentPage === totalPages}
+                          onClick={() => setCurrentPage((p) => p + 1)}
+                        >
+                          Next
+                        </button>
                       </div>
                     </div>
 
-                    {participantLoading ? (
-                      <div className="table-message">
-                        Fetching participants…
-                      </div>
-                    ) : visibleParticipants.length === 0 ? (
-                      <div className="table-message">
-                        No participants found.
-                      </div>
-                    ) : (tr.training_type || "").toUpperCase() ===
-                      "BENEFICIARY" ? (
-                      <div className="table-container">
-                        <table className="training-table">
-                          <thead>
-                            <tr>
-                              <th>SHG Code</th>
-                              <th>Member Code</th>
-                              <th>Name</th>
-                              <th>Age</th>
-                              <th>Gender</th>
-                              <th>Social Category</th>
-                              <th>PLD</th>
-                              <th>View</th>
-                            </tr>
-                          </thead>
+                    {/* ACTION BUTTONS */}
+                    <div style={{ marginTop: 12 }}>
+                      {isDmmu &&
+                        (tr.status || "").toUpperCase() === "PENDING" && (
+                          <div className="action-box">
+                            <strong>Note:</strong> Request is PENDING. Appropriate
+                            authority action required.
+                            <button
+                              className="btn-primary"
+                              onClick={() =>
+                                navigate(`/tms/dmmu/tr-review/${id}`)
+                              }
+                            >
+                              Go to DMMU Review
+                            </button>
+                          </div>
+                        )}
 
-                          <tbody>
-                            {paginatedParticipants.map((p) => (
-                              <tr key={p.id}>
-                                <td>{p.lokos_shg_code}</td>
-                                <td>{p.lokos_member_code}</td>
-                                <td>{p.member_name}</td>
-                                <td>{p.age ?? "-"}</td>
-                                <td>{p.gender}</td>
-                                <td>{p.social_category}</td>
-                                <td>{p.pld_status}</td>
-                                <td>
-                                  <button
-                                    className="view-btn"
-                                    onClick={() => onViewBeneficiary(p)}
-                                  >
-                                    View
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    ) : (
-                      <div className="table-container">
-                        <table className="training-table">
-                          <thead>
-                            <tr>
-                              <th>Trainer ID</th>
-                              <th>Full Name</th>
-                              <th>Mobile</th>
-                              <th>View</th>
-                            </tr>
-                          </thead>
-
-                          <tbody>
-                            {visibleParticipants.map((p) => (
-                              <tr key={p.id}>
-                                <td>{p.trainer || p.id}</td>
-                                <td>{p.full_name}</td>
-                                <td>{p.mobile_no}</td>
-                                <td>
-                                  <button
-                                    className="view-btn"
-                                    onClick={() => onViewTrainer(p)}
-                                  >
-                                    View
-                                  </button>
-                                </td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-                    <div
-                      style={{
-                        display: "flex",
-                        justifyContent: "center",
-                        alignItems: "center",
-                        gap: 8,
-                        marginTop: 12,
-                      }}
-                    >
-                      <button
-                        className="btn-outline"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
-                      >
-                        Prev
-                      </button>
-
-                      <span style={{ fontWeight: 600 }}>
-                        Page {currentPage} of {totalPages || 1}
-                      </span>
-
-                      <button
-                        className="btn-outline"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </div>
-
-                  {/* ACTION BUTTONS */}
-                  <div style={{ marginTop: 12 }}>
-                    {isDmmu &&
-                      (tr.status || "").toUpperCase() === "PENDING" && (
+                      {isTP && (tr.status || "").toUpperCase() === "REJECTED" && (
                         <div className="action-box">
-                          <strong>Note:</strong> Request is PENDING. Appropriate
-                          authority action required.
+                          <strong>Note:</strong> Request is REJECTED.
                           <button
                             className="btn-primary"
                             onClick={() =>
-                              navigate(`/tms/dmmu/tr-review/${id}`)
+                              navigate(`/tms/tp/batches/create/${id}`)
                             }
                           >
-                            Go to DMMU Review
+                            Review Batches
                           </button>
                         </div>
                       )}
 
-                    {isTP && (tr.status || "").toUpperCase() === "REJECTED" && (
-                      <div className="action-box">
-                        <strong>Note:</strong> Request is REJECTED.
+                      {isTP && (tr.status || "").toUpperCase() === "BATCHING" && (
                         <button
                           className="btn-primary"
-                          onClick={() =>
-                            navigate(`/tms/tp/batches/create/${id}`)
-                          }
+                          onClick={() => navigate(`/tms/tp/batches/create/${id}`)}
                         >
-                          Review Batches
+                          Create Batches
                         </button>
-                      </div>
-                    )}
+                      )}
 
-                    {isTP && (tr.status || "").toUpperCase() === "BATCHING" && (
-                      <button
-                        className="btn-primary"
-                        onClick={() => navigate(`/tms/tp/batches/create/${id}`)}
-                      >
-                        Create Batches
-                      </button>
-                    )}
-
-                    {["ONGOING", "PENDING", "COMPLETED", "REJECTED"].includes(
-                      (tr.status || "").toUpperCase(),
-                    ) && (
-                      <button
-                        className="btn-outline"
-                        onClick={() => navigate(`/tms/batches-list/${id}`)}
-                      >
-                        View Batches in this Training Request
-                      </button>
-                    )}
-                  </div>
-                </>
-              )}
+                      {["ONGOING", "PENDING", "COMPLETED", "REJECTED"].includes(
+                        (tr.status || "").toUpperCase(),
+                      ) && (
+                          <button
+                            className="btn-outline"
+                            onClick={() => navigate(`/tms/batches-list/${id}`)}
+                          >
+                            View Batches in this Training Request
+                          </button>
+                        )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
 
       {/* Participant / Trainer modal */}
@@ -854,6 +860,11 @@ export default function TrainingRequestDetail() {
 
       {/* STYLES */}
       <style>{`
+.content-area {
+  display: flex;
+  flex: 1;
+  width: 100%;
+}
 
 .card-ui{
   background:#fff;

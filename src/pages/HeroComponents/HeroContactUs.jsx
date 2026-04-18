@@ -1,22 +1,55 @@
-import React from "react";
+import React, { useContext } from "react";
+import { LanguageContext } from "../LanguageContext.jsx";
 
 /**
  * HeroContactUs
- * Contact section – Call Us & Write to Us
  */
 
 export default function HeroContactUs() {
+  const { lang } = useContext(LanguageContext);
+
+  const content = {
+    en: {
+      title: "Need Support for Pragati Setu?",
+      highlight: "Contact Us!",
+      subtitle:
+        "Our technical support team is available over Phone and Email to assist you with any issues.",
+
+      callTitle: "Call Us",
+      callTime: "Monday through Friday",
+      callTime2: "10:30 AM to 6:30 PM",
+
+      writeTitle: "Write to us",
+      writeDesc:
+        "Mail us your queries and our support team will get back to you within 24 hours.",
+    },
+
+    hi: {
+      title: "प्रगति सेतु के लिए सहायता चाहिए?",
+      highlight: "संपर्क करें!",
+      subtitle:
+        "हमारी तकनीकी सहायता टीम आपकी किसी भी समस्या में फोन और ईमेल के माध्यम से मदद के लिए उपलब्ध है।",
+
+      callTitle: "हमें कॉल करें",
+      callTime: "सोमवार से शुक्रवार",
+      callTime2: "सुबह 10:30 बजे से शाम 6:30 बजे तक",
+
+      writeTitle: "हमें लिखें",
+      writeDesc:
+        "अपनी समस्याएं हमें मेल करें, हमारी टीम 24 घंटे के भीतर आपसे संपर्क करेगी।",
+    },
+  };
+
+  const t = content[lang] || content.en;
+
   return (
     <div className="hero-contact-wrapper">
       {/* HEADER */}
       <div className="contact-header">
         <h2 className="contact-title">
-          Need Support for Pragati Setu? <span>Contact Us!</span>
+          {t.title} <span>{t.highlight}</span>
         </h2>
-        <p className="contact-subtitle">
-          Our technical support team is available over Phone and Email to assist
-          you with any issues.
-        </p>
+        <p className="contact-subtitle">{t.subtitle}</p>
       </div>
 
       {/* CARDS */}
@@ -25,11 +58,11 @@ export default function HeroContactUs() {
         <div className="contact-card">
           <div className="contact-icon orange">📞</div>
 
-          <h3>Call Us</h3>
+          <h3>{t.callTitle}</h3>
           <p className="contact-time">
-            <strong>Monday through Friday</strong>
+            <strong>{t.callTime}</strong>
             <br />
-            10:30 AM to 6:30 PM
+            {t.callTime2}
           </p>
 
           <p className="contact-link">
@@ -41,11 +74,8 @@ export default function HeroContactUs() {
         <div className="contact-card">
           <div className="contact-icon orange">📝</div>
 
-          <h3>Write to us</h3>
-          <p className="contact-desc">
-            Mail us your queries and our support team will get back to you
-            within 24 hours.
-          </p>
+          <h3>{t.writeTitle}</h3>
+          <p className="contact-desc">{t.writeDesc}</p>
 
           <p className="contact-link">
             <a href="#">support.psetu.gov.in</a>

@@ -1,13 +1,16 @@
 // src/pages/AboutPragatiSetu.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import ps_logo from "../assets/PS_TRANS.png";
 import up_logo from "../assets/upgov_logo.jpg";
 import aboutImg from "../assets/Rural-Women-Entrepreneurs.jpeg";
 import TopNavigation from "./HeaderTopNav.jsx";
 import GovHeader from "./GovHeader.jsx";
 import Footer from "../components/layout/Footer.jsx";
+import { LanguageContext } from "./LanguageContext"; // ✅ ADD
 
 export default function AboutPragatiSetu() {
+  const { lang } = useContext(LanguageContext); // ✅ USE
+
   /* ================= FONT SIZE CONTROLS ================= */
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
@@ -16,6 +19,27 @@ export default function AboutPragatiSetu() {
   useEffect(() => {
     setFontScale(1);
   }, []);
+
+  /* ================= LANGUAGE CONTENT ================= */
+  const content = {
+    en: {
+      title1: "Beneficiary",
+      title2: "Profiling",
+      p1: `Pragati Setu is a comprehensive digital governance platform designed to strengthen rural development initiatives under the State Rural Livelihood Mission. The platform connects government departments, field officials, and beneficiaries through a single integrated system to ensure transparency, efficiency, and accountability in service delivery.`,
+      p2: `It enables real-time data collection, monitoring, and analytics for various welfare schemes and livelihood programs. By digitizing manual processes, Pragati Setu reduces delays, improves accuracy, and helps decision-makers track progress effectively across districts and villages.`,
+      p3: `Key features of Pragati Setu include Beneficiary Profiling, Lakhpati Didi Management, Training Management System (TMS), Enterprise Tracking, User Management, and Performance Dashboards.`,
+    },
+
+    hi: {
+      title1: "लाभार्थी",
+      title2: "प्रोफाइलिंग",
+      p1: `प्रगति सेतु एक व्यापक डिजिटल गवर्नेंस प्लेटफॉर्म है, जिसे राज्य ग्रामीण आजीविका मिशन के अंतर्गत ग्रामीण विकास पहलों को मजबूत करने के लिए विकसित किया गया है। यह प्लेटफॉर्म सरकारी विभागों, फील्ड अधिकारियों और लाभार्थियों को एकीकृत प्रणाली के माध्यम से जोड़ता है, जिससे सेवा वितरण में पारदर्शिता, दक्षता और जवाबदेही सुनिश्चित होती है।`,
+      p2: `यह विभिन्न कल्याणकारी योजनाओं और आजीविका कार्यक्रमों के लिए रियल-टाइम डेटा संग्रह, निगरानी और विश्लेषण को सक्षम बनाता है। मैनुअल प्रक्रियाओं को डिजिटाइज़ करके, प्रगति सेतु देरी को कम करता है, सटीकता बढ़ाता है और निर्णय लेने वालों को जिलों और गांवों में प्रगति को प्रभावी ढंग से ट्रैक करने में मदद करता है।`,
+      p3: `प्रगति सेतु की प्रमुख विशेषताओं में लाभार्थी प्रोफाइलिंग, लखपति दीदी प्रबंधन, प्रशिक्षण प्रबंधन प्रणाली (TMS), एंटरप्राइज ट्रैकिंग, यूज़र मैनेजमेंट और प्रदर्शन डैशबोर्ड शामिल हैं।`,
+    },
+  };
+
+  const t = content[lang] || content.en;
 
   return (
     <div className="home-shell">
@@ -28,55 +52,38 @@ export default function AboutPragatiSetu() {
 
       <TopNavigation />
 
-      {/* ================= MAIN SECTION ================= */}
+      {/* ================= MAIN ================= */}
       <main className="page-main">
-        <h1 className="about-left ">
-          <span className="contrast-color-two">Beneficiary</span>
-          <span className="contrast-color-one"> Profiling</span>
+        <h1 className="about-left">
+          <span className="contrast-color-two">{t.title1}</span>
+          <span className="contrast-color-one"> {t.title2}</span>
         </h1>
+
         <div className="about-section">
-          {/* LEFT DIAGRAM */}
+          {/* LEFT IMAGE */}
           <div className="about-left">
             <img src={aboutImg} alt="Pragati Setu Diagram" />
           </div>
 
-          {/* RIGHT TOP CONTENT */}
+          {/* RIGHT TEXT */}
           <div className="about-right">
             <div className="pragati-card">
-              <p>
-                Pragati Setu is a comprehensive digital governance platform
-                designed to strengthen rural development initiatives under the
-                State Rural Livelihood Mission. The platform connects government
-                departments, field officials, and beneficiaries through a single
-                integrated system to ensure transparency, efficiency, and
-                accountability in service delivery.
-              </p>
+              <p>{t.p1}</p>
             </div>
           </div>
         </div>
 
-        {/* BOTTOM CARDS */}
+        {/* BOTTOM */}
         <div className="bottom-section">
           <div className="pragati-card">
-            <p>
-              It enables real-time data collection, monitoring, and analytics
-              for various welfare schemes and livelihood programs. By digitizing
-              manual processes, Pragati Setu reduces delays, improves accuracy,
-              and helps decision-makers track progress effectively across
-              districts and villages.
-            </p>
+            <p>{t.p2}</p>
           </div>
 
           <div className="pragati-card">
-            <p>
-              Key features of Pragati Setu include Beneficiary Profiling,
-              Lakhpati Didi Management, Training Management System (TMS),
-              Enterprise Tracking, User Management, and Performance Dashboards.
-            </p>
+            <p>{t.p3}</p>
           </div>
         </div>
       </main>
-
       {/* ================= FOOTER ================= */}
       <footer className="home-footer">
         <Footer />

@@ -1,49 +1,102 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { LanguageContext } from "../LanguageContext.jsx";
 
 /**
  * HeroFAQs
- * Expand / Collapse FAQ section
  */
 
 export default function HeroFAQs() {
-  const faqs = [
-    {
-      question: "What is Pragati Setu?",
-      answer:
-        "Pragati Setu is a government-grade digital platform designed to strengthen and manage Self Help Group (SHG)–related activities across the state. It acts as a digital bridge connecting rural women, SHGs, Community-Based Organizations, and government systems through structured data and transparent workflows.",
-      color: "#2563eb",
+  const { lang } = useContext(LanguageContext);
+
+  const content = {
+    en: {
+      title: "Frequently Asked",
+      highlight: "Questions?",
+      faqs: [
+        {
+          question: "What is Pragati Setu?",
+          answer:
+            "Pragati Setu is a government-grade digital platform designed to strengthen and manage Self Help Group (SHG)–related activities across the state. It acts as a digital bridge connecting rural women, SHGs, Community-Based Organizations, and government systems through structured data and transparent workflows.",
+          color: "#2563eb",
+        },
+        {
+          question: "What is the purpose of Pragati Setu?",
+          answer:
+            "Pragati Setu aims to enable livelihood-based empowerment of SHG women by capturing beneficiary and enterprise data, supporting skill-based employment, financial inclusion, and continuous livelihood monitoring for informed decision-making and targeted interventions.",
+          color: "#16a34a",
+        },
+        {
+          question: "What kind of data is captured in Pragati Setu?",
+          answer:
+            "The platform captures comprehensive data including beneficiary profiles, SHG and enterprise details, livelihood activities, skill mapping, training interventions, financial inclusion status, and progress indicators.",
+          color: "#0ea5e9",
+        },
+        {
+          question: "Who uses Pragati Setu?",
+          answer:
+            "Pragati Setu is used by field functionaries, Community-Based Organizations, and government officials at block, district, and state levels.",
+          color: "#9333ea",
+        },
+        {
+          question: "How does Pragati Setu empower SHG women?",
+          answer:
+            "By organizing and analyzing livelihood data, Pragati Setu enables targeted skill training, financial access, enterprise support, and continuous monitoring.",
+          color: "#15803d",
+        },
+        {
+          question: "How do I navigate to dashboard?",
+          answer:
+            "Click on Login in the top navigation bar. After login, you will be redirected to your dashboard.",
+          color: "#be123c",
+        },
+      ],
     },
-    {
-      question: "What is the purpose of Pragati Setu?",
-      answer:
-        "Pragati Setu aims to enable livelihood-based empowerment of SHG women by capturing beneficiary and enterprise data, supporting skill-based employment, financial inclusion, and continuous livelihood monitoring for informed decision-making and targeted interventions.",
-      color: "#16a34a",
+
+    hi: {
+      title: "अक्सर पूछे जाने वाले",
+      highlight: "प्रश्न?",
+      faqs: [
+        {
+          question: "प्रगति सेतु क्या है?",
+          answer:
+            "प्रगति सेतु एक सरकारी डिजिटल प्लेटफ़ॉर्म है जो स्वयं सहायता समूह (SHG) से जुड़ी गतिविधियों के प्रबंधन को मजबूत करता है। यह ग्रामीण महिलाओं, SHG और सरकारी तंत्र के बीच एक डिजिटल सेतु का कार्य करता है।",
+          color: "#2563eb",
+        },
+        {
+          question: "प्रगति सेतु का उद्देश्य क्या है?",
+          answer:
+            "इसका उद्देश्य SHG महिलाओं को सशक्त बनाना है, जिसमें लाभार्थी डेटा, रोजगार, वित्तीय समावेशन और आजीविका की निगरानी शामिल है।",
+          color: "#16a34a",
+        },
+        {
+          question: "प्रगति सेतु में किस प्रकार का डेटा संग्रहित होता है?",
+          answer:
+            "इसमें लाभार्थी प्रोफाइल, SHG विवरण, उद्यम, कौशल, प्रशिक्षण और वित्तीय स्थिति से जुड़ा डेटा शामिल होता है।",
+          color: "#0ea5e9",
+        },
+        {
+          question: "प्रगति सेतु का उपयोग कौन करता है?",
+          answer:
+            "इसका उपयोग ब्लॉक, जिला और राज्य स्तर के अधिकारी तथा फील्ड कर्मचारी करते हैं।",
+          color: "#9333ea",
+        },
+        {
+          question: "यह SHG महिलाओं को कैसे सशक्त बनाता है?",
+          answer:
+            "यह प्लेटफ़ॉर्म डेटा के आधार पर प्रशिक्षण, वित्तीय सहायता और उद्यम विकास को सक्षम बनाता है।",
+          color: "#15803d",
+        },
+        {
+          question: "डैशबोर्ड कैसे खोलें?",
+          answer:
+            "ऊपर दिए गए लॉगिन बटन पर क्लिक करें और लॉगिन करने के बाद डैशबोर्ड खुल जाएगा।",
+          color: "#be123c",
+        },
+      ],
     },
-    {
-      question: "What kind of data is captured in Pragati Setu?",
-      answer:
-        "The platform captures comprehensive data including beneficiary profiles, SHG and enterprise details, livelihood activities, skill mapping, training interventions, financial inclusion status, and progress indicators to support sustainable livelihood planning.",
-      color: "#0ea5e9",
-    },
-    {
-      question: "Who uses Pragati Setu?",
-      answer:
-        "Pragati Setu is used by field functionaries, Community-Based Organizations, and government officials at block, district, and state levels for monitoring, planning, and implementation of livelihood and empowerment initiatives.",
-      color: "#9333ea",
-    },
-    {
-      question: "How does Pragati Setu empower SHG women?",
-      answer:
-        "By organizing and analyzing livelihood data, Pragati Setu enables targeted skill training, access to financial services, enterprise support, and continuous monitoring, helping SHG women transition towards sustainable income generation and economic self-reliance.",
-      color: "#15803d",
-    },
-    {
-      question: "How do I navigate to dashboard?",
-      answer:
-        "To access the dashboard, click on the Login button available in the top navigation bar. After successful authentication, you will be redirected to your role-based dashboard.",
-      color: "#be123c",
-    },
-  ];
+  };
+
+  const t = content[lang] || content.en;
 
   const [activeIndex, setActiveIndex] = useState(0);
 
@@ -56,13 +109,13 @@ export default function HeroFAQs() {
       {/* HEADER */}
       <div className="faq-header">
         <h2 className="faq-title">
-          Frequently Asked <span>Questions?</span>
+          {t.title} <span>{t.highlight}</span>
         </h2>
       </div>
 
       {/* FAQ LIST */}
       <div className="faq-list">
-        {faqs.map((faq, index) => (
+        {t.faqs.map((faq, index) => (
           <div
             key={index}
             className={`faq-item ${activeIndex === index ? "active" : ""}`}

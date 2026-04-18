@@ -2,6 +2,8 @@
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
@@ -24,7 +26,7 @@ function saveCache(payload, meta = {}) {
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload, meta }),
     );
-  } catch {}
+  } catch { }
 }
 
 function loadCache() {
@@ -47,7 +49,7 @@ function loadMap(key) {
 function saveMap(key, map) {
   try {
     localStorage.setItem(key, JSON.stringify(map || {}));
-  } catch {}
+  } catch { }
 }
 
 /* ---------------- partner resolver (SAFE & CACHED) ---------------- */
@@ -58,7 +60,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch {}
+  } catch { }
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -72,7 +74,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
     if (partnerId) {
       try {
         localStorage.setItem(TP_SELF_PARTNER_KEY, String(partnerId));
-      } catch {}
+      } catch { }
     }
 
     return partnerId;
@@ -120,7 +122,7 @@ export default function TrainingRequestList() {
         localStorage.getItem("ps_user_geoscope") || "null",
       );
       if (cached) return cached;
-    } catch {}
+    } catch { }
 
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(user?.id);
@@ -128,7 +130,7 @@ export default function TrainingRequestList() {
         localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
         return resp.data;
       }
-    } catch {}
+    } catch { }
     return null;
   }
 
@@ -199,7 +201,7 @@ export default function TrainingRequestList() {
       saveMap(USER_MAP_KEY, um);
       saveMap(PARTNER_MAP_KEY, pm);
       saveMap(PLAN_MAP_KEY, plm);
-    } catch {}
+    } catch { }
   }
 
   /* ---------------- main fetch ---------------- */
@@ -343,230 +345,233 @@ export default function TrainingRequestList() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">Pragati Setu — Training Requests</div>
           }
         /> */}
-        <main
-          style={{
-            padding: 18,
-            minHeight: "100vh",
-          }}
-        >
-          <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div>
 
-          <div
+          <main
             style={{
-              maxWidth: 1200,
-              margin: "20px auto",
+              padding: 18,
+              minHeight: "100vh",
             }}
           >
-            {/* FILTER */}
-            <div style={{ marginBottom: 14 }}>
-              <TrainingReqListFilter
-                user={user}
-                onApply={fetchRequestsWithFilters}
-              />
-            </div>
+            {/* <div className="dashboard-header">
+            <h2 className="dashboard-title">{roleMessage}</h2>
+          </div> */}
 
-            {/* HEADER */}
             <div
               style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 12,
-                borderBottom: "2px solid #a7c6ed",
-                paddingBottom: 8,
+                maxWidth: 1200,
+                margin: "20px auto",
               }}
             >
-              <h2 style={{ margin: 0, color: "#2b4e72" }}>Training Requests</h2>
-
-              <div style={{ marginLeft: "auto" }}>
-                <button
-                  className="btnPrimary"
-                  onClick={() => {
-                    localStorage.removeItem(CACHE_KEY);
-                    localStorage.removeItem(TP_SELF_PARTNER_KEY);
-                    setRefreshToken((t) => t + 1);
-                  }}
-                >
-                  Refresh
-                </button>
+              {/* FILTER */}
+              <div style={{ marginBottom: 14 }}>
+                <TrainingReqListFilter
+                  user={user}
+                  onApply={fetchRequestsWithFilters}
+                />
               </div>
-            </div>
 
-            {/* TABLE CARD */}
-            <div
-              style={{
-                background: "#fff",
-                padding: 14,
-                borderRadius: 10,
-                border: "2px solid #3d6ba6",
-                boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-              }}
-            >
+              {/* HEADER */}
               <div
                 style={{
-                  maxHeight: 520,
-                  overflow: "auto",
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  borderBottom: "2px solid #a7c6ed",
+                  paddingBottom: 8,
                 }}
               >
-                <table className="training-table">
-                  <thead>
-                    <tr>
-                      <th>ID</th>
-                      <th>Theme</th>
-                      <th>Plan</th>
-                      <th>Type</th>
-                      <th>Level</th>
-                      <th>Status</th>
-                      <th>Partner</th>
-                      <th>District</th>
-                      <th>Block</th>
-                      <th />
-                    </tr>
-                  </thead>
+                <h2 style={{ margin: 0, color: "#2b4e72" }}>Training Requests</h2>
 
-                  <tbody>
-                    {loading ? (
-                      <tr>
-                        <td colSpan={10}>Loading…</td>
-                      </tr>
-                    ) : filtered.length === 0 ? (
-                      <tr>
-                        <td colSpan={10}>No training requests</td>
-                      </tr>
-                    ) : (
-                      // filtered.map((r) => (
-                      paginatedData.map((r) => (
-                        <tr key={r.id}>
-                          <td>{r.id}</td>
-                          <td>{r.theme_name}</td>
-                          <td>{r.training_plan_name}</td>
-                          <td>{r.training_type}</td>
-                          <td>{r.level}</td>
-                          <td>{r.status}</td>
-                          <td>{r.partner_name}</td>
-                          <td>{r.district_name}</td>
-                          <td>{r.block_name}</td>
-                          <td>
-                            <button
-                              className="btnView"
-                              onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
-                            >
-                              View
-                            </button>
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-                {/* ========================= */}
-                {/* 🔽 ADDED: MOBILE CARD VIEW */}
-                {/* ========================= */}
-
-                <div className="mobile-card-list">
-                  {loading ? (
-                    <div className="mobile-card">Loading…</div>
-                  ) : filtered.length === 0 ? (
-                    <div className="mobile-card">No training requests</div>
-                  ) : (
-                    paginatedData.map((r) => (
-                      <div key={r.id} className="mobile-card">
-                        <div>
-                          <strong>ID:</strong> {r.id}
-                        </div>
-                        <div>
-                          <strong>Theme:</strong> {r.theme_name}
-                        </div>
-                        <div>
-                          <strong>Plan:</strong> {r.training_plan_name}
-                        </div>
-                        <div>
-                          <strong>Type:</strong> {r.training_type}
-                        </div>
-                        <div>
-                          <strong>Level:</strong> {r.level}
-                        </div>
-                        <div>
-                          <strong>Status:</strong> {r.status}
-                        </div>
-                        <div>
-                          <strong>Partner:</strong> {r.partner_name}
-                        </div>
-                        <div>
-                          <strong>District:</strong> {r.district_name}
-                        </div>
-                        <div>
-                          <strong>Block:</strong> {r.block_name}
-                        </div>
-
-                        <button
-                          className="btnView"
-                          onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
-                        >
-                          View
-                        </button>
-                      </div>
-                    ))
-                  )}
+                <div style={{ marginLeft: "auto" }}>
+                  <button
+                    className="btnPrimary"
+                    onClick={() => {
+                      localStorage.removeItem(CACHE_KEY);
+                      localStorage.removeItem(TP_SELF_PARTNER_KEY);
+                      setRefreshToken((t) => t + 1);
+                    }}
+                  >
+                    Refresh
+                  </button>
                 </div>
-                {/* PAGINATION CONTROLS */}
+              </div>
+
+              {/* TABLE CARD */}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 14,
+                  borderRadius: 10,
+                  border: "2px solid #3d6ba6",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                }}
+              >
                 <div
                   style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    marginTop: 12,
+                    maxHeight: 520,
+                    overflow: "auto",
                   }}
                 >
-                  <div style={{ color: "#2b4e72", fontSize: 14 }}>
-                    Page {currentPage} of {totalPages || 1}
+                  <table className="training-table">
+                    <thead>
+                      <tr>
+                        <th>ID</th>
+                        <th>Theme</th>
+                        <th>Plan</th>
+                        <th>Type</th>
+                        <th>Level</th>
+                        <th>Status</th>
+                        <th>Partner</th>
+                        <th>District</th>
+                        <th>Block</th>
+                        <th />
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {loading ? (
+                        <tr>
+                          <td colSpan={10}>Loading…</td>
+                        </tr>
+                      ) : filtered.length === 0 ? (
+                        <tr>
+                          <td colSpan={10}>No training requests</td>
+                        </tr>
+                      ) : (
+                        // filtered.map((r) => (
+                        paginatedData.map((r) => (
+                          <tr key={r.id}>
+                            <td>{r.id}</td>
+                            <td>{r.theme_name}</td>
+                            <td>{r.training_plan_name}</td>
+                            <td>{r.training_type}</td>
+                            <td>{r.level}</td>
+                            <td>{r.status}</td>
+                            <td>{r.partner_name}</td>
+                            <td>{r.district_name}</td>
+                            <td>{r.block_name}</td>
+                            <td>
+                              <button
+                                className="btnView"
+                                onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
+                              >
+                                View
+                              </button>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                  {/* ========================= */}
+                  {/* 🔽 ADDED: MOBILE CARD VIEW */}
+                  {/* ========================= */}
+
+                  <div className="mobile-card-list">
+                    {loading ? (
+                      <div className="mobile-card">Loading…</div>
+                    ) : filtered.length === 0 ? (
+                      <div className="mobile-card">No training requests</div>
+                    ) : (
+                      paginatedData.map((r) => (
+                        <div key={r.id} className="mobile-card">
+                          <div>
+                            <strong>ID:</strong> {r.id}
+                          </div>
+                          <div>
+                            <strong>Theme:</strong> {r.theme_name}
+                          </div>
+                          <div>
+                            <strong>Plan:</strong> {r.training_plan_name}
+                          </div>
+                          <div>
+                            <strong>Type:</strong> {r.training_type}
+                          </div>
+                          <div>
+                            <strong>Level:</strong> {r.level}
+                          </div>
+                          <div>
+                            <strong>Status:</strong> {r.status}
+                          </div>
+                          <div>
+                            <strong>Partner:</strong> {r.partner_name}
+                          </div>
+                          <div>
+                            <strong>District:</strong> {r.district_name}
+                          </div>
+                          <div>
+                            <strong>Block:</strong> {r.block_name}
+                          </div>
+
+                          <button
+                            className="btnView"
+                            onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
+                          >
+                            View
+                          </button>
+                        </div>
+                      ))
+                    )}
                   </div>
+                  {/* PAGINATION CONTROLS */}
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 12,
+                    }}
+                  >
+                    <div style={{ color: "#2b4e72", fontSize: 14 }}>
+                      Page {currentPage} of {totalPages || 1}
+                    </div>
 
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button
-                      className="btnPage"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((p) => p - 1)}
-                    >
-                      Prev
-                    </button>
-
-                    {[...Array(totalPages)].map((_, i) => (
+                    <div style={{ display: "flex", gap: 6 }}>
                       <button
-                        key={i}
-                        className={`btnPage ${currentPage === i + 1 ? "activePage" : ""}`}
-                        onClick={() => setCurrentPage(i + 1)}
+                        className="btnPage"
+                        disabled={currentPage === 1}
+                        onClick={() => setCurrentPage((p) => p - 1)}
                       >
-                        {i + 1}
+                        Prev
                       </button>
-                    ))}
 
-                    <button
-                      className="btnPage"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                    >
-                      Next
-                    </button>
+                      {[...Array(totalPages)].map((_, i) => (
+                        <button
+                          key={i}
+                          className={`btnPage ${currentPage === i + 1 ? "activePage" : ""}`}
+                          onClick={() => setCurrentPage(i + 1)}
+                        >
+                          {i + 1}
+                        </button>
+                      ))}
+
+                      <button
+                        className="btnPage"
+                        disabled={currentPage === totalPages}
+                        onClick={() => setCurrentPage((p) => p + 1)}
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* CSS */}
-          <style>{`
+            {/* CSS */}
+            <style>{`
 
 /* BUTTON */
 .btnPrimary{
@@ -693,6 +698,11 @@ export default function TrainingRequestList() {
   display:none;
 }
 
+.content-area {
+  display: flex;
+  flex: 1;
+}
+
 /* ========================= */
 /* 🔽 MOBILE RESPONSIVE */
 /* ========================= */
@@ -744,8 +754,11 @@ export default function TrainingRequestList() {
 }
 
 `}</style>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
+
     </div>
   );
 }

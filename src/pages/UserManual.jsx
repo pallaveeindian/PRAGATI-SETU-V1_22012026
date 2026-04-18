@@ -1,6 +1,6 @@
 // src/pages/UserManual.jsx
 
-import React, { useEffect } from "react";
+import React, { useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
 import ps_logo from "../assets/PS_TRANS.png";
 import up_logo from "../assets/upgov_logo.jpg";
@@ -10,79 +10,78 @@ import Footer from "../components/layout/Footer.jsx";
 import aboutImg from "../assets/User-manual.jpeg";
 import GovHeader from "./GovHeader.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
+import { LanguageContext } from "./LanguageContext";
+
 export default function UserManual() {
+
+  const { lang } = useContext(LanguageContext);
+
   /* ================= FONT SIZE CONTROLS ================= */
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
   };
 
   useEffect(() => {
-    // default font scale
     setFontScale(1);
   }, []);
 
+  /* ================= CONTENT (UNCHANGED ENGLISH + HINDI ADDED) ================= */
+  const content = {
+    en: {
+      title1: "User",
+      title2: " Manual",
+      p1: `The Pragati Setu Login Process provides secure and role-based access to various mission applications including BMS, TMS, LDMS, and EMS. Users begin by opening the official Pragati Setu login page through a supported web browser and selecting the required application module based on their operational needs.`,
+      p2: `The system supports multiple User Types such as Admin and General Users, followed by selection of an authorized Role including State IT Admin, PMU IT Admin, SMMU, DMMU, BMMU, and other designated roles. This ensures that each user gains access only to the features and data permitted under their responsibility and administrative level.`,
+      p3: `After selecting the application and role, users must enter their registered Username and Password credentials and click the Log In button. Upon successful authentication, the system redirects the user to the respective dashboard. This structured login workflow enhances security, prevents unauthorized access, and ensures controlled and efficient digital operations across all administrative tiers.`
+    },
+    hi: {
+      title1: "यूज़र",
+      title2: " मैनुअल",
+      p1: `प्रगति सेतु लॉगिन प्रक्रिया विभिन्न मिशन एप्लिकेशनों जैसे BMS, TMS, LDMS और EMS तक सुरक्षित और भूमिका-आधारित पहुँच प्रदान करती है। उपयोगकर्ता सबसे पहले समर्थित वेब ब्राउज़र के माध्यम से आधिकारिक लॉगिन पेज खोलते हैं और अपनी आवश्यकता के अनुसार संबंधित मॉड्यूल का चयन करते हैं।`,
+      p2: `यह प्रणाली विभिन्न उपयोगकर्ता प्रकारों जैसे Admin और General Users को सपोर्ट करती है, और अधिकृत भूमिकाओं जैसे State IT Admin, PMU IT Admin, SMMU, DMMU, BMMU आदि का चयन करने की सुविधा देती है। इससे यह सुनिश्चित होता है कि प्रत्येक उपयोगकर्ता को केवल उन्हीं फीचर्स और डेटा तक पहुँच मिले जो उनकी जिम्मेदारी के अनुसार अनुमत हैं।`,
+      p3: `एप्लिकेशन और भूमिका चयन के बाद, उपयोगकर्ता को अपना पंजीकृत Username और Password दर्ज करना होता है और Log In बटन पर क्लिक करना होता है। सफल लॉगिन के बाद उपयोगकर्ता को संबंधित डैशबोर्ड पर भेज दिया जाता है। यह प्रक्रिया सुरक्षा बढ़ाती है, अनधिकृत पहुँच को रोकती है और सभी प्रशासनिक स्तरों पर नियंत्रित और कुशल संचालन सुनिश्चित करती है।`
+    }
+  };
+
+  const t = content[lang];
+
   return (
     <div className="home-shell">
-      {/* ================= ACCESSIBILITY HEADER ================= */}
+
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
         onFontChange={setFontScale}
       />
 
-      {/* ================= TOP NAV ================= */}
       <TopNavigation />
 
-      {/* CONTENT */}
       <main className="home-hero">
         <div className="about-section">
+
           <div className="about-left">
             <h1>
-              <span className="contrast-color-two">User</span>
-              <span className="contrast-color-one"> Manual</span>
+              <span className="contrast-color-two">{t.title1}</span>
+              <span className="contrast-color-one">{t.title2}</span>
             </h1>
+
             <div className="pragati-card">
-              <p>
-                The <strong>Pragati Setu Login Process</strong> provides secure
-                and role-based access to various mission applications including{" "}
-                <strong>BMS</strong>, <strong>TMS</strong>,{" "}
-                <strong>LDMS</strong>, and <strong>EMS</strong>. Users begin by
-                opening the official Pragati Setu login page through a supported
-                web browser and selecting the required application module based
-                on their operational needs.
-              </p>
+              <p>{t.p1}</p>
             </div>
+
             <div className="pragati-card">
-              <p>
-                The system supports multiple <strong>User Types</strong> such as{" "}
-                <strong>Admin</strong> and <strong>General Users</strong>,
-                followed by selection of an authorized <strong>Role</strong>{" "}
-                including <strong>State IT Admin</strong>,{" "}
-                <strong>PMU IT Admin</strong>, <strong>SMMU</strong>,{" "}
-                <strong>DMMU</strong>, <strong>BMMU</strong>, and other
-                designated roles. This ensures that each user gains access only
-                to the features and data permitted under their responsibility
-                and administrative level.
-              </p>
+              <p>{t.p2}</p>
             </div>
+
             <div className="pragati-card">
-              <p>
-                After selecting the application and role, users must enter their
-                registered <strong>Username</strong> and{" "}
-                <strong>Password</strong> credentials and click the{" "}
-                <strong>Log In</strong> button. Upon successful authentication,
-                the system redirects the user to the respective dashboard. This
-                structured login workflow enhances security, prevents
-                unauthorized access, and ensures controlled and efficient
-                digital operations across all administrative tiers.
-              </p>
+              <p>{t.p3}</p>
             </div>
           </div>
 
-          {/* RIGHT IMAGE */}
           <div className="about-right">
             <img src={aboutImg} alt="Pragati Setu Diagram" />
           </div>
+
         </div>
       </main>
 

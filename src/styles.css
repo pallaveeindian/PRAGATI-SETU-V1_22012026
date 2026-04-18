@@ -15,6 +15,7 @@ html,
 body,
 #root {
   height: 100%;
+  overflow-x: hidden;
 }
 
 body {
@@ -141,6 +142,7 @@ textarea {
 
 .app-shell {
   display: flex;
+  flex-direction: column;
   min-height: 100vh;
   width: 100%;
 }
@@ -301,7 +303,6 @@ textarea {
 .main-area {
   border-left: 1px solid #eef2f7;
   flex: 1;
-  min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
@@ -510,6 +511,7 @@ th {
    Responsive
    ------------------------ */
 @media (max-width: 980px) {
+
   .left-nav,
   .ln {
     width: 180px;
@@ -521,6 +523,7 @@ th {
 }
 
 @media (max-width: 720px) {
+
   .left-nav,
   .ln {
     display: none;
@@ -662,15 +665,20 @@ th {
 
   background:
     linear-gradient(#2563eb 0 0),
-    /* Blue */ linear-gradient(#2563eb 0 0),
+    /* Blue */
+    linear-gradient(#2563eb 0 0),
     linear-gradient(#dc2626 0 0),
-    /* Red */ linear-gradient(#dc2626 0 0),
+    /* Red */
+    linear-gradient(#dc2626 0 0),
     linear-gradient(#facc15 0 0),
-    /* Yellow */ linear-gradient(#facc15 0 0),
+    /* Yellow */
+    linear-gradient(#facc15 0 0),
     linear-gradient(#16a34a 0 0),
-    /* Green */ linear-gradient(#16a34a 0 0),
+    /* Green */
+    linear-gradient(#16a34a 0 0),
     linear-gradient(#fb923c 0 0),
-    /* Orange */ linear-gradient(#fb923c 0 0),
+    /* Orange */
+    linear-gradient(#fb923c 0 0),
     #ffffff;
   /* White base */
 

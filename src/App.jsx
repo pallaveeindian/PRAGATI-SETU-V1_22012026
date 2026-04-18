@@ -7,6 +7,9 @@ import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext";
 
+
+import { LanguageProvider } from "../src/pages/LanguageContext.jsx";
+
 // Homepage
 import AboutUs from "./pages/AboutUs";
 import BeneficiaryProfiling from "./pages/BeneficiaryProfiling";
@@ -101,222 +104,224 @@ export default function App() {
   }
 
   return (
-    <Routes>
-      <Route path="/" element={<Home />} />
-      <Route path="/about-us" element={<AboutUs />} />
-      <Route path="/beneficiary-profiling" element={<BeneficiaryProfiling />} />
-      <Route path="/user-management" element={<UserManagement />} />
-      <Route path="/training-management" element={<TrainingManagement />} />
-      <Route path="/lakhpati-didi" element={<LakhpatiDidi />} />
-      <Route path="/enterprise-tracking" element={<EnterpriseTracking />} />
-      <Route
-        path="/monitoring-and-anlytics"
-        element={<MonitoringandAnlytics />}
-      />
-      <Route path="/power-bi-analytics" element={<PowerBIAnalytics />} />
-      <Route path="/user-manual" element={<UserManual />} />
-      <Route
-        path="/frequently-asked-questions"
-        element={<FrequentlyAskedQuestions />}
-      />
-      <Route path="/what's-new" element={<WhatsNew />} />
-      <Route path="/login" element={<Login />} />
-      {/* Protected routes */}
-      <Route element={<ProtectedRoute />}>
-        {/* Main Dashboard */}
-        <Route path="/dashboard" element={<DashboardHome />} />
-        {/* <Route path="/dashboard/*" element={<DashboardHome />} /> */}
-
-        {/* ----- TMS Routes ----- */}
-        <Route path="/tms" element={<TmsLanding />} />
-        <Route path="/tms/training-report" element={<TrainingReport />} />
-
-        {/* SMMU Routes */}
-        <Route element={<ProtectedRoute allowedRoles="smmu" />}>
-          {/* SMMU Partner Target Creation */}
-          <Route path="/tms/smmu/dashboard" element={<SmmuTmsDashboard />} />
-          <Route
-            path="/tms/smmu/partner-targets"
-            element={<SmmuCreatePartnerTargets />}
-          />
-          <Route path="/tms/smmu/tp-TvA" element={<SmmuTargetAchievement />} />
-        </Route>
-
-        {/* DMMU Routes */}
-        <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
-          <Route path="/tms/dmmu/dashboard" element={<DmmuTmsDashboard />} />
-          <Route path="/tms/dmmu/tr-review/:id" element={<DmmuTrReview />} />
-          <Route
-            path="/tms/dmmu/tr-closure/:id"
-            element={<DmmuRequestClosure />}
-          />
-        </Route>
-
-        {/* BMMU Routes */}
-        <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
-          <Route path="/tms/bmmu/dashboard" element={<BmmuTmsDashboard />} />
-          {/* Propose training plan */}
-          <Route
-            path="/tms/bmmu/create-training-plan"
-            element={<BmmuCreateTrainingPlan />}
-          />
-        </Route>
-
-        {/* Training Partner Routes */}
-        <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
-          <Route path="/tms/tp/dashboard" element={<TpDashboard />}></Route>
-          <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
-          <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
-          <Route
-            path="/tms/tp/centre/:centreId"
-            element={<TpCentreRegistration />}
-          />
-          <Route
-            path="/tms/tp/tr-closure/:id"
-            element={<TpTrainingRequestClosure />}
-          />
-          <Route
-            path="/tms/tp/batches/create/:id"
-            element={<TpCreateBatch />}
-          />
-          <Route path="/tms/tp/cp-list" element={<TpListCP />} />
-          <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
-          <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
-          <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
-        </Route>
-
-        {/* TPCP Routes */}
-        <Route element={<ProtectedRoute allowedRoles="tp_contact_person" />}>
-          <Route path="/tms/cp/dashboard" element={<CpDashboard />}></Route>
-          <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
-          <Route
-            path="/tms/cp/batch-attendance-ekyc/:id"
-            element={<CpAdPerBatchEkyc />}
-          />
-          <Route
-            path="/tms/cp/batch-attendance/:id"
-            element={<CpAdPerBatch />}
-          />
-          <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
-          <Route
-            path="/tms/cp/batch-closure/:id"
-            element={<CpBatchClosure />}
-          />
-          +
-        </Route>
-
-        {/* Master Trainer Routes */}
-        <Route element={<ProtectedRoute allowedRoles="master_trainer" />}>
-          <Route path="/tms/mt/dashboard" element={<MtDashboard />}></Route>
-        </Route>
-
-        {/* Create Training Request */}
+    <LanguageProvider>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/about-us" element={<AboutUs />} />
+        <Route path="/beneficiary-profiling" element={<BeneficiaryProfiling />} />
+        <Route path="/user-management" element={<UserManagement />} />
+        <Route path="/training-management" element={<TrainingManagement />} />
+        <Route path="/lakhpati-didi" element={<LakhpatiDidi />} />
+        <Route path="/enterprise-tracking" element={<EnterpriseTracking />} />
         <Route
-          element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
-        >
-          <Route
-            path="/tms/create-training-request"
-            element={<CreateTrainingRequest />}
-          />
-        </Route>
-
-        {/* View Training Requests List */}
+          path="/monitoring-and-anlytics"
+          element={<MonitoringandAnlytics />}
+        />
+        <Route path="/power-bi-analytics" element={<PowerBIAnalytics />} />
+        <Route path="/user-manual" element={<UserManual />} />
         <Route
-          element={
-            <ProtectedRoute
-              allowedRoles={["smmu", "dmmu", "bmmu", "training_partner"]}
-            />
-          }
-        >
-          <Route
-            path="/tms/training-requests"
-            element={<TrainingRequestList />}
-          />
-          <Route
-            path="/tms/tr-detail/:id"
-            element={<TrainingRequestDetail />}
-          />
-          <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
-          <Route
-            path="/tms/batches-list/:id/"
-            element={<TrainingBatchList />}
-          />
-        </Route>
+          path="/frequently-asked-questions"
+          element={<FrequentlyAskedQuestions />}
+        />
+        <Route path="/what's-new" element={<WhatsNew />} />
+        <Route path="/login" element={<Login />} />
+        {/* Protected routes */}
+        <Route element={<ProtectedRoute />}>
+          {/* Main Dashboard */}
+          <Route path="/dashboard" element={<DashboardHome />} />
+          {/* <Route path="/dashboard/*" element={<DashboardHome />} /> */}
 
-        <Route
-          element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
-        >
-          <Route
-            path="/tms/batch-certificate/:id"
-            element={<BatchCertificate />}
-          />
-        </Route>
+          {/* ----- TMS Routes ----- */}
+          <Route path="/tms" element={<TmsLanding />} />
+          <Route path="/tms/training-report" element={<TrainingReport />} />
 
-        {/* Batch Detail Permissions */}
-        <Route
-          element={
-            <ProtectedRoute
-              allowedRoles={[
-                "smmu",
-                "dmmu",
-                "bmmu",
-                "training_partner",
-                "tp_contact_person",
-              ]}
-            />
-          }
-        >
-          <Route
-            path="/tms/batch-detail/:id"
-            element={<TrainingBatchDetail />}
-          />
-        </Route>
-
-        {/* Catch-all for unknown TMS paths */}
-        <Route path="/tms/*" element={<TmsLanding />} />
-      </Route>
-      {/* ----- LDMS Routes (GLOBAL LAYOUT APPLIED) ----- */}
-      <Route element={<ProtectedRoute />}>
-        <Route path="/ldms" element={<LdmsLayout />}>
-          {/* BMMU Routes */}
-          <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
-          <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
-          {/* DMMU Routes */}
-          <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
-          <Route
-            path="dmmu/approve-support/:id"
-            element={<DmmuLdmsApprove />}
-          />
           {/* SMMU Routes */}
-          <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
-          {/* Global Routes */}
-          <Route path="support-capture" element={<SupportCapture />} />
+          <Route element={<ProtectedRoute allowedRoles="smmu" />}>
+            {/* SMMU Partner Target Creation */}
+            <Route path="/tms/smmu/dashboard" element={<SmmuTmsDashboard />} />
+            <Route
+              path="/tms/smmu/partner-targets"
+              element={<SmmuCreatePartnerTargets />}
+            />
+            <Route path="/tms/smmu/tp-TvA" element={<SmmuTargetAchievement />} />
+          </Route>
+
+          {/* DMMU Routes */}
+          <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
+            <Route path="/tms/dmmu/dashboard" element={<DmmuTmsDashboard />} />
+            <Route path="/tms/dmmu/tr-review/:id" element={<DmmuTrReview />} />
+            <Route
+              path="/tms/dmmu/tr-closure/:id"
+              element={<DmmuRequestClosure />}
+            />
+          </Route>
+
+          {/* BMMU Routes */}
+          <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
+            <Route path="/tms/bmmu/dashboard" element={<BmmuTmsDashboard />} />
+            {/* Propose training plan */}
+            <Route
+              path="/tms/bmmu/create-training-plan"
+              element={<BmmuCreateTrainingPlan />}
+            />
+          </Route>
+
+          {/* Training Partner Routes */}
+          <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
+            <Route path="/tms/tp/dashboard" element={<TpDashboard />}></Route>
+            <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
+            <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
+            <Route
+              path="/tms/tp/centre/:centreId"
+              element={<TpCentreRegistration />}
+            />
+            <Route
+              path="/tms/tp/tr-closure/:id"
+              element={<TpTrainingRequestClosure />}
+            />
+            <Route
+              path="/tms/tp/batches/create/:id"
+              element={<TpCreateBatch />}
+            />
+            <Route path="/tms/tp/cp-list" element={<TpListCP />} />
+            <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
+            <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
+            <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
+          </Route>
+
+          {/* TPCP Routes */}
+          <Route element={<ProtectedRoute allowedRoles="tp_contact_person" />}>
+            <Route path="/tms/cp/dashboard" element={<CpDashboard />}></Route>
+            <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
+            <Route
+              path="/tms/cp/batch-attendance-ekyc/:id"
+              element={<CpAdPerBatchEkyc />}
+            />
+            <Route
+              path="/tms/cp/batch-attendance/:id"
+              element={<CpAdPerBatch />}
+            />
+            <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
+            <Route
+              path="/tms/cp/batch-closure/:id"
+              element={<CpBatchClosure />}
+            />
+            +
+          </Route>
+
+          {/* Master Trainer Routes */}
+          <Route element={<ProtectedRoute allowedRoles="master_trainer" />}>
+            <Route path="/tms/mt/dashboard" element={<MtDashboard />}></Route>
+          </Route>
+
+          {/* Create Training Request */}
           <Route
-            path="support-map/edit/:supportApprovalId"
-            element={<SupportCapture />}
-          />
-          <Route path="scheme-dictionary" element={<SchemeDictionary />} />
-          <Route path="demand-analytics" element={<DemandAnalytics />} />
-          <Route path="support-map-list" element={<SupportBucketList />} />
+            element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
+          >
+            <Route
+              path="/tms/create-training-request"
+              element={<CreateTrainingRequest />}
+            />
+          </Route>
+
+          {/* View Training Requests List */}
           <Route
-            path="support-map-detail/:id"
-            element={<RecordSupportDetail />}
-          />
-          <Route path="supported-pld-list" element={<SupPLDList />} />
+            element={
+              <ProtectedRoute
+                allowedRoles={["smmu", "dmmu", "bmmu", "training_partner"]}
+              />
+            }
+          >
+            <Route
+              path="/tms/training-requests"
+              element={<TrainingRequestList />}
+            />
+            <Route
+              path="/tms/tr-detail/:id"
+              element={<TrainingRequestDetail />}
+            />
+            <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
+            <Route
+              path="/tms/batches-list/:id/"
+              element={<TrainingBatchList />}
+            />
+          </Route>
+
           <Route
-            path="supported-pld-list/detail/:pldId"
-            element={<SupPLDDetail />}
-          />
-          <Route path="reports" element={<LdmsReports />} />
-          <Route path="dash-block/:blockId" element={<BlockMap />} />
-          <Route path="dash-district/:districtId" element={<DmmuBlockMap />} />
-          {/* future LDMS pages */}
-          {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
-          {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
+            element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
+          >
+            <Route
+              path="/tms/batch-certificate/:id"
+              element={<BatchCertificate />}
+            />
+          </Route>
+
+          {/* Batch Detail Permissions */}
+          <Route
+            element={
+              <ProtectedRoute
+                allowedRoles={[
+                  "smmu",
+                  "dmmu",
+                  "bmmu",
+                  "training_partner",
+                  "tp_contact_person",
+                ]}
+              />
+            }
+          >
+            <Route
+              path="/tms/batch-detail/:id"
+              element={<TrainingBatchDetail />}
+            />
+          </Route>
+
+          {/* Catch-all for unknown TMS paths */}
+          <Route path="/tms/*" element={<TmsLanding />} />
         </Route>
-      </Route>
-      {/* 404 */}
-      <Route path="*" element={<div>404</div>} />
-    </Routes>
+        {/* ----- LDMS Routes (GLOBAL LAYOUT APPLIED) ----- */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/ldms" element={<LdmsLayout />}>
+            {/* BMMU Routes */}
+            <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
+            <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
+            {/* DMMU Routes */}
+            <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
+            <Route
+              path="dmmu/approve-support/:id"
+              element={<DmmuLdmsApprove />}
+            />
+            {/* SMMU Routes */}
+            <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
+            {/* Global Routes */}
+            <Route path="support-capture" element={<SupportCapture />} />
+            <Route
+              path="support-map/edit/:supportApprovalId"
+              element={<SupportCapture />}
+            />
+            <Route path="scheme-dictionary" element={<SchemeDictionary />} />
+            <Route path="demand-analytics" element={<DemandAnalytics />} />
+            <Route path="support-map-list" element={<SupportBucketList />} />
+            <Route
+              path="support-map-detail/:id"
+              element={<RecordSupportDetail />}
+            />
+            <Route path="supported-pld-list" element={<SupPLDList />} />
+            <Route
+              path="supported-pld-list/detail/:pldId"
+              element={<SupPLDDetail />}
+            />
+            <Route path="reports" element={<LdmsReports />} />
+            <Route path="dash-block/:blockId" element={<BlockMap />} />
+            <Route path="dash-district/:districtId" element={<DmmuBlockMap />} />
+            {/* future LDMS pages */}
+            {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
+            {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
+          </Route>
+        </Route>
+        {/* 404 */}
+        <Route path="*" element={<div>404</div>} />
+      </Routes>
+    </LanguageProvider>
   );
 }

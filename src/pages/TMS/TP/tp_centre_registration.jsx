@@ -1,6 +1,8 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
@@ -301,12 +303,14 @@ export default function TpCentreRegistration() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu —{" "}
@@ -315,452 +319,393 @@ export default function TpCentreRegistration() {
           }
         /> */}
 
-        <main style={{ padding: "50px 18px" }}>
-          {/* ===== Page Header ===== */}
-          <div className="tp-page-header">
-            <div>
-              <h2 className="tp-page-title">
-                <FaUniversity />
-                {isEdit
-                  ? "Edit Training Centre"
-                  : "Training Centre Registration"}
-              </h2>
-              <p className="tp-page-subtitle">
-                Fill the required details to register your training centre
-              </p>
+          <main style={{ padding: "50px 18px" }}>
+            {/* ===== Page Header ===== */}
+            <div className="tp-page-header">
+              <div>
+                <h2 className="tp-page-title">
+                  <FaUniversity />
+                  {isEdit
+                    ? "Edit Training Centre"
+                    : "Training Centre Registration"}
+                </h2>
+                <p className="tp-page-subtitle">
+                  Fill the required details to register your training centre
+                </p>
+              </div>
             </div>
-          </div>
-          {/* ===== Stepper ===== */}
-          <div className="stepper">
-            {STEPS.map((s, i) => (
-              <button
-                key={s}
-                className={i === step ? "step active" : "step"}
-                onClick={() => setStep(i)}
-              >
-                <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
-                  {i + 1}. {s}
-                </span>
-              </button>
-            ))}
-          </div>
+            {/* ===== Stepper ===== */}
+            <div className="stepper">
+              {STEPS.map((s, i) => (
+                <button
+                  key={s}
+                  className={i === step ? "step active" : "step"}
+                  onClick={() => setStep(i)}
+                >
+                  <span style={{ display: "flex", alignItems: "center", gap: 6 }}>
+                    {i + 1}. {s}
+                  </span>
+                </button>
+              ))}
+            </div>
 
-          {/* ===================== BASIC ===================== */}
-          {step === 0 &&
-            table(
-              [
-                row(
-                  "sn",
-                  "Serial Number",
-                  <>
-                    <input
-                      type="text"
-                      className="input-blue"
-                      inputMode="numeric"
-                      pattern="[0-9]*"
-                      value={centre.serial_number}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/\D/g, "");
-                        if (value.length > 6) {
+            {/* ===================== BASIC ===================== */}
+            {step === 0 &&
+              table(
+                [
+                  row(
+                    "sn",
+                    "Serial Number",
+                    <>
+                      <input
+                        type="text"
+                        className="input-blue"
+                        inputMode="numeric"
+                        pattern="[0-9]*"
+                        value={centre.serial_number}
+                        onChange={(e) => {
+                          const value = e.target.value.replace(/\D/g, "");
+                          if (value.length > 6) {
+                            setErrors({
+                              ...errors,
+                              serial_number:
+                                "Serial Number cannot be more than 6 digits",
+                            });
+                            return;
+                          }
+
+                          setCentre({ ...centre, serial_number: value });
+
                           setErrors({
                             ...errors,
-                            serial_number:
-                              "Serial Number cannot be more than 6 digits",
+                            serial_number: value
+                              ? ""
+                              : "Serial Number is required",
                           });
-                          return;
+                        }}
+                      />
+
+                      {errors.serial_number && (
+                        <small style={{ color: "red" }}>
+                          {errors.serial_number}
+                        </small>
+                      )}
+                    </>,
+                  ),
+                  row(
+                    "name",
+                    "Centre Name",
+                    <>
+                      <input
+                        type="text"
+                        className="input-blue"
+                        value={centre.venue_name}
+                        onChange={(e) => {
+                          const value = e.target.value.toUpperCase();
+
+                          setCentre({ ...centre, venue_name: value });
+
+                          setErrors({
+                            ...errors,
+                            venue_name: value ? "" : "Centre Name is required",
+                          });
+                        }}
+                      />
+
+                      {errors.venue_name && (
+                        <small style={{ color: "red" }}>
+                          {errors.venue_name}
+                        </small>
+                      )}
+                    </>,
+                  ),
+                  row(
+                    "type",
+                    "Centre Type",
+                    <>
+                      <select
+                        value={centre.centre_type}
+                        className="input-blue"
+                        onChange={(e) =>
+                          setCentre({ ...centre, centre_type: e.target.value })
                         }
+                      >
+                        <option value="">Select</option>
+                        <option value="PRIVATE">Private</option>
+                        <option value="GOVERNMENT">Government</option>
+                        <option value="LODGE">Lodge</option>
+                        <option value="RENTED">Rented</option>
+                        <option value="OTHERS">Others</option>
+                      </select>
+                      {centre.centre_type === "OTHERS" && (
+                        <>
+                          <input
+                            placeholder="Specify other centre type"
+                            value={centre.centre_type_other || ""}
+                            onChange={(e) => {
+                              const value = e.target.value;
+                              setCentre({ ...centre, centre_type_other: value });
 
-                        setCentre({ ...centre, serial_number: value });
+                              setErrors({
+                                ...errors,
+                                centre_type_other: value
+                                  ? ""
+                                  : "Please specify centre type",
+                              });
+                            }}
+                          />
 
-                        setErrors({
-                          ...errors,
-                          serial_number: value
-                            ? ""
-                            : "Serial Number is required",
-                        });
-                      }}
-                    />
+                          {errors.centre_type_other && (
+                            <small style={{ color: "red" }}>
+                              {errors.centre_type_other}
+                            </small>
+                          )}
+                        </>
+                      )}
+                    </>,
+                  ),
+                ],
+                "basic",
+              )}
 
-                    {errors.serial_number && (
-                      <small style={{ color: "red" }}>
-                        {errors.serial_number}
-                      </small>
-                    )}
-                  </>,
-                ),
-                row(
-                  "name",
-                  "Centre Name",
-                  <>
-                    <input
-                      type="text"
-                      className="input-blue"
-                      value={centre.venue_name}
-                      onChange={(e) => {
-                        const value = e.target.value.toUpperCase();
+            {/* ===================== ADDRESS ===================== */}
+            {step === 1 &&
+              table(
+                [
+                  row(
+                    "addr",
+                    "Centre Address",
+                    <>
+                      <textarea
+                        maxLength={150}
+                        className="input-blue"
+                        value={centre.venue_address}
+                        onChange={(e) =>
+                          setCentre({ ...centre, venue_address: e.target.value })
+                        }
+                      />
+                      <small>{centre.venue_address.length}/150</small>
+                    </>,
+                  ),
 
-                        setCentre({ ...centre, venue_name: value });
-
-                        setErrors({
-                          ...errors,
-                          venue_name: value ? "" : "Centre Name is required",
-                        });
-                      }}
-                    />
-
-                    {errors.venue_name && (
-                      <small style={{ color: "red" }}>
-                        {errors.venue_name}
-                      </small>
-                    )}
-                  </>,
-                ),
-                row(
-                  "type",
-                  "Centre Type",
-                  <>
+                  row(
+                    "dist",
+                    "District",
                     <select
-                      value={centre.centre_type}
+                      value={centre.district}
                       className="input-blue"
                       onChange={(e) =>
-                        setCentre({ ...centre, centre_type: e.target.value })
+                        setCentre({ ...centre, district: e.target.value })
+                      }
+                    >
+                      <option value="">Select District</option>
+                      {districts.map((d) => (
+                        <option key={d.district_id} value={d.district_id}>
+                          {d.district_name_en}
+                        </option>
+                      ))}
+                    </select>,
+                  ),
+                  row(
+                    "block",
+                    "Block",
+                    loadingBlocks ? (
+                      "Loading…"
+                    ) : (
+                      <select
+                        value={centre.block}
+                        className="input-blue"
+                        onChange={(e) =>
+                          setCentre({ ...centre, block: e.target.value })
+                        }
+                      >
+                        <option value="">Select Block</option>
+                        {blocks.map((b) => (
+                          <option key={b.block_id} value={b.block_id}>
+                            {b.block_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    ),
+                  ),
+                  row(
+                    "pan",
+                    "Panchayat",
+                    loadingPanchayats ? (
+                      "Loading…"
+                    ) : (
+                      <select
+                        value={centre.panchayat}
+                        className="input-blue"
+                        onChange={(e) =>
+                          setCentre({ ...centre, panchayat: e.target.value })
+                        }
+                      >
+                        <option value="">Select Panchayat</option>
+                        {panchayats.map((p) => (
+                          <option key={p.panchayat_id} value={p.panchayat_id}>
+                            {p.panchayat_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    ),
+                  ),
+                  row(
+                    "vill",
+                    "Village",
+                    loadingVillages ? (
+                      "Loading…"
+                    ) : (
+                      <select
+                        value={centre.village}
+                        className="input-blue"
+                        onChange={(e) =>
+                          setCentre({ ...centre, village: e.target.value })
+                        }
+                      >
+                        <option value="">Select Village</option>
+                        {villages.map((v) => (
+                          <option key={v.village_id} value={v.village_id}>
+                            {v.village_name_english}
+                          </option>
+                        ))}
+                      </select>
+                    ),
+                  ),
+                ],
+                "address",
+              )}
+
+            {/* ===================== FACILITIES ===================== */}
+            {step === 2 &&
+              table(
+                [
+                  row(
+                    "sec",
+                    "Security Arrangements",
+                    <>
+                      <textarea
+                        maxLength={150}
+                        className="input-blue"
+                        value={centre.security_arrangements}
+                        onChange={(e) =>
+                          setCentre({
+                            ...centre,
+                            security_arrangements: e.target.value,
+                          })
+                        }
+                      />
+                      <small>{centre.security_arrangements.length}/150</small>
+                    </>,
+                  ),
+
+                  row(
+                    "toilet",
+                    "Total Toilets / Bathrooms",
+                    <input
+                      type="number"
+                      className="input-blue"
+                      min="1"
+                      value={centre.toilets_bathrooms}
+                      onChange={(e) =>
+                        setCentre({
+                          ...centre,
+                          toilets_bathrooms: e.target.value,
+                        })
+                      }
+                      style={{
+                        width: "100%",
+                        padding: "8px",
+                      }}
+                    />,
+                  ),
+                  row(
+                    "power",
+                    "Power / Water Availability",
+                    <select
+                      value={centre.power_water_facility}
+                      className="input-blue"
+                      onChange={(e) =>
+                        setCentre({
+                          ...centre,
+                          power_water_facility: e.target.value,
+                        })
                       }
                     >
                       <option value="">Select</option>
-                      <option value="PRIVATE">Private</option>
-                      <option value="GOVERNMENT">Government</option>
-                      <option value="LODGE">Lodge</option>
-                      <option value="RENTED">Rented</option>
-                      <option value="OTHERS">Others</option>
-                    </select>
-                    {centre.centre_type === "OTHERS" && (
+                      <option value="REGULAR">Regular</option>
+                      <option value="LIMITED">Limited</option>
+                      <option value="SCARCE">Scarce</option>
+                    </select>,
+                  ),
+                  ...[
+                    ["medical_kit", "Medical Kit Available"],
+                    ["open_space", "Open Space Available"],
+                    ["field_visit_facility", "Field Visit Facility"],
+                    ["transport_facility", "Transport Facility"],
+                    ["dining_facility", "Dining Facility"],
+                  ].map(([k, label]) =>
+                    row(
+                      k,
+                      label,
                       <>
-                        <input
-                          placeholder="Specify other centre type"
-                          value={centre.centre_type_other || ""}
-                          onChange={(e) => {
-                            const value = e.target.value;
-                            setCentre({ ...centre, centre_type_other: value });
-
-                            setErrors({
-                              ...errors,
-                              centre_type_other: value
-                                ? ""
-                                : "Please specify centre type",
-                            });
-                          }}
-                        />
-
-                        {errors.centre_type_other && (
-                          <small style={{ color: "red" }}>
-                            {errors.centre_type_other}
-                          </small>
-                        )}
-                      </>
-                    )}
-                  </>,
-                ),
-              ],
-              "basic",
-            )}
-
-          {/* ===================== ADDRESS ===================== */}
-          {step === 1 &&
-            table(
-              [
-                row(
-                  "addr",
-                  "Centre Address",
-                  <>
-                    <textarea
-                      maxLength={150}
-                      className="input-blue"
-                      value={centre.venue_address}
-                      onChange={(e) =>
-                        setCentre({ ...centre, venue_address: e.target.value })
-                      }
-                    />
-                    <small>{centre.venue_address.length}/150</small>
-                  </>,
-                ),
-
-                row(
-                  "dist",
-                  "District",
-                  <select
-                    value={centre.district}
-                    className="input-blue"
-                    onChange={(e) =>
-                      setCentre({ ...centre, district: e.target.value })
-                    }
-                  >
-                    <option value="">Select District</option>
-                    {districts.map((d) => (
-                      <option key={d.district_id} value={d.district_id}>
-                        {d.district_name_en}
-                      </option>
-                    ))}
-                  </select>,
-                ),
-                row(
-                  "block",
-                  "Block",
-                  loadingBlocks ? (
-                    "Loading…"
-                  ) : (
-                    <select
-                      value={centre.block}
-                      className="input-blue"
-                      onChange={(e) =>
-                        setCentre({ ...centre, block: e.target.value })
-                      }
-                    >
-                      <option value="">Select Block</option>
-                      {blocks.map((b) => (
-                        <option key={b.block_id} value={b.block_id}>
-                          {b.block_name_en}
-                        </option>
-                      ))}
-                    </select>
+                        <label>
+                          <input
+                            type="radio"
+                            checked={centre[k] === true}
+                            onChange={() => setCentre({ ...centre, [k]: true })}
+                          />{" "}
+                          Yes
+                        </label>{" "}
+                        <label>
+                          <input
+                            type="radio"
+                            checked={centre[k] === false}
+                            onChange={() => setCentre({ ...centre, [k]: false })}
+                          />{" "}
+                          No
+                        </label>
+                      </>,
+                    ),
                   ),
-                ),
-                row(
-                  "pan",
-                  "Panchayat",
-                  loadingPanchayats ? (
-                    "Loading…"
-                  ) : (
-                    <select
-                      value={centre.panchayat}
-                      className="input-blue"
-                      onChange={(e) =>
-                        setCentre({ ...centre, panchayat: e.target.value })
-                      }
-                    >
-                      <option value="">Select Panchayat</option>
-                      {panchayats.map((p) => (
-                        <option key={p.panchayat_id} value={p.panchayat_id}>
-                          {p.panchayat_name_en}
-                        </option>
-                      ))}
-                    </select>
-                  ),
-                ),
-                row(
-                  "vill",
-                  "Village",
-                  loadingVillages ? (
-                    "Loading…"
-                  ) : (
-                    <select
-                      value={centre.village}
-                      className="input-blue"
-                      onChange={(e) =>
-                        setCentre({ ...centre, village: e.target.value })
-                      }
-                    >
-                      <option value="">Select Village</option>
-                      {villages.map((v) => (
-                        <option key={v.village_id} value={v.village_id}>
-                          {v.village_name_english}
-                        </option>
-                      ))}
-                    </select>
-                  ),
-                ),
-              ],
-              "address",
-            )}
-
-          {/* ===================== FACILITIES ===================== */}
-          {step === 2 &&
-            table(
-              [
-                row(
-                  "sec",
-                  "Security Arrangements",
-                  <>
-                    <textarea
-                      maxLength={150}
-                      className="input-blue"
-                      value={centre.security_arrangements}
-                      onChange={(e) =>
-                        setCentre({
-                          ...centre,
-                          security_arrangements: e.target.value,
-                        })
-                      }
-                    />
-                    <small>{centre.security_arrangements.length}/150</small>
-                  </>,
-                ),
-
-                row(
-                  "toilet",
-                  "Total Toilets / Bathrooms",
-                  <input
-                    type="number"
-                    className="input-blue"
-                    min="1"
-                    value={centre.toilets_bathrooms}
-                    onChange={(e) =>
-                      setCentre({
-                        ...centre,
-                        toilets_bathrooms: e.target.value,
-                      })
-                    }
-                    style={{
-                      width: "100%",
-                      padding: "8px",
-                    }}
-                  />,
-                ),
-                row(
-                  "power",
-                  "Power / Water Availability",
-                  <select
-                    value={centre.power_water_facility}
-                    className="input-blue"
-                    onChange={(e) =>
-                      setCentre({
-                        ...centre,
-                        power_water_facility: e.target.value,
-                      })
-                    }
-                  >
-                    <option value="">Select</option>
-                    <option value="REGULAR">Regular</option>
-                    <option value="LIMITED">Limited</option>
-                    <option value="SCARCE">Scarce</option>
-                  </select>,
-                ),
-                ...[
-                  ["medical_kit", "Medical Kit Available"],
-                  ["open_space", "Open Space Available"],
-                  ["field_visit_facility", "Field Visit Facility"],
-                  ["transport_facility", "Transport Facility"],
-                  ["dining_facility", "Dining Facility"],
-                ].map(([k, label]) =>
                   row(
-                    k,
-                    label,
+                    "other",
+                    "Other Details",
                     <>
-                      <label>
-                        <input
-                          type="radio"
-                          checked={centre[k] === true}
-                          onChange={() => setCentre({ ...centre, [k]: true })}
-                        />{" "}
-                        Yes
-                      </label>{" "}
-                      <label>
-                        <input
-                          type="radio"
-                          checked={centre[k] === false}
-                          onChange={() => setCentre({ ...centre, [k]: false })}
-                        />{" "}
-                        No
-                      </label>
+                      <textarea
+                        maxLength={300}
+                        className="input-blue"
+                        value={centre.other_details}
+                        onChange={(e) =>
+                          setCentre({ ...centre, other_details: e.target.value })
+                        }
+                      />
+                      <small>{centre.other_details.length}/300</small>
                     </>,
                   ),
-                ),
-                row(
-                  "other",
-                  "Other Details",
-                  <>
-                    <textarea
-                      maxLength={300}
-                      className="input-blue"
-                      value={centre.other_details}
-                      onChange={(e) =>
-                        setCentre({ ...centre, other_details: e.target.value })
-                      }
-                    />
-                    <small>{centre.other_details.length}/300</small>
-                  </>,
-                ),
-              ],
-              "facilities",
-            )}
-
-          {/* ===================== ROOMS ===================== */}
-          {step === 3 && (
-            <>
-              {table(
-                [
-                  row(
-                    "hc",
-                    "Total Training Halls",
-                    <input
-                      type="number"
-                      min="1"
-                      value={centre.training_hall_count}
-                      className="input-blue"
-                      onChange={(e) =>
-                        setCentre({
-                          ...centre,
-                          training_hall_count: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "8px",
-                      }}
-                    />,
-                  ),
-                  row(
-                    "cap",
-                    "Avg Training Hall Capacity",
-                    <input
-                      type="number"
-                      min="1"
-                      value={centre.training_hall_capacity}
-                      className="input-blue"
-                      onChange={(e) =>
-                        setCentre({
-                          ...centre,
-                          training_hall_capacity: e.target.value,
-                        })
-                      }
-                      style={{
-                        width: "100%",
-                        padding: "8px",
-                      }}
-                    />,
-                  ),
                 ],
-                "rooms-main",
+                "facilities",
               )}
 
-              {rooms.map((r, i) =>
-                table(
+            {/* ===================== ROOMS ===================== */}
+            {step === 3 && (
+              <>
+                {table(
                   [
                     row(
-                      `rn_${i}`,
-                      "Hall Name",
-                      <textarea
-                        value={r.room_name}
-                        className="input-blue"
-                        onChange={(e) => {
-                          const c = [...rooms];
-                          c[i].room_name = e.target.value;
-                          setRooms(c);
-                        }}
-                      />,
-                    ),
-                    row(
-                      `rc_${i}`,
-                      "Hall Capacity",
+                      "hc",
+                      "Total Training Halls",
                       <input
                         type="number"
                         min="1"
-                        value={r.room_capacity}
+                        value={centre.training_hall_count}
                         className="input-blue"
-                        onChange={(e) => {
-                          const c = [...rooms];
-                          c[i].room_capacity = e.target.value;
-                          setRooms(c);
-                        }}
+                        onChange={(e) =>
+                          setCentre({
+                            ...centre,
+                            training_hall_count: e.target.value,
+                          })
+                        }
                         style={{
                           width: "100%",
                           padding: "8px",
@@ -768,228 +713,318 @@ export default function TpCentreRegistration() {
                       />,
                     ),
                     row(
-                      `rd_${i}`,
-                      "Action",
-                      <button
-                        className="tp-btn-danger"
-                        onClick={() =>
-                          setRooms(rooms.filter((_, idx) => idx !== i))
+                      "cap",
+                      "Avg Training Hall Capacity",
+                      <input
+                        type="number"
+                        min="1"
+                        value={centre.training_hall_capacity}
+                        className="input-blue"
+                        onChange={(e) =>
+                          setCentre({
+                            ...centre,
+                            training_hall_capacity: e.target.value,
+                          })
                         }
-                      >
-                        <FaTrash /> Delete
-                      </button>,
+                        style={{
+                          width: "100%",
+                          padding: "8px",
+                        }}
+                      />,
                     ),
                   ],
-                  `room_${i}`,
-                ),
-              )}
+                  "rooms-main",
+                )}
 
-              <button
-                className="tp-btn"
-                onClick={() => setRooms([...rooms, { ...EMPTY_ROOM }])}
-              >
-                <FaPlus /> Add Room
-              </button>
-            </>
-          )}
-
-          {/* ===================== MEDIA ===================== */}
-          {step === 4 && (
-            <>
-              {media.map((m, i) =>
-                table(
-                  [
-                    row(
-                      `mc_${i}`,
-                      "Media Category",
-                      <select
-                        value={m.category}
-                        className="input-blue"
-                        onChange={(e) => {
-                          const c = [...media];
-                          c[i].category = e.target.value;
-                          setMedia(c);
-                        }}
-                      >
-                        {[
-                          "FOODING",
-                          "TOILET",
-                          "CENTRE_FRONT",
-                          "HOSTEL",
-                          "CCTV_SECURITY",
-                          "ACTIVITY_HALL",
-                          "OTHER",
-                        ].map((x) => (
-                          <option key={x} value={x}>
-                            {x}
-                          </option>
-                        ))}
-                      </select>,
-                    ),
-
-                    row(
-                      `mf_${i}`,
-                      "Upload File",
-                      <>
-                        {/* Existing file preview (ONLY when no new file selected) */}
-                        {m.id && !m.file && (
-                          <div style={{ marginBottom: 6 }}>
-                            <button
-                              onClick={async () => {
-                                try {
-                                  const response = await api.get(
-                                    `/tms/submissions/${m.id}/download/`,
-                                    { responseType: "blob" },
-                                  );
-
-                                  const disposition =
-                                    response.headers["content-disposition"];
-                                  let filename = "download";
-
-                                  if (disposition) {
-                                    const match =
-                                      disposition.match(/filename="(.+)"/);
-                                    if (match?.[1]) {
-                                      filename = match[1];
-                                    }
-                                  }
-
-                                  const blob = new Blob([response.data]);
-                                  const url = window.URL.createObjectURL(blob);
-
-                                  const link = document.createElement("a");
-                                  link.href = url;
-                                  link.download = filename;
-
-                                  document.body.appendChild(link);
-                                  link.click();
-                                  link.remove();
-                                  window.URL.revokeObjectURL(url);
-                                } catch (err) {
-                                  console.error("Download failed", err);
-                                }
-                              }}
-                            >
-                              <FaDownload /> Download existing file
-                            </button>
-                          </div>
-                        )}
-
-                        {/* New file upload */}
-                        <input
-                          type="file"
-                          accept=".jpg,.jpeg,.pdf"
-                          onChange={(e) => {
-                            const file = e.target.files[0];
-                            if (!file) return;
-
-                            const allowed = [
-                              "image/jpeg",
-                              "image/jpg",
-                              "application/pdf",
-                            ];
-
-                            if (!allowed.includes(file.type)) {
-                              alert("Only JPG or PDF files are allowed");
-                              e.target.value = "";
-                              return;
-                            }
-
-                            const c = [...media];
-                            c[i].file = file; //  new file set
-                            c[i].existing_url = null; //  hide old file
-                            setMedia(c);
-                          }}
-                        />
-                      </>,
-                    ),
-                    row(
-                      `mn_${i}`,
-                      "Notes",
-                      <>
+                {rooms.map((r, i) =>
+                  table(
+                    [
+                      row(
+                        `rn_${i}`,
+                        "Hall Name",
                         <textarea
-                          maxLength={300}
-                          value={m.notes}
+                          value={r.room_name}
+                          className="input-blue"
+                          onChange={(e) => {
+                            const c = [...rooms];
+                            c[i].room_name = e.target.value;
+                            setRooms(c);
+                          }}
+                        />,
+                      ),
+                      row(
+                        `rc_${i}`,
+                        "Hall Capacity",
+                        <input
+                          type="number"
+                          min="1"
+                          value={r.room_capacity}
+                          className="input-blue"
+                          onChange={(e) => {
+                            const c = [...rooms];
+                            c[i].room_capacity = e.target.value;
+                            setRooms(c);
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "8px",
+                          }}
+                        />,
+                      ),
+                      row(
+                        `rd_${i}`,
+                        "Action",
+                        <button
+                          className="tp-btn-danger"
+                          onClick={() =>
+                            setRooms(rooms.filter((_, idx) => idx !== i))
+                          }
+                        >
+                          <FaTrash /> Delete
+                        </button>,
+                      ),
+                    ],
+                    `room_${i}`,
+                  ),
+                )}
+
+                <button
+                  className="tp-btn"
+                  onClick={() => setRooms([...rooms, { ...EMPTY_ROOM }])}
+                >
+                  <FaPlus /> Add Room
+                </button>
+              </>
+            )}
+
+            {/* ===================== MEDIA ===================== */}
+            {step === 4 && (
+              <>
+                {media.map((m, i) =>
+                  table(
+                    [
+                      row(
+                        `mc_${i}`,
+                        "Media Category",
+                        <select
+                          value={m.category}
                           className="input-blue"
                           onChange={(e) => {
                             const c = [...media];
-                            c[i].notes = e.target.value;
+                            c[i].category = e.target.value;
                             setMedia(c);
                           }}
-                        />
-                        <small>{m.notes.length}/300</small>
-                      </>,
-                    ),
-                    row(
-                      `md_${i}`,
-                      "Action",
-                      <button
-                        className="tp-btn-danger"
-                        onClick={async () => {
-                          if (m.id) {
-                            await TMS_API.trainingPartnerSubmissions.destroy(
-                              m.id,
-                            );
-                          }
+                        >
+                          {[
+                            "FOODING",
+                            "TOILET",
+                            "CENTRE_FRONT",
+                            "HOSTEL",
+                            "CCTV_SECURITY",
+                            "ACTIVITY_HALL",
+                            "OTHER",
+                          ].map((x) => (
+                            <option key={x} value={x}>
+                              {x}
+                            </option>
+                          ))}
+                        </select>,
+                      ),
 
-                          setMedia(media.filter((_, idx) => idx !== i));
-                        }}
-                      >
-                        <FaTrash /> Delete
-                      </button>,
-                    ),
-                  ],
-                  `media_${i}`,
-                ),
-              )}
+                      row(
+                        `mf_${i}`,
+                        "Upload File",
+                        <>
+                          {/* Existing file preview (ONLY when no new file selected) */}
+                          {m.id && !m.file && (
+                            <div style={{ marginBottom: 6 }}>
+                              <button
+                                onClick={async () => {
+                                  try {
+                                    const response = await api.get(
+                                      `/tms/submissions/${m.id}/download/`,
+                                      { responseType: "blob" },
+                                    );
 
-              <button
-                className="tp-btn"
-                onClick={() => setMedia([...media, { ...EMPTY_MEDIA }])}
-              >
-                <FaPlus /> Add Media
-              </button>
-            </>
-          )}
+                                    const disposition =
+                                      response.headers["content-disposition"];
+                                    let filename = "download";
 
-          {/* ===================== ACTIONS ===================== */}
-          <div style={{ textAlign: "right", marginTop: 20 }}>
-            {step > 0 && (
-              <button
-                className="tp-btn-outline"
-                onClick={() => setStep(step - 1)}
-              >
-                <FaArrowLeft /> Back
-              </button>
-            )}{" "}
-            {step < STEPS.length - 1 ? (
-              <button className="tp-btn" onClick={() => setStep(step + 1)}>
-                Next <FaArrowRight />
-              </button>
-            ) : (
-              <button
-                className="tp-btn"
-                disabled={submitting}
-                onClick={() => setConfirmOpen(true)}
-              >
-                <FaCheck /> Register Centre
-              </button>
+                                    if (disposition) {
+                                      const match =
+                                        disposition.match(/filename="(.+)"/);
+                                      if (match?.[1]) {
+                                        filename = match[1];
+                                      }
+                                    }
+
+                                    const blob = new Blob([response.data]);
+                                    const url = window.URL.createObjectURL(blob);
+
+                                    const link = document.createElement("a");
+                                    link.href = url;
+                                    link.download = filename;
+
+                                    document.body.appendChild(link);
+                                    link.click();
+                                    link.remove();
+                                    window.URL.revokeObjectURL(url);
+                                  } catch (err) {
+                                    console.error("Download failed", err);
+                                  }
+                                }}
+                              >
+                                <FaDownload /> Download existing file
+                              </button>
+                            </div>
+                          )}
+
+                          {/* New file upload */}
+                          <input
+                            type="file"
+                            accept=".jpg,.jpeg,.pdf"
+                            onChange={(e) => {
+                              const file = e.target.files[0];
+                              if (!file) return;
+
+                              const allowed = [
+                                "image/jpeg",
+                                "image/jpg",
+                                "application/pdf",
+                              ];
+
+                              if (!allowed.includes(file.type)) {
+                                alert("Only JPG or PDF files are allowed");
+                                e.target.value = "";
+                                return;
+                              }
+
+                              const c = [...media];
+                              c[i].file = file; //  new file set
+                              c[i].existing_url = null; //  hide old file
+                              setMedia(c);
+                            }}
+                          />
+                        </>,
+                      ),
+                      row(
+                        `mn_${i}`,
+                        "Notes",
+                        <>
+                          <textarea
+                            maxLength={300}
+                            value={m.notes}
+                            className="input-blue"
+                            onChange={(e) => {
+                              const c = [...media];
+                              c[i].notes = e.target.value;
+                              setMedia(c);
+                            }}
+                          />
+                          <small>{m.notes.length}/300</small>
+                        </>,
+                      ),
+                      row(
+                        `md_${i}`,
+                        "Action",
+                        <button
+                          className="tp-btn-danger"
+                          onClick={async () => {
+                            if (m.id) {
+                              await TMS_API.trainingPartnerSubmissions.destroy(
+                                m.id,
+                              );
+                            }
+
+                            setMedia(media.filter((_, idx) => idx !== i));
+                          }}
+                        >
+                          <FaTrash /> Delete
+                        </button>,
+                      ),
+                    ],
+                    `media_${i}`,
+                  ),
+                )}
+
+                <button
+                  className="tp-btn"
+                  onClick={() => setMedia([...media, { ...EMPTY_MEDIA }])}
+                >
+                  <FaPlus /> Add Media
+                </button>
+              </>
             )}
+
+            {/* ===================== ACTIONS ===================== */}
+            <div style={{ textAlign: "right", marginTop: 20 }}>
+              {step > 0 && (
+                <button
+                  className="tp-btn-outline"
+                  onClick={() => setStep(step - 1)}
+                >
+                  <FaArrowLeft /> Back
+                </button>
+              )}{" "}
+              {step < STEPS.length - 1 ? (
+                <button className="tp-btn" onClick={() => setStep(step + 1)}>
+                  Next <FaArrowRight />
+                </button>
+              ) : (
+                <button
+                  className="tp-btn"
+                  disabled={submitting}
+                  onClick={() => setConfirmOpen(true)}
+                >
+                  <FaCheck /> Register Centre
+                </button>
+              )}
+            </div>
+          </main>
+          <div style={{ padding: 18, margin: "0 auto" }}>
+            <ConfirmModal
+              open={confirmOpen}
+              payload={{ centre, rooms, media, centreId }}
+              submitting={submitting}
+              onClose={() => setConfirmOpen(false)}
+              onConfirm={handleConfirmSubmit}
+            />
           </div>
-        </main>
-        <div style={{ padding: 18, maxWidth: 1100, margin: "0 auto" }}>
-          <ConfirmModal
-            open={confirmOpen}
-            payload={{ centre, rooms, media, centreId }}
-            submitting={submitting}
-            onClose={() => setConfirmOpen(false)}
-            onConfirm={handleConfirmSubmit}
-          />
+          <Footer />
         </div>
       </div>
 
       {/* Confirm Modal */}
       <style>{`
+
+
+/* MAIN CONTENT AREA */
+.content-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* ===== MAIN AREA ===== */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;   /* overflow fix */
+}
+
+/* ===== MAIN CONTENT ===== */
+.main-area main {
+  flex: 1;   /*  pushes footer down */
+}
+
+/* ===== FOOTER FIX ===== */
+footer {
+  margin-top: auto;   /*  footer always bottom */
+  flex-shrink: 0;
+}
+
+
 
 .input-blue {
   width: 100%;
