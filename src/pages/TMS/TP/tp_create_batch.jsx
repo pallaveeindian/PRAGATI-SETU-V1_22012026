@@ -2,6 +2,8 @@
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useParams } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { useNavigate } from "react-router-dom";
@@ -703,27 +705,27 @@ function CombinedParticipantSelector({
       const list =
         trainingReq.training_type === "BENEFICIARY"
           ? resp.data.beneficiary_registrations.map((x) => ({
-              ...x,
-              // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
-              // tr_participation_id: x.id,
-              // training: tr.id,
-              // _uid: `trp-${x.id}`,
-              id: x.id, // Primary Key of TRBeneficiary
-              training: tr.id,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-            }))
+            ...x,
+            // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
+            // tr_participation_id: x.id,
+            // training: tr.id,
+            // _uid: `trp-${x.id}`,
+            id: x.id, // Primary Key of TRBeneficiary
+            training: tr.id,
+            _uid: `trp-${x.id}`, // ✅ Standardized UID
+            // _uid: `reg-${x.id}`
+          }))
           : resp.data.trainer_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary Key of TRTrainer
-              training: tr.id,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
-              // tr_participation_id: x.id,
-              // training: tr.id,
-              // _uid: `trp-${x.id}`,
-            }));
+            ...x,
+            id: x.id, // Primary Key of TRTrainer
+            training: tr.id,
+            _uid: `trp-${x.id}`, // ✅ Standardized UID
+            // _uid: `reg-${x.id}`
+            // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
+            // tr_participation_id: x.id,
+            // training: tr.id,
+            // _uid: `trp-${x.id}`,
+          }));
 
       setParticipantCache((old) => ({
         ...old,
@@ -1131,8 +1133,7 @@ function BatchSubmitSection({
     // Only fail if there are ACTUALLY missing participants from the base TR
     if (missingCount > 0) {
       alert(
-        `${missingCount} participant${
-          missingCount > 1 ? "s" : ""
+        `${missingCount} participant${missingCount > 1 ? "s" : ""
         } left to select`,
       );
       return false;
@@ -1393,28 +1394,28 @@ export default function TpCreateBatch() {
         const list =
           r.data.training_type === "BENEFICIARY"
             ? r.data.beneficiary_registrations.map((x) => ({
-                ...x,
-                id: x.id, // Primary key of TRBeneficiary
-                training: requestId,
-                _uid: `trp-${x.id}`, // ✅ Standardized UID
-                // _uid: `reg-${x.id}`
-                // id: x.beneficiary,
-                // tr_participation_id: x.id,
-                // training: requestId,
-                // // _uid: `${requestId}-${x.beneficiary}`,
-                // _uid: `trp-${x.id}`
-              }))
+              ...x,
+              id: x.id, // Primary key of TRBeneficiary
+              training: requestId,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+              // id: x.beneficiary,
+              // tr_participation_id: x.id,
+              // training: requestId,
+              // // _uid: `${requestId}-${x.beneficiary}`,
+              // _uid: `trp-${x.id}`
+            }))
             : r.data.trainer_registrations.map((x) => ({
-                ...x,
-                id: x.id, // Primary key of TRTrainer
-                training: requestId,
-                _uid: `trp-${x.id}`, // ✅ Standardized UID
-                // _uid: `reg-${x.id}`
-                // id: x.trainer,
-                // tr_participation_id: x.id,
-                // training: requestId,
-                // _uid: `${requestId}-${x.trainer}`,
-              }));
+              ...x,
+              id: x.id, // Primary key of TRTrainer
+              training: requestId,
+              _uid: `trp-${x.id}`, // ✅ Standardized UID
+              // _uid: `reg-${x.id}`
+              // id: x.trainer,
+              // tr_participation_id: x.id,
+              // training: requestId,
+              // _uid: `${requestId}-${x.trainer}`,
+            }));
 
         seed[`tr-${requestId}`] = {
           list,
@@ -1444,7 +1445,7 @@ export default function TpCreateBatch() {
         const existing = (resp?.data?.results || []).filter(
           (b) => b.is_active === true,
         );
-        
+
         if (!existing.length) {
           setBatches([]);
           return;
@@ -1741,12 +1742,14 @@ export default function TpCreateBatch() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               {isReviewMode ? "Review & Modify Batches" : "Create Batches"}
@@ -1754,429 +1757,436 @@ export default function TpCreateBatch() {
           }
         /> */}
 
-        <main
-          style={{
-            padding: 18,
-            minHeight: "100vh", // UPDATED UI
-          }}
-        >
-          {loadingTR ? (
-            <p>Loading Training Request…</p>
-          ) : !trainingReq ? (
-            <p>Training Request not found</p>
-          ) : (
-            <>
-              {/* TRAINING REQUEST SUMMARY */}
-              <div
-                className="card"
-                style={{
-                  background: "#fff", // UPDATED UI
-                  borderRadius: 10, // UPDATED UI
-                  padding: 20, // UPDATED UI
-                  borderLeft: "6px solid #3d6ba6", // UPDATED UI
-                  boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                }}
-              >
-                <h3 style={{ color: "#2b4e72" }}>
-                  {trainingReq.training_plan.training_name}
-                </h3>
-
-                <p>
-                  Theme: <b style={{ color: "#3d6ba6" }}>{themeName}</b>
-                </p>
-
-                <p>
-                  Type: <b>{trainingReq.training_type}</b> | Level:{" "}
-                  <b>{trainingReq.level}</b> | Status:{" "}
-                  <b style={{ color: "#3d6ba6" }}>{trainingReq.status}</b>
-                </p>
-
-                <p>
-                  Location:{" "}
-                  <b>
-                    {trainingReq.district?.district_name_en} /{" "}
-                    {trainingReq.block?.block_name_en}
-                  </b>
-                </p>
-              </div>
-
-              {/* ADD BATCH BUTTON */}
-              <div style={{ marginTop: 16, marginBottom: 8 }}>
-                <button
-                  className="btn btnPrimary"
+          <main
+            style={{
+              padding: 18,
+              minHeight: "100vh", // UPDATED UI
+            }}
+          >
+            {loadingTR ? (
+              <p>Loading Training Request…</p>
+            ) : !trainingReq ? (
+              <p>Training Request not found</p>
+            ) : (
+              <>
+                {/* TRAINING REQUEST SUMMARY */}
+                <div
+                  className="card"
                   style={{
-                    background: "#3d6ba6", // UPDATED UI
-                    border: "none",
-                    color: "#fff",
+                    background: "#fff", // UPDATED UI
+                    borderRadius: 10, // UPDATED UI
+                    padding: 20, // UPDATED UI
+                    borderLeft: "6px solid #3d6ba6", // UPDATED UI
+                    boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
                   }}
-                  onClick={addBatch}
                 >
-                  + Add Batch
-                </button>
-              </div>
+                  <h3 style={{ color: "#2b4e72" }}>
+                    {trainingReq.training_plan.training_name}
+                  </h3>
 
-              {batches.map((batch) => {
-                const perBatchSel = participantSelections[batch.key] || {};
-                const selectedList = Array.from(
-                  new Map(
-                    Object.values(perBatchSel)
-                      .flat()
-                      .map((p) => [p._uid, p]),
-                  ).values(),
-                );
+                  <p>
+                    Theme: <b style={{ color: "#3d6ba6" }}>{themeName}</b>
+                  </p>
 
-                const count = selectedList.length;
+                  <p>
+                    Type: <b>{trainingReq.training_type}</b> | Level:{" "}
+                    <b>{trainingReq.level}</b> | Status:{" "}
+                    <b style={{ color: "#3d6ba6" }}>{trainingReq.status}</b>
+                  </p>
 
-                return (
-                  <div
-                    key={batch.key}
-                    className="card"
+                  <p>
+                    Location:{" "}
+                    <b>
+                      {trainingReq.district?.district_name_en} /{" "}
+                      {trainingReq.block?.block_name_en}
+                    </b>
+                  </p>
+                </div>
+
+                {/* ADD BATCH BUTTON */}
+                <div style={{ marginTop: 16, marginBottom: 8 }}>
+                  <button
+                    className="btn btnPrimary"
                     style={{
-                      marginTop: 12,
-                      background: "#fff", // UPDATED UI
-                      borderRadius: 10,
-                      padding: 18,
-                      boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                      borderLeft: "6px solid #5a8cc2", // UPDATED UI
+                      background: "#3d6ba6", // UPDATED UI
+                      border: "none",
+                      color: "#fff",
                     }}
+                    onClick={addBatch}
                   >
-                    {/* BATCH HEADER */}
+                    + Add Batch
+                  </button>
+                </div>
+
+                {batches.map((batch) => {
+                  const perBatchSel = participantSelections[batch.key] || {};
+                  const selectedList = Array.from(
+                    new Map(
+                      Object.values(perBatchSel)
+                        .flat()
+                        .map((p) => [p._uid, p]),
+                    ).values(),
+                  );
+
+                  const count = selectedList.length;
+
+                  return (
                     <div
+                      key={batch.key}
+                      className="card"
                       style={{
-                        display: "flex",
-                        alignItems: "center",
-                        cursor: "pointer",
-                      }}
-                      onClick={() => {
-                        activeBatchKeyRef.current = batch.key;
-                        updateBatch(batch.key, { expanded: !batch.expanded });
+                        marginTop: 12,
+                        background: "#fff", // UPDATED UI
+                        borderRadius: 10,
+                        padding: 18,
+                        boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                        borderLeft: "6px solid #5a8cc2", // UPDATED UI
                       }}
                     >
-                      <h4
+                      {/* BATCH HEADER */}
+                      <div
                         style={{
-                          margin: 0,
-                          flex: 1,
-                          color: "#2b4e72", // UPDATED UI
+                          display: "flex",
+                          alignItems: "center",
+                          cursor: "pointer",
+                        }}
+                        onClick={() => {
+                          activeBatchKeyRef.current = batch.key;
+                          updateBatch(batch.key, { expanded: !batch.expanded });
                         }}
                       >
-                        {batch.title}
-                        <span style={{ fontSize: 12, color: "#5a8cc2" }}>
-                          {" "}
-                          ({count} participants)
-                        </span>
-                      </h4>
-
-                      {batches.length > 1 && (
-                        <button
-                          className="btn-sm btn-outline"
+                        <h4
                           style={{
-                            borderColor: "#3d6ba6", // UPDATED UI
-                            color: "#3d6ba6",
-                          }}
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            removeBatch(batch.key);
+                            margin: 0,
+                            flex: 1,
+                            color: "#2b4e72", // UPDATED UI
                           }}
                         >
-                          Delete
-                        </button>
-                      )}
+                          {batch.title}
+                          <span style={{ fontSize: 12, color: "#5a8cc2" }}>
+                            {" "}
+                            ({count} participants)
+                          </span>
+                        </h4>
 
-                      <span style={{ marginLeft: 8 }}>
-                        {batch.expanded ? "▲" : "▼"}
-                      </span>
-                    </div>
-
-                    {/* BATCH CONTENT */}
-                    {batch.expanded && (
-                      <div style={{ marginTop: 12 }}>
-                        {/* BATCH TYPE */}
-                        <div
-                          className="card"
-                          style={{
-                            marginTop: 8,
-                            padding: 16,
-                            borderRadius: 8,
-                            background: "#f8fbff", // UPDATED UI
-                          }}
-                        >
-                          <label>Batch Type</label>
-
-                          <select
-                            className="input"
-                            value={batch.batchType}
-                            onChange={(e) =>
-                              updateBatch(
-                                batch.key,
-                                { batchType: e.target.value },
-                                true,
-                              )
-                            }
+                        {batches.length > 1 && (
+                          <button
+                            className="btn-sm btn-outline"
+                            style={{
+                              borderColor: "#3d6ba6", // UPDATED UI
+                              color: "#3d6ba6",
+                            }}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              removeBatch(batch.key);
+                            }}
                           >
-                            <option value="">-- Select --</option>
-                            <option value="SEPARATE">Separate</option>
-                            <option value="COMBINED">Combined</option>
-                          </select>
-                        </div>
+                            Delete
+                          </button>
+                        )}
 
-                        {/* PARTICIPANT TABLE */}
-                        <ParticipantTable
-                          trId={requestId}
-                          title="Participants from this Training Request"
-                          cache={participantCache}
-                          setCache={setParticipantCache}
-                          selected={participantSelections}
-                          setSelected={setParticipantSelections}
-                          trainingType={trainingReq.training_type}
-                          batchKey={batch.key}
-                          blockNamesCache={blockNamesCache}
-                          setBlockNamesCache={setBlockNamesCache}
-                          markBatchTouched={markBatchTouched}
-                          isReviewMode={isReviewMode}
-                          usedUidsAcrossBatches={usedUidsAcrossBatches}
-                        />
-                        {batch.batchType === "COMBINED" && (
-                          <CombinedParticipantSelector
-                            trainingReq={trainingReq}
-                            participantCache={participantCache}
-                            setParticipantCache={setParticipantCache}
-                            selectedParticipants={participantSelections}
-                            setSelectedParticipants={setParticipantSelections}
+                        <span style={{ marginLeft: 8 }}>
+                          {batch.expanded ? "▲" : "▼"}
+                        </span>
+                      </div>
+
+                      {/* BATCH CONTENT */}
+                      {batch.expanded && (
+                        <div style={{ marginTop: 12 }}>
+                          {/* BATCH TYPE */}
+                          <div
+                            className="card"
+                            style={{
+                              marginTop: 8,
+                              padding: 16,
+                              borderRadius: 8,
+                              background: "#f8fbff", // UPDATED UI
+                            }}
+                          >
+                            <label>Batch Type</label>
+
+                            <select
+                              className="input"
+                              value={batch.batchType}
+                              onChange={(e) =>
+                                updateBatch(
+                                  batch.key,
+                                  { batchType: e.target.value },
+                                  true,
+                                )
+                              }
+                            >
+                              <option value="">-- Select --</option>
+                              <option value="SEPARATE">Separate</option>
+                              <option value="COMBINED">Combined</option>
+                            </select>
+                          </div>
+
+                          {/* PARTICIPANT TABLE */}
+                          <ParticipantTable
+                            trId={requestId}
+                            title="Participants from this Training Request"
+                            cache={participantCache}
+                            setCache={setParticipantCache}
+                            selected={participantSelections}
+                            setSelected={setParticipantSelections}
+                            trainingType={trainingReq.training_type}
                             batchKey={batch.key}
                             blockNamesCache={blockNamesCache}
                             setBlockNamesCache={setBlockNamesCache}
                             markBatchTouched={markBatchTouched}
+                            isReviewMode={isReviewMode}
                             usedUidsAcrossBatches={usedUidsAcrossBatches}
                           />
-                        )}
-                        {/* SELECTED PARTICIPANTS */}
-                        {selectedList.length > 0 && (
+                          {batch.batchType === "COMBINED" && (
+                            <CombinedParticipantSelector
+                              trainingReq={trainingReq}
+                              participantCache={participantCache}
+                              setParticipantCache={setParticipantCache}
+                              selectedParticipants={participantSelections}
+                              setSelectedParticipants={setParticipantSelections}
+                              batchKey={batch.key}
+                              blockNamesCache={blockNamesCache}
+                              setBlockNamesCache={setBlockNamesCache}
+                              markBatchTouched={markBatchTouched}
+                              usedUidsAcrossBatches={usedUidsAcrossBatches}
+                            />
+                          )}
+                          {/* SELECTED PARTICIPANTS */}
+                          {selectedList.length > 0 && (
+                            <div
+                              className="card"
+                              style={{
+                                marginTop: 12,
+                                padding: 16,
+                                borderRadius: 8,
+                              }}
+                            >
+                              <h4 style={{ color: "#2b4e72" }}>
+                                Selected Participants for this Batch
+                              </h4>
+
+                              <div style={{ overflowX: "auto" }}>
+                                {/* UPDATED UI */}
+                                <table className="table table-compact">
+                                  <thead>
+                                    <tr>
+                                      <th>Name</th>
+                                      <th>Mobile</th>
+                                      <th>TR ID</th>
+                                      <th />
+                                    </tr>
+                                  </thead>
+
+                                  <tbody>
+                                    {selectedList.map((p) => (
+                                      <tr key={p._uid}>
+                                        <td>{p.full_name || p.member_name}</td>
+                                        <td>{p.mobile_no || p.mobile}</td>
+                                        <td>{p.training}</td>
+
+                                        <td>
+                                          <button
+                                            className="btn-sm btn-outline"
+                                            style={{
+                                              borderColor: "#3d6ba6",
+                                              color: "#3d6ba6",
+                                            }}
+                                            onClick={() =>
+                                              removeParticipantFromBatch(
+                                                batch.key,
+                                                p.training,
+                                                p,
+                                              )
+                                            }
+                                          >
+                                            Remove
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            </div>
+                          )}
+
+                          {/* ALLOT CENTRE */}
                           <div
                             className="card"
                             style={{
-                              marginTop: 12,
+                              marginTop: 16,
                               padding: 16,
-                              borderRadius: 8,
                             }}
                           >
-                            <h4 style={{ color: "#2b4e72" }}>
-                              Selected Participants for this Batch
-                            </h4>
+                            <h4 style={{ color: "#2b4e72" }}>Allot Centre</h4>
 
-                            <div style={{ overflowX: "auto" }}>
-                              {/* UPDATED UI */}
-                              <table className="table table-compact">
-                                <thead>
-                                  <tr>
-                                    <th>Name</th>
-                                    <th>Mobile</th>
-                                    <th>TR ID</th>
-                                    <th />
-                                  </tr>
-                                </thead>
+                            {loadingCentres ? (
+                              <p>Loading centres…</p>
+                            ) : centres.length === 0 ? (
+                              <p>
+                                No centres found. Please register a centre first.
+                              </p>
+                            ) : (
+                              <div style={{ overflowX: "auto" }}>
+                                {/* UPDATED UI */}
+                                <table className="table table-compact">
+                                  <thead>
+                                    <tr>
+                                      <th />
+                                      <th>Serial</th>
+                                      <th>Centre</th>
+                                      <th>Type</th>
+                                      <th>Training Halls</th>
+                                      <th />
+                                    </tr>
+                                  </thead>
 
-                                <tbody>
-                                  {selectedList.map((p) => (
-                                    <tr key={p._uid}>
-                                      <td>{p.full_name || p.member_name}</td>
-                                      <td>{p.mobile_no || p.mobile}</td>
-                                      <td>{p.training}</td>
+                                  <tbody>
+                                    {centres.map((c) => (
+                                      <tr key={c.id}>
+                                        <td>
+                                          <input
+                                            type="radio"
+                                            checked={
+                                              batch.centre?.id === c.id ||
+                                              batch.centre === c.id
+                                            }
+                                            onChange={() =>
+                                              updateBatch(
+                                                batch.key,
+                                                { centre: c },
+                                                true,
+                                              )
+                                            }
+                                          />
+                                        </td>
 
-                                      <td>
-                                        <button
-                                          className="btn-sm btn-outline"
+                                        <td>{c.serial_number}</td>
+
+                                        <td
                                           style={{
-                                            borderColor: "#3d6ba6",
+                                            cursor: "pointer",
                                             color: "#3d6ba6",
                                           }}
-                                          onClick={() =>
-                                            removeParticipantFromBatch(
-                                              batch.key,
-                                              p.training,
-                                              p,
-                                            )
-                                          }
-                                        >
-                                          Remove
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          </div>
-                        )}
-
-                        {/* ALLOT CENTRE */}
-                        <div
-                          className="card"
-                          style={{
-                            marginTop: 16,
-                            padding: 16,
-                          }}
-                        >
-                          <h4 style={{ color: "#2b4e72" }}>Allot Centre</h4>
-
-                          {loadingCentres ? (
-                            <p>Loading centres…</p>
-                          ) : centres.length === 0 ? (
-                            <p>
-                              No centres found. Please register a centre first.
-                            </p>
-                          ) : (
-                            <div style={{ overflowX: "auto" }}>
-                              {/* UPDATED UI */}
-                              <table className="table table-compact">
-                                <thead>
-                                  <tr>
-                                    <th />
-                                    <th>Serial</th>
-                                    <th>Centre</th>
-                                    <th>Type</th>
-                                    <th>Training Halls</th>
-                                    <th />
-                                  </tr>
-                                </thead>
-
-                                <tbody>
-                                  {centres.map((c) => (
-                                    <tr key={c.id}>
-                                      <td>
-                                        <input
-                                          type="radio"
-                                          checked={
-                                            batch.centre?.id === c.id ||
-                                            batch.centre === c.id
-                                          }
-                                          onChange={() =>
-                                            updateBatch(
-                                              batch.key,
-                                              { centre: c },
-                                              true,
-                                            )
-                                          }
-                                        />
-                                      </td>
-
-                                      <td>{c.serial_number}</td>
-
-                                      <td
-                                        style={{
-                                          cursor: "pointer",
-                                          color: "#3d6ba6",
-                                        }}
-                                        onClick={() => handleViewCentre(c.id)}
-                                      >
-                                        {c.venue_name}
-                                      </td>
-
-                                      <td>{c.centre_type}</td>
-
-                                      <td>{c.training_hall_count}</td>
-
-                                      <td>
-                                        <button
-                                          className="btn-sm btn-flat"
-                                          disabled={viewLoadingId === c.id}
                                           onClick={() => handleViewCentre(c.id)}
                                         >
-                                          {viewLoadingId === c.id
-                                            ? "Opening…"
-                                            : "View"}
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )}
-                        </div>
+                                          {c.venue_name}
+                                        </td>
 
-                        {/* START DATE */}
-                        <div
-                          className="card"
-                          style={{
-                            marginTop: 16,
-                            padding: 16,
-                          }}
-                        >
-                          <label>Start Date</label>
+                                        <td>{c.centre_type}</td>
 
-                          <input
-                            type="date"
-                            className="input"
-                            min={todayISO()}
-                            value={batch.startDate}
-                            onChange={(e) => {
-                              const sd = e.target.value;
-                              const today = todayISO();
+                                        <td>{c.training_hall_count}</td>
 
-                              if (sd < today) {
-                                alert("Start date cannot be before today");
-                                return;
-                              }
+                                        <td>
+                                          <button
+                                            className="btn-sm btn-flat"
+                                            disabled={viewLoadingId === c.id}
+                                            onClick={() => handleViewCentre(c.id)}
+                                          >
+                                            {viewLoadingId === c.id
+                                              ? "Opening…"
+                                              : "View"}
+                                          </button>
+                                        </td>
+                                      </tr>
+                                    ))}
+                                  </tbody>
+                                </table>
+                              </div>
+                            )}
+                          </div>
 
-                              if (isSunday(sd)) {
-                                alert("Start date cannot be a Sunday");
-                                return;
-                              }
+                          {/* START DATE */}
+                          <div
+                            className="card"
+                            style={{
+                              marginTop: 16,
+                              padding: 16,
+                            }}
+                          >
+                            <label>Start Date</label>
 
-                              const ed = trainingReq?.training_plan?.no_of_days
-                                ? calcEndDate(
+                            <input
+                              type="date"
+                              className="input"
+                              min={todayISO()}
+                              value={batch.startDate}
+                              onChange={(e) => {
+                                const sd = e.target.value;
+                                const today = todayISO();
+
+                                if (sd < today) {
+                                  alert("Start date cannot be before today");
+                                  return;
+                                }
+
+                                if (isSunday(sd)) {
+                                  alert("Start date cannot be a Sunday");
+                                  return;
+                                }
+
+                                const ed = trainingReq?.training_plan?.no_of_days
+                                  ? calcEndDate(
                                     sd,
                                     trainingReq.training_plan.no_of_days,
                                   )
-                                : "";
+                                  : "";
 
-                              updateBatch(
-                                batch.key,
-                                {
-                                  startDate: sd,
-                                  endDate: ed,
-                                },
-                                true,
-                              );
-                            }}
-                          />
+                                updateBatch(
+                                  batch.key,
+                                  {
+                                    startDate: sd,
+                                    endDate: ed,
+                                  },
+                                  true,
+                                );
+                              }}
+                            />
 
-                          {batch.endDate && (
-                            <p>
-                              End Date: <b>{batch.endDate}</b>
-                            </p>
-                          )}
+                            {batch.endDate && (
+                              <p>
+                                End Date: <b>{batch.endDate}</b>
+                              </p>
+                            )}
+                          </div>
                         </div>
-                      </div>
-                    )}
-                  </div>
-                );
-              })}
+                      )}
+                    </div>
+                  );
+                })}
 
-              {/* SUBMIT */}
-              <div style={{ marginTop: 16 }}>
-                <BatchSubmitSection
-                  disabled={globalErrors.length > 0}
-                  trainingReq={trainingReq}
-                  batches={batches}
-                  participantSelections={participantSelections}
-                  user={user}
-                  isReviewMode={isReviewMode}
-                  deletedParticipantIds={deletedParticipantIds}
-                  deletedBatchIds={deletedBatchIds}
-                />
-              </div>
-            </>
-          )}
-        </main>
-      </div>
+                {/* SUBMIT */}
+                <div style={{ marginTop: 16 }}>
+                  <BatchSubmitSection
+                    disabled={globalErrors.length > 0}
+                    trainingReq={trainingReq}
+                    batches={batches}
+                    participantSelections={participantSelections}
+                    user={user}
+                    isReviewMode={isReviewMode}
+                    deletedParticipantIds={deletedParticipantIds}
+                    deletedBatchIds={deletedBatchIds}
+                  />
+                </div>
+              </>
+            )}
+          </main>
+          <Footer />
+        </div>
 
-      <CentreViewModal
-        open={!!centrePreview}
-        data={centrePreview}
-        onClose={() => setCentrePreview(null)}
-      />
-      <style>{`.btnPrimary{
+        <CentreViewModal
+          open={!!centrePreview}
+          data={centrePreview}
+          onClose={() => setCentrePreview(null)}
+        />
+        <style>{`
+        .content-area {
+  display: flex;
+  flex: 1;              
+  min-width: 0;
+}
+        .btnPrimary{
   background:#3d6ba6;
   color:#fff;
   border:none;
@@ -2191,6 +2201,7 @@ export default function TpCreateBatch() {
   box-shadow:0 6px 12px rgba(0,0,0,0.15);
 }
 `}</style>
+      </div>
     </div>
   );
 }

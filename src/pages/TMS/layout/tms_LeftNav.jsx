@@ -579,17 +579,21 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
 /* Toggle */
 .tms-toggle {
   height: 40px;
+  width: 100%;              /*  IMPORTANT */
   border: none;
   background: #002073;
   border-top: 1px solid #e5e7eb;
   cursor: pointer;
   font-size: 14px;
   color: #fff;
-  transition: background 0.2s ease; ]
+  transition: background 0.2s ease;
+  display: flex;            /*  center alignment */
+  align-items: center;
+  justify-content: center;
 }
 
 .tms-toggle:hover {
-  background: #0a2a6b; ]
+  background: #0a2a6b; 
 }
 
 .nav-icon {
@@ -654,6 +658,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
 
 .tms-submenu-item:hover {
   background: #f1f5f9; 
+color: #002073;
   
 }
 

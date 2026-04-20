@@ -604,6 +604,29 @@ export default function BmmuTmsDashboard() {
   display: flex;
   align-items: center;
 }
+  .main-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* main content stretch kare */
+.dashboard-main {
+  flex: 1;
+}
+
+/* ===== FOOTER FIX ===== */
+.app-footer {
+  margin-top: auto;
+}
+
+/* OPTIONAL HEADER */
+.dashboard-header {
+  display: flex;
+  align-items: center;
+}
+
 .dashboard-title {
   color: #2b4e72;
 }

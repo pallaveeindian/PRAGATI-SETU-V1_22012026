@@ -9,6 +9,8 @@ import React, {
 } from "react";
 // import TopNav from "./layout/tms_TopNav";
 import LeftNav from "./layout/tms_LeftNav";
+import Header from "../../pages/TMS/layout/header";
+import Footer from "../../pages/TMS/layout/footer";
 import { AuthContext } from "../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API, EPSAKHI_API } from "../../api/axios";
 import ShgListTable from "../Dashboard/ShgListTable";
@@ -81,7 +83,7 @@ function resolveFinalDistrict({
           district = isNaN(Number(d)) ? d : Number(d);
           setDistrictId?.(district);
         }
-      } catch {}
+      } catch { }
     }
     return district;
   })();
@@ -1609,13 +1611,17 @@ export default function CreateTrainingRequest() {
   };
 
   return (
-    <div style={{ display: "flex", minHeight: "100vh", width: "100%" }}>
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+    <div style={{ minHeight: "100vh", width: "100%", display: "flex", flexDirection: "column" }}>
+
+
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Create Training Request
@@ -1623,482 +1629,365 @@ export default function CreateTrainingRequest() {
           }
         /> */}
 
-        <main style={{ padding: 18 }}>
-          <div
-            style={{
-              width: "100%",
-              margin: "20px 0",
-              padding: "0 12px",
-            }}
-          >
+          <main style={{ padding: 18, flex: 1 }}>
             <div
               style={{
-                display: "flex",
-                flexWrap: "wrap",
-                justifyContent: "space-between",
-                alignItems: "center",
-                gap: 16,
-                marginBottom: 24,
                 width: "100%",
-                boxSizing: "border-box",
+                margin: "20px 0",
+                padding: "0 12px",
               }}
             >
-              <div>
-                <div className="dashboard-header">
-                  <h2 className="dashboard-title">{roleMessage}</h2>
+              <div
+                style={{
+                  display: "flex",
+                  flexWrap: "wrap",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  gap: 16,
+                  marginBottom: 24,
+                  width: "100%",
+                  boxSizing: "border-box",
+                }}
+              >
+                <div>
+                  <div className="dashboard-header">
+                    <h2 className="dashboard-title">{roleMessage}</h2>
+                  </div>
+                  <h2 style={{ margin: 0, color: "#0369a1" }}>
+                    Create Training Request
+                  </h2>
                 </div>
-                <h2 style={{ margin: 0, color: "#0369a1" }}>
-                  Create Training Request
-                </h2>
-              </div>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button
-                  className="btnPrimaryHover"
-                  style={{ ...btnPrimary, color: "#111827" }}
-                  onClick={() => {
-                    // Clear caches and re-run preload (no page reload)
-                    localStorage.removeItem(TRP_SCOPE_CACHE);
-                    localStorage.removeItem(TRAIN_PLAN_CACHE);
-                    localStorage.removeItem(MASTER_TRAINERS_CACHE);
-                    localStorage.removeItem(TRAINING_THEMES_CACHE);
-                    // re-run minimal preload
-                    preloadAll();
-                  }}
-                >
-                  Refresh & Reload
-                </button>
-              </div>
-            </div>
-
-            {/* Stepper */}
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                marginBottom: 16,
-                alignItems: "center",
-              }}
-            >
-              {steps.map((s) => (
-                <div
-                  key={s.id}
-                  onClick={() => jumpToStep(s.id)}
-                  style={s.id === step ? stepActive : stepInactive}
-                  className="btnPrimaryHover"
-                >
-                  {s.title}
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  <button
+                    className="btnPrimaryHover"
+                    style={{ ...btnPrimary, color: "#111827" }}
+                    onClick={() => {
+                      // Clear caches and re-run preload (no page reload)
+                      localStorage.removeItem(TRP_SCOPE_CACHE);
+                      localStorage.removeItem(TRAIN_PLAN_CACHE);
+                      localStorage.removeItem(MASTER_TRAINERS_CACHE);
+                      localStorage.removeItem(TRAINING_THEMES_CACHE);
+                      // re-run minimal preload
+                      preloadAll();
+                    }}
+                  >
+                    Refresh & Reload
+                  </button>
                 </div>
-              ))}
-            </div>
+              </div>
 
-            <div
-              className="training-content"
-              style={{
-                display: "grid",
-                gap: 20,
-                width: "100%",
-              }}
-            >
-              {/* LEFT column */}
-              <div style={cardStyle}>
-                {/* Step content */}
-                {step === 1 && (
-                  <>
-                    <h3 style={headerGradient}>1 — Choose Training Plan</h3>
-                    <div style={{ marginBottom: 12 }}>
-                      <label
-                        style={{
-                          display: "block",
-                          fontWeight: 700,
-                          marginBottom: 6,
-                        }}
-                      >
-                        Training Plan (allowed for your role)
-                      </label>
+              {/* Stepper */}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  marginBottom: 16,
+                  alignItems: "center",
+                }}
+              >
+                {steps.map((s) => (
+                  <div
+                    key={s.id}
+                    onClick={() => jumpToStep(s.id)}
+                    style={s.id === step ? stepActive : stepInactive}
+                    className="btnPrimaryHover"
+                  >
+                    {s.title}
+                  </div>
+                ))}
+              </div>
 
-                      <select
-                        value={selectedPlan?.id || ""}
-                        onChange={(e) => {
-                          const id = e.target.value;
-                          const pl = plans.find(
-                            (p) => String(p.id) === String(id),
-                          );
-                          handlePlanSelect(pl || null);
-                        }}
-                        style={{
-                          width: "100%",
-                          maxWidth: "100%",
-                          padding: "10px",
-                          borderRadius: "6px",
-                          border: "2px solid #3d6ba6",
-                          outline: "none",
-                          fontSize: "14px",
-                          boxSizing: "border-box",
-                          background: "#fff",
-                        }}
-                      >
-                        <option value="">-- select training plan --</option>
+              <div
+                className="training-content"
+                style={{
+                  display: "grid",
+                  gap: 20,
+                  width: "100%",
+                }}
+              >
+                {/* LEFT column */}
+                <div style={cardStyle}>
+                  {/* Step content */}
+                  {step === 1 && (
+                    <>
+                      <h3 style={headerGradient}>1 — Choose Training Plan</h3>
+                      <div style={{ marginBottom: 12 }}>
+                        <label
+                          style={{
+                            display: "block",
+                            fontWeight: 700,
+                            marginBottom: 6,
+                          }}
+                        >
+                          Training Plan (allowed for your role)
+                        </label>
 
-                        {plans.map((p) => {
-                          const title =
-                            p.training_name ||
-                            p.training_plan_name ||
-                            p.trainingTitle ||
-                            p.name ||
-                            `Plan ${p.id}`;
+                        <select
+                          value={selectedPlan?.id || ""}
+                          onChange={(e) => {
+                            const id = e.target.value;
+                            const pl = plans.find(
+                              (p) => String(p.id) === String(id),
+                            );
+                            handlePlanSelect(pl || null);
+                          }}
+                          style={{
+                            width: "100%",
+                            maxWidth: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "2px solid #3d6ba6",
+                            outline: "none",
+                            fontSize: "14px",
+                            boxSizing: "border-box",
+                            background: "#fff",
+                          }}
+                        >
+                          <option value="">-- select training plan --</option>
 
-                          return (
-                            <option key={p.id} value={p.id}>
-                              {title}{" "}
-                              {p.level_of_training
-                                ? `(${p.level_of_training})`
-                                : ""}
-                            </option>
-                          );
-                        })}
-                      </select>
-                    </div>
+                          {plans.map((p) => {
+                            const title =
+                              p.training_name ||
+                              p.training_plan_name ||
+                              p.trainingTitle ||
+                              p.name ||
+                              `Plan ${p.id}`;
 
-                    {selectedPlan ? (
-                      <div
-                        style={{
-                          marginTop: 12,
-                          padding: 12,
-                          border: "1px solid #eef2f6",
-                          borderRadius: 6,
-                        }}
-                      >
-                        <h3 style={{ margin: "6px 0" }}>{selectedPlanTitle}</h3>
-                        <div style={{ color: "#6c757d", marginBottom: 8 }}>
-                          {selectedPlan.training_objective ||
-                            selectedPlan.description ||
-                            ""}
-                        </div>
+                            return (
+                              <option key={p.id} value={p.id}>
+                                {title}{" "}
+                                {p.level_of_training
+                                  ? `(${p.level_of_training})`
+                                  : ""}
+                              </option>
+                            );
+                          })}
+                        </select>
+                      </div>
+
+                      {selectedPlan ? (
                         <div
-                          style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+                          style={{
+                            marginTop: 12,
+                            padding: 12,
+                            border: "1px solid #eef2f6",
+                            borderRadius: 6,
+                          }}
                         >
-                          <div>
-                            <strong>Duration:</strong>{" "}
-                            {selectedPlan.no_of_days ?? "—"} days
+                          <h3 style={{ margin: "6px 0" }}>{selectedPlanTitle}</h3>
+                          <div style={{ color: "#6c757d", marginBottom: 8 }}>
+                            {selectedPlan.training_objective ||
+                              selectedPlan.description ||
+                              ""}
                           </div>
-                          <div>
-                            <strong>Type:</strong>{" "}
-                            {selectedPlan.type_of_training || "—"}
-                          </div>
-                          <div>
-                            <strong>Level:</strong>{" "}
-                            {selectedPlan.level_of_training || "—"}
-                          </div>
-                          <div>
-                            <strong>Theme:</strong>{" "}
-                            {selectedPlan.theme_name ||
-                              selectedTheme?.theme_name ||
-                              "—"}
+                          <div
+                            style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+                          >
+                            <div>
+                              <strong>Duration:</strong>{" "}
+                              {selectedPlan.no_of_days ?? "—"} days
+                            </div>
+                            <div>
+                              <strong>Type:</strong>{" "}
+                              {selectedPlan.type_of_training || "—"}
+                            </div>
+                            <div>
+                              <strong>Level:</strong>{" "}
+                              {selectedPlan.level_of_training || "—"}
+                            </div>
+                            <div>
+                              <strong>Theme:</strong>{" "}
+                              {selectedPlan.theme_name ||
+                                selectedTheme?.theme_name ||
+                                "—"}
+                            </div>
                           </div>
                         </div>
-                      </div>
-                    ) : (
-                      <div className="muted">
-                        Select a training plan to preview details and choose
-                        participants.
-                      </div>
-                    )}
-
-                    <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                      <button
-                        className="btnPrimaryHover"
-                        style={btnPrimary}
-                        onClick={() => goToNext()}
-                        disabled={!selectedPlan}
-                      >
-                        Next
-                      </button>
-                    </div>
-                  </>
-                )}
-
-                {step === 2 && (
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 12,
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div>
-                        <h3 style={headerGradient}>2 — Select Participants</h3>
+                      ) : (
                         <div className="muted">
-                          Choose beneficiaries (SHGs) or trainers depending on
-                          selection.
+                          Select a training plan to preview details and choose
+                          participants.
                         </div>
-                      </div>
-                      <div>
+                      )}
+
+                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
                         <button
                           className="btnPrimaryHover"
-                          style={btnOutline}
-                          onClick={goToPrev}
-                        >
-                          Back
-                        </button>
-                        <button
-                          style={{ ...btnPrimary, marginLeft: 8 }}
+                          style={btnPrimary}
                           onClick={() => goToNext()}
-                          className="btnPrimaryHover"
+                          disabled={!selectedPlan}
                         >
                           Next
                         </button>
                       </div>
-                    </div>
+                    </>
+                  )}
 
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 8,
-                        margin: "12px 0",
-                        alignItems: "center",
-                      }}
-                    >
-                      <label style={{ fontWeight: 700 }}>Applicable For</label>
-                      <select
-                        value={form.training_type}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setForm((f) => ({ ...f, training_type: val }));
-                          // If switching to TRAINER while on participants step, fetch trainers for user's district
-                          if (val === "TRAINER" && step === 2) {
-                            fetchMasterTrainersByDistrict(true);
-                          }
+                  {step === 2 && (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 12,
+                          alignItems: "center",
+                          justifyContent: "space-between",
                         }}
-                        style={{ outline: "2px solid #3d6ba6" }}
                       >
-                        <option value="BENEFICIARY">Beneficiary</option>
-                        <option value="TRAINER">Master Trainer</option>
-                      </select>
+                        <div>
+                          <h3 style={headerGradient}>2 — Select Participants</h3>
+                          <div className="muted">
+                            Choose beneficiaries (SHGs) or trainers depending on
+                            selection.
+                          </div>
+                        </div>
+                        <div>
+                          <button
+                            className="btnPrimaryHover"
+                            style={btnOutline}
+                            onClick={goToPrev}
+                          >
+                            Back
+                          </button>
+                          <button
+                            style={{ ...btnPrimary, marginLeft: 8 }}
+                            onClick={() => goToNext()}
+                            className="btnPrimaryHover"
+                          >
+                            Next
+                          </button>
+                        </div>
+                      </div>
 
-                      <label style={{ fontWeight: 700, marginLeft: 12 }}>
-                        Level
-                      </label>
-                      <select
-                        value={form.level}
-                        onChange={(e) =>
-                          setForm({ ...form, level: e.target.value })
-                        }
-                        style={{ outline: "2px solid #3d6ba6" }}
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 8,
+                          margin: "12px 0",
+                          alignItems: "center",
+                        }}
                       >
-                        <option value="BLOCK">Block</option>
-                        <option value="DISTRICT">District</option>
-                        <option value="STATE">State</option>
-                      </select>
-                    </div>
-
-                    {/* Render beneficiary vs trainer flows */}
-                    {form.training_type === "BENEFICIARY" ? (
-                      <>
-                        {/* sub-stepper for beneficiary flow */}
-                        <div
-                          style={{ display: "flex", gap: 8, marginBottom: 12 }}
+                        <label style={{ fontWeight: 700 }}>Applicable For</label>
+                        <select
+                          value={form.training_type}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setForm((f) => ({ ...f, training_type: val }));
+                            // If switching to TRAINER while on participants step, fetch trainers for user's district
+                            if (val === "TRAINER" && step === 2) {
+                              fetchMasterTrainersByDistrict(true);
+                            }
+                          }}
+                          style={{ outline: "2px solid #3d6ba6" }}
                         >
-                          {roleKey === "dmmu" && (
+                          <option value="BENEFICIARY">Beneficiary</option>
+                          <option value="TRAINER">Master Trainer</option>
+                        </select>
+
+                        <label style={{ fontWeight: 700, marginLeft: 12 }}>
+                          Level
+                        </label>
+                        <select
+                          value={form.level}
+                          onChange={(e) =>
+                            setForm({ ...form, level: e.target.value })
+                          }
+                          style={{ outline: "2px solid #3d6ba6" }}
+                        >
+                          <option value="BLOCK">Block</option>
+                          <option value="DISTRICT">District</option>
+                          <option value="STATE">State</option>
+                        </select>
+                      </div>
+
+                      {/* Render beneficiary vs trainer flows */}
+                      {form.training_type === "BENEFICIARY" ? (
+                        <>
+                          {/* sub-stepper for beneficiary flow */}
+                          <div
+                            style={{ display: "flex", gap: 8, marginBottom: 12 }}
+                          >
+                            {roleKey === "dmmu" && (
+                              <div
+                                onClick={() => setParticipantSubStep(0)}
+                                style={{
+                                  padding: "6px 10px",
+                                  borderRadius: 8,
+                                  background:
+                                    participantSubStep === 0
+                                      ? "#0b2540"
+                                      : "#f5f7fa",
+                                  color:
+                                    participantSubStep === 0 ? "#fff" : "#0b2540",
+                                  cursor: "pointer",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                1 — Block
+                              </div>
+                            )}
+
                             <div
-                              onClick={() => setParticipantSubStep(0)}
+                              onClick={() => {
+                                if (roleKey === "dmmu" && !blockId) return;
+                                setParticipantSubStep(1);
+                              }}
                               style={{
                                 padding: "6px 10px",
                                 borderRadius: 8,
                                 background:
-                                  participantSubStep === 0
+                                  participantSubStep === 1
                                     ? "#0b2540"
                                     : "#f5f7fa",
                                 color:
-                                  participantSubStep === 0 ? "#fff" : "#0b2540",
-                                cursor: "pointer",
+                                  participantSubStep === 1 ? "#fff" : "#0b2540",
+                                cursor:
+                                  roleKey === "dmmu" && !blockId
+                                    ? "not-allowed"
+                                    : "pointer",
+                                opacity: roleKey === "dmmu" && !blockId ? 0.5 : 1,
                                 fontWeight: 600,
                               }}
                             >
-                              1 — Block
+                              {roleKey === "dmmu"
+                                ? "2 — SHG list"
+                                : "1 — SHG list"}
                             </div>
-                          )}
-
-                          <div
-                            onClick={() => {
-                              if (roleKey === "dmmu" && !blockId) return;
-                              setParticipantSubStep(1);
-                            }}
-                            style={{
-                              padding: "6px 10px",
-                              borderRadius: 8,
-                              background:
-                                participantSubStep === 1
-                                  ? "#0b2540"
-                                  : "#f5f7fa",
-                              color:
-                                participantSubStep === 1 ? "#fff" : "#0b2540",
-                              cursor:
-                                roleKey === "dmmu" && !blockId
-                                  ? "not-allowed"
-                                  : "pointer",
-                              opacity: roleKey === "dmmu" && !blockId ? 0.5 : 1,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {roleKey === "dmmu"
-                              ? "2 — SHG list"
-                              : "1 — SHG list"}
-                          </div>
-
-                          <div
-                            onClick={() => {
-                              if (roleKey === "dmmu" && !selectedShgForMembers)
-                                return;
-                              setParticipantSubStep(2);
-                            }}
-                            style={{
-                              padding: "6px 10px",
-                              borderRadius: 8,
-                              background:
-                                participantSubStep === 2
-                                  ? "#0b2540"
-                                  : "#f5f7fa",
-                              color:
-                                participantSubStep === 2 ? "#fff" : "#0b2540",
-                              cursor:
-                                roleKey === "dmmu" && !selectedShgForMembers
-                                  ? "not-allowed"
-                                  : "pointer",
-                              opacity:
-                                roleKey === "dmmu" && !selectedShgForMembers
-                                  ? 0.5
-                                  : 1,
-                              fontWeight: 600,
-                            }}
-                          >
-                            {roleKey === "dmmu" ? "3 — Members" : "2 — Members"}
-                          </div>
-                        </div>
-
-                        {/* DMMU BLOCK SELECTION */}
-                        {roleKey === "dmmu" && participantSubStep === 0 && (
-                          <div>
-                            <h4>Select Block</h4>
 
                             <div
+                              onClick={() => {
+                                if (roleKey === "dmmu" && !selectedShgForMembers)
+                                  return;
+                                setParticipantSubStep(2);
+                              }}
                               style={{
-                                fontSize: 13,
-                                color: "#6c757d",
-                                marginBottom: 8,
+                                padding: "6px 10px",
+                                borderRadius: 8,
+                                background:
+                                  participantSubStep === 2
+                                    ? "#0b2540"
+                                    : "#f5f7fa",
+                                color:
+                                  participantSubStep === 2 ? "#fff" : "#0b2540",
+                                cursor:
+                                  roleKey === "dmmu" && !selectedShgForMembers
+                                    ? "not-allowed"
+                                    : "pointer",
+                                opacity:
+                                  roleKey === "dmmu" && !selectedShgForMembers
+                                    ? 0.5
+                                    : 1,
+                                fontWeight: 600,
                               }}
                             >
-                              Select a block to view SHGs under it.
+                              {roleKey === "dmmu" ? "3 — Members" : "2 — Members"}
                             </div>
-
-                            {blockLoading ? (
-                              <div className="table-spinner">
-                                Loading blocks…
-                              </div>
-                            ) : !blockList || blockList.length === 0 ? (
-                              <p className="muted">
-                                No blocks found for this district.
-                              </p>
-                            ) : (
-                              <div style={{ display: "grid", gap: 10 }}>
-                                {blockList.map((b) => (
-                                  <div
-                                    key={
-                                      b.id ??
-                                      b.block_id ??
-                                      `${b.block_name_en}-${b.district_id}`
-                                    }
-                                    onClick={() => {
-                                      setSelectedBlockForShg(b);
-                                      setBlockId(b.block_id);
-
-                                      // RESET downstream selections
-                                      setSelectedShgForMembers(null);
-                                      setMemberListReloadToken((t) => t + 1);
-
-                                      setParticipantSubStep(1); // go to SHG step
-                                    }}
-                                    style={{
-                                      padding: "14px 16px",
-                                      borderRadius: 12,
-                                      border:
-                                        selectedBlockForShg?.block_id ===
-                                        b.block_id
-                                          ? "2px solid #2563eb"
-                                          : "1px solid #e5e7eb",
-                                      cursor: "pointer",
-                                      background:
-                                        selectedBlockForShg?.block_id ===
-                                        b.block_id
-                                          ? "linear-gradient(135deg, #dbeafe, #eff6ff)"
-                                          : "#ffffff",
-                                      boxShadow:
-                                        selectedBlockForShg?.block_id ===
-                                        b.block_id
-                                          ? "0 6px 18px rgba(37, 99, 235, 0.25)"
-                                          : "0 2px 6px rgba(0,0,0,0.06)",
-                                      transition: "all 0.25s ease",
-                                      transform:
-                                        hover === b.block_id
-                                          ? "translateY(-4px) scale(1.02)"
-                                          : "none",
-                                    }}
-                                    onMouseEnter={() => setHover(b.block_id)}
-                                    onMouseLeave={() => setHover(null)}
-                                  >
-                                    <div
-                                      style={{
-                                        display: "flex",
-                                        justifyContent: "space-between",
-                                        alignItems: "center",
-                                      }}
-                                    >
-                                      <div>
-                                        <div
-                                          style={{
-                                            fontWeight: 700,
-                                            fontSize: 15,
-                                            color: "#1e293b",
-                                          }}
-                                        >
-                                          {b.block_name_en || b.name}
-                                        </div>
-                                        <div
-                                          style={{
-                                            fontSize: 12,
-                                            color: "#64748b",
-                                            marginTop: 2,
-                                          }}
-                                        >
-                                          Block ID: {b.block_id}
-                                        </div>
-                                      </div>
-
-                                      <div
-                                        style={{
-                                          fontSize: 11,
-                                          padding: "4px 8px",
-                                          borderRadius: 999,
-                                          background: "#e0f2fe",
-                                          color: "#0369a1",
-                                          fontWeight: 600,
-                                        }}
-                                      >
-                                        SELECT
-                                      </div>
-                                    </div>
-                                  </div>
-                                ))}
-                              </div>
-                            )}
                           </div>
-                        )}
 
-                        {participantSubStep === 1 &&
-                          (roleKey !== "dmmu" || selectedBlockForShg) && (
+                          {/* DMMU BLOCK SELECTION */}
+                          {roleKey === "dmmu" && participantSubStep === 0 && (
                             <div>
-                              <h4>SHG list</h4>
+                              <h4>Select Block</h4>
+
                               <div
                                 style={{
                                   fontSize: 13,
@@ -2106,260 +1995,424 @@ export default function CreateTrainingRequest() {
                                   marginBottom: 8,
                                 }}
                               >
-                                Select an SHG to view members. After selecting
-                                an SHG, go to member sub-step to pick members
-                                (or click a SHG member directly to jump).
+                                Select a block to view SHGs under it.
                               </div>
 
-                              {roleKey === "dmmu" && !blockId ? (
-                                <div className="muted">
-                                  Please select a block first.
+                              {blockLoading ? (
+                                <div className="table-spinner">
+                                  Loading blocks…
                                 </div>
+                              ) : !blockList || blockList.length === 0 ? (
+                                <p className="muted">
+                                  No blocks found for this district.
+                                </p>
                               ) : (
-                                <ShgListTable
-                                  blockId={blockId}
-                                  onSelectShg={(shg) => {
-                                    setSelectedShgLoading(true);
-                                    setSelectedShgForMembers(shg);
-                                    setParticipantSubStep(2);
-                                    setMemberListReloadToken((t) => t + 1);
-                                    setTimeout(
-                                      () => setSelectedShgLoading(false),
-                                      700,
-                                    );
-                                  }}
-                                />
+                                <div style={{ display: "grid", gap: 10 }}>
+                                  {blockList.map((b) => (
+                                    <div
+                                      key={
+                                        b.id ??
+                                        b.block_id ??
+                                        `${b.block_name_en}-${b.district_id}`
+                                      }
+                                      onClick={() => {
+                                        setSelectedBlockForShg(b);
+                                        setBlockId(b.block_id);
+
+                                        // RESET downstream selections
+                                        setSelectedShgForMembers(null);
+                                        setMemberListReloadToken((t) => t + 1);
+
+                                        setParticipantSubStep(1); // go to SHG step
+                                      }}
+                                      style={{
+                                        padding: "14px 16px",
+                                        borderRadius: 12,
+                                        border:
+                                          selectedBlockForShg?.block_id ===
+                                            b.block_id
+                                            ? "2px solid #2563eb"
+                                            : "1px solid #e5e7eb",
+                                        cursor: "pointer",
+                                        background:
+                                          selectedBlockForShg?.block_id ===
+                                            b.block_id
+                                            ? "linear-gradient(135deg, #dbeafe, #eff6ff)"
+                                            : "#ffffff",
+                                        boxShadow:
+                                          selectedBlockForShg?.block_id ===
+                                            b.block_id
+                                            ? "0 6px 18px rgba(37, 99, 235, 0.25)"
+                                            : "0 2px 6px rgba(0,0,0,0.06)",
+                                        transition: "all 0.25s ease",
+                                        transform:
+                                          hover === b.block_id
+                                            ? "translateY(-4px) scale(1.02)"
+                                            : "none",
+                                      }}
+                                      onMouseEnter={() => setHover(b.block_id)}
+                                      onMouseLeave={() => setHover(null)}
+                                    >
+                                      <div
+                                        style={{
+                                          display: "flex",
+                                          justifyContent: "space-between",
+                                          alignItems: "center",
+                                        }}
+                                      >
+                                        <div>
+                                          <div
+                                            style={{
+                                              fontWeight: 700,
+                                              fontSize: 15,
+                                              color: "#1e293b",
+                                            }}
+                                          >
+                                            {b.block_name_en || b.name}
+                                          </div>
+                                          <div
+                                            style={{
+                                              fontSize: 12,
+                                              color: "#64748b",
+                                              marginTop: 2,
+                                            }}
+                                          >
+                                            Block ID: {b.block_id}
+                                          </div>
+                                        </div>
+
+                                        <div
+                                          style={{
+                                            fontSize: 11,
+                                            padding: "4px 8px",
+                                            borderRadius: 999,
+                                            background: "#e0f2fe",
+                                            color: "#0369a1",
+                                            fontWeight: 600,
+                                          }}
+                                        >
+                                          SELECT
+                                        </div>
+                                      </div>
+                                    </div>
+                                  ))}
+                                </div>
                               )}
                             </div>
                           )}
 
-                        {participantSubStep === 2 && selectedShgForMembers && (
-                          <div>
-                            <h4>Members (selected SHG)</h4>
-                            <div
-                              style={{
-                                fontSize: 13,
-                                color: "#6c757d",
-                                marginBottom: 8,
-                              }}
-                            >
-                              Use PLD filter, search and pagination inside the
-                              member list. Check members to add them to
-                              selection. Once checked, items cannot be unchecked
-                              (use Remove in Review step).
-                            </div>
+                          {participantSubStep === 1 &&
+                            (roleKey !== "dmmu" || selectedBlockForShg) && (
+                              <div>
+                                <h4>SHG list</h4>
+                                <div
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#6c757d",
+                                    marginBottom: 8,
+                                  }}
+                                >
+                                  Select an SHG to view members. After selecting
+                                  an SHG, go to member sub-step to pick members
+                                  (or click a SHG member directly to jump).
+                                </div>
 
-                            {selectedShgLoading ? (
+                                {roleKey === "dmmu" && !blockId ? (
+                                  <div className="muted">
+                                    Please select a block first.
+                                  </div>
+                                ) : (
+                                  <ShgListTable
+                                    blockId={blockId}
+                                    onSelectShg={(shg) => {
+                                      setSelectedShgLoading(true);
+                                      setSelectedShgForMembers(shg);
+                                      setParticipantSubStep(2);
+                                      setMemberListReloadToken((t) => t + 1);
+                                      setTimeout(
+                                        () => setSelectedShgLoading(false),
+                                        700,
+                                      );
+                                    }}
+                                  />
+                                )}
+                              </div>
+                            )}
+
+                          {participantSubStep === 2 && selectedShgForMembers && (
+                            <div>
+                              <h4>Members (selected SHG)</h4>
                               <div
-                                className="table-spinner"
-                                style={{ padding: 12 }}
+                                style={{
+                                  fontSize: 13,
+                                  color: "#6c757d",
+                                  marginBottom: 8,
+                                }}
                               >
-                                Loading members…
+                                Use PLD filter, search and pagination inside the
+                                member list. Check members to add them to
+                                selection. Once checked, items cannot be unchecked
+                                (use Remove in Review step).
+                              </div>
+
+                              {selectedShgLoading ? (
+                                <div
+                                  className="table-spinner"
+                                  style={{ padding: 12 }}
+                                >
+                                  Loading members…
+                                </div>
+                              ) : (
+                                <div className="no-action">
+                                  <MemberListArea
+                                    selectedShg={selectedShgForMembers}
+                                    onToggleMember={async (member, checked) => {
+                                      const lokos_shg_code =
+                                        member.shg_code ||
+                                        member.lokos_shg_code ||
+                                        member.shg?.shg_code ||
+                                        (selectedShgForMembers &&
+                                          (selectedShgForMembers.shg_code ||
+                                            selectedShgForMembers.code));
+                                      const lokos_member_code =
+                                        member.member_code ||
+                                        member.lokos_member_code ||
+                                        member.memberCode ||
+                                        member.id;
+
+                                      if (!checked) {
+                                        // ignore uncheck attempts
+                                        return;
+                                      }
+
+                                      const already = selectedBeneficiaries.some(
+                                        (p) =>
+                                          String(p.lokos_member_code) ===
+                                          String(lokos_member_code) &&
+                                          String(p.lokos_shg_code) ===
+                                          String(lokos_shg_code),
+                                      );
+                                      if (already) return;
+
+                                      try {
+                                        const detail =
+                                          await fetchMemberDetailBestEffort(
+                                            member,
+                                          );
+                                        const merged = {
+                                          ...(detail || {}),
+                                          shg_code: lokos_shg_code,
+                                          member_code: lokos_member_code,
+                                        };
+                                        addSelectedMember(merged);
+                                      } catch (e) {
+                                        addSelectedMember({
+                                          ...member,
+                                          shg_code: lokos_shg_code,
+                                          member_code: lokos_member_code,
+                                        });
+                                      }
+                                    }}
+                                    reloadToken={memberListReloadToken}
+                                    selectedMemberCodes={selectedMemberCodesSet}
+                                  />
+                                </div>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      ) : (
+                        <div>
+                          {/* MasterTrainerList expects parent to have fetched trainers by district */}
+                          <MasterTrainerList
+                            // filters={{ district: districtId }}
+                            onToggleTrainer={onToggleTrainer}
+                            selectedIds={selectedTrainerIds}
+                            preloadedTrainers={preloadedTrainers}
+                            preloadReloadToken={preloadReloadToken}
+                            onRequestReload={() =>
+                              fetchMasterTrainersByDistrict(true)
+                            }
+                          />
+                        </div>
+                      )}
+                    </>
+                  )}
+
+                  {step === 3 && (
+                    <>
+                      <div
+                        style={{
+                          display: "flex",
+                          gap: 12,
+                          alignItems: "center",
+                          justifyContent: "space-between",
+                        }}
+                      >
+                        <div>
+                          <h3 style={{ marginTop: 0 }}>3 — Review & Submit</h3>
+                          <div className="muted">
+                            Preview payload and confirm submission.
+                          </div>
+                        </div>
+                        <div>
+                          <button
+                            className="btnPrimaryHover"
+                            style={btnPrimary}
+                            onClick={goToPrev}
+                          >
+                            Back
+                          </button>
+                          <button
+                            // style={btnPrimary}
+                            style={{ ...btnPrimary, marginLeft: 8 }}
+                            onClick={openPreview}
+                            className="btnPrimaryHover"
+                          >
+                            Preview & Confirm
+                          </button>
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                        <label style={{ display: "block", fontWeight: 700 }}>
+                          Training Plan
+                        </label>
+                        <div
+                          style={{
+                            padding: 8,
+                            background: "#f8fafc",
+                            borderRadius: 6,
+                          }}
+                        >
+                          {selectedPlan ? selectedPlanTitle : "(none selected)"}
+                        </div>
+                      </div>
+
+                      <div style={{ marginTop: 12 }}>
+                        <label style={{ display: "block", fontWeight: 700 }}>
+                          Partner
+                        </label>
+
+                        {roleKey === "bmmu" && autoPartnerAssigned ? (
+                          <div
+                            style={{
+                              padding: 8,
+                              background: "#fbfdff",
+                              borderRadius: 6,
+                            }}
+                          >
+                            {partners.find(
+                              (p) => String(p.id) === String(form.partner),
+                            )?.name || `Partner ID ${form.partner}`}
+                          </div>
+                        ) : (
+                          <div style={{ marginTop: 10 }}>
+                            <label style={{ fontWeight: 700 }}>
+                              Training Partner
+                            </label>
+
+                            {form.partner ? (
+                              <div
+                                style={{
+                                  marginTop: 6,
+                                  padding: "10px 12px",
+                                  borderRadius: 8,
+                                  background:
+                                    "linear-gradient(135deg, #ecfeff, #cffafe)",
+                                  border: "1px solid #06b6d4",
+                                  fontWeight: 600,
+                                  color: "#0c4a6e",
+                                }}
+                              >
+                                {partners.find(
+                                  (p) => String(p.id) === String(form.partner),
+                                )?.name || `Partner ID: ${form.partner}`}
                               </div>
                             ) : (
-                              <div className="no-action">
-                                <MemberListArea
-                                  selectedShg={selectedShgForMembers}
-                                  onToggleMember={async (member, checked) => {
-                                    const lokos_shg_code =
-                                      member.shg_code ||
-                                      member.lokos_shg_code ||
-                                      member.shg?.shg_code ||
-                                      (selectedShgForMembers &&
-                                        (selectedShgForMembers.shg_code ||
-                                          selectedShgForMembers.code));
-                                    const lokos_member_code =
-                                      member.member_code ||
-                                      member.lokos_member_code ||
-                                      member.memberCode ||
-                                      member.id;
-
-                                    if (!checked) {
-                                      // ignore uncheck attempts
-                                      return;
-                                    }
-
-                                    const already = selectedBeneficiaries.some(
-                                      (p) =>
-                                        String(p.lokos_member_code) ===
-                                          String(lokos_member_code) &&
-                                        String(p.lokos_shg_code) ===
-                                          String(lokos_shg_code),
-                                    );
-                                    if (already) return;
-
-                                    try {
-                                      const detail =
-                                        await fetchMemberDetailBestEffort(
-                                          member,
-                                        );
-                                      const merged = {
-                                        ...(detail || {}),
-                                        shg_code: lokos_shg_code,
-                                        member_code: lokos_member_code,
-                                      };
-                                      addSelectedMember(merged);
-                                    } catch (e) {
-                                      addSelectedMember({
-                                        ...member,
-                                        shg_code: lokos_shg_code,
-                                        member_code: lokos_member_code,
-                                      });
-                                    }
-                                  }}
-                                  reloadToken={memberListReloadToken}
-                                  selectedMemberCodes={selectedMemberCodesSet}
-                                />
+                              <div
+                                style={{
+                                  marginTop: 6,
+                                  padding: "10px 12px",
+                                  borderRadius: 8,
+                                  background: "#fef2f2",
+                                  border: "1px solid #dc2626",
+                                  color: "#dc2626",
+                                  fontWeight: 600,
+                                }}
+                              >
+                                No Training Partner has been assigned a target for
+                                this training plan.
                               </div>
                             )}
                           </div>
                         )}
-                      </>
-                    ) : (
-                      <div>
-                        {/* MasterTrainerList expects parent to have fetched trainers by district */}
-                        <MasterTrainerList
-                          // filters={{ district: districtId }}
-                          onToggleTrainer={onToggleTrainer}
-                          selectedIds={selectedTrainerIds}
-                          preloadedTrainers={preloadedTrainers}
-                          preloadReloadToken={preloadReloadToken}
-                          onRequestReload={() =>
-                            fetchMasterTrainersByDistrict(true)
-                          }
-                        />
+                        {!autoPartnerAssigned && (
+                          <div
+                            style={{
+                              marginTop: 6,
+                              fontSize: 13,
+                              color: "#dc2626",
+                              fontWeight: 600,
+                            }}
+                          >
+                            Please wait till all training partners are assigned their targets by State.
+                          </div>
+                        )}
                       </div>
-                    )}
-                  </>
-                )}
 
-                {step === 3 && (
-                  <>
-                    <div
-                      style={{
-                        display: "flex",
-                        gap: 12,
-                        alignItems: "center",
-                        justifyContent: "space-between",
-                      }}
-                    >
-                      <div>
-                        <h3 style={{ marginTop: 0 }}>3 — Review & Submit</h3>
-                        <div className="muted">
-                          Preview payload and confirm submission.
-                        </div>
-                      </div>
-                      <div>
-                        <button
-                          className="btnPrimaryHover"
-                          style={btnPrimary}
-                          onClick={goToPrev}
-                        >
-                          Back
-                        </button>
-                        <button
-                          // style={btnPrimary}
-                          style={{ ...btnPrimary, marginLeft: 8 }}
-                          onClick={openPreview}
-                          className="btnPrimaryHover"
-                        >
-                          Preview & Confirm
-                        </button>
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: 12 }}>
-                      <label style={{ display: "block", fontWeight: 700 }}>
-                        Training Plan
-                      </label>
-                      <div
-                        style={{
-                          padding: 8,
-                          background: "#f8fafc",
-                          borderRadius: 6,
-                        }}
-                      >
-                        {selectedPlan ? selectedPlanTitle : "(none selected)"}
-                      </div>
-                    </div>
-
-                    <div style={{ marginTop: 12 }}>
-                      <label style={{ display: "block", fontWeight: 700 }}>
-                        Partner
-                      </label>
-
-                      {roleKey === "bmmu" && autoPartnerAssigned ? (
-                        <div
-                          style={{
-                            padding: 8,
-                            background: "#fbfdff",
-                            borderRadius: 6,
-                          }}
-                        >
-                          {partners.find(
-                            (p) => String(p.id) === String(form.partner),
-                          )?.name || `Partner ID ${form.partner}`}
-                        </div>
-                      ) : (
-                        <div style={{ marginTop: 10 }}>
-                          <label style={{ fontWeight: 700 }}>
-                            Training Partner
-                          </label>
-
-                          {form.partner ? (
-                            <div
-                              style={{
-                                marginTop: 6,
-                                padding: "10px 12px",
-                                borderRadius: 8,
-                                background:
-                                  "linear-gradient(135deg, #ecfeff, #cffafe)",
-                                border: "1px solid #06b6d4",
-                                fontWeight: 600,
-                                color: "#0c4a6e",
-                              }}
-                            >
-                              {partners.find(
-                                (p) => String(p.id) === String(form.partner),
-                              )?.name || `Partner ID: ${form.partner}`}
-                            </div>
+                      <div style={{ marginTop: 12 }}>
+                        <h4>Selected Participants</h4>
+                        {form.training_type === "BENEFICIARY" ? (
+                          selectedBeneficiaries.length === 0 ? (
+                            <p className="muted">No beneficiaries selected.</p>
                           ) : (
                             <div
-                              style={{
-                                marginTop: 6,
-                                padding: "10px 12px",
-                                borderRadius: 8,
-                                background: "#fef2f2",
-                                border: "1px solid #dc2626",
-                                color: "#dc2626",
-                                fontWeight: 600,
-                              }}
+                              className="table-wrapper"
+                              style={{ maxHeight: 220, overflow: "auto" }}
                             >
-                              No Training Partner has been assigned a target for
-                              this training plan.
+                              <table className="table table-compact">
+                                <thead>
+                                  <tr>
+                                    <th>SHG</th>
+                                    <th>Member</th>
+                                    <th>Member Code</th>
+                                    <th>Age</th>
+                                    <th>PLD</th>
+                                    <th></th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {selectedBeneficiaries.map((b, idx) => (
+                                    <tr
+                                      key={`${b.lokos_shg_code}|${b.lokos_member_code}|${idx}`}
+                                    >
+                                      <td>{b.lokos_shg_code || "—"}</td>
+                                      <td>{b.member_name || "—"}</td>
+                                      <td>{b.lokos_member_code || "—"}</td>
+                                      <td>{b.age ?? "—"}</td>
+                                      <td>{b.pld_status || "—"}</td>
+                                      <td>
+                                        <button
+                                          className="btn-sm btn-flat"
+                                          onClick={() =>
+                                            removeSelectedBeneficiary(
+                                              b.lokos_member_code,
+                                              b.lokos_shg_code,
+                                            )
+                                          }
+                                        >
+                                          Remove
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
                             </div>
-                          )}
-                        </div>
-                      )}
-                      {!autoPartnerAssigned && (
-                        <div
-                          style={{
-                            marginTop: 6,
-                            fontSize: 13,
-                            color: "#dc2626",
-                            fontWeight: 600,
-                          }}
-                        >
-                          Please wait till all training partners are assigned their targets by State.
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ marginTop: 12 }}>
-                      <h4>Selected Participants</h4>
-                      {form.training_type === "BENEFICIARY" ? (
-                        selectedBeneficiaries.length === 0 ? (
-                          <p className="muted">No beneficiaries selected.</p>
+                          )
+                        ) : selectedTrainerList.length === 0 ? (
+                          <p className="muted">No trainers selected.</p>
                         ) : (
                           <div
                             className="table-wrapper"
@@ -2368,32 +2421,25 @@ export default function CreateTrainingRequest() {
                             <table className="table table-compact">
                               <thead>
                                 <tr>
-                                  <th>SHG</th>
-                                  <th>Member</th>
-                                  <th>Member Code</th>
-                                  <th>Age</th>
-                                  <th>PLD</th>
+                                  <th>Name</th>
+                                  <th>Designation</th>
+                                  <th>District</th>
+                                  <th>Block</th>
                                   <th></th>
                                 </tr>
                               </thead>
                               <tbody>
-                                {selectedBeneficiaries.map((b, idx) => (
-                                  <tr
-                                    key={`${b.lokos_shg_code}|${b.lokos_member_code}|${idx}`}
-                                  >
-                                    <td>{b.lokos_shg_code || "—"}</td>
-                                    <td>{b.member_name || "—"}</td>
-                                    <td>{b.lokos_member_code || "—"}</td>
-                                    <td>{b.age ?? "—"}</td>
-                                    <td>{b.pld_status || "—"}</td>
+                                {selectedTrainerList.map((t) => (
+                                  <tr key={t.id}>
+                                    <td>{t.full_name || t.name}</td>
+                                    <td>{t.designation || "-"}</td>
+                                    <td>{t.empanel_district || "-"}</td>
+                                    <td>{t.empanel_block || "-"}</td>
                                     <td>
                                       <button
                                         className="btn-sm btn-flat"
                                         onClick={() =>
-                                          removeSelectedBeneficiary(
-                                            b.lokos_member_code,
-                                            b.lokos_shg_code,
-                                          )
+                                          removeSelectedTrainer(t.id)
                                         }
                                       >
                                         Remove
@@ -2404,182 +2450,143 @@ export default function CreateTrainingRequest() {
                               </tbody>
                             </table>
                           </div>
-                        )
-                      ) : selectedTrainerList.length === 0 ? (
-                        <p className="muted">No trainers selected.</p>
+                        )}
+                      </div>
+                    </>
+                  )}
+                </div>
+
+                {/* RIGHT column */}
+                <aside
+                  style={{ ...cardStyle, width: "100%", maxHeight: "350px" }}
+                >
+                  <h3 style={headerGradient}>Request Summary</h3>
+                  <div
+                    style={{ fontSize: 13, color: "#6c757d", marginBottom: 8 }}
+                  >
+                    Quick summary and actions.
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <strong>Plan:</strong>
+                    <div
+                      style={{
+                        padding: 8,
+                        background: "#fbfdff",
+                        borderRadius: 6,
+                      }}
+                    >
+                      {selectedPlan ? selectedPlanTitle : "—"}
+                    </div>
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <strong>Type:</strong> {form.training_type}
+                  </div>
+
+                  <div style={{ marginBottom: 12 }}>
+                    <strong>Participants:</strong>{" "}
+                    {form.training_type === "BENEFICIARY"
+                      ? `${selectedBeneficiaries.length} beneficiaries`
+                      : `${selectedTrainersMap.size} trainers`}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 8 }}>
+                    <button
+                      className="btnPrimaryHover"
+                      style={btnPrimary}
+                      onClick={openPreview}
+                    >
+                      Preview & Confirm
+                    </button>
+                    <button
+                      className="btnPrimaryHover"
+                      style={btnPrimary}
+                      onClick={() => {
+                        setSelectedBeneficiaries([]);
+                        setSelectedTrainersMap(new Map());
+                      }}
+                    >
+                      Clear Selections
+                    </button>
+                  </div>
+
+                  {submitSummary && (
+                    <div
+                      style={{
+                        marginTop: 16,
+                        padding: 8,
+                        borderRadius: 6,
+                        border: "1px solid #f1f3f5",
+                        background: "#fff",
+                      }}
+                    >
+                      <h4 style={{ margin: "6px 0" }}>Last submission</h4>
+                      {submitSummary.trId ? (
+                        <div>
+                          Training Request ID:{" "}
+                          <strong>{submitSummary.trId}</strong>
+                        </div>
                       ) : (
-                        <div
-                          className="table-wrapper"
-                          style={{ maxHeight: 220, overflow: "auto" }}
-                        >
-                          <table className="table table-compact">
-                            <thead>
-                              <tr>
-                                <th>Name</th>
-                                <th>Designation</th>
-                                <th>District</th>
-                                <th>Block</th>
-                                <th></th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {selectedTrainerList.map((t) => (
-                                <tr key={t.id}>
-                                  <td>{t.full_name || t.name}</td>
-                                  <td>{t.designation || "-"}</td>
-                                  <td>{t.empanel_district || "-"}</td>
-                                  <td>{t.empanel_block || "-"}</td>
-                                  <td>
-                                    <button
-                                      className="btn-sm btn-flat"
-                                      onClick={() =>
-                                        removeSelectedTrainer(t.id)
-                                      }
-                                    >
-                                      Remove
-                                    </button>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
+                        <div style={{ color: "#b03a2e" }}>
+                          Training request failed to create.
                         </div>
                       )}
+                      <div>Successes: {submitSummary.successes?.length ?? 0}</div>
+                      <div>Failures: {submitSummary.failures?.length ?? 0}</div>
+                      {submitSummary.failures?.length > 0 && (
+                        <details style={{ marginTop: 6 }}>
+                          <summary style={{ cursor: "pointer" }}>
+                            Show errors
+                          </summary>
+                          <ul>
+                            {submitSummary.failures.map((f, i) => (
+                              <li key={i}>
+                                <strong>{f.type}</strong>:{" "}
+                                {f.error || JSON.stringify(f.row)}
+                              </li>
+                            ))}
+                          </ul>
+                        </details>
+                      )}
                     </div>
-                  </>
-                )}
+                  )}
+                </aside>
               </div>
-
-              {/* RIGHT column */}
-              <aside
-                style={{ ...cardStyle, width: "100%", maxHeight: "350px" }}
-              >
-                <h3 style={headerGradient}>Request Summary</h3>
-                <div
-                  style={{ fontSize: 13, color: "#6c757d", marginBottom: 8 }}
-                >
-                  Quick summary and actions.
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <strong>Plan:</strong>
-                  <div
-                    style={{
-                      padding: 8,
-                      background: "#fbfdff",
-                      borderRadius: 6,
-                    }}
-                  >
-                    {selectedPlan ? selectedPlanTitle : "—"}
-                  </div>
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <strong>Type:</strong> {form.training_type}
-                </div>
-
-                <div style={{ marginBottom: 12 }}>
-                  <strong>Participants:</strong>{" "}
-                  {form.training_type === "BENEFICIARY"
-                    ? `${selectedBeneficiaries.length} beneficiaries`
-                    : `${selectedTrainersMap.size} trainers`}
-                </div>
-
-                <div style={{ display: "flex", gap: 8 }}>
-                  <button
-                    className="btnPrimaryHover"
-                    style={btnPrimary}
-                    onClick={openPreview}
-                  >
-                    Preview & Confirm
-                  </button>
-                  <button
-                    className="btnPrimaryHover"
-                    style={btnPrimary}
-                    onClick={() => {
-                      setSelectedBeneficiaries([]);
-                      setSelectedTrainersMap(new Map());
-                    }}
-                  >
-                    Clear Selections
-                  </button>
-                </div>
-
-                {submitSummary && (
-                  <div
-                    style={{
-                      marginTop: 16,
-                      padding: 8,
-                      borderRadius: 6,
-                      border: "1px solid #f1f3f5",
-                      background: "#fff",
-                    }}
-                  >
-                    <h4 style={{ margin: "6px 0" }}>Last submission</h4>
-                    {submitSummary.trId ? (
-                      <div>
-                        Training Request ID:{" "}
-                        <strong>{submitSummary.trId}</strong>
-                      </div>
-                    ) : (
-                      <div style={{ color: "#b03a2e" }}>
-                        Training request failed to create.
-                      </div>
-                    )}
-                    <div>Successes: {submitSummary.successes?.length ?? 0}</div>
-                    <div>Failures: {submitSummary.failures?.length ?? 0}</div>
-                    {submitSummary.failures?.length > 0 && (
-                      <details style={{ marginTop: 6 }}>
-                        <summary style={{ cursor: "pointer" }}>
-                          Show errors
-                        </summary>
-                        <ul>
-                          {submitSummary.failures.map((f, i) => (
-                            <li key={i}>
-                              <strong>{f.type}</strong>:{" "}
-                              {f.error || JSON.stringify(f.row)}
-                            </li>
-                          ))}
-                        </ul>
-                      </details>
-                    )}
-                  </div>
-                )}
-              </aside>
             </div>
-          </div>
-        </main>
-      </div>
+          </main>
+          <Footer />
+        </div>
 
-      {/* Preview / Confirm modal */}
-      {previewOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.4)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9999,
-          }}
-        >
+        {/* Preview / Confirm modal */}
+        {previewOpen && (
           <div
             style={{
-              width: 920,
-              maxHeight: "88vh",
-              overflow: "auto",
-              background: "#fff",
-              borderRadius: 8,
-              padding: 18,
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.4)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9999,
             }}
           >
-            <h3>Preview Training Request</h3>
-            <div style={{ color: "#6c757d", marginBottom: 12 }}>
-              Review payload below. Confirm to submit.
-            </div>
+            <div
+              style={{
+                width: 920,
+                maxHeight: "88vh",
+                overflow: "auto",
+                background: "#fff",
+                borderRadius: 8,
+                padding: 18,
+              }}
+            >
+              <h3>Preview Training Request</h3>
+              <div style={{ color: "#6c757d", marginBottom: 12 }}>
+                Review payload below. Confirm to submit.
+              </div>
 
-            {/* <div style={{ display: "flex", gap: 12 }}>
+              {/* <div style={{ display: "flex", gap: 12 }}>
               <div style={{ flex: 1 }}>
                 <h4>Request payload</h4>
                 <pre
@@ -2594,320 +2601,320 @@ export default function CreateTrainingRequest() {
                 </pre>
               </div> */}
 
-            <div style={{ gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <h4>Details</h4>
+              <div style={{ gap: 12 }}>
+                <div style={{ flex: 1 }}>
+                  <h4>Details</h4>
 
-                <div
-                  style={{
-                    background: "#f7fafc",
-                    padding: 14,
-                    borderRadius: 6,
-                    fontSize: 14,
-                  }}
-                >
-                  {Object.entries(buildPreviewPayload() || {})
-                    .filter(
-                      ([key]) =>
-                        key !== "block" &&
-                        key !== "created_by" &&
-                        key !== "district",
-                    )
-                    .map(([key, value]) => {
-                      // Training Plan Name
-                      if (key === "training_plan") {
-                        value =
-                          selectedPlan?.training_name ||
-                          selectedPlan?.name ||
-                          selectedPlan?.title ||
-                          "-";
-                      }
+                  <div
+                    style={{
+                      background: "#f7fafc",
+                      padding: 14,
+                      borderRadius: 6,
+                      fontSize: 14,
+                    }}
+                  >
+                    {Object.entries(buildPreviewPayload() || {})
+                      .filter(
+                        ([key]) =>
+                          key !== "block" &&
+                          key !== "created_by" &&
+                          key !== "district",
+                      )
+                      .map(([key, value]) => {
+                        // Training Plan Name
+                        if (key === "training_plan") {
+                          value =
+                            selectedPlan?.training_name ||
+                            selectedPlan?.name ||
+                            selectedPlan?.title ||
+                            "-";
+                        }
 
-                      // Partner Name
-                      if (key === "partner") {
-                        const partnerObj = Array.isArray(partners)
-                          ? partners.find((p) => p.id === Number(form.partner))
-                          : null;
+                        // Partner Name
+                        if (key === "partner") {
+                          const partnerObj = Array.isArray(partners)
+                            ? partners.find((p) => p.id === Number(form.partner))
+                            : null;
 
-                        value = partnerObj?.name || value || "-";
-                      }
+                          value = partnerObj?.name || value || "-";
+                        }
 
-                      return (
-                        <div
-                          key={key}
-                          style={{
-                            display: "grid",
-                            gridTemplateColumns: "200px 1fr",
-                            padding: "6px 0",
-                            borderBottom: "1px solid #e5e7eb",
-                          }}
-                        >
-                          <div style={{ fontWeight: 600 }}>
-                            {key
-                              .replaceAll("_", " ")
-                              .replace(/\b\w/g, (l) => l.toUpperCase())}
+                        return (
+                          <div
+                            key={key}
+                            style={{
+                              display: "grid",
+                              gridTemplateColumns: "200px 1fr",
+                              padding: "6px 0",
+                              borderBottom: "1px solid #e5e7eb",
+                            }}
+                          >
+                            <div style={{ fontWeight: 600 }}>
+                              {key
+                                .replaceAll("_", " ")
+                                .replace(/\b\w/g, (l) => l.toUpperCase())}
+                            </div>
+
+                            <div>{value ?? "-"}</div>
                           </div>
-
-                          <div>{value ?? "-"}</div>
-                        </div>
-                      );
-                    })}
+                        );
+                      })}
+                  </div>
                 </div>
-              </div>
 
-              <div>
-                <h4>Participants</h4>
-                {form.training_type === "BENEFICIARY" ? (
-                  selectedBeneficiaries.length === 0 ? (
-                    <p className="muted">No beneficiaries</p>
+                <div>
+                  <h4>Participants</h4>
+                  {form.training_type === "BENEFICIARY" ? (
+                    selectedBeneficiaries.length === 0 ? (
+                      <p className="muted">No beneficiaries</p>
+                    ) : (
+                      <div style={{ maxHeight: 420, overflow: "auto" }}>
+                        <table className="table table-compact">
+                          <thead>
+                            <tr>
+                              <th>SHG</th>
+                              <th>Member</th>
+                              <th>Code</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {selectedBeneficiaries.map((b, i) => (
+                              <tr
+                                key={`${b.lokos_shg_code}|${b.lokos_member_code}|${i}`}
+                              >
+                                <td>{b.lokos_shg_code}</td>
+                                <td>{b.member_name}</td>
+                                <td>{b.lokos_member_code}</td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
+                    )
+                  ) : selectedTrainerList.length === 0 ? (
+                    <p className="muted">No trainers</p>
                   ) : (
                     <div style={{ maxHeight: 420, overflow: "auto" }}>
                       <table className="table table-compact">
                         <thead>
                           <tr>
-                            <th>SHG</th>
-                            <th>Member</th>
-                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Designation</th>
                           </tr>
                         </thead>
                         <tbody>
-                          {selectedBeneficiaries.map((b, i) => (
-                            <tr
-                              key={`${b.lokos_shg_code}|${b.lokos_member_code}|${i}`}
-                            >
-                              <td>{b.lokos_shg_code}</td>
-                              <td>{b.member_name}</td>
-                              <td>{b.lokos_member_code}</td>
+                          {selectedTrainerList.map((t) => (
+                            <tr key={t.id}>
+                              <td>{t.full_name || t.name}</td>
+                              <td>{t.designation || "-"}</td>
                             </tr>
                           ))}
                         </tbody>
                       </table>
                     </div>
-                  )
-                ) : selectedTrainerList.length === 0 ? (
-                  <p className="muted">No trainers</p>
+                  )}
+                </div>
+              </div>
+
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                  marginTop: 12,
+                }}
+              >
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setPreviewOpen(false)}
+                  disabled={submitting}
+                >
+                  Cancel
+                </button>
+                <button
+                  className="btn"
+                  onClick={async () => {
+                    await confirmAndSubmit();
+                    setPreviewOpen(false);
+                  }}
+                  disabled={submitting}
+                >
+                  {submitting ? "Submitting…" : "Confirm & Submit"}
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* After submission summary modal (if needed) */}
+        {submitSummary && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.35)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 9998,
+            }}
+          >
+            <div
+              style={{
+                width: 760,
+                background: "#fff",
+                borderRadius: 8,
+                padding: 18,
+              }}
+            >
+              <h3>Submission Result</h3>
+              <div style={{ marginBottom: 8 }}>
+                {submitSummary.trId ? (
+                  <div>
+                    Training Request created!
+                    {/* <strong>{submitSummary.trId}</strong> */}
+                  </div>
                 ) : (
-                  <div style={{ maxHeight: 420, overflow: "auto" }}>
-                    <table className="table table-compact">
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>Designation</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {selectedTrainerList.map((t) => (
-                          <tr key={t.id}>
-                            <td>{t.full_name || t.name}</td>
-                            <td>{t.designation || "-"}</td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
+                  <div style={{ color: "#b03a2e" }}>
+                    Failed to create training request
                   </div>
                 )}
               </div>
-            </div>
 
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                justifyContent: "flex-end",
-                marginTop: 12,
-              }}
-            >
-              <button
-                className="btn btn-outline"
-                onClick={() => setPreviewOpen(false)}
-                disabled={submitting}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn"
-                onClick={async () => {
-                  await confirmAndSubmit();
-                  setPreviewOpen(false);
-                }}
-                disabled={submitting}
-              >
-                {submitting ? "Submitting…" : "Confirm & Submit"}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* After submission summary modal (if needed) */}
-      {submitSummary && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.35)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 9998,
-          }}
-        >
-          <div
-            style={{
-              width: 760,
-              background: "#fff",
-              borderRadius: 8,
-              padding: 18,
-            }}
-          >
-            <h3>Submission Result</h3>
-            <div style={{ marginBottom: 8 }}>
-              {submitSummary.trId ? (
-                <div>
-                  Training Request created!
-                  {/* <strong>{submitSummary.trId}</strong> */}
-                </div>
-              ) : (
-                <div style={{ color: "#b03a2e" }}>
-                  Failed to create training request
-                </div>
-              )}
-            </div>
-
-            {/* <div>
+              {/* <div>
               Child rows succeeded: {submitSummary.successes?.length ?? 0}
             </div>
             <div>Child rows failed: {submitSummary.failures?.length ?? 0}</div> */}
 
-            {submitSummary.failures?.length > 0 && (
-              <div style={{ marginTop: 12 }}>
-                <h4>Errors</h4>
-                <div
-                  style={{
-                    maxHeight: 260,
-                    overflow: "auto",
-                    border: "1px solid #f1f3f5",
-                    padding: 8,
-                    borderRadius: 6,
-                  }}
-                >
-                  <ul>
-                    {submitSummary.failures.map((f, i) => (
-                      <li key={i}>
-                        <strong>{f.type}</strong>:{" "}
-                        {f.error || JSON.stringify(f.row)}
-                      </li>
-                    ))}
-                  </ul>
+              {submitSummary.failures?.length > 0 && (
+                <div style={{ marginTop: 12 }}>
+                  <h4>Errors</h4>
+                  <div
+                    style={{
+                      maxHeight: 260,
+                      overflow: "auto",
+                      border: "1px solid #f1f3f5",
+                      padding: 8,
+                      borderRadius: 6,
+                    }}
+                  >
+                    <ul>
+                      {submitSummary.failures.map((f, i) => (
+                        <li key={i}>
+                          <strong>{f.type}</strong>:{" "}
+                          {f.error || JSON.stringify(f.row)}
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                justifyContent: "flex-end",
-                marginTop: 12,
-              }}
-            >
-              <button
-                className="btn btn-outline"
-                onClick={() => setSubmitSummary(null)}
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  justifyContent: "flex-end",
+                  marginTop: 12,
+                }}
               >
-                Close
-              </button>
-              <button className="btn" onClick={() => setSubmitSummary(null)}>
-                OK
-              </button>
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setSubmitSummary(null)}
+                >
+                  Close
+                </button>
+                <button className="btn" onClick={() => setSubmitSummary(null)}>
+                  OK
+                </button>
+              </div>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ---------- Preload modal ---------- */}
-      {preloading && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.45)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 99999,
-          }}
-        >
+        {/* ---------- Preload modal ---------- */}
+        {preloading && (
           <div
             style={{
-              width: 520,
-              background: "#fff",
-              borderRadius: 8,
-              padding: 18,
-              textAlign: "center",
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.45)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 99999,
             }}
           >
-            <h3 style={{ marginTop: 0 }}>Loading data…</h3>
-            <p style={{ color: "#6c757d" }}>
-              Preparing training plans and themes. Master trainers and partners
-              are loaded only when needed.
-            </p>
-            <div style={{ marginTop: 12 }}>
-              <div className="table-spinner" style={{ padding: 12 }}>
-                Loading…
-              </div>
-            </div>
             <div
               style={{
-                marginTop: 12,
-                display: "flex",
-                justifyContent: "center",
-                gap: 8,
+                width: 520,
+                background: "#fff",
+                borderRadius: 8,
+                padding: 18,
+                textAlign: "center",
               }}
             >
-              <button
-                className="btn btn-outline"
-                onClick={() => setPreloading(false)}
+              <h3 style={{ marginTop: 0 }}>Loading data…</h3>
+              <p style={{ color: "#6c757d" }}>
+                Preparing training plans and themes. Master trainers and partners
+                are loaded only when needed.
+              </p>
+              <div style={{ marginTop: 12 }}>
+                <div className="table-spinner" style={{ padding: 12 }}>
+                  Loading…
+                </div>
+              </div>
+              <div
+                style={{
+                  marginTop: 12,
+                  display: "flex",
+                  justifyContent: "center",
+                  gap: 8,
+                }}
               >
-                Cancel
+                <button
+                  className="btn btn-outline"
+                  onClick={() => setPreloading(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* If there were non-fatal preload errors, show a dismissible notice */}
+        {!preloading && preloadErrors?.length > 0 && (
+          <div
+            style={{
+              position: "fixed",
+              right: 12,
+              bottom: 12,
+              zIndex: 99999,
+              background: "#fff4e5",
+              border: "1px solid #ffd8a8",
+              padding: 12,
+              borderRadius: 8,
+              maxWidth: 420,
+            }}
+          >
+            <strong>Some data failed to load</strong>
+            <div style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}>
+              {preloadErrors.join(", ")}
+            </div>
+            <div style={{ marginTop: 8, textAlign: "right" }}>
+              <button
+                className="btn-sm btn-flat"
+                onClick={() => setPreloadErrors([])}
+              >
+                Dismiss
               </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* If there were non-fatal preload errors, show a dismissible notice */}
-      {!preloading && preloadErrors?.length > 0 && (
-        <div
-          style={{
-            position: "fixed",
-            right: 12,
-            bottom: 12,
-            zIndex: 99999,
-            background: "#fff4e5",
-            border: "1px solid #ffd8a8",
-            padding: 12,
-            borderRadius: 8,
-            maxWidth: 420,
-          }}
-        >
-          <strong>Some data failed to load</strong>
-          <div style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}>
-            {preloadErrors.join(", ")}
-          </div>
-          <div style={{ marginTop: 8, textAlign: "right" }}>
-            <button
-              className="btn-sm btn-flat"
-              onClick={() => setPreloadErrors([])}
-            >
-              Dismiss
-            </button>
-          </div>
-        </div>
-      )}
-
-      {/* Small style to hide the last column (View Detail / Action) only inside MemberListArea wrapper */}
-      <style>{`
+        {/* Small style to hide the last column (View Detail / Action) only inside MemberListArea wrapper */}
+        <style>{`
         /* .no-action wrapper hides the last column (header + cells) of tables within it.
            This keeps other tables intact while removing the "View Detail" action in member list. */
         .no-action .table thead th:last-child,
@@ -2920,6 +2927,12 @@ export default function CreateTrainingRequest() {
 }
 .training-content{
   grid-template-columns: minmax(0,1fr) 360px;
+}
+
+.content-area {
+  display: flex;
+  flex: 1;             
+  min-width: 0;
 }
 
 @media (max-width: 900px){
@@ -2937,6 +2950,7 @@ export default function CreateTrainingRequest() {
   color: #2b4e72;
 }
       `}</style>
+      </div>
     </div>
   );
 }

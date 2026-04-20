@@ -723,9 +723,9 @@ function SmmuDashboard() {
   const districtTotalPages =
     districtMeta && districtMeta.page_size > 0
       ? Math.max(
-          1,
-          Math.ceil((districtMeta.total || 0) / districtMeta.page_size),
-        )
+        1,
+        Math.ceil((districtMeta.total || 0) / districtMeta.page_size),
+      )
       : 1;
   const blockTotalPages =
     blockMeta && blockMeta.page_size > 0
@@ -1329,7 +1329,7 @@ export default function DashboardHome() {
               </div>
             </div>
           }
-          // IMPORTANT: do NOT pass `right` so TopNav shows default user/logout controls
+        // IMPORTANT: do NOT pass `right` so TopNav shows default user/logout controls
         />
         <main className="dashboard-main" style={{ padding: 18 }}>
           {mainContent}

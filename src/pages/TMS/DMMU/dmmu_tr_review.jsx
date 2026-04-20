@@ -2,6 +2,8 @@
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API } from "../../../api/axios";
@@ -28,7 +30,7 @@ function loadJson(key) {
 function saveJson(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
-  } catch {}
+  } catch { }
 }
 
 function getBatchesCacheKey(requestId) {
@@ -49,7 +51,7 @@ function invalidateCaches(requestId) {
   try {
     localStorage.removeItem(TR_DETAIL_CACHE_KEY + requestId);
     localStorage.removeItem(getBatchesCacheKey(requestId));
-  } catch {}
+  } catch { }
 }
 
 /* ---------------- simple modal ---------------- */
@@ -523,7 +525,7 @@ export default function DmmuTrReview() {
 
       alert("Training Request reverted and all batches marked REJECTED.");
 
-      // 🔥 invalidate caches
+      //  invalidate caches
       invalidateCaches(requestId);
 
       // 🔄 refresh
@@ -792,258 +794,471 @@ export default function DmmuTrReview() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — DMMU Training Request Review
             </div>
           }
         /> */}
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1200, margin: "20px auto" }}>
-            <div
-              style={{
-                display: "flex",
-                gap: 8,
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>
-                DMMU Review — Training Request #{requestId}
-              </h2>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    localStorage.removeItem(TR_DETAIL_CACHE_KEY + requestId);
-                    fetchTrDetail(true);
-                  }}
-                >
-                  Refresh request
-                </button>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    localStorage.removeItem(getBatchesCacheKey(requestId));
-                    fetchBatches(true);
-                  }}
-                >
-                  Refresh batches
-                </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => navigate(-1)}
-                >
-                  Back
-                </button>
-              </div>
-            </div>
-
-            <div style={{ background: "#fff", padding: 16, borderRadius: 8 }}>
-              {/* Training Request summary */}
-              {renderTrSummary()}
-
-              {/* Batches list */}
-              <div style={{ marginTop: 16 }}>
-                <h3 style={{ marginTop: 0 }}>
-                  Batches in this Training Request
-                </h3>
-                <div
-                  style={{
-                    fontSize: 13,
-                    color: "#6c757d",
-                    marginBottom: 8,
-                  }}
-                >
-                  Review each batch and assign master trainer(s) where required.
-                </div>
-
-                {loadingBatches ? (
-                  <div
-                    style={{
-                      padding: 20,
-                      textAlign: "center",
-                      color: "#6c757d",
-                    }}
-                  >
-                    <div className="table-spinner">
-                      Loading batches for this training request…
-                    </div>
-                  </div>
-                ) : batches.length === 0 ? (
-                  <div className="muted">
-                    No batches found for this training request.
-                  </div>
-                ) : (
-                  <div style={{ maxHeight: 480, overflow: "auto" }}>
-                    <table className="table table-compact">
-                      <thead>
-                        <tr>
-                          <th>S.No.</th>
-                          <th>Batch Code</th>
-                          <th>Status</th>
-                          <th>Start Date</th>
-                          <th>End Date</th>
-                          <th>Batch Type</th>
-                          <th>Master Trainer(s)</th>
-                          <th>Action</th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {batches.map((b, idx) => (
-                          <tr key={b.id}>
-                            <td>{idx + 1}</td>
-                            <td>{b.code}</td>
-                            <td>{b.status}</td>
-                            <td>{fmtDate(b.start_date)}</td>
-                            <td>{fmtDate(b.end_date)}</td>
-                            <td>{b.batch_type}</td>
-                            <td>
-                              {(() => {
-                                const names = getSelectedTrainerNames(b.id);
-                                if (!names.length) {
-                                  return (
-                                    <span className="muted">Not assigned</span>
-                                  );
-                                }
-                                return (
-                                  <ul style={{ margin: 0, paddingLeft: 16 }}>
-                                    {names.map((n, i) => (
-                                      <li key={i}>{n}</li>
-                                    ))}
-                                  </ul>
-                                );
-                              })()}
-                            </td>
-                            <td>
-                              <button
-                                className="btn-sm btn-flat"
-                                onClick={() =>
-                                  navigate(`/tms/batch-detail/${b.id}`)
-                                }
-                              >
-                                View
-                              </button>{" "}
-                              {canActOnRequest && (
-                                <button
-                                  className="btn-sm btn-flat"
-                                  onClick={() => {
-                                    setMtModalBatch(b);
-                                    setMtModalOpen(true);
-                                  }}
-                                >
-                                  Add Master Trainer
-                                </button>
-                              )}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                )}
-              </div>
-
-              {/* Approve / Revert */}
-              {canActOnRequest && (
-                <div
-                  style={{
-                    marginTop: 18,
-                    display: "flex",
-                    justifyContent: "flex-end",
-                    gap: 12,
-                  }}
-                >
+          <main style={{ padding: 18 }}>
+            <div style={{ maxWidth: 1200, margin: "20px auto" }}>
+              <div
+                style={{
+                  display: "flex",
+                  gap: 8,
+                  alignItems: "center",
+                  marginBottom: 12,
+                }}
+              >
+                {/* <h2 style={{ margin: 0 }}>
+                  DMMU Review — Training Request #{requestId}
+                </h2> */}
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
                   <button
-                    className="btn btn-outline"
-                    style={{
-                      borderColor: "#ef4444",
-                      color: "#b91c1c",
-                      fontWeight: 600,
+                    className="btn"
+                    onClick={() => {
+                      localStorage.removeItem(TR_DETAIL_CACHE_KEY + requestId);
+                      fetchTrDetail(true);
                     }}
-                    onClick={() => setRevertModalOpen(true)}
-                    disabled={savingApprove || savingRevert}
                   >
-                    {savingRevert ? "Reverting…" : "Revert Request"}
+                    Refresh request
                   </button>
                   <button
                     className="btn"
-                    style={{
-                      border: "2px solid #16a34a",
-                      background: "#16a34a",
-                      color: "#fff",
-                      fontWeight: 600,
+                    onClick={() => {
+                      localStorage.removeItem(getBatchesCacheKey(requestId));
+                      fetchBatches(true);
                     }}
-                    onClick={handleApprove}
-                    disabled={
-                      savingApprove ||
-                      savingRevert ||
-                      !Object.values(mtSelections).some((arr) => arr?.length)
-                    }
                   >
-                    {savingApprove ? "Approving…" : "Approve Request"}
+                    Refresh batches
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate(-1)}
+                  >
+                    Back
                   </button>
                 </div>
-              )}
+              </div>
+
+              <div style={{ background: "#fff", padding: 16, borderRadius: 8 }}>
+                {/* Training Request summary */}
+                {renderTrSummary()}
+
+                {/* Batches list */}
+                <div style={{ marginTop: 16 }}>
+                  <h3 style={{ marginTop: 0 }}>
+                    Batches in this Training Request
+                  </h3>
+                  <div
+                    style={{
+                      fontSize: 13,
+                      color: "#6c757d",
+                      marginBottom: 8,
+                    }}
+                  >
+                    Review each batch and assign master trainer(s) where required.
+                  </div>
+
+                  {loadingBatches ? (
+                    <div
+                      style={{
+                        padding: 20,
+                        textAlign: "center",
+                        color: "#6c757d",
+                      }}
+                    >
+                      <div className="table-spinner">
+                        Loading batches for this training request…
+                      </div>
+                    </div>
+                  ) : batches.length === 0 ? (
+                    <div className="muted">
+                      No batches found for this training request.
+                    </div>
+                  ) : (
+                    <div style={{ maxHeight: 480, overflow: "auto" }}>
+                      <table className="table table-compact">
+                        <thead>
+                          <tr>
+                            <th>S.No.</th>
+                            <th>Batch Code</th>
+                            <th>Status</th>
+                            <th>Start Date</th>
+                            <th>End Date</th>
+                            <th>Batch Type</th>
+                            <th>Master Trainer(s)</th>
+                            <th>Action</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          {batches.map((b, idx) => (
+                            <tr key={b.id}>
+                              <td>{idx + 1}</td>
+                              <td>{b.code}</td>
+                              <td>{b.status}</td>
+                              <td>{fmtDate(b.start_date)}</td>
+                              <td>{fmtDate(b.end_date)}</td>
+                              <td>{b.batch_type}</td>
+                              <td>
+                                {(() => {
+                                  const names = getSelectedTrainerNames(b.id);
+                                  if (!names.length) {
+                                    return (
+                                      <span className="muted">Not assigned</span>
+                                    );
+                                  }
+                                  return (
+                                    <ul style={{ margin: 0, paddingLeft: 16 }}>
+                                      {names.map((n, i) => (
+                                        <li key={i}>{n}</li>
+                                      ))}
+                                    </ul>
+                                  );
+                                })()}
+                              </td>
+                              <td>
+                                <button
+                                  className="btn-sm btn-flat"
+                                  onClick={() =>
+                                    navigate(`/tms/batch-detail/${b.id}`)
+                                  }
+                                >
+                                  View
+                                </button>{" "}
+                                {canActOnRequest && (
+                                  <button
+                                    className="btn-sm btn-flat"
+                                    onClick={() => {
+                                      setMtModalBatch(b);
+                                      setMtModalOpen(true);
+                                    }}
+                                  >
+                                    Add Master Trainer
+                                  </button>
+                                )}
+                              </td>
+                            </tr>
+                          ))}
+                        </tbody>
+                      </table>
+                    </div>
+                  )}
+                </div>
+
+                {/* Approve / Revert */}
+                {canActOnRequest && (
+                  <div
+                    style={{
+                      marginTop: 18,
+                      display: "flex",
+                      justifyContent: "flex-end",
+                      gap: 12,
+                    }}
+                  >
+                    <button
+                      className="btn btn-outline"
+                      style={{
+                        borderColor: "#ef4444",
+                        color: "#ffff",
+                        fontWeight: 600,
+                      }}
+                      onClick={() => setRevertModalOpen(true)}
+                      disabled={savingApprove || savingRevert}
+                    >
+                      {savingRevert ? "Reverting…" : "Revert Request"}
+                    </button>
+                    <button
+                      className="btn"
+                      style={{
+                        border: "2px solid #16a34a",
+                        background: "#16a34a",
+                        color: "#fff",
+                        fontWeight: 600,
+                      }}
+                      onClick={handleApprove}
+                      disabled={
+                        savingApprove ||
+                        savingRevert ||
+                        !Object.values(mtSelections).some((arr) => arr?.length)
+                      }
+                    >
+                      {savingApprove ? "Approving…" : "Approve Request"}
+                    </button>
+                  </div>
+                )}
+              </div>
             </div>
+          </main>
+          <Footer />
+        </div>
+
+        {/* Master Trainer assignment modal */}
+        {renderMtModal()}
+
+        {/* Revert reason modal */}
+        <Modal
+          open={revertModalOpen}
+          onClose={() => {
+            if (!savingRevert) setRevertModalOpen(false);
+          }}
+          title="Revert Training Request"
+          width={600}
+        >
+          <div style={{ fontSize: 14, marginBottom: 10 }}>
+            Please provide a rejection reason. This will be stored in{" "}
+            <strong>rejection_reason</strong> and the Training Request along with
+            all its batches will be marked as <strong>REJECTED</strong>.
           </div>
-        </main>
+          <textarea
+            className="input"
+            rows={4}
+            placeholder="Rejection Reason…"
+            value={revertReason}
+            onChange={(e) => setRevertReason(e.target.value)}
+            disabled={savingRevert}
+            style={{ width: "100%", marginBottom: 12 }}
+          />
+          <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
+            <button
+              className="btn btn-outline"
+              onClick={() => setRevertModalOpen(false)}
+              disabled={savingRevert}
+            >
+              Cancel
+            </button>
+            <button
+              className="btn"
+              style={{
+                borderColor: "#ef4444",
+                background: "#ef4444",
+                color: "#fff",
+              }}
+              onClick={handleConfirmRevert}
+              disabled={savingRevert}
+            >
+              {savingRevert ? "Submitting…" : "Confirm Revert"}
+            </button>
+          </div>
+        </Modal>
       </div>
+      <style>{`
+      .content-area {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
 
-      {/* Master Trainer assignment modal */}
-      {renderMtModal()}
+.main-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+  background: #f5f7fb;
+}
 
-      {/* Revert reason modal */}
-      <Modal
-        open={revertModalOpen}
-        onClose={() => {
-          if (!savingRevert) setRevertModalOpen(false);
-        }}
-        title="Revert Training Request"
-        width={600}
-      >
-        <div style={{ fontSize: 14, marginBottom: 10 }}>
-          Please provide a rejection reason. This will be stored in{" "}
-          <strong>rejection_reason</strong> and the Training Request along with
-          all its batches will be marked as <strong>REJECTED</strong>.
-        </div>
-        <textarea
-          className="input"
-          rows={4}
-          placeholder="Rejection Reason…"
-          value={revertReason}
-          onChange={(e) => setRevertReason(e.target.value)}
-          disabled={savingRevert}
-          style={{ width: "100%", marginBottom: 12 }}
-        />
-        <div style={{ display: "flex", justifyContent: "flex-end", gap: 8 }}>
-          <button
-            className="btn btn-outline"
-            onClick={() => setRevertModalOpen(false)}
-            disabled={savingRevert}
-          >
-            Cancel
-          </button>
-          <button
-            className="btn"
-            style={{
-              borderColor: "#ef4444",
-              background: "#ef4444",
-              color: "#fff",
-            }}
-            onClick={handleConfirmRevert}
-            disabled={savingRevert}
-          >
-            {savingRevert ? "Submitting…" : "Confirm Revert"}
-          </button>
-        </div>
-      </Modal>
+main {
+  flex: 1;
+  padding: 18px;
+}
+
+/*  Sticky Footer */
+footer {
+  margin-top: auto;
+  flex-shrink: 0;
+  background: #2b4e72; /* theme color */
+  color: #fff;
+  padding: 12px 20px;
+  text-align: center;
+}
+
+
+/* ===== Card UI ===== */
+.card-ui {
+  background: #fff;
+  padding: 16px;
+  border-radius: 10px;
+  border: 2px solid #3d6ba6;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+}
+
+
+/* ===== Summary Section ===== */
+.summary-box {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 20px;
+  margin-bottom: 12px;
+  color: #2b4e72;
+}
+
+.status-badge {
+  background: #a7c6ed;
+  color: #2b4e72;
+  padding: 4px 10px;
+  border-radius: 6px;
+  font-weight: 700;
+}
+
+.status-panel {
+  padding: 12px;
+  border-radius: 6px;
+  background: #f4f8fd;
+  border-left: 4px solid #3d6ba6;
+  margin-bottom: 14px;
+}
+
+
+/* ===== Toolbar ===== */
+.participant-toolbar {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 10px;
+}
+
+.input-filter {
+  border: 1px solid #3d6ba6;
+  padding: 6px 10px;
+  border-radius: 6px;
+  outline: none;
+}
+
+
+/* ===== Table ===== */
+.table-container {
+  max-height: 420px;
+  overflow: auto;
+  border: 1px solid #e4ecf5;
+  border-radius: 8px;
+}
+
+.training-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+
+.training-table thead {
+  background: #3d6ba6;
+  color: white;
+  position: sticky;
+  top: 0;
+}
+
+.training-table th {
+  padding: 10px;
+  text-align: left;
+  border-right: 1px solid rgba(255,255,255,0.2);
+}
+
+.training-table td {
+  padding: 10px;
+  border-bottom: 1px solid #e4ecf5;
+  border-right: 1px solid #e4ecf5;
+}
+
+.training-table tbody tr:nth-child(even) {
+  background: #f7fbff;
+}
+
+.training-table tbody tr:hover {
+  background: #e4ecf5;
+}
+
+
+/* ===== Buttons ===== */
+.btn {
+  padding: 6px 12px;
+  border-radius: 6px;
+  border: none;
+  background: #3d6ba6;
+  color: #fff;
+  cursor: pointer;
+  transition: all 0.25s ease;
+}
+
+.btn:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(0,0,0,0.15);
+}
+
+.btn-outline {
+  background: #5a8cc2;
+  color: #fff;
+  border: none;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 12px;
+}
+
+.btn-flat {
+  background: transparent;
+  border: none;
+  color: #3d6ba6;
+  cursor: pointer;
+}
+
+.btn-flat:hover {
+  text-decoration: underline;
+}
+
+
+/* ===== Action Box ===== */
+.action-box {
+  background: #f4f8fd;
+  border-left: 4px solid #5a8cc2;
+  padding: 10px;
+  margin-bottom: 10px;
+}
+
+
+/* ===== Modal ===== */
+.modal-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.modal-row {
+  display: flex;
+  gap: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid #e4ecf5;
+}
+
+.modal-label {
+  min-width: 160px;
+  font-weight: 700;
+  color: #2b4e72;
+}
+
+.modal-value {
+  color: #111;
+}
+
+
+/* ===== Misc ===== */
+.table-message {
+  padding: 20px;
+  text-align: center;
+  color: #2b4e72;
+}
+
+.muted {
+  color: #6c757d;
+}
+
+`}</style>
     </div>
   );
 }

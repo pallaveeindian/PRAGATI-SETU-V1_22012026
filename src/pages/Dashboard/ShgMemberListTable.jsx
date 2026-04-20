@@ -133,8 +133,8 @@ export default function ShgMemberListTable({
       );
       setError(
         e?.response?.data?.detail ||
-          e.message ||
-          "Failed to load SHG members from UPSRLM.",
+        e.message ||
+        "Failed to load SHG members from UPSRLM.",
       );
     } finally {
       setLoading(false);
@@ -170,19 +170,46 @@ export default function ShgMemberListTable({
       : 1;
 
   // Toggle handler when user checks/unchecks a row
+  // function handleToggleRow(member, checked) {
+  //   const code = member?.member_code || member?.lokos_member_code || member?.id;
+  //   if (!code) return;
+
+  //   // if parent controls selection via selectedMemberCodes prop, just call callback
+  //   if (controlledSelectedSet) {
+  //     if (onToggleMember) onToggleMember(member, !!checked);
+  //     // also keep legacy callback for add
+  //     if (checked && onSelectMember) onSelectMember(member);
+  //     return;
+  //   }
+
+  //   // otherwise maintain internal state
+  //   setInternalSelected((prev) => {
+  //     const copy = new Set(prev);
+  //     if (checked) copy.add(String(code));
+  //     else copy.delete(String(code));
+  //     return copy;
+  //   });
+
+  //   // call callbacks
+  //   if (onToggleMember) onToggleMember(member, !!checked);
+  //   if (checked && onSelectMember) onSelectMember(member);
+  // }
+
   function handleToggleRow(member, checked) {
     const code = member?.member_code || member?.lokos_member_code || member?.id;
     if (!code) return;
 
-    // if parent controls selection via selectedMemberCodes prop, just call callback
     if (controlledSelectedSet) {
       if (onToggleMember) onToggleMember(member, !!checked);
-      // also keep legacy callback for add
-      if (checked && onSelectMember) onSelectMember(member);
+
+      // 🔥 FIX: handle unselect
+      if (onSelectMember) {
+        if (checked) onSelectMember(member);
+        else onSelectMember(null); // ✅ IMPORTANT
+      }
       return;
     }
 
-    // otherwise maintain internal state
     setInternalSelected((prev) => {
       const copy = new Set(prev);
       if (checked) copy.add(String(code));
@@ -190,9 +217,13 @@ export default function ShgMemberListTable({
       return copy;
     });
 
-    // call callbacks
     if (onToggleMember) onToggleMember(member, !!checked);
-    if (checked && onSelectMember) onSelectMember(member);
+
+    // 🔥 FIX HERE ALSO
+    if (onSelectMember) {
+      if (checked) onSelectMember(member);
+      else onSelectMember(null); // ✅ IMPORTANT
+    }
   }
   return (
     <div
@@ -387,12 +418,14 @@ export default function ShgMemberListTable({
                 {rows.map((m) => {
                   const code = m.member_code || m.lokos_member_code || m.id;
 
-                  const isSelected =
-                    (selectedMemberCode &&
-                      code &&
-                      selectedMemberCode === code) ||
-                    isMemberSelected(m);
+                  // const isSelected =
+                  //   (selectedMemberCode &&
+                  //     code &&
+                  //     selectedMemberCode === code) ||
+                  //   isMemberSelected(m);
 
+
+                  const isSelected = isMemberSelected(m);
                   const age = calculateAge(m.dob);
 
                   const phone =
