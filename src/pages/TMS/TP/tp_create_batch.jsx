@@ -841,29 +841,107 @@ function CombinedParticipantSelector({
    PREVIEW MODAL
 ========================================================= */
 
-function PreviewModal({ open, payload, onClose, onConfirm, disabled }) {
-  if (!open) return null;
+// function PreviewModal({ open, payload, onClose, onConfirm, disabled }) {
+//   if (!open) return null;
+
+//   return (
+//     <div className="modal-backdrop">
+//       <div className="modal-card" style={{ maxWidth: 500 }}>
+//         <h3>Confirm Proposal</h3>
+
+//         <p style={{ marginTop: 12, fontSize: 15 }}>
+//           Are you sure you want to propose this training request to <b>DMMU</b>?
+//         </p>
+
+//         <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
+//           <button className="btn-outline" onClick={onClose}>
+//             Back
+//           </button>
+
+//           <button
+//             className="btn btn-primary"
+//             disabled={disabled}
+//             onClick={onConfirm}
+//           >
+//             Propose to DMMU
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// }
+
+/* ================= PREVIEW MODAL (UPDATED) ================= */
+
+function PreviewModal({ open, payload, onClose, onConfirm, disabled, trainingReq }) {
+  if (!open || !payload) return null;
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal-card" style={{ maxWidth: 500 }}>
-        <h3>Confirm Proposal</h3>
+    <div className="modal-backdrop" style={{
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
+      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
+    }}>
+      <div className="modal-card" style={{
+        maxWidth: '800px', width: '90%', maxHeght: '90vh',
+        background: '#fff', borderRadius: '12px', padding: '24px',
+        display: 'flex', flexDirection: 'column'
+      }}>
+        <div style={{ borderBottom: '1px solid #eee', marginBottom: '16px', paddingBottom: '8px' }}>
+          <h2 style={{ margin: 0, color: '#2b4e72' }}>Batch Proposal Summary</h2>
+          <p style={{ margin: '4px 0', color: '#666' }}>Please review the batch details before proposing to DMMU.</p>
+        </div>
 
-        <p style={{ marginTop: 12, fontSize: 15 }}>
-          Are you sure you want to propose this training request to <b>DMMU</b>?
-        </p>
+        <div style={{ overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
+          {payload.batches.map((item, idx) => {
+            const { batch, participants } = item;
+            return (
+              <div key={idx} style={{
+                border: '1px solid #e0e7ff', borderRadius: '8px',
+                padding: '16px', marginBottom: '16px', background: '#fcfdff'
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
+                  <h4 style={{ margin: '0 0 8px 0', color: '#3d6ba6' }}>Batch {idx + 1}: {batch.code}</h4>
+                  <span className="badge" style={{ background: '#e0e7ff', color: '#3d6ba6', padding: '4px 10px', borderRadius: '12px', fontSize: '12px' }}>
+                    {participants.length} Participants
+                  </span>
+                </div>
 
-        <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-          <button className="btn-outline" onClick={onClose}>
-            Back
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+                  <div>
+                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Centre</label>
+                    {/* We pass the name via payload in the next step */}
+                    <strong>{batch.venue_name || "Selected Centre"}</strong>
+                  </div>
+                  <div>
+                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Batch Type</label>
+                    <strong>{batch.batch_type}</strong>
+                  </div>
+                  <div>
+                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Start Date</label>
+                    <strong>{batch.start_date}</strong>
+                  </div>
+                  <div>
+                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>End Date</label>
+                    <strong>{batch.end_date}</strong>
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+
+        <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '16px' }}>
+          <button className="btn-outline" onClick={onClose} style={{ padding: '10px 20px' }}>
+            ← Back to Edit
           </button>
 
           <button
             className="btn btn-primary"
             disabled={disabled}
             onClick={onConfirm}
+            style={{ padding: '10px 24px', background: '#3d6ba6', color: '#fff', border: 'none', borderRadius: '6px' }}
           >
-            Propose to DMMU
+            {disabled ? "Processing..." : "Confirm & Propose to DMMU"}
           </button>
         </div>
       </div>
@@ -917,43 +995,43 @@ function BatchSubmitSection({
   const [payload, setPayload] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  function buildPayload() {
-    const batchItems = batches.map((b) => {
-      const perBatchSel = participantSelections[b.key] || {};
-      const allParticipants = Object.values(perBatchSel).flat();
+  // function buildPayload() {
+  //   const batchItems = batches.map((b) => {
+  //     const perBatchSel = participantSelections[b.key] || {};
+  //     const allParticipants = Object.values(perBatchSel).flat();
 
-      // --------------------------
-      // CHANGE 1: Use optional chaining (?.) and default values
-      // Ensures that if a field is missing, the payload still gets valid default values
-      // --------------------------
-      return {
-        batch: {
-          request: trainingReq?.id || null, // safely handle missing trainingReq
-          centre: b?.centre?.id || b?.centre || null, // safely handle missing centre
-          batch_type: b?.batchType || "", // empty string fallback
-          start_date: b?.startDate || "", // empty string fallback
-          end_date: b?.endDate || "", // empty string fallback
-          status: "PENDING",
-          code: generateBatchCode(
-            trainingReq?.block?.block_name_en, // optional chaining
-            trainingReq?.district?.district_name_en, // optional chaining
-          ),
-          created_by: user?.id || null, // optional chaining
-        },
+  //     // --------------------------
+  //     // CHANGE 1: Use optional chaining (?.) and default values
+  //     // Ensures that if a field is missing, the payload still gets valid default values
+  //     // --------------------------
+  //     return {
+  //       batch: {
+  //         request: trainingReq?.id || null, // safely handle missing trainingReq
+  //         centre: b?.centre?.id || b?.centre || null, // safely handle missing centre
+  //         batch_type: b?.batchType || "", // empty string fallback
+  //         start_date: b?.startDate || "", // empty string fallback
+  //         end_date: b?.endDate || "", // empty string fallback
+  //         status: "PENDING",
+  //         code: generateBatchCode(
+  //           trainingReq?.block?.block_name_en, // optional chaining
+  //           trainingReq?.district?.district_name_en, // optional chaining
+  //         ),
+  //         created_by: user?.id || null, // optional chaining
+  //       },
 
-        // --------------------------
-        // CHANGE 2: Participants array is always an array
-        // Handles the case when no participants are selected
-        // --------------------------
-        participants: allParticipants.map((p) => ({
-          id: p?.id || null, // optional chaining
-          tr: p?.training || null, // optional chaining
-        })),
-      };
-    });
+  //       // --------------------------
+  //       // CHANGE 2: Participants array is always an array
+  //       // Handles the case when no participants are selected
+  //       // --------------------------
+  //       participants: allParticipants.map((p) => ({
+  //         id: p?.id || null, // optional chaining
+  //         tr: p?.training || null, // optional chaining
+  //       })),
+  //     };
+  //   });
 
-    return { batches: batchItems };
-  }
+  //   return { batches: batchItems };
+  // }
 
   // async function execute() {
   //   setSubmitting(true);
@@ -1081,6 +1159,39 @@ function BatchSubmitSection({
   //     setSubmitting(false);
   //   }
   // }
+
+  // Inside BatchSubmitSection component:
+
+  function buildPayload() {
+    const batchItems = batches.map((b) => {
+      const perBatchSel = participantSelections[b.key] || {};
+      const allParticipants = Object.values(perBatchSel).flat();
+
+      return {
+        batch: {
+          request: trainingReq?.id || null,
+          centre: b?.centre?.id || b?.centre || null,
+          venue_name: b?.centre?.venue_name || "N/A", // ADD THIS LINE
+          batch_type: b?.batchType || "",
+          start_date: b?.startDate || "",
+          end_date: b?.endDate || "",
+          status: "PENDING",
+          code: generateBatchCode(
+            trainingReq?.block?.block_name_en,
+            trainingReq?.district?.district_name_en,
+          ),
+          created_by: user?.id || null,
+        },
+        participants: allParticipants.map((p) => ({
+          id: p?.id || null,
+          tr: p?.training || null,
+        })),
+      };
+    });
+
+    return { batches: batchItems };
+  }
+
   const navigate = useNavigate();
   function validateAllBatches() {
     const totalParticipantsList =
@@ -1303,13 +1414,23 @@ function BatchSubmitSection({
           ? "Resubmit Revised Batches"
           : "Preview All Created Batches"}
       </button>
-      <PreviewModal
+      {/* <PreviewModal
         open={previewOpen}
         payload={payload}
         disabled={submitting}
         onClose={() => setPreviewOpen(false)}
         onConfirm={execute}
+      /> */}
+
+      <PreviewModal
+        open={previewOpen}
+        payload={payload}
+        disabled={submitting}
+        trainingReq={trainingReq} // ADD THIS
+        onClose={() => setPreviewOpen(false)}
+        onConfirm={execute}
       />
+
     </>
   );
 }
