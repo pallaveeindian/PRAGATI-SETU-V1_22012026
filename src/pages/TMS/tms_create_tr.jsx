@@ -12,7 +12,7 @@ import LeftNav from "./layout/tms_LeftNav";
 import Header from "../../pages/TMS/layout/header";
 import Footer from "../../pages/TMS/layout/footer";
 import { AuthContext } from "../../contexts/AuthContext";
-import { TMS_API, LOOKUP_API, EPSAKHI_API } from "../../api/axios";
+import api, { TMS_API, LOOKUP_API, EPSAKHI_API } from "../../api/axios";
 import ShgListTable from "../Dashboard/ShgListTable";
 import ShgMemberListTable from "../Dashboard/ShgMemberListTable";
 
@@ -83,7 +83,7 @@ function resolveFinalDistrict({
           district = isNaN(Number(d)) ? d : Number(d);
           setDistrictId?.(district);
         }
-      } catch { }
+      } catch {}
     }
     return district;
   })();
@@ -440,6 +440,10 @@ export default function CreateTrainingRequest() {
   const [previewOpen, setPreviewOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [submitSummary, setSubmitSummary] = useState(null); // { trId, successes, failures: [{row, error}], rawResponse }
+
+  // NEW: Engagement Check States
+  const [engagementStatus, setEngagementStatus] = useState("idle"); // 'idle', 'checking', 'all_clear', 'has_engaged'
+  const [engagedParticipants, setEngagedParticipants] = useState([]);
 
   // Preload modal state
   const [preloading, setPreloading] = useState(false);
@@ -1368,7 +1372,82 @@ export default function CreateTrainingRequest() {
       return alert("Select beneficiaries.");
     if (form.training_type === "TRAINER" && selectedTrainersMap.size === 0)
       return alert("Select trainers.");
+
+    // Reset engagement state when modal opens
+    setEngagementStatus("idle");
+    setEngagedParticipants([]);
     setPreviewOpen(true);
+  }
+
+  // NEW: Check engagement before final submit
+  async function checkEngagementBeforeSubmit() {
+    setEngagementStatus("checking");
+    try {
+      let ids = [];
+      if (form.training_type === "BENEFICIARY") {
+        ids = selectedBeneficiaries
+          .map((b) => b.lokos_member_code)
+          .filter(Boolean);
+      } else {
+        ids = Array.from(selectedTrainersMap.keys()).map(String);
+      }
+
+      if (ids.length === 0) {
+        setEngagementStatus("all_clear");
+        return;
+      }
+
+      const resp = await api.post("/tms/check-training-engagement/", {
+        participant_type: form.training_type,
+        ids: ids,
+      });
+
+      const engagedIds = resp?.data?.engaged_ids || [];
+
+      if (engagedIds.length === 0) {
+        setEngagementStatus("all_clear");
+      } else {
+        let engagedList = [];
+        if (form.training_type === "BENEFICIARY") {
+          engagedList = selectedBeneficiaries.filter((b) =>
+            engagedIds.includes(b.lokos_member_code),
+          );
+        } else {
+          engagedList = Array.from(selectedTrainersMap.values()).filter((t) =>
+            engagedIds.includes(String(t.id)),
+          );
+        }
+        setEngagedParticipants(engagedList);
+        setEngagementStatus("has_engaged");
+      }
+    } catch (e) {
+      console.error("Engagement check failed", e);
+      alert("Failed to verify participant eligibility. Please try again.");
+      setEngagementStatus("idle");
+    }
+  }
+
+  // NEW: Remove ineligible participants surgically
+  function removeIneligibleParticipants() {
+    if (form.training_type === "BENEFICIARY") {
+      const engagedSet = new Set(
+        engagedParticipants.map((b) => b.lokos_member_code),
+      );
+      setSelectedBeneficiaries((prev) =>
+        prev.filter((b) => !engagedSet.has(b.lokos_member_code)),
+      );
+    } else {
+      const engagedSet = new Set(engagedParticipants.map((t) => String(t.id)));
+      setSelectedTrainersMap((prev) => {
+        const copy = new Map(prev);
+        for (const key of copy.keys()) {
+          if (engagedSet.has(String(key))) copy.delete(key);
+        }
+        return copy;
+      });
+    }
+    setEngagementStatus("idle");
+    setEngagedParticipants([]);
   }
 
   // final submit: create training request, then create child rows with per-row error handling
@@ -1611,9 +1690,14 @@ export default function CreateTrainingRequest() {
   };
 
   return (
-    <div style={{ minHeight: "100vh", width: "100%", display: "flex", flexDirection: "column" }}>
-
-
+    <div
+      style={{
+        minHeight: "100vh",
+        width: "100%",
+        display: "flex",
+        flexDirection: "column",
+      }}
+    >
       <Header />
       <div className="content-area">
         <LeftNav
@@ -1774,14 +1858,20 @@ export default function CreateTrainingRequest() {
                             borderRadius: 6,
                           }}
                         >
-                          <h3 style={{ margin: "6px 0" }}>{selectedPlanTitle}</h3>
+                          <h3 style={{ margin: "6px 0" }}>
+                            {selectedPlanTitle}
+                          </h3>
                           <div style={{ color: "#6c757d", marginBottom: 8 }}>
                             {selectedPlan.training_objective ||
                               selectedPlan.description ||
                               ""}
                           </div>
                           <div
-                            style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
+                            style={{
+                              display: "flex",
+                              gap: 12,
+                              flexWrap: "wrap",
+                            }}
                           >
                             <div>
                               <strong>Duration:</strong>{" "}
@@ -1834,7 +1924,9 @@ export default function CreateTrainingRequest() {
                         }}
                       >
                         <div>
-                          <h3 style={headerGradient}>2 — Select Participants</h3>
+                          <h3 style={headerGradient}>
+                            2 — Select Participants
+                          </h3>
                           <div className="muted">
                             Choose beneficiaries (SHGs) or trainers depending on
                             selection.
@@ -1866,7 +1958,9 @@ export default function CreateTrainingRequest() {
                           alignItems: "center",
                         }}
                       >
-                        <label style={{ fontWeight: 700 }}>Applicable For</label>
+                        <label style={{ fontWeight: 700 }}>
+                          Applicable For
+                        </label>
                         <select
                           value={form.training_type}
                           onChange={(e) => {
@@ -1904,7 +1998,11 @@ export default function CreateTrainingRequest() {
                         <>
                           {/* sub-stepper for beneficiary flow */}
                           <div
-                            style={{ display: "flex", gap: 8, marginBottom: 12 }}
+                            style={{
+                              display: "flex",
+                              gap: 8,
+                              marginBottom: 12,
+                            }}
                           >
                             {roleKey === "dmmu" && (
                               <div
@@ -1917,7 +2015,9 @@ export default function CreateTrainingRequest() {
                                       ? "#0b2540"
                                       : "#f5f7fa",
                                   color:
-                                    participantSubStep === 0 ? "#fff" : "#0b2540",
+                                    participantSubStep === 0
+                                      ? "#fff"
+                                      : "#0b2540",
                                   cursor: "pointer",
                                   fontWeight: 600,
                                 }}
@@ -1944,7 +2044,8 @@ export default function CreateTrainingRequest() {
                                   roleKey === "dmmu" && !blockId
                                     ? "not-allowed"
                                     : "pointer",
-                                opacity: roleKey === "dmmu" && !blockId ? 0.5 : 1,
+                                opacity:
+                                  roleKey === "dmmu" && !blockId ? 0.5 : 1,
                                 fontWeight: 600,
                               }}
                             >
@@ -1955,7 +2056,10 @@ export default function CreateTrainingRequest() {
 
                             <div
                               onClick={() => {
-                                if (roleKey === "dmmu" && !selectedShgForMembers)
+                                if (
+                                  roleKey === "dmmu" &&
+                                  !selectedShgForMembers
+                                )
                                   return;
                                 setParticipantSubStep(2);
                               }}
@@ -1979,7 +2083,9 @@ export default function CreateTrainingRequest() {
                                 fontWeight: 600,
                               }}
                             >
-                              {roleKey === "dmmu" ? "3 — Members" : "2 — Members"}
+                              {roleKey === "dmmu"
+                                ? "3 — Members"
+                                : "2 — Members"}
                             </div>
                           </div>
 
@@ -2030,18 +2136,18 @@ export default function CreateTrainingRequest() {
                                         borderRadius: 12,
                                         border:
                                           selectedBlockForShg?.block_id ===
-                                            b.block_id
+                                          b.block_id
                                             ? "2px solid #2563eb"
                                             : "1px solid #e5e7eb",
                                         cursor: "pointer",
                                         background:
                                           selectedBlockForShg?.block_id ===
-                                            b.block_id
+                                          b.block_id
                                             ? "linear-gradient(135deg, #dbeafe, #eff6ff)"
                                             : "#ffffff",
                                         boxShadow:
                                           selectedBlockForShg?.block_id ===
-                                            b.block_id
+                                          b.block_id
                                             ? "0 6px 18px rgba(37, 99, 235, 0.25)"
                                             : "0 2px 6px rgba(0,0,0,0.06)",
                                         transition: "all 0.25s ease",
@@ -2139,87 +2245,94 @@ export default function CreateTrainingRequest() {
                               </div>
                             )}
 
-                          {participantSubStep === 2 && selectedShgForMembers && (
-                            <div>
-                              <h4>Members (selected SHG)</h4>
-                              <div
-                                style={{
-                                  fontSize: 13,
-                                  color: "#6c757d",
-                                  marginBottom: 8,
-                                }}
-                              >
-                                Use PLD filter, search and pagination inside the
-                                member list. Check members to add them to
-                                selection. Once checked, items cannot be unchecked
-                                (use Remove in Review step).
-                              </div>
-
-                              {selectedShgLoading ? (
+                          {participantSubStep === 2 &&
+                            selectedShgForMembers && (
+                              <div>
+                                <h4>Members (selected SHG)</h4>
                                 <div
-                                  className="table-spinner"
-                                  style={{ padding: 12 }}
+                                  style={{
+                                    fontSize: 13,
+                                    color: "#6c757d",
+                                    marginBottom: 8,
+                                  }}
                                 >
-                                  Loading members…
+                                  Use PLD filter, search and pagination inside
+                                  the member list. Check members to add them to
+                                  selection. Once checked, items cannot be
+                                  unchecked (use Remove in Review step).
                                 </div>
-                              ) : (
-                                <div className="no-action">
-                                  <MemberListArea
-                                    selectedShg={selectedShgForMembers}
-                                    onToggleMember={async (member, checked) => {
-                                      const lokos_shg_code =
-                                        member.shg_code ||
-                                        member.lokos_shg_code ||
-                                        member.shg?.shg_code ||
-                                        (selectedShgForMembers &&
-                                          (selectedShgForMembers.shg_code ||
-                                            selectedShgForMembers.code));
-                                      const lokos_member_code =
-                                        member.member_code ||
-                                        member.lokos_member_code ||
-                                        member.memberCode ||
-                                        member.id;
 
-                                      if (!checked) {
-                                        // ignore uncheck attempts
-                                        return;
-                                      }
+                                {selectedShgLoading ? (
+                                  <div
+                                    className="table-spinner"
+                                    style={{ padding: 12 }}
+                                  >
+                                    Loading members…
+                                  </div>
+                                ) : (
+                                  <div className="no-action">
+                                    <MemberListArea
+                                      selectedShg={selectedShgForMembers}
+                                      onToggleMember={async (
+                                        member,
+                                        checked,
+                                      ) => {
+                                        const lokos_shg_code =
+                                          member.shg_code ||
+                                          member.lokos_shg_code ||
+                                          member.shg?.shg_code ||
+                                          (selectedShgForMembers &&
+                                            (selectedShgForMembers.shg_code ||
+                                              selectedShgForMembers.code));
+                                        const lokos_member_code =
+                                          member.member_code ||
+                                          member.lokos_member_code ||
+                                          member.memberCode ||
+                                          member.id;
 
-                                      const already = selectedBeneficiaries.some(
-                                        (p) =>
-                                          String(p.lokos_member_code) ===
-                                          String(lokos_member_code) &&
-                                          String(p.lokos_shg_code) ===
-                                          String(lokos_shg_code),
-                                      );
-                                      if (already) return;
+                                        if (!checked) {
+                                          // ignore uncheck attempts
+                                          return;
+                                        }
 
-                                      try {
-                                        const detail =
-                                          await fetchMemberDetailBestEffort(
-                                            member,
+                                        const already =
+                                          selectedBeneficiaries.some(
+                                            (p) =>
+                                              String(p.lokos_member_code) ===
+                                                String(lokos_member_code) &&
+                                              String(p.lokos_shg_code) ===
+                                                String(lokos_shg_code),
                                           );
-                                        const merged = {
-                                          ...(detail || {}),
-                                          shg_code: lokos_shg_code,
-                                          member_code: lokos_member_code,
-                                        };
-                                        addSelectedMember(merged);
-                                      } catch (e) {
-                                        addSelectedMember({
-                                          ...member,
-                                          shg_code: lokos_shg_code,
-                                          member_code: lokos_member_code,
-                                        });
+                                        if (already) return;
+
+                                        try {
+                                          const detail =
+                                            await fetchMemberDetailBestEffort(
+                                              member,
+                                            );
+                                          const merged = {
+                                            ...(detail || {}),
+                                            shg_code: lokos_shg_code,
+                                            member_code: lokos_member_code,
+                                          };
+                                          addSelectedMember(merged);
+                                        } catch (e) {
+                                          addSelectedMember({
+                                            ...member,
+                                            shg_code: lokos_shg_code,
+                                            member_code: lokos_member_code,
+                                          });
+                                        }
+                                      }}
+                                      reloadToken={memberListReloadToken}
+                                      selectedMemberCodes={
+                                        selectedMemberCodesSet
                                       }
-                                    }}
-                                    reloadToken={memberListReloadToken}
-                                    selectedMemberCodes={selectedMemberCodesSet}
-                                  />
-                                </div>
-                              )}
-                            </div>
-                          )}
+                                    />
+                                  </div>
+                                )}
+                              </div>
+                            )}
                         </>
                       ) : (
                         <div>
@@ -2341,8 +2454,8 @@ export default function CreateTrainingRequest() {
                                   fontWeight: 600,
                                 }}
                               >
-                                No Training Partner has been assigned a target for
-                                this training plan.
+                                No Training Partner has been assigned a target
+                                for this training plan.
                               </div>
                             )}
                           </div>
@@ -2356,7 +2469,8 @@ export default function CreateTrainingRequest() {
                               fontWeight: 600,
                             }}
                           >
-                            Please wait till all training partners are assigned their targets by State.
+                            Please wait till all training partners are assigned
+                            their targets by State.
                           </div>
                         )}
                       </div>
@@ -2532,7 +2646,9 @@ export default function CreateTrainingRequest() {
                           Training request failed to create.
                         </div>
                       )}
-                      <div>Successes: {submitSummary.successes?.length ?? 0}</div>
+                      <div>
+                        Successes: {submitSummary.successes?.length ?? 0}
+                      </div>
                       <div>Failures: {submitSummary.failures?.length ?? 0}</div>
                       {submitSummary.failures?.length > 0 && (
                         <details style={{ marginTop: 6 }}>
@@ -2633,7 +2749,9 @@ export default function CreateTrainingRequest() {
                         // Partner Name
                         if (key === "partner") {
                           const partnerObj = Array.isArray(partners)
-                            ? partners.find((p) => p.id === Number(form.partner))
+                            ? partners.find(
+                                (p) => p.id === Number(form.partner),
+                              )
                             : null;
 
                           value = partnerObj?.name || value || "-";
@@ -2716,31 +2834,140 @@ export default function CreateTrainingRequest() {
                 </div>
               </div>
 
+              {/* --- NEW: Engagement Check UI --- */}
+              {engagementStatus === "has_engaged" && (
+                <div
+                  style={{
+                    marginTop: 16,
+                    padding: 12,
+                    background: "#fef2f2",
+                    border: "1px solid #f87171",
+                    borderRadius: 8,
+                  }}
+                >
+                  <h4 style={{ margin: "0 0 8px 0", color: "#b91c1c" }}>
+                    ⚠️ Ineligible Participants Found
+                  </h4>
+                  <div
+                    style={{ fontSize: 13, color: "#991b1b", marginBottom: 12 }}
+                  >
+                    The following participants are currently engaged in another
+                    ongoing/scheduled training and cannot be added.
+                  </div>
+                  <div
+                    style={{
+                      maxHeight: 150,
+                      overflow: "auto",
+                      background: "#fff",
+                      border: "1px solid #fca5a5",
+                      borderRadius: 6,
+                    }}
+                  >
+                    <table
+                      className="table table-compact"
+                      style={{ margin: 0 }}
+                    >
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>
+                            {form.training_type === "BENEFICIARY"
+                              ? "Member Code"
+                              : "Designation"}
+                          </th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {engagedParticipants.map((p, i) => (
+                          <tr key={i}>
+                            <td>
+                              {p.member_name || p.full_name || p.name || "—"}
+                            </td>
+                            <td>
+                              {form.training_type === "BENEFICIARY"
+                                ? p.lokos_member_code
+                                : p.designation || "—"}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                  <div style={{ marginTop: 12, textAlign: "right" }}>
+                    <button
+                      className="btn-sm btn-flat"
+                      style={{
+                        background: "#ef4444",
+                        color: "#fff",
+                        border: "none",
+                      }}
+                      onClick={removeIneligibleParticipants}
+                    >
+                      Remove Ineligible Participants
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {engagementStatus === "all_clear" && (
+                <div
+                  style={{
+                    marginTop: 16,
+                    padding: 10,
+                    background: "#f0fdf4",
+                    border: "1px solid #4ade80",
+                    borderRadius: 8,
+                    color: "#166534",
+                    fontWeight: 600,
+                  }}
+                >
+                  ✅ All selected participants are eligible and available! You
+                  can now submit.
+                </div>
+              )}
+
               <div
                 style={{
                   display: "flex",
                   gap: 8,
                   justifyContent: "flex-end",
-                  marginTop: 12,
+                  marginTop: 16,
                 }}
               >
                 <button
                   className="btn btn-outline"
                   onClick={() => setPreviewOpen(false)}
-                  disabled={submitting}
+                  disabled={submitting || engagementStatus === "checking"}
                 >
                   Cancel
                 </button>
-                <button
-                  className="btn"
-                  onClick={async () => {
-                    await confirmAndSubmit();
-                    setPreviewOpen(false);
-                  }}
-                  disabled={submitting}
-                >
-                  {submitting ? "Submitting…" : "Confirm & Submit"}
-                </button>
+
+                {engagementStatus === "idle" ||
+                engagementStatus === "has_engaged" ? (
+                  <button
+                    className="btn"
+                    onClick={checkEngagementBeforeSubmit}
+                    disabled={
+                      engagementStatus === "checking" ||
+                      engagementStatus === "has_engaged"
+                    }
+                  >
+                    {engagementStatus === "checking"
+                      ? "Checking Availability..."
+                      : "Check Availability & Confirm"}
+                  </button>
+                ) : (
+                  <button
+                    className="btn"
+                    onClick={async () => {
+                      await confirmAndSubmit();
+                      setPreviewOpen(false);
+                    }}
+                    disabled={submitting}
+                  >
+                    {submitting ? "Submitting…" : "Final Submit"}
+                  </button>
+                )}
               </div>
             </div>
           </div>
@@ -2856,8 +3083,8 @@ export default function CreateTrainingRequest() {
             >
               <h3 style={{ marginTop: 0 }}>Loading data…</h3>
               <p style={{ color: "#6c757d" }}>
-                Preparing training plans and themes. Master trainers and partners
-                are loaded only when needed.
+                Preparing training plans and themes. Master trainers and
+                partners are loaded only when needed.
               </p>
               <div style={{ marginTop: 12 }}>
                 <div className="table-spinner" style={{ padding: 12 }}>
