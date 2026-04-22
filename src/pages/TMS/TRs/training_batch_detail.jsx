@@ -26,7 +26,7 @@ function saveCache(id, payload) {
       DETAIL_CACHE_PREFIX + id,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch (e) { }
+  } catch (e) {}
 }
 
 function fmtDate(iso) {
@@ -227,7 +227,7 @@ export default function TrainingBatchDetail() {
     console.log("🔄 Refresh clicked");
     try {
       localStorage.removeItem(DETAIL_CACHE_PREFIX + batchId);
-    } catch (e) { }
+    } catch (e) {}
     setSelectedAttendanceDate(null);
     setSelectedAttendanceRecords([]);
     setSelectedMediaDate(null);
@@ -319,11 +319,26 @@ export default function TrainingBatchDetail() {
                 </h2>
 
                 <div className="batch-header-actions">
+                  {batchData?.status === "CLOSED" && (
+                    <button
+                      className="btn-primary"
+                      onClick={() =>
+                        navigate(`/tms/download-certificate/${batchId}`)
+                      }
+                      style={{ background: "#16a34a" }}
+                    >
+                      📄 Download Certificate
+                    </button>
+                  )}
+
                   <button className="btn-primary" onClick={handleRefresh}>
                     Refresh
                   </button>
 
-                  <button className="btn-secondary" onClick={() => navigate(-1)}>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => navigate(-1)}
+                  >
                     Back
                   </button>
                 </div>
@@ -337,8 +352,9 @@ export default function TrainingBatchDetail() {
                 </div>
               ) : closureRequest ? (
                 <div className="closure-banner closed">
-                  <strong>This batch is now closed.</strong>A closure request has
-                  been submitted for this batch and is under review / processing.
+                  <strong>This batch is now closed.</strong>A closure request
+                  has been submitted for this batch and is under review /
+                  processing.
                 </div>
               ) : null}
 
@@ -419,8 +435,8 @@ export default function TrainingBatchDetail() {
                         <div className="info-tile">
                           <span className="info-label">District</span>
                           <span className="info-value">
-                            {trainingRequestDetail?.district?.district_name_en ||
-                              "-"}
+                            {trainingRequestDetail?.district
+                              ?.district_name_en || "-"}
                           </span>
                         </div>
 
@@ -552,7 +568,8 @@ export default function TrainingBatchDetail() {
                                 </div>
                               ) : selectedAttendanceRecords.length === 0 ? (
                                 <div className="muted">
-                                  No participant attendance records for this date.
+                                  No participant attendance records for this
+                                  date.
                                 </div>
                               ) : (
                                 <div className="attendance-participant-table">
@@ -607,7 +624,9 @@ export default function TrainingBatchDetail() {
                                       borderTop: "1px dashed #e5e7eb",
                                     }}
                                   >
-                                    <h4>Media on {fmtDate(selectedMediaDate)}</h4>
+                                    <h4>
+                                      Media on {fmtDate(selectedMediaDate)}
+                                    </h4>
                                     <div
                                       style={{
                                         display: "flex",
@@ -615,77 +634,79 @@ export default function TrainingBatchDetail() {
                                         gap: 12,
                                       }}
                                     >
-                                      {mediaByDate[selectedMediaDate].map((m) => {
-                                        const src = normalizeMediaUrl(m.file);
-                                        const isImage =
-                                          src &&
-                                          !src.toLowerCase().endsWith(".pdf");
-                                        return (
-                                          <div
-                                            key={m.id}
-                                            style={{
-                                              width: 150,
-                                              borderRadius: 6,
-                                              border: "1px solid #e5e7eb",
-                                              padding: 8,
-                                              background: "#fff",
-                                              fontSize: 12,
-                                            }}
-                                          >
-                                            {isImage ? (
-                                              <img
-                                                src={src}
-                                                alt={m.category}
-                                                style={{
-                                                  width: "100%",
-                                                  height: 90,
-                                                  objectFit: "cover",
-                                                  borderRadius: 4,
-                                                  cursor: "pointer",
-                                                }}
-                                                onClick={() =>
-                                                  setMediaPreviewSrc(src)
-                                                }
-                                              />
-                                            ) : (
-                                              <div
-                                                style={{
-                                                  height: 90,
-                                                  display: "flex",
-                                                  alignItems: "center",
-                                                  justifyContent: "center",
-                                                  background: "#f9fafb",
-                                                  borderRadius: 4,
-                                                  cursor: "pointer",
-                                                }}
-                                                onClick={() =>
-                                                  window.open(src, "_blank")
-                                                }
-                                              >
-                                                View PDF
-                                              </div>
-                                            )}
+                                      {mediaByDate[selectedMediaDate].map(
+                                        (m) => {
+                                          const src = normalizeMediaUrl(m.file);
+                                          const isImage =
+                                            src &&
+                                            !src.toLowerCase().endsWith(".pdf");
+                                          return (
                                             <div
+                                              key={m.id}
                                               style={{
-                                                marginTop: 4,
-                                                fontWeight: 600,
+                                                width: 150,
+                                                borderRadius: 6,
+                                                border: "1px solid #e5e7eb",
+                                                padding: 8,
+                                                background: "#fff",
+                                                fontSize: 12,
                                               }}
                                             >
-                                              {m.category}
-                                            </div>
-                                            {m.notes && (
+                                              {isImage ? (
+                                                <img
+                                                  src={src}
+                                                  alt={m.category}
+                                                  style={{
+                                                    width: "100%",
+                                                    height: 90,
+                                                    objectFit: "cover",
+                                                    borderRadius: 4,
+                                                    cursor: "pointer",
+                                                  }}
+                                                  onClick={() =>
+                                                    setMediaPreviewSrc(src)
+                                                  }
+                                                />
+                                              ) : (
+                                                <div
+                                                  style={{
+                                                    height: 90,
+                                                    display: "flex",
+                                                    alignItems: "center",
+                                                    justifyContent: "center",
+                                                    background: "#f9fafb",
+                                                    borderRadius: 4,
+                                                    cursor: "pointer",
+                                                  }}
+                                                  onClick={() =>
+                                                    window.open(src, "_blank")
+                                                  }
+                                                >
+                                                  View PDF
+                                                </div>
+                                              )}
                                               <div
                                                 style={{
-                                                  marginTop: 2,
-                                                  color: "#4b5563",
+                                                  marginTop: 4,
+                                                  fontWeight: 600,
                                                 }}
                                               >
-                                                {m.notes}
+                                                {m.category}
                                               </div>
-                                            )}
-                                          </div>
-                                        );
-                                      })}
+                                              {m.notes && (
+                                                <div
+                                                  style={{
+                                                    marginTop: 2,
+                                                    color: "#4b5563",
+                                                  }}
+                                                >
+                                                  {m.notes}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        },
+                                      )}
                                     </div>
                                   </div>
                                 )}
@@ -722,7 +743,8 @@ export default function TrainingBatchDetail() {
                               </div>
                               <div>
                                 <strong>Halls:</strong>{" "}
-                                {centreDetail.training_hall_count || 0} (Capacity:{" "}
+                                {centreDetail.training_hall_count || 0}{" "}
+                                (Capacity:{" "}
                                 {centreDetail.training_hall_capacity || 0})
                               </div>
                             </div>
@@ -804,7 +826,9 @@ export default function TrainingBatchDetail() {
                               <div className="facility-item">
                                 Transport
                                 <span>
-                                  {centreDetail.transport_facility ? "✅" : "❌"}
+                                  {centreDetail.transport_facility
+                                    ? "✅"
+                                    : "❌"}
                                 </span>
                               </div>
 
@@ -826,28 +850,30 @@ export default function TrainingBatchDetail() {
                                 <h4>Media</h4>
 
                                 <div className="media-grid">
-                                  {centreDetail.submissions.map((submission) => {
-                                    const src = normalizeMediaUrl(
-                                      submission.file,
-                                    );
+                                  {centreDetail.submissions.map(
+                                    (submission) => {
+                                      const src = normalizeMediaUrl(
+                                        submission.file,
+                                      );
 
-                                    return (
-                                      <div
-                                        key={submission.id}
-                                        className="media-card"
-                                      >
-                                        <img
-                                          src={src}
-                                          alt={submission.category}
-                                          onClick={() =>
-                                            window.open(src, "_blank")
-                                          }
-                                        />
+                                      return (
+                                        <div
+                                          key={submission.id}
+                                          className="media-card"
+                                        >
+                                          <img
+                                            src={src}
+                                            alt={submission.category}
+                                            onClick={() =>
+                                              window.open(src, "_blank")
+                                            }
+                                          />
 
-                                        <div>{submission.category}</div>
-                                      </div>
-                                    );
-                                  })}
+                                          <div>{submission.category}</div>
+                                        </div>
+                                      );
+                                    },
+                                  )}
                                 </div>
                               </div>
                             )}
@@ -859,7 +885,8 @@ export default function TrainingBatchDetail() {
                     {/* 5. PARTICIPANT DETAILS */}
                     <div>
                       <h3 className="participants-title">
-                        👥 {isTrainerTraining ? "Batch Trainers" : "Participants"}{" "}
+                        👥{" "}
+                        {isTrainerTraining ? "Batch Trainers" : "Participants"}{" "}
                         ({displayedParticipants.length})
                       </h3>
 
@@ -961,12 +988,12 @@ export default function TrainingBatchDetail() {
                                   }}
                                   onMouseEnter={
                                     (e) =>
-                                    (e.currentTarget.style.background =
-                                      "#f4f8fd") // UI CHANGE hover
+                                      (e.currentTarget.style.background =
+                                        "#f4f8fd") // UI CHANGE hover
                                   }
                                   onMouseLeave={(e) =>
-                                  (e.currentTarget.style.background =
-                                    "transparent")
+                                    (e.currentTarget.style.background =
+                                      "transparent")
                                   }
                                 >
                                   <td className="tdStyle">{index + 1}</td>
@@ -988,17 +1015,20 @@ export default function TrainingBatchDetail() {
                                         {fmtDate(p.registered_on)}
                                       </td>
                                       <td
-                                        className={`table-cell-bold ${p.is_replaced
-                                          ? "replaced-yes"
-                                          : "replaced-no"
-                                          }`}
+                                        className={`table-cell-bold ${
+                                          p.is_replaced
+                                            ? "replaced-yes"
+                                            : "replaced-no"
+                                        }`}
                                       >
                                         {p.is_replaced ? "Yes" : "No"}
                                       </td>
                                     </>
                                   ) : (
                                     <>
-                                      <td className="tdStyle">{p.age || "-"}</td>
+                                      <td className="tdStyle">
+                                        {p.age || "-"}
+                                      </td>
                                       <td className="tdStyle">
                                         {p.gender || "-"}
                                       </td>

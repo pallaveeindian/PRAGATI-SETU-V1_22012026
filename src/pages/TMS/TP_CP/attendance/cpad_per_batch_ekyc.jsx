@@ -118,6 +118,21 @@ export default function CpAdPerBatchEkyc() {
       });
     });
 
+    // NEW: Include regular trainers (acting as trainees in a TOT batch)
+    (batchObj.trainer_participations || []).forEach((tp) => {
+      const key = `trainee-${tp.id}`;
+      rows.push({
+        key,
+        id: null,
+        batch: batchObj.id,
+        participant_id: String(tp.id),
+        participant_role: "trainee",
+        ekyc_status: "PENDING",
+        verified_on: null,
+        remarks: "",
+      });
+    });
+
     return rows;
   }
 
@@ -160,6 +175,10 @@ export default function CpAdPerBatchEkyc() {
     });
     (batch.beneficiary_participations || []).forEach((bp) => {
       expected.add(`trainee-${bp.id}`);
+    });
+    // NEW: Add trainer participations to expected completion list
+    (batch.trainer_participations || []).forEach((tp) => {
+      expected.add(`trainee-${tp.id}`);
     });
     if (!expected.size) return false;
 
@@ -424,6 +443,14 @@ export default function CpAdPerBatchEkyc() {
       const name = b?.member_name || `Beneficiary #${bp.beneficiary}`;
       map[`trainee-${bp.id}`] = { name, roleLabel: "Trainee" };
     });
+
+    // NEW: Map names for regular trainers
+    (batch.trainer_participations || []).forEach((tp) => {
+      const t = (batch.trainer || []).find((x) => x.id === tp.trainer);
+      const name = t?.full_name || t?.member_name || `Trainer #${tp.trainer}`;
+      map[`trainee-${tp.id}`] = { name, roleLabel: "Trainee" };
+    });
+
     return map;
   }, [batch]);
 

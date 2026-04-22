@@ -7,7 +7,6 @@ import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext";
 
-
 import { LanguageProvider } from "../src/pages/LanguageContext.jsx";
 
 // Homepage
@@ -53,7 +52,7 @@ import TrainingRequestDetail from "./pages/TMS/TRs/training_req_detail";
 import TrainingBatchList from "./pages/TMS/TRs/training_batch_list";
 import TrainingBatchDetail from "./pages/TMS/TRs/training_batch_detail";
 import BatchCertificate from "./pages/TMS/TRs/batch_certificate";
-
+import DownloadBatchCertificate from "./pages/TMS/TRs/dwnld_bcert";
 import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
 
 import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
@@ -108,7 +107,10 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
-        <Route path="/beneficiary-profiling" element={<BeneficiaryProfiling />} />
+        <Route
+          path="/beneficiary-profiling"
+          element={<BeneficiaryProfiling />}
+        />
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/training-management" element={<TrainingManagement />} />
         <Route path="/lakhpati-didi" element={<LakhpatiDidi />} />
@@ -143,7 +145,10 @@ export default function App() {
               path="/tms/smmu/partner-targets"
               element={<SmmuCreatePartnerTargets />}
             />
-            <Route path="/tms/smmu/tp-TvA" element={<SmmuTargetAchievement />} />
+            <Route
+              path="/tms/smmu/tp-TvA"
+              element={<SmmuTargetAchievement />}
+            />
           </Route>
 
           {/* DMMU Routes */}
@@ -170,7 +175,10 @@ export default function App() {
           <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
             <Route path="/tms/tp/dashboard" element={<TpDashboard />}></Route>
             <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
-            <Route path="/tms/tp/centre/new" element={<TpCentreRegistration />} />
+            <Route
+              path="/tms/tp/centre/new"
+              element={<TpCentreRegistration />}
+            />
             <Route
               path="/tms/tp/centre/:centreId"
               element={<TpCentreRegistration />}
@@ -192,7 +200,10 @@ export default function App() {
           {/* TPCP Routes */}
           <Route element={<ProtectedRoute allowedRoles="tp_contact_person" />}>
             <Route path="/tms/cp/dashboard" element={<CpDashboard />}></Route>
-            <Route path="/tms/cp/batch-detail/:id" element={<CpBatchDetail />} />
+            <Route
+              path="/tms/cp/batch-detail/:id"
+              element={<CpBatchDetail />}
+            />
             <Route
               path="/tms/cp/batch-attendance-ekyc/:id"
               element={<CpAdPerBatchEkyc />}
@@ -255,6 +266,19 @@ export default function App() {
               element={<BatchCertificate />}
             />
           </Route>
+          {/* NEW: Download Batch Certificate Route */}
+          <Route
+            element={
+              <ProtectedRoute
+                allowedRoles={["smmu", "dmmu", "bmmu", "training_partner"]}
+              />
+            }
+          >
+            <Route
+              path="/tms/download-certificate/:id"
+              element={<DownloadBatchCertificate />}
+            />
+          </Route>
 
           {/* Batch Detail Permissions */}
           <Route
@@ -313,7 +337,10 @@ export default function App() {
             />
             <Route path="reports" element={<LdmsReports />} />
             <Route path="dash-block/:blockId" element={<BlockMap />} />
-            <Route path="dash-district/:districtId" element={<DmmuBlockMap />} />
+            <Route
+              path="dash-district/:districtId"
+              element={<DmmuBlockMap />}
+            />
             {/* future LDMS pages */}
             {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
             {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}

@@ -6,7 +6,7 @@ import LeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API, LOOKUP_API } from "../../../api/axios";
+import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 
 const DETAIL_CACHE_PREFIX = "tms_tr_detail_cache_v1::";
@@ -26,7 +26,7 @@ function saveCache(id, payload) {
       DETAIL_CACHE_PREFIX + id,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch (e) { }
+  } catch (e) {}
 }
 
 /* Small, reusable Modal used to show participant/trainer details */
@@ -116,12 +116,22 @@ export default function TrainingRequestDetail() {
     return c?.payload?.training_plan_obj || null;
   });
 
+  // TR location names
+  const [trLocNames, setTrLocNames] = useState(() => {
+    const c = loadCache(id);
+    return c?.payload?.trLocNames || { district: "", block: "" };
+  });
+
   // participants list and loading
   const [participants, setParticipants] = useState(() => {
     const c = loadCache(id);
     return c?.payload?.participants || [];
   });
   const [participantLoading, setParticipantLoading] = useState(false);
+
+  // MIGRATED DATA STATE
+  const [migratedData, setMigratedData] = useState(null);
+  const [migratedLoading, setMigratedLoading] = useState(false);
 
   // modal state for viewing participant details
   const [modalOpen, setModalOpen] = useState(false);
@@ -272,7 +282,23 @@ export default function TrainingRequestDetail() {
       const trObj = trResp?.data ?? trResp ?? null;
       setTr(trObj);
 
-      // 1.a) fetch training plan name (fast list)
+      // 1.a) fetch TR location names
+      let dName =
+        trObj?.district_name_en || trObj?.district_name || "";
+      let bName = trObj?.block_name_en || trObj?.block_name || "";
+
+      if (!dName && trObj?.district && typeof trObj.district !== "object") {
+        dName =
+          (await fetchDistrictNameSafe(trObj.district)) ||
+          String(trObj.district);
+      }
+      if (!bName && trObj?.block && typeof trObj.block !== "object") {
+        bName = (await fetchBlockNameSafe(trObj.block)) || String(trObj.block);
+      }
+      const locNamesLocal = { district: dName, block: bName };
+      setTrLocNames(locNamesLocal);
+
+      // 1.b) fetch training plan name (fast list)
       let trainingPlanObjLocal = null;
       try {
         if (trObj?.training_plan) {
@@ -336,6 +362,7 @@ export default function TrainingRequestDetail() {
         partner: partnerObj,
         participants: parts || [],
         training_plan_obj: trainingPlanObjLocal,
+        trLocNames: locNamesLocal,
       });
     } catch (e) {
       console.error("fetch detail failed", e);
@@ -546,13 +573,35 @@ export default function TrainingRequestDetail() {
   function handleRefresh() {
     try {
       localStorage.removeItem(DETAIL_CACHE_PREFIX + id);
-    } catch (e) { }
+    } catch (e) {}
     setRefreshToken((t) => t + 1);
   }
 
   useEffect(() => {
     setCurrentPage(1);
   }, [pldFilter]);
+
+  // FETCH MIGRATED / DELETED PARTICIPANTS IF REMARKS EXIST
+  useEffect(() => {
+    async function fetchMigrated() {
+      if (!tr?.remarks) {
+        setMigratedData(null);
+        return;
+      }
+      setMigratedLoading(true);
+      try {
+        const res = await api.get(
+          `/tms/training-requests/${id}/deleted-participants/`,
+        );
+        setMigratedData(res.data);
+      } catch (err) {
+        console.warn("Failed to fetch migrated participants:", err);
+      } finally {
+        setMigratedLoading(false);
+      }
+    }
+    fetchMigrated();
+  }, [tr?.remarks, id]);
 
   return (
     <div className="app-shell">
@@ -608,11 +657,29 @@ export default function TrainingRequestDetail() {
                 {loadingAll ? (
                   <div className="table-message">Loading all details…</div>
                 ) : !tr ? (
-                  <div className="table-message">Training request not found.</div>
+                  <div className="table-message">
+                    Training request not found.
+                  </div>
                 ) : (
                   <>
                     {/* SUMMARY */}
                     <div className="summary-box">
+                      <div
+                        style={{
+                          width: "100%",
+                          borderBottom: "1px dashed #e4ecf5",
+                          paddingBottom: 8,
+                          marginBottom: 4,
+                        }}
+                      >
+                        <strong style={{ color: "#3d6ba6" }}>Location:</strong>{" "}
+                        <span style={{ fontWeight: 600 }}>
+                          {trLocNames.district
+                            ? `${trLocNames.district} / ${trLocNames.block}`
+                            : "Not Assigned"}
+                        </span>
+                      </div>
+
                       <div>
                         <strong>Plan:</strong>{" "}
                         {trainingPlanObj?.training_name ||
@@ -648,20 +715,22 @@ export default function TrainingRequestDetail() {
                       <div className="participant-toolbar">
                         {(tr.training_type || "").toUpperCase() ===
                           "BENEFICIARY" && (
-                            <>
-                              <label style={{ fontWeight: 600 }}>PLD Filter</label>
+                          <>
+                            <label style={{ fontWeight: 600 }}>
+                              PLD Filter
+                            </label>
 
-                              <select
-                                value={pldFilter}
-                                onChange={(e) => setPldFilter(e.target.value)}
-                                className="input-filter"
-                              >
-                                <option value="">All</option>
-                                <option value="YES">YES</option>
-                                <option value="NO">NO</option>
-                              </select>
-                            </>
-                          )}
+                            <select
+                              value={pldFilter}
+                              onChange={(e) => setPldFilter(e.target.value)}
+                              className="input-filter"
+                            >
+                              <option value="">All</option>
+                              <option value="YES">YES</option>
+                              <option value="NO">NO</option>
+                            </select>
+                          </>
+                        )}
 
                         <div style={{ marginLeft: "auto", color: "#2b4e72" }}>
                           {participantLoading
@@ -781,13 +850,141 @@ export default function TrainingRequestDetail() {
                       </div>
                     </div>
 
+                    {/* MIGRATED / COMBINED DETAILS */}
+                    {(migratedLoading || migratedData) && (
+                      <div
+                        style={{
+                          marginBottom: 14,
+                          marginTop: 24,
+                          borderTop: "2px dashed #a7c6ed",
+                          paddingTop: 16,
+                        }}
+                      >
+                        <h4 style={{ color: "#2b4e72", marginBottom: 12 }}>
+                          Migrated / Combined Details
+                        </h4>
+
+                        {migratedLoading ? (
+                          <div className="table-message">
+                            Fetching migrated details…
+                          </div>
+                        ) : (
+                          <>
+                            {/* RELATED TRAINING REQUESTS */}
+                            {migratedData?.related_training_requests?.length >
+                              0 && (
+                              <div style={{ marginBottom: 16 }}>
+                                <strong style={{ color: "#2b4e72" }}>
+                                  Related Training Requests:
+                                </strong>
+                                <div
+                                  style={{
+                                    display: "flex",
+                                    gap: 10,
+                                    flexWrap: "wrap",
+                                    marginTop: 8,
+                                  }}
+                                >
+                                  {migratedData.related_training_requests.map(
+                                    (r) => (
+                                      <div
+                                        key={r.id}
+                                        style={{
+                                          background: "#f4f8fd",
+                                          border: "1px solid #a7c6ed",
+                                          padding: "8px 12px",
+                                          borderRadius: 6,
+                                          display: "flex",
+                                          alignItems: "center",
+                                          gap: 12,
+                                        }}
+                                      >
+                                        <span
+                                          style={{
+                                            fontWeight: 600,
+                                            color: "#2b4e72",
+                                          }}
+                                        >
+                                          TR #{r.id} ({r.status})
+                                        </span>
+                                        <button
+                                          className="btn-sm btn-outline"
+                                          style={{
+                                            padding: "4px 10px",
+                                            fontSize: 12,
+                                          }}
+                                          onClick={() =>
+                                            navigate(`/tms/tr-detail/${r.id}`)
+                                          }
+                                        >
+                                          View Request
+                                        </button>
+                                      </div>
+                                    ),
+                                  )}
+                                </div>
+                              </div>
+                            )}
+
+                            {/* MIGRATED PARTICIPANTS TABLE */}
+                            {migratedData?.deleted_participants?.length > 0 && (
+                              <div>
+                                <strong style={{ color: "#2b4e72" }}>
+                                  Migrated Participants:
+                                </strong>
+                                <div
+                                  className="table-container"
+                                  style={{ marginTop: 8, maxHeight: 300 }}
+                                >
+                                  <table className="training-table">
+                                    <thead>
+                                      <tr>
+                                        <th>Name</th>
+                                        <th>Mobile</th>
+                                        {tr.training_type === "BENEFICIARY" ? (
+                                          <th>SHG Code</th>
+                                        ) : (
+                                          <th>Aadhaar</th>
+                                        )}
+                                      </tr>
+                                    </thead>
+                                    <tbody>
+                                      {migratedData.deleted_participants.map(
+                                        (p) => (
+                                          <tr key={p.id}>
+                                            <td>
+                                              {p.full_name ||
+                                                p.member_name ||
+                                                "-"}
+                                            </td>
+                                            <td>
+                                              {p.mobile_no || p.mobile || "-"}
+                                            </td>
+                                            <td>
+                                              {p.lokos_shg_code ||
+                                                p.aadhaar_no ||
+                                                "-"}
+                                            </td>
+                                          </tr>
+                                        ),
+                                      )}
+                                    </tbody>
+                                  </table>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                    )}
+
                     {/* ACTION BUTTONS */}
                     <div style={{ marginTop: 12 }}>
                       {isDmmu &&
                         (tr.status || "").toUpperCase() === "PENDING" && (
                           <div className="action-box">
-                            <strong>Note:</strong> Request is PENDING. Appropriate
-                            authority action required.
+                            <strong>Note:</strong> Request is PENDING.
+                            Appropriate authority action required.
                             <button
                               className="btn-primary"
                               onClick={() =>
@@ -799,39 +996,43 @@ export default function TrainingRequestDetail() {
                           </div>
                         )}
 
-                      {isTP && (tr.status || "").toUpperCase() === "REJECTED" && (
-                        <div className="action-box">
-                          <strong>Note:</strong> Request is REJECTED.
+                      {isTP &&
+                        (tr.status || "").toUpperCase() === "REJECTED" && (
+                          <div className="action-box">
+                            <strong>Note:</strong> Request is REJECTED.
+                            <button
+                              className="btn-primary"
+                              onClick={() =>
+                                navigate(`/tms/tp/batches/create/${id}`)
+                              }
+                            >
+                              Review Batches
+                            </button>
+                          </div>
+                        )}
+
+                      {isTP &&
+                        (tr.status || "").toUpperCase() === "BATCHING" && (
                           <button
                             className="btn-primary"
                             onClick={() =>
                               navigate(`/tms/tp/batches/create/${id}`)
                             }
                           >
-                            Review Batches
+                            Create Batches
                           </button>
-                        </div>
-                      )}
-
-                      {isTP && (tr.status || "").toUpperCase() === "BATCHING" && (
-                        <button
-                          className="btn-primary"
-                          onClick={() => navigate(`/tms/tp/batches/create/${id}`)}
-                        >
-                          Create Batches
-                        </button>
-                      )}
+                        )}
 
                       {["ONGOING", "PENDING", "COMPLETED", "REJECTED"].includes(
                         (tr.status || "").toUpperCase(),
                       ) && (
-                          <button
-                            className="btn-outline"
-                            onClick={() => navigate(`/tms/batches-list/${id}`)}
-                          >
-                            View Batches in this Training Request
-                          </button>
-                        )}
+                        <button
+                          className="btn-outline"
+                          onClick={() => navigate(`/tms/batches-list/${id}`)}
+                        >
+                          View Batches in this Training Request
+                        </button>
+                      )}
                     </div>
                   </>
                 )}

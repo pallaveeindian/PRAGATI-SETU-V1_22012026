@@ -14,7 +14,7 @@ import api, { TMS_API, LOOKUP_API } from "../../../api/axios"; // shared axios i
 ========================================================= */
 
 const PARTICIPANT_PAGE_SIZE = 10;
-const MAX_BATCH_PARTICIPANTS = 50;
+const MAX_BATCH_PARTICIPANTS = 40;
 
 /* =========================================================
    HELPERS (FROM TP CENTRE LIST)
@@ -642,59 +642,6 @@ function CombinedParticipantSelector({
     }
   }
 
-  // async function loadParticipantsForTR(tr) {
-  //   if (participantCache[`tr-${tr.id}`]) return;
-  //   setLoadingTRParticipants((s) => ({ ...s, [tr.id]: true }));
-  //   try {
-  //     const resp = await api.get(`/tms/training-requests/${tr.id}/detail/`);
-  //     // const list =
-  //     //   baseType === "BENEFICIARY"
-  //     //     ? resp.data.beneficiary_registrations.map((x) => ({
-  //     //         ...x,
-  //     //         id: x.beneficiary,
-  //     //         tr_participation_id: x.id,
-  //     //         training: tr.id,
-  //     //         // _uid: `${tr.id}-${x.beneficiary}`,
-  //     //         _uid: `trp-${x.id}`
-
-  //     //       }))
-  //     //     : resp.data.trainer_registrations.map((x) => ({
-  //     //         ...x,
-  //     //         id: x.trainer,
-  //     //         tr_participation_id: x.id,
-  //     //         training: tr.id,
-  //     //         _uid: `${tr.id}-${x.trainer}`,
-  //     //       }));
-
-  //     const list =
-  // baseType === "BENEFICIARY"
-  //   ? resp.data.beneficiary_registrations.map((x) => ({
-  //       ...x,
-  //       id: x.beneficiary ?? x.id,   // <-- ensures id is never null
-  //       tr_participation_id: x.id,
-  //       training: tr.id,
-  //       _uid: `trp-${x.id}`
-  //     }))
-  //   : resp.data.trainer_registrations.map((x) => ({
-  //       ...x,
-  //       id: x.trainer ?? x.id,       // <-- ensures id is never null
-  //       tr_participation_id: x.id,
-  //       training: tr.id,
-  //       _uid: `${tr.id}-${x.trainer ?? x.id}`,
-  //     }));
-
-  //     setParticipantCache((old) => ({
-  //       ...old,
-  //       [`tr-${tr.id}`]: {
-  //         list: list,
-  //         page: 1,
-  //         total: list.length,
-  //       },
-  //     }));
-  //   } finally {
-  //     setLoadingTRParticipants((s) => ({ ...s, [tr.id]: false }));
-  //   }
-  // }
   async function loadParticipantsForTR(tr) {
     if (participantCache[`tr-${tr.id}`]) return;
     setLoadingTRParticipants((s) => ({ ...s, [tr.id]: true }));
@@ -705,27 +652,17 @@ function CombinedParticipantSelector({
       const list =
         trainingReq.training_type === "BENEFICIARY"
           ? resp.data.beneficiary_registrations.map((x) => ({
-            ...x,
-            // id: x.beneficiary ?? x.id,             // ✅ fallback to participation id
-            // tr_participation_id: x.id,
-            // training: tr.id,
-            // _uid: `trp-${x.id}`,
-            id: x.id, // Primary Key of TRBeneficiary
-            training: tr.id,
-            _uid: `trp-${x.id}`, // ✅ Standardized UID
-            // _uid: `reg-${x.id}`
-          }))
+              ...x,
+              id: x.id,
+              training: tr.id,
+              _uid: `trp-${x.id}`,
+            }))
           : resp.data.trainer_registrations.map((x) => ({
-            ...x,
-            id: x.id, // Primary Key of TRTrainer
-            training: tr.id,
-            _uid: `trp-${x.id}`, // ✅ Standardized UID
-            // _uid: `reg-${x.id}`
-            // id: x.trainer ?? x.id,                 // ✅ fallback to participation id
-            // tr_participation_id: x.id,
-            // training: tr.id,
-            // _uid: `trp-${x.id}`,
-          }));
+              ...x,
+              id: x.id,
+              training: tr.id,
+              _uid: `trp-${x.id}`,
+            }));
 
       setParticipantCache((old) => ({
         ...old,
@@ -841,87 +778,153 @@ function CombinedParticipantSelector({
    PREVIEW MODAL
 ========================================================= */
 
-// function PreviewModal({ open, payload, onClose, onConfirm, disabled }) {
-//   if (!open) return null;
-
-//   return (
-//     <div className="modal-backdrop">
-//       <div className="modal-card" style={{ maxWidth: 500 }}>
-//         <h3>Confirm Proposal</h3>
-
-//         <p style={{ marginTop: 12, fontSize: 15 }}>
-//           Are you sure you want to propose this training request to <b>DMMU</b>?
-//         </p>
-
-//         <div style={{ display: "flex", gap: 8, marginTop: 20 }}>
-//           <button className="btn-outline" onClick={onClose}>
-//             Back
-//           </button>
-
-//           <button
-//             className="btn btn-primary"
-//             disabled={disabled}
-//             onClick={onConfirm}
-//           >
-//             Propose to DMMU
-//           </button>
-//         </div>
-//       </div>
-//     </div>
-//   );
-// }
-
-/* ================= PREVIEW MODAL (UPDATED) ================= */
-
-function PreviewModal({ open, payload, onClose, onConfirm, disabled, trainingReq }) {
+function PreviewModal({
+  open,
+  payload,
+  onClose,
+  onConfirm,
+  disabled,
+  trainingReq,
+}) {
   if (!open || !payload) return null;
 
   return (
-    <div className="modal-backdrop" style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.6)',
-      display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 3000
-    }}>
-      <div className="modal-card" style={{
-        maxWidth: '800px', width: '90%', maxHeght: '90vh',
-        background: '#fff', borderRadius: '12px', padding: '24px',
-        display: 'flex', flexDirection: 'column'
-      }}>
-        <div style={{ borderBottom: '1px solid #eee', marginBottom: '16px', paddingBottom: '8px' }}>
-          <h2 style={{ margin: 0, color: '#2b4e72' }}>Batch Proposal Summary</h2>
-          <p style={{ margin: '4px 0', color: '#666' }}>Please review the batch details before proposing to DMMU.</p>
+    <div
+      className="modal-backdrop"
+      style={{
+        position: "fixed",
+        inset: 0,
+        background: "rgba(0,0,0,0.6)",
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        zIndex: 3000,
+      }}
+    >
+      <div
+        className="modal-card"
+        style={{
+          maxWidth: "800px",
+          width: "90%",
+          maxHeght: "90vh",
+          background: "#fff",
+          borderRadius: "12px",
+          padding: "24px",
+          display: "flex",
+          flexDirection: "column",
+        }}
+      >
+        <div
+          style={{
+            borderBottom: "1px solid #eee",
+            marginBottom: "16px",
+            paddingBottom: "8px",
+          }}
+        >
+          <h2 style={{ margin: 0, color: "#2b4e72" }}>
+            Batch Proposal Summary
+          </h2>
+          <p style={{ margin: "4px 0", color: "#666" }}>
+            Please review the batch details before proposing to DMMU.
+          </p>
         </div>
 
-        <div style={{ overflowY: 'auto', flex: 1, paddingRight: '8px' }}>
+        <div style={{ overflowY: "auto", flex: 1, paddingRight: "8px" }}>
           {payload.batches.map((item, idx) => {
             const { batch, participants } = item;
             return (
-              <div key={idx} style={{
-                border: '1px solid #e0e7ff', borderRadius: '8px',
-                padding: '16px', marginBottom: '16px', background: '#fcfdff'
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
-                  <h4 style={{ margin: '0 0 8px 0', color: '#3d6ba6' }}>Batch {idx + 1}: {batch.code}</h4>
-                  <span className="badge" style={{ background: '#e0e7ff', color: '#3d6ba6', padding: '4px 10px', borderRadius: '12px', fontSize: '12px' }}>
+              <div
+                key={idx}
+                style={{
+                  border: "1px solid #e0e7ff",
+                  borderRadius: "8px",
+                  padding: "16px",
+                  marginBottom: "16px",
+                  background: "#fcfdff",
+                }}
+              >
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "flex-start",
+                  }}
+                >
+                  <h4 style={{ margin: "0 0 8px 0", color: "#3d6ba6" }}>
+                    Batch {idx + 1}: {batch.code}
+                  </h4>
+                  <span
+                    className="badge"
+                    style={{
+                      background: "#e0e7ff",
+                      color: "#3d6ba6",
+                      padding: "4px 10px",
+                      borderRadius: "12px",
+                      fontSize: "12px",
+                    }}
+                  >
                     {participants.length} Participants
                   </span>
                 </div>
 
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', fontSize: '14px' }}>
+                <div
+                  style={{
+                    display: "grid",
+                    gridTemplateColumns: "1fr 1fr",
+                    gap: "12px",
+                    fontSize: "14px",
+                  }}
+                >
                   <div>
-                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Centre</label>
-                    {/* We pass the name via payload in the next step */}
+                    <label
+                      style={{
+                        color: "#888",
+                        display: "block",
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Centre
+                    </label>
                     <strong>{batch.venue_name || "Selected Centre"}</strong>
                   </div>
                   <div>
-                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Batch Type</label>
+                    <label
+                      style={{
+                        color: "#888",
+                        display: "block",
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Batch Type
+                    </label>
                     <strong>{batch.batch_type}</strong>
                   </div>
                   <div>
-                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>Start Date</label>
+                    <label
+                      style={{
+                        color: "#888",
+                        display: "block",
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      Start Date
+                    </label>
                     <strong>{batch.start_date}</strong>
                   </div>
                   <div>
-                    <label style={{ color: '#888', display: 'block', fontSize: '11px', textTransform: 'uppercase' }}>End Date</label>
+                    <label
+                      style={{
+                        color: "#888",
+                        display: "block",
+                        fontSize: "11px",
+                        textTransform: "uppercase",
+                      }}
+                    >
+                      End Date
+                    </label>
                     <strong>{batch.end_date}</strong>
                   </div>
                 </div>
@@ -930,8 +933,21 @@ function PreviewModal({ open, payload, onClose, onConfirm, disabled, trainingReq
           })}
         </div>
 
-        <div style={{ display: "flex", gap: 12, marginTop: 24, justifyContent: 'flex-end', borderTop: '1px solid #eee', paddingTop: '16px' }}>
-          <button className="btn-outline" onClick={onClose} style={{ padding: '10px 20px' }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 12,
+            marginTop: 24,
+            justifyContent: "flex-end",
+            borderTop: "1px solid #eee",
+            paddingTop: "16px",
+          }}
+        >
+          <button
+            className="btn-outline"
+            onClick={onClose}
+            style={{ padding: "10px 20px" }}
+          >
             ← Back to Edit
           </button>
 
@@ -939,7 +955,13 @@ function PreviewModal({ open, payload, onClose, onConfirm, disabled, trainingReq
             className="btn btn-primary"
             disabled={disabled}
             onClick={onConfirm}
-            style={{ padding: '10px 24px', background: '#3d6ba6', color: '#fff', border: 'none', borderRadius: '6px' }}
+            style={{
+              padding: "10px 24px",
+              background: "#3d6ba6",
+              color: "#fff",
+              border: "none",
+              borderRadius: "6px",
+            }}
           >
             {disabled ? "Processing..." : "Confirm & Propose to DMMU"}
           </button>
@@ -961,7 +983,6 @@ async function deleteAllExistingBatchesAndParticipants(trainingReq) {
   for (const b of batches) {
     const { data: detail } = await api.get(`/tms/batches/${b.id}/detail`);
 
-    // Delete batch participants FIRST
     if (trainingReq.training_type === "BENEFICIARY") {
       for (const bp of detail.beneficiary_participations || []) {
         await safeDelete(() => TMS_API.batchBeneficiaries.destroy(bp.id));
@@ -972,7 +993,6 @@ async function deleteAllExistingBatchesAndParticipants(trainingReq) {
       }
     }
 
-    // Then delete batch
     await safeDelete(() => TMS_API.batches.destroy(b.id));
   }
 }
@@ -995,173 +1015,6 @@ function BatchSubmitSection({
   const [payload, setPayload] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // function buildPayload() {
-  //   const batchItems = batches.map((b) => {
-  //     const perBatchSel = participantSelections[b.key] || {};
-  //     const allParticipants = Object.values(perBatchSel).flat();
-
-  //     // --------------------------
-  //     // CHANGE 1: Use optional chaining (?.) and default values
-  //     // Ensures that if a field is missing, the payload still gets valid default values
-  //     // --------------------------
-  //     return {
-  //       batch: {
-  //         request: trainingReq?.id || null, // safely handle missing trainingReq
-  //         centre: b?.centre?.id || b?.centre || null, // safely handle missing centre
-  //         batch_type: b?.batchType || "", // empty string fallback
-  //         start_date: b?.startDate || "", // empty string fallback
-  //         end_date: b?.endDate || "", // empty string fallback
-  //         status: "PENDING",
-  //         code: generateBatchCode(
-  //           trainingReq?.block?.block_name_en, // optional chaining
-  //           trainingReq?.district?.district_name_en, // optional chaining
-  //         ),
-  //         created_by: user?.id || null, // optional chaining
-  //       },
-
-  //       // --------------------------
-  //       // CHANGE 2: Participants array is always an array
-  //       // Handles the case when no participants are selected
-  //       // --------------------------
-  //       participants: allParticipants.map((p) => ({
-  //         id: p?.id || null, // optional chaining
-  //         tr: p?.training || null, // optional chaining
-  //       })),
-  //     };
-  //   });
-
-  //   return { batches: batchItems };
-  // }
-
-  // async function execute() {
-  //   setSubmitting(true);
-
-  //   try {
-  //     // 🔥 REVIEW MODE = FULL RESET
-  //     if (isReviewMode) {
-  //       await deleteAllExistingBatchesAndParticipants(trainingReq);
-  //     }
-
-  //     const payload = buildPayload();
-
-  //     for (const item of payload.batches) {
-  //       const { batch, participants } = item;
-
-  //       // ALWAYS CREATE NEW BATCH
-  //       const created = await TMS_API.batches.create({
-  //         request: trainingReq.id,
-  //         centre: batch.centre,
-  //         batch_type: batch.batch_type,
-  //         start_date: batch.start_date,
-  //         end_date: batch.end_date,
-  //         code: batch.code,
-  //         status: "PENDING",
-  //         created_by: user.id,
-  //       });
-
-  //       const batchId = created.data.id;
-
-  //       const ids = participants.map((p) => p.id);
-
-  //       await api.post(
-  //         `/tms/batches/${batchId}/attach-participants/`,
-  //         trainingReq.training_type === "BENEFICIARY"
-  //           ? { beneficiary_ids: ids }
-  //           : { trainer_ids: ids },
-  //       );
-  //     }
-
-  //     await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
-  //       status: "PENDING",
-  //       updated_by: user.id,
-  //     });
-
-  //     alert("Batches submitted successfully !");
-  //     window.location.href = "/tms/training-requests";
-  //   } catch (e) {
-  //     console.error(e);
-  //     alert("Failed to update batches");
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // }
-
-  // async function execute() {
-  //   console.log("EXECUTE STARTED");
-  //   setSubmitting(true);
-
-  //   try {
-  //     for (let i = 0; i < batches.length; i++) {
-  //       const b = batches[i];
-  //       const perBatchSel = participantSelections[b.key] || {};
-  //       const count = Object.values(perBatchSel).flat().length;
-
-  //       console.log(`Batch ${b.title} count:`, count);
-
-  //       if (count < 1) {
-  //         alert(`"${b.title}" must have at least 1 participant`);
-  //         setSubmitting(false);
-  //         return;
-  //       }
-  //     }
-
-  //     if (isReviewMode) {
-  //       console.log("Deleting old batches...");
-  //       await deleteAllExistingBatchesAndParticipants(trainingReq);
-  //     }
-
-  //     const payload = buildPayload();
-  //     console.log("Payload:", payload);
-
-  //     for (const item of payload.batches) {
-  //       const { batch, participants } = item;
-
-  //       console.log("Creating batch:", batch);
-  //       console.log("Participants:", participants);
-
-  //       const created = await TMS_API.batches.create({
-  //         request: trainingReq.id,
-  //         centre: batch.centre,
-  //         batch_type: batch.batch_type,
-  //         start_date: batch.start_date,
-  //         end_date: batch.end_date,
-  //         code: batch.code,
-  //         status: "PENDING",
-  //         created_by: user.id,
-  //       });
-
-  //       const batchId = created.data.id;
-  //       console.log("Batch created ID:", batchId);
-
-  //       const ids = participants.map((p) => p.id);
-  //       console.log("Participant IDs:", ids);
-
-  //       await api.post(
-  //         `/tms/batches/${batchId}/attach-participants/`,
-  //         trainingReq.training_type === "BENEFICIARY"
-  //           ? { beneficiary_ids: ids }
-  //           : { trainer_ids: ids },
-  //       );
-
-  //       console.log("Participants attached");
-  //     }
-
-  //     await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
-  //       status: "PENDING",
-  //       updated_by: user.id,
-  //     });
-
-  //     alert("SUCCESS ✅");
-  //   } catch (e) {
-  //     console.error("ERROR ❌:", e);
-  //     alert(e?.response?.data?.detail || "Failed to update batches");
-  //   } finally {
-  //     setSubmitting(false);
-  //   }
-  // }
-
-  // Inside BatchSubmitSection component:
-
   function buildPayload() {
     const batchItems = batches.map((b) => {
       const perBatchSel = participantSelections[b.key] || {};
@@ -1171,7 +1024,7 @@ function BatchSubmitSection({
         batch: {
           request: trainingReq?.id || null,
           centre: b?.centre?.id || b?.centre || null,
-          venue_name: b?.centre?.venue_name || "N/A", // ADD THIS LINE
+          venue_name: b?.centre?.venue_name || "N/A",
           batch_type: b?.batchType || "",
           start_date: b?.startDate || "",
           end_date: b?.endDate || "",
@@ -1193,6 +1046,7 @@ function BatchSubmitSection({
   }
 
   const navigate = useNavigate();
+
   function validateAllBatches() {
     const totalParticipantsList =
       trainingReq.training_type === "BENEFICIARY"
@@ -1200,7 +1054,6 @@ function BatchSubmitSection({
         : trainingReq?.trainer_registrations || [];
 
     const totalIds = totalParticipantsList.map((p) => Number(p.id));
-
     let allSelectedIds = [];
 
     for (let i = 0; i < batches.length; i++) {
@@ -1214,7 +1067,6 @@ function BatchSubmitSection({
 
       console.log(`Batch ${b.title} selected IDs:`, selectedIds);
 
-      // ❌ Batch empty
       if (selectedIds.length < 1) {
         alert(`"${b.title}" must have at least 1 participant`);
         return false;
@@ -1228,23 +1080,14 @@ function BatchSubmitSection({
     console.log("Total IDs:", totalIds);
     console.log("All Selected:", uniqueSelectedIds);
 
-    // ❌ Missing participants
-    // if (uniqueSelectedIds.length !== totalIds.length) {
-    //   const missing = totalIds.filter((id) => !uniqueSelectedIds.includes(id));
-
-    //   alert(`Missing participants: ${missing.join(", ")}`);
-    //   return false;
-    // }
-
-    // return true;
     const missingCount = totalIds.filter(
       (id) => !uniqueSelectedIds.includes(id),
     ).length;
 
-    // Only fail if there are ACTUALLY missing participants from the base TR
     if (missingCount > 0) {
       alert(
-        `${missingCount} participant${missingCount > 1 ? "s" : ""
+        `${missingCount} participant${
+          missingCount > 1 ? "s" : ""
         } left to select`,
       );
       return false;
@@ -1252,6 +1095,7 @@ function BatchSubmitSection({
 
     return true;
   }
+
   async function execute() {
     console.log("EXECUTE STARTED");
     setSubmitting(true);
@@ -1262,21 +1106,119 @@ function BatchSubmitSection({
         return;
       }
 
-      //  REVIEW MODE CLEANUP
       if (isReviewMode) {
         console.log("Deleting old batches...");
         await deleteAllExistingBatchesAndParticipants(trainingReq);
       }
 
+      // 🌟 COMBINED BATCH LOGIC: Grouping and moving external participants 🌟
+      const externalGroups = {};
+      for (const b of batches) {
+        const perBatchSel = participantSelections[b.key] || {};
+        Object.values(perBatchSel)
+          .flat()
+          .forEach((p) => {
+            if (p.training && String(p.training) !== String(trainingReq.id)) {
+              if (!externalGroups[p.training]) externalGroups[p.training] = [];
+              externalGroups[p.training].push(p);
+            }
+          });
+      }
+
+      let combinedRemarksAddOn = "";
+      let newIdsMap = {}; // mapping old Source Participant ID to the Newly cloned Participant ID
+
+      for (const [sourceTrId, pts] of Object.entries(externalGroups)) {
+        // Fetch Source TR to get district, block and original list lengths
+        const sourceResp = await api.get(
+          `/tms/training-requests/${sourceTrId}/detail/`,
+        );
+        const sourceTr = sourceResp.data;
+
+        const distId =
+          sourceTr.district?.district_id || sourceTr.district || "Unknown";
+        const blockId = sourceTr.block?.block_id || sourceTr.block || "Unknown";
+
+        // Append to Current TR Remarks Addon (Rule 3)
+        combinedRemarksAddOn += `COMBINED from ${sourceTr.id}-${distId}-${blockId} , `;
+
+        // Construct Source TR remarks Addon (Rule 3)
+        let sourceRemarkAddOn = "";
+        if (trainingReq.training_type === "BENEFICIARY") {
+          const codes = pts
+            .map((p) => p.lokos_member_code || p.beneficiary || p.id)
+            .join(" , ");
+          sourceRemarkAddOn = `PARTICIPANTS [${codes}] MOVED TO ${trainingReq.id} , `;
+        } else {
+          const trainers = pts
+            .map((p) => p.trainer_name || p.trainer || p.id)
+            .join(" , ");
+          sourceRemarkAddOn = `PARTICIPANTS [${trainers}] MOVED TO ${trainingReq.id} , `;
+        }
+
+        // Clone rows into Opened TR, then Delete rows from Source TR (Rules 4, 5)
+        for (const p of pts) {
+          const commonPayload = {
+            training: trainingReq.id,
+            district: p.district?.district_id || p.district_id || p.district,
+            block: p.block?.block_id || p.block_id || p.block,
+            mobile_no: p.mobile_no || p.mobile,
+            created_by: user.id,
+          };
+
+          if (trainingReq.training_type === "BENEFICIARY") {
+            const res = await TMS_API.trBeneficiaries.create({
+              ...commonPayload,
+              beneficiary: p.beneficiary || p.id,
+              full_name: p.full_name || p.member_name,
+            });
+            newIdsMap[p.id] = res.data.id;
+
+            // Soft delete safety: Update deleted_by before destroying
+            await TMS_API.trBeneficiaries.partialUpdate(p.id, {
+              deleted_by: user.id,
+            });
+            await TMS_API.trBeneficiaries.destroy(p.id);
+          } else {
+            const res = await TMS_API.trTrainers.create({
+              ...commonPayload,
+              trainer: p.trainer || p.id,
+              full_name: p.full_name || p.trainer_name || p.trainer,
+            });
+            newIdsMap[p.id] = res.data.id;
+
+            // Soft delete safety: Update deleted_by before destroying
+            await TMS_API.trTrainers.partialUpdate(p.id, {
+              deleted_by: user.id,
+            });
+            await TMS_API.trTrainers.destroy(p.id);
+          }
+        }
+
+        // Apply Source TR Status update if emptied out completely (Rule 6)
+        const totalOrig =
+          trainingReq.training_type === "BENEFICIARY"
+            ? sourceTr.beneficiary_registrations?.length || 0
+            : sourceTr.trainer_registrations?.length || 0;
+
+        const isAllMoved = totalOrig > 0 && totalOrig === pts.length;
+        const newSourceRemarks =
+          (sourceTr.remarks ? sourceTr.remarks + " " : "") + sourceRemarkAddOn;
+
+        const patchData = { remarks: newSourceRemarks };
+        if (isAllMoved) {
+          patchData.status = "COMPLETED";
+        }
+
+        await api.patch(`/tms/training-requests/${sourceTr.id}/`, patchData);
+      }
+
+      // Build payload and swap out the old external IDs with new ones
       const payload = buildPayload();
       console.log("Payload:", payload);
 
-      // 🚀 CREATE BATCHES
       for (const item of payload.batches) {
         const { batch, participants } = item;
-
-        console.log("Creating batch:", batch);
-        console.log("Participants:", participants);
 
         const created = await TMS_API.batches.create({
           request: trainingReq.id,
@@ -1290,9 +1232,9 @@ function BatchSubmitSection({
         });
 
         const batchId = created.data.id;
-        console.log("Batch created ID:", batchId);
-        const ids = participants.map((p) => p.id);
-        console.log("Participant IDs:", ids);
+
+        // Map over participants and swap the old ID mapped to other TR with the new ID created in current TR
+        const ids = participants.map((p) => newIdsMap[p.id] || p.id);
 
         await api.post(
           `/tms/batches/${batchId}/attach-participants/`,
@@ -1300,15 +1242,24 @@ function BatchSubmitSection({
             ? { beneficiary_ids: ids }
             : { trainer_ids: ids },
         );
-
-        console.log("Participants attached");
       }
 
-      // ✅ UPDATE TRAINING REQUEST STATUS
-      await api.patch(`/tms/training-requests/${trainingReq.id}/`, {
+      // ✅ UPDATE TRAINING REQUEST STATUS AND NEW COMBINED REMARKS (Rule 3)
+      const finalTrPatch = {
         status: "PENDING",
         updated_by: user.id,
-      });
+      };
+
+      if (combinedRemarksAddOn) {
+        finalTrPatch.remarks =
+          (trainingReq.remarks ? trainingReq.remarks + " " : "") +
+          combinedRemarksAddOn;
+      }
+
+      await api.patch(
+        `/tms/training-requests/${trainingReq.id}/`,
+        finalTrPatch,
+      );
 
       alert("SUCCESS ✅");
       setTimeout(() => {
@@ -1324,87 +1275,11 @@ function BatchSubmitSection({
 
   return (
     <>
-      {/* <button
-        className="btn btnPrimary"
-        disabled={disabled}
-        onClick={() => {
-          // 🔒 HARD VALIDATION: each batch must have ≥ 1 participant
-          // for (let i = 0; i < batches.length; i++) {
-          //   const b = batches[i];
-          //   const perBatchSel = participantSelections[b.key] || {};
-          //   const count = Object.values(perBatchSel).flat().length;
-
-          //   if (count < 1) {
-          //     alert(`"${b.title}" must have at least 1 participant`);
-          //     return;
-          //   }
-          // }
-          for (let i = 0; i < batches.length; i++) {
-            const b = batches[i];
-            const perBatchSel = participantSelections[b.key] || {};
-            const selectedCount = Object.values(perBatchSel).flat().length;
-
-            const totalParticipants =
-              trainingReq.training_type === "BENEFICIARY"
-                ? trainingReq.beneficiary_registrations.length
-                : trainingReq.trainer_registrations.length;
-
-            console.log(`Batch ${b.title} selected:`, selectedCount);
-            console.log(`Total participants:`, totalParticipants);
-
-            if (selectedCount !== totalParticipants) {
-              alert(
-                `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
-              );
-              setSubmitting(false);
-              return;
-            }
-          }
-
-          const p = buildPayload();
-          setPayload(p);
-          setPreviewOpen(true);
-        }}
-      >
-        {isReviewMode
-          ? "Resubmit Revised Batches"
-          : "Preview All Created Batches"}
-      </button> */}
       <button
         className="btn btnPrimary"
         disabled={disabled}
         onClick={() => {
-          //  TOTAL participants in TR
-          // const totalParticipants =
-          //   trainingReq.training_type === "BENEFICIARY"
-          //     ? trainingReq?.beneficiary_registrations?.length || 0
-          //     : trainingReq?.trainer_registrations?.length || 0;
-
-          // for (let i = 0; i < batches.length; i++) {
-          //   const b = batches[i];
-          //   const perBatchSel = participantSelections[b.key] || {};
-          //   const selectedCount = Object.values(perBatchSel).flat().length;
-
-          //   console.log(`Batch ${b.title} selected:`, selectedCount);
-          //   console.log(`Total participants:`, totalParticipants);
-
-          //   //  No participants
-          //   if (selectedCount < 1) {
-          //     alert(`"${b.title}" must have at least 1 participant`);
-          //     return;
-          //   }
-
-          //   //  Not all selected
-          //   if (selectedCount !== totalParticipants) {
-          //     alert(
-          //       `"${b.title}" must include ALL participants.\nSelected: ${selectedCount} / Total: ${totalParticipants}`,
-          //     );
-          //     return;
-          //   }
-          // }
-
           if (!validateAllBatches()) return;
-          //  Only opens preview if validation passes
           const p = buildPayload();
           setPayload(p);
           setPreviewOpen(true);
@@ -1414,23 +1289,15 @@ function BatchSubmitSection({
           ? "Resubmit Revised Batches"
           : "Preview All Created Batches"}
       </button>
-      {/* <PreviewModal
-        open={previewOpen}
-        payload={payload}
-        disabled={submitting}
-        onClose={() => setPreviewOpen(false)}
-        onConfirm={execute}
-      /> */}
 
       <PreviewModal
         open={previewOpen}
         payload={payload}
         disabled={submitting}
-        trainingReq={trainingReq} // ADD THIS
+        trainingReq={trainingReq}
         onClose={() => setPreviewOpen(false)}
         onConfirm={execute}
       />
-
     </>
   );
 }
@@ -1468,7 +1335,6 @@ export default function TpCreateBatch() {
   ]);
   const activeBatchKeyRef = useRef(null);
   useEffect(() => {
-    // Ensure there is always an active batch
     if (!activeBatchKeyRef.current && batches.length > 0) {
       activeBatchKeyRef.current = batches[0].key;
     }
@@ -1478,13 +1344,11 @@ export default function TpCreateBatch() {
 
   const usedUidsAcrossBatches = useMemo(() => {
     const set = new Set();
-
     Object.values(participantSelections).forEach((perBatch) => {
       Object.values(perBatch || {}).forEach((arr) => {
         arr.forEach((p) => set.add(p._uid));
       });
     });
-
     return set;
   }, [participantSelections]);
 
@@ -1492,9 +1356,7 @@ export default function TpCreateBatch() {
   const [centres, setCentres] = useState([]);
   const [centrePreview, setCentrePreview] = useState(null);
   const [viewLoadingId, setViewLoadingId] = useState(null);
-
   const [globalErrors, setGlobalErrors] = useState([]);
-
   const [blockNamesCache, setBlockNamesCache] = useState({});
 
   useEffect(() => {
@@ -1515,28 +1377,17 @@ export default function TpCreateBatch() {
         const list =
           r.data.training_type === "BENEFICIARY"
             ? r.data.beneficiary_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary key of TRBeneficiary
-              training: requestId,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.beneficiary,
-              // tr_participation_id: x.id,
-              // training: requestId,
-              // // _uid: `${requestId}-${x.beneficiary}`,
-              // _uid: `trp-${x.id}`
-            }))
+                ...x,
+                id: x.id,
+                training: requestId,
+                _uid: `trp-${x.id}`,
+              }))
             : r.data.trainer_registrations.map((x) => ({
-              ...x,
-              id: x.id, // Primary key of TRTrainer
-              training: requestId,
-              _uid: `trp-${x.id}`, // ✅ Standardized UID
-              // _uid: `reg-${x.id}`
-              // id: x.trainer,
-              // tr_participation_id: x.id,
-              // training: requestId,
-              // _uid: `${requestId}-${x.trainer}`,
-            }));
+                ...x,
+                id: x.id,
+                training: requestId,
+                _uid: `trp-${x.id}`,
+              }));
 
         seed[`tr-${requestId}`] = {
           list,
@@ -1577,9 +1428,7 @@ export default function TpCreateBatch() {
         for (let i = 0; i < existing.length; i++) {
           const b = existing[i];
 
-          // IMPORTANT: use /detail serializer
           const { data: detail } = await api.get(`/tms/batches/${b.id}/detail`);
-
           const key = `batch-${i + 1}`;
 
           batchState.push({
@@ -1600,22 +1449,14 @@ export default function TpCreateBatch() {
 
           participantState[key] = {};
 
-          // ---------------------------
-          // BENEFICIARY PARTICIPANTS
-          // ---------------------------
           if (trainingReq.training_type === "BENEFICIARY") {
             for (const ben of detail.beneficiary || []) {
               const trId = ben.training;
-
               if (!participantState[key][trId]) {
                 participantState[key][trId] = [];
               }
-
               participantState[key][trId].push({
                 ...ben,
-                // id: ben.id,
-                // training: trId,
-                // tr_participation_id: ben.tr_participation_id || ben.id,
                 id: ben.beneficiary ?? ben.id,
                 training: trId,
                 tr_participation_id: ben.tr_participation_id || ben.id,
@@ -1623,26 +1464,18 @@ export default function TpCreateBatch() {
                   detail.beneficiary_participations.find(
                     (x) => x.beneficiary === ben.id,
                   )?.id || null,
-                // _uid: `${trId}-${ben.id}`,
-                // _uid: `trp-${ben.tr_participation_id || ben.id}`,
-                // _uid: `trp-${ben.tr_participation_id || ben.id}`,
-                _uid: `trp-${ben.id}`, // ✅ Synchronized UID
+                _uid: `trp-${ben.id}`,
                 __selected: true,
               });
             }
           }
 
-          // ---------------------------
-          // TRAINER PARTICIPANTS
-          // ---------------------------
           if (trainingReq.training_type === "TRAINER") {
             for (const tr of detail.trainer || []) {
               const trId = tr.training;
-
               if (!participantState[key][trId]) {
                 participantState[key][trId] = [];
               }
-
               participantState[key][trId].push({
                 ...tr,
                 id: tr.id,
@@ -1651,9 +1484,7 @@ export default function TpCreateBatch() {
                 batch_participation_id:
                   detail.trainer_participations.find((x) => x.trainer === tr.id)
                     ?.id || null,
-                // _uid: `${trId}-${tr.id}`,
-                // _uid: `trp-${tr.tr_participation_id || tr.id}`,
-                _uid: `trp-${tr.id}`, // ✅ Synchronized UID
+                _uid: `trp-${tr.id}`,
                 __selected: true,
               });
             }
@@ -1716,15 +1547,35 @@ export default function TpCreateBatch() {
     loadCentres();
   }, [user]);
 
+  // 🌟 COMBINED BATCH LOGIC: Validating COMBINED/SEPARATE Requirements (Rule 2) 🌟
   useEffect(() => {
-    // recalc errors for each batch based on current batch fields + selections
     setBatches((prev) =>
       prev.map((b) => {
         const perBatchSel = participantSelections[b.key] || {};
-        const count = Object.values(perBatchSel).flat().length;
+        const allParticipants = Object.values(perBatchSel).flat();
+        const count = allParticipants.length;
+
+        // Count how many participants belong to a different TR
+        const externalCount = allParticipants.filter(
+          (p) => p.training && String(p.training) !== String(trainingReq?.id),
+        ).length;
+
         const errs = [];
 
         if (!b.batchType) errs.push("Batch Type not selected");
+
+        if (b.batchType === "COMBINED" && externalCount === 0) {
+          errs.push(
+            "Batch is COMBINED but no participants from other Training Requests are selected.",
+          );
+        }
+
+        if (b.batchType === "SEPARATE" && externalCount > 0) {
+          errs.push(
+            "Batch is SEPARATE but includes participants from other Training Requests.",
+          );
+        }
+
         if (count === 0) errs.push("No participants selected");
         if (count > MAX_BATCH_PARTICIPANTS)
           errs.push("Participant limit exceeded (50 max)");
@@ -1833,7 +1684,6 @@ export default function TpCreateBatch() {
       const pageData = c[key];
       if (!pageData) return c;
 
-      // prevent duplicates
       if (pageData.list.some((p) => p._uid === participant._uid)) {
         return c;
       }
@@ -1870,18 +1720,10 @@ export default function TpCreateBatch() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav
-          left={
-            <div className="app-title">
-              {isReviewMode ? "Review & Modify Batches" : "Create Batches"}
-            </div>
-          }
-        /> */}
-
           <main
             style={{
               padding: 18,
-              minHeight: "100vh", // UPDATED UI
+              minHeight: "100vh",
             }}
           >
             {loadingTR ? (
@@ -1890,15 +1732,14 @@ export default function TpCreateBatch() {
               <p>Training Request not found</p>
             ) : (
               <>
-                {/* TRAINING REQUEST SUMMARY */}
                 <div
                   className="card"
                   style={{
-                    background: "#fff", // UPDATED UI
-                    borderRadius: 10, // UPDATED UI
-                    padding: 20, // UPDATED UI
-                    borderLeft: "6px solid #3d6ba6", // UPDATED UI
-                    boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
+                    background: "#fff",
+                    borderRadius: 10,
+                    padding: 20,
+                    borderLeft: "6px solid #3d6ba6",
+                    boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
                   }}
                 >
                   <h3 style={{ color: "#2b4e72" }}>
@@ -1924,12 +1765,11 @@ export default function TpCreateBatch() {
                   </p>
                 </div>
 
-                {/* ADD BATCH BUTTON */}
                 <div style={{ marginTop: 16, marginBottom: 8 }}>
                   <button
                     className="btn btnPrimary"
                     style={{
-                      background: "#3d6ba6", // UPDATED UI
+                      background: "#3d6ba6",
                       border: "none",
                       color: "#fff",
                     }}
@@ -1957,14 +1797,13 @@ export default function TpCreateBatch() {
                       className="card"
                       style={{
                         marginTop: 12,
-                        background: "#fff", // UPDATED UI
+                        background: "#fff",
                         borderRadius: 10,
                         padding: 18,
-                        boxShadow: "0 6px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                        borderLeft: "6px solid #5a8cc2", // UPDATED UI
+                        boxShadow: "0 6px 14px rgba(0,0,0,0.08)",
+                        borderLeft: "6px solid #5a8cc2",
                       }}
                     >
-                      {/* BATCH HEADER */}
                       <div
                         style={{
                           display: "flex",
@@ -1980,7 +1819,7 @@ export default function TpCreateBatch() {
                           style={{
                             margin: 0,
                             flex: 1,
-                            color: "#2b4e72", // UPDATED UI
+                            color: "#2b4e72",
                           }}
                         >
                           {batch.title}
@@ -1994,7 +1833,7 @@ export default function TpCreateBatch() {
                           <button
                             className="btn-sm btn-outline"
                             style={{
-                              borderColor: "#3d6ba6", // UPDATED UI
+                              borderColor: "#3d6ba6",
                               color: "#3d6ba6",
                             }}
                             onClick={(e) => {
@@ -2011,17 +1850,41 @@ export default function TpCreateBatch() {
                         </span>
                       </div>
 
-                      {/* BATCH CONTENT */}
+                      {/* Batch Validation Error Display (Good UX Addition) */}
+                      {batch.touched && batch.errors.length > 0 && (
+                        <div
+                          style={{
+                            marginTop: "12px",
+                            background: "#fee2e2",
+                            padding: "8px 12px",
+                            borderRadius: "6px",
+                            border: "1px solid #ef4444",
+                          }}
+                        >
+                          {batch.errors.map((err, i) => (
+                            <div
+                              key={i}
+                              style={{
+                                color: "#b91c1c",
+                                fontSize: "13px",
+                                fontWeight: "500",
+                              }}
+                            >
+                              ⚠ {err}
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
                       {batch.expanded && (
                         <div style={{ marginTop: 12 }}>
-                          {/* BATCH TYPE */}
                           <div
                             className="card"
                             style={{
                               marginTop: 8,
                               padding: 16,
                               borderRadius: 8,
-                              background: "#f8fbff", // UPDATED UI
+                              background: "#f8fbff",
                             }}
                           >
                             <label>Batch Type</label>
@@ -2043,7 +1906,6 @@ export default function TpCreateBatch() {
                             </select>
                           </div>
 
-                          {/* PARTICIPANT TABLE */}
                           <ParticipantTable
                             trId={requestId}
                             title="Participants from this Training Request"
@@ -2073,7 +1935,6 @@ export default function TpCreateBatch() {
                               usedUidsAcrossBatches={usedUidsAcrossBatches}
                             />
                           )}
-                          {/* SELECTED PARTICIPANTS */}
                           {selectedList.length > 0 && (
                             <div
                               className="card"
@@ -2088,7 +1949,6 @@ export default function TpCreateBatch() {
                               </h4>
 
                               <div style={{ overflowX: "auto" }}>
-                                {/* UPDATED UI */}
                                 <table className="table table-compact">
                                   <thead>
                                     <tr>
@@ -2132,7 +1992,6 @@ export default function TpCreateBatch() {
                             </div>
                           )}
 
-                          {/* ALLOT CENTRE */}
                           <div
                             className="card"
                             style={{
@@ -2146,11 +2005,11 @@ export default function TpCreateBatch() {
                               <p>Loading centres…</p>
                             ) : centres.length === 0 ? (
                               <p>
-                                No centres found. Please register a centre first.
+                                No centres found. Please register a centre
+                                first.
                               </p>
                             ) : (
                               <div style={{ overflowX: "auto" }}>
-                                {/* UPDATED UI */}
                                 <table className="table table-compact">
                                   <thead>
                                     <tr>
@@ -2203,7 +2062,9 @@ export default function TpCreateBatch() {
                                           <button
                                             className="btn-sm btn-flat"
                                             disabled={viewLoadingId === c.id}
-                                            onClick={() => handleViewCentre(c.id)}
+                                            onClick={() =>
+                                              handleViewCentre(c.id)
+                                            }
                                           >
                                             {viewLoadingId === c.id
                                               ? "Opening…"
@@ -2218,7 +2079,6 @@ export default function TpCreateBatch() {
                             )}
                           </div>
 
-                          {/* START DATE */}
                           <div
                             className="card"
                             style={{
@@ -2247,11 +2107,12 @@ export default function TpCreateBatch() {
                                   return;
                                 }
 
-                                const ed = trainingReq?.training_plan?.no_of_days
+                                const ed = trainingReq?.training_plan
+                                  ?.no_of_days
                                   ? calcEndDate(
-                                    sd,
-                                    trainingReq.training_plan.no_of_days,
-                                  )
+                                      sd,
+                                      trainingReq.training_plan.no_of_days,
+                                    )
                                   : "";
 
                                 updateBatch(
@@ -2277,7 +2138,6 @@ export default function TpCreateBatch() {
                   );
                 })}
 
-                {/* SUBMIT */}
                 <div style={{ marginTop: 16 }}>
                   <BatchSubmitSection
                     disabled={globalErrors.length > 0}

@@ -209,6 +209,10 @@ export default function CpAdPerBatch() {
     (batch.beneficiary_participations || []).forEach((bp) => {
       expectedIds.add(`trainee-${bp.id}`);
     });
+    // NEW: Add trainer participations to expected completion list
+    (batch.trainer_participations || []).forEach((tp) => {
+      expectedIds.add(`trainee-${tp.id}`);
+    });
     if (expectedIds.size === 0) return false;
     const verifiedIds = new Set(
       (ekyc || [])
@@ -328,6 +332,16 @@ export default function CpAdPerBatch() {
         participant_id: String(bp.id),
         participant_role: "trainee",
         name: b?.member_name || `Beneficiary #${bp.beneficiary}`,
+      });
+    });
+    // NEW: Add trainer participations (acting as trainees)
+    (batch.trainer_participations || []).forEach((tp) => {
+      const t = (batch.trainer || []).find((x) => x.id === tp.trainer);
+      rows.push({
+        key: `trainee-${tp.id}`,
+        participant_id: String(tp.id),
+        participant_role: "trainee",
+        name: t?.full_name || t?.member_name || `Trainer #${tp.trainer}`,
       });
     });
     return rows;
