@@ -334,27 +334,6 @@ function CentreViewModal({ open, data, onClose }) {
    OTHER UTILITIES
 ========================================================= */
 
-function rand5() {
-  const chars =
-    "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
-  let out = "";
-  for (let i = 0; i < 5; i++) {
-    out += chars.charAt(Math.floor(Math.random() * chars.length));
-  }
-  return out.toUpperCase();
-}
-
-function generateBatchCode(blockName, districtName) {
-  const blk = (blockName || "").substring(0, 3).toUpperCase();
-  const dis = (districtName || "").substring(0, 3).toUpperCase();
-
-  const d = new Date();
-  const mm = String(d.getMonth() + 1).padStart(2, "0");
-  const yy = String(d.getFullYear()).slice(-2);
-
-  return `${blk}-${dis}-${mm}${yy}-${rand5()}`;
-}
-
 function calcEndDate(startDate, days) {
   if (!startDate || !days) return null;
   const d = new Date(startDate);
@@ -851,7 +830,7 @@ function PreviewModal({
                   }}
                 >
                   <h4 style={{ margin: "0 0 8px 0", color: "#3d6ba6" }}>
-                    Batch {idx + 1}: {batch.code}
+                    Batch {idx + 1}: {batch.status}
                   </h4>
                   <span
                     className="badge"
@@ -1029,10 +1008,6 @@ function BatchSubmitSection({
           start_date: b?.startDate || "",
           end_date: b?.endDate || "",
           status: "PENDING",
-          code: generateBatchCode(
-            trainingReq?.block?.block_name_en,
-            trainingReq?.district?.district_name_en,
-          ),
           created_by: user?.id || null,
         },
         participants: allParticipants.map((p) => ({
