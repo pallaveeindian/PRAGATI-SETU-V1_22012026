@@ -1689,6 +1689,11 @@ export default function CreateTrainingRequest() {
     transition: "transform 0.25s ease, box-shadow 0.25s ease",
   };
 
+  const hasParticipants =
+    form.training_type === "BENEFICIARY"
+      ? selectedBeneficiaries.length > 0
+      : selectedTrainersMap.size > 0;
+
   return (
     <div
       style={{
@@ -2942,6 +2947,15 @@ export default function CreateTrainingRequest() {
                   Cancel
                 </button>
 
+                {/* Inline warning */}
+                {!hasParticipants && (
+                  <div
+                    style={{ color: "#dc3545", marginBottom: 8, fontSize: 13 }}
+                  >
+                    ⚠ Please add at least one participant to continue.
+                  </div>
+                )}
+
                 {engagementStatus === "idle" ||
                 engagementStatus === "has_engaged" ? (
                   <button
@@ -2949,7 +2963,23 @@ export default function CreateTrainingRequest() {
                     onClick={checkEngagementBeforeSubmit}
                     disabled={
                       engagementStatus === "checking" ||
-                      engagementStatus === "has_engaged"
+                      engagementStatus === "has_engaged" ||
+                      !hasParticipants
+                    }
+                    style={{
+                      opacity:
+                        engagementStatus === "checking" || !hasParticipants
+                          ? 0.6
+                          : 1,
+                      cursor:
+                        engagementStatus === "checking" || !hasParticipants
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                    title={
+                      !hasParticipants
+                        ? "Add participants first"
+                        : "Check if participants are available"
                     }
                   >
                     {engagementStatus === "checking"
@@ -2963,7 +2993,19 @@ export default function CreateTrainingRequest() {
                       await confirmAndSubmit();
                       setPreviewOpen(false);
                     }}
-                    disabled={submitting}
+                    disabled={submitting || !hasParticipants}
+                    style={{
+                      opacity: submitting || !hasParticipants ? 0.6 : 1,
+                      cursor:
+                        submitting || !hasParticipants
+                          ? "not-allowed"
+                          : "pointer",
+                    }}
+                    title={
+                      !hasParticipants
+                        ? "Add participants first"
+                        : "Submit training request"
+                    }
                   >
                     {submitting ? "Submitting…" : "Final Submit"}
                   </button>
