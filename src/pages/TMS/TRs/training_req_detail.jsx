@@ -462,7 +462,7 @@ export default function TrainingRequestDetail() {
           </span>
         );
       case "COMPLETED":
-        return <span>Training is {boldStatus}, Stats are visible below.</span>;
+        return <span>Training request is accepted, batches are live.</span>;
       case "REJECTED":
         return (
           <span>

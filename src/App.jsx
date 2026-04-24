@@ -52,7 +52,7 @@ import TrainingRequestDetail from "./pages/TMS/TRs/training_req_detail";
 import TrainingBatchList from "./pages/TMS/TRs/training_batch_list";
 import TrainingBatchDetail from "./pages/TMS/TRs/training_batch_detail";
 import BatchCertificate from "./pages/TMS/TRs/batch_certificate";
-import DownloadBatchCertificate from "./pages/TMS/TRs/dwnld_bcert";
+
 import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
 
 import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
@@ -77,7 +77,11 @@ import DmmuLdmsApprove from "./pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
 import TrainingReport from "./pages/TMS/TrainingReport/TrainingReport";
 import SmmuTargetAchievement from "./pages/TMS/SMMU/smmu_tp_tva";
-
+import BmmuTargetAchievement from "./pages/TMS/BMMU/bmmu_tp_tvs";
+import DmmuTargetAchievement from "./pages/TMS/DMMU/dmmu_tp_tvs";
+// import ServerMaintenance from "./components/ErrorPages/ServerMaintenance";
+import ErrorPage from "./components/ErrorPages/ErrorPage";
+import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
 // tiny placeholder landing for /tms
 function TmsLanding() {
   return (
@@ -134,7 +138,8 @@ export default function App() {
           {/* <Route path="/dashboard/*" element={<DashboardHome />} /> */}
 
           {/* ----- TMS Routes ----- */}
-          <Route path="/tms" element={<TmsLanding />} />
+          {/* <Route path="/tms" element={<TmsLanding />} /> */}
+          <Route path="/error" element={<ErrorPage />} />
           <Route path="/tms/training-report" element={<TrainingReport />} />
 
           {/* SMMU Routes */}
@@ -159,8 +164,11 @@ export default function App() {
               path="/tms/dmmu/tr-closure/:id"
               element={<DmmuRequestClosure />}
             />
+            <Route
+              path="/tms/dmmu/tp-TvA"
+              element={<DmmuTargetAchievement />}
+            />
           </Route>
-
           {/* BMMU Routes */}
           <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
             <Route path="/tms/bmmu/dashboard" element={<BmmuTmsDashboard />} />
@@ -168,6 +176,10 @@ export default function App() {
             <Route
               path="/tms/bmmu/create-training-plan"
               element={<BmmuCreateTrainingPlan />}
+            />
+            <Route
+              path="/tms/bmmu/tp-TvA"
+              element={<BmmuTargetAchievement />}
             />
           </Route>
 
@@ -266,19 +278,6 @@ export default function App() {
               element={<BatchCertificate />}
             />
           </Route>
-          {/* NEW: Download Batch Certificate Route */}
-          <Route
-            element={
-              <ProtectedRoute
-                allowedRoles={["smmu", "dmmu", "bmmu", "training_partner"]}
-              />
-            }
-          >
-            <Route
-              path="/tms/download-certificate/:id"
-              element={<DownloadBatchCertificate />}
-            />
-          </Route>
 
           {/* Batch Detail Permissions */}
           <Route
@@ -301,7 +300,8 @@ export default function App() {
           </Route>
 
           {/* Catch-all for unknown TMS paths */}
-          <Route path="/tms/*" element={<TmsLanding />} />
+          {/* <Route path="/tms/*" element={<TmsLanding />} /> */}
+          <Route path="/error" element={<ErrorPage />} />
         </Route>
         {/* ----- LDMS Routes (GLOBAL LAYOUT APPLIED) ----- */}
         <Route element={<ProtectedRoute />}>
@@ -347,7 +347,9 @@ export default function App() {
           </Route>
         </Route>
         {/* 404 */}
-        <Route path="*" element={<div>404</div>} />
+        {/* <Route path="*" element={<div>404</div>} /> */}
+        <Route path="*" element={<ErrorPage />} />
+        <Route path="/future-updates" element={<SiteDevErrorPage />} />
       </Routes>
     </LanguageProvider>
   );

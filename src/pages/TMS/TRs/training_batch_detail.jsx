@@ -61,6 +61,7 @@ function normalizeMediaUrl(url) {
   // Fallback for any weird edge cases
   return url;
 }
+
 export default function TrainingBatchDetail() {
   const { id: batchId } = useParams();
   const navigate = useNavigate();
@@ -236,7 +237,6 @@ export default function TrainingBatchDetail() {
   }
 
   const hasMasterTrainers = masterTrainers && masterTrainers.length > 0;
-  const firstMasterTrainer = hasMasterTrainers ? masterTrainers[0] : null;
 
   /* ------------- fetch participant records for a given attendance date ------------- */
   async function fetchAttendanceParticipantsForDate(dateStr) {
@@ -344,7 +344,6 @@ export default function TrainingBatchDetail() {
                 </div>
               </div>
 
-              {/* NEW: Closure banner */}
               {/* CLOSURE BANNER */}
               {loadingClosureInfo ? (
                 <div className="closure-banner loading">
@@ -890,29 +889,41 @@ export default function TrainingBatchDetail() {
                         ({displayedParticipants.length})
                       </h3>
 
-                      {hasMasterTrainers && firstMasterTrainer && (
+                      {/* SURGICAL MODIFICATION: Map all Master Trainers */}
+                      {hasMasterTrainers && (
                         <div className="master-trainer-card">
                           <div className="master-trainer-heading">
                             👨‍🏫 Master Trainer
+                            {masterTrainers.length > 1 ? "s" : ""}
                           </div>
 
-                          <div className="master-trainer-info">
-                            <div>
-                              <strong>Name:</strong>{" "}
-                              {firstMasterTrainer.full_name ||
-                                firstMasterTrainer.name ||
-                                "-"}
-                            </div>
+                          <div
+                            style={{
+                              display: "flex",
+                              flexDirection: "column",
+                              gap: "10px",
+                            }}
+                          >
+                            {masterTrainers.map((trainer, idx) => (
+                              <div
+                                className="master-trainer-info"
+                                key={trainer.id || idx}
+                              >
+                                <div>
+                                  <strong>Name:</strong>{" "}
+                                  {trainer.full_name || trainer.name || "-"}
+                                </div>
 
-                            <div>
-                              <strong>Mobile:</strong>{" "}
-                              {firstMasterTrainer.mobile_no ||
-                                firstMasterTrainer.mobile ||
-                                "-"}
-                            </div>
+                                <div>
+                                  <strong>Mobile:</strong>{" "}
+                                  {trainer.mobile_no || trainer.mobile || "-"}
+                                </div>
+                              </div>
+                            ))}
                           </div>
                         </div>
                       )}
+
                       <div
                         style={{
                           maxHeight: 400,

@@ -5,6 +5,8 @@ import TmsLeftNav from "../layout/tms_LeftNav";
 // import TopNav from "../layout/tms_TopNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 
 const BATCH_CACHE_KEY_PREFIX = "tms_cp_batch_detail_v1::";
 const PLAN_CACHE_KEY_PREFIX = "tms_cp_training_plan_v1::";
@@ -227,259 +229,330 @@ export default function CpBatchDetail() {
 
   const hasTimeOfTraining = !!batch?.time_of_training;
 
+  // --- SURGICAL ADDITION: Check if batch end date has passed ---
+  let isBatchEnded = false;
+  if (batch?.end_date) {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0); // Strip time for accurate day comparison
+    const endDate = new Date(batch.end_date);
+    endDate.setHours(0, 0, 0, 0);
+    if (today > endDate) {
+      isBatchEnded = true;
+    }
+  }
+  // -------------------------------------------------------------
+
   return (
     <div className="app-shell">
-      <TmsLeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <TmsLeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Contact Person / Batch Detail
             </div>
           }
         /> */}
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 12,
-                gap: 8,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>Batch Detail — #{batchId}</h2>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button className="btn" onClick={handleRefreshAll}>
-                  Refresh
-                </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => navigate(-1)}
-                >
-                  Back
-                </button>
-              </div>
-            </div>
-
-            <div style={{ background: "#fff", borderRadius: 8, padding: 18 }}>
-              {/* Batch summary */}
-              {loadingBatch && !batch ? (
-                <div className="table-spinner">Loading batch details…</div>
-              ) : !batch ? (
-                <div className="muted">
-                  Batch not found or could not be loaded.
+          <main style={{ padding: 18 }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  gap: 8,
+                }}
+              >
+                <h2 style={{ margin: 0 }}>Batch Detail — #{batchId}</h2>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  <button className="btn" onClick={handleRefreshAll}>
+                    Refresh
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate(-1)}
+                  >
+                    Back
+                  </button>
                 </div>
-              ) : (
-                <>
-                  <div style={{ marginBottom: 10 }}>
-                    <div style={{ marginBottom: 4 }}>
-                      <strong>Batch Code:</strong>{" "}
-                      <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
-                        {batch.code || batch.id}
-                      </span>
-                    </div>
-                    <div style={{ marginBottom: 4 }}>
-                      <strong>Status:</strong>{" "}
-                      <span
-                        style={{
-                          fontWeight: 700,
-                          color: "#fff",
-                          background: statusBadgeColor(batch.status),
-                          borderRadius: 999,
-                          padding: "3px 10px",
-                          fontSize: 12,
-                        }}
-                      >
-                        {(batch.status || "-").toUpperCase()}
-                      </span>
-                    </div>
-                    <div style={{ marginBottom: 4 }}>
-                      <strong>Centre:</strong> {batch.centre?.venue_name || "—"}
-                    </div>
-                    <div style={{ marginBottom: 4 }}>
-                      <strong>Start Date:</strong> {fmtDate(batch.start_date)} |{" "}
-                      <strong>End Date:</strong> {fmtDate(batch.end_date)}
-                    </div>
+              </div>
+
+              <div style={{ background: "#fff", borderRadius: 8, padding: 18 }}>
+                {/* Batch summary */}
+                {loadingBatch && !batch ? (
+                  <div className="table-spinner">Loading batch details…</div>
+                ) : !batch ? (
+                  <div className="muted">
+                    Batch not found or could not be loaded.
                   </div>
-
-                  {/* Training Plan info */}
-                  <div
-                    style={{
-                      padding: 10,
-                      borderRadius: 6,
-                      background: "#f9fafb",
-                      marginBottom: 12,
-                    }}
-                  >
-                    {loadingPlan && !trainingPlan ? (
-                      <div className="table-spinner">
-                        Loading training plan information…
+                ) : (
+                  <>
+                    <div style={{ marginBottom: 10 }}>
+                      <div style={{ marginBottom: 4 }}>
+                        <strong>Batch Code:</strong>{" "}
+                        <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
+                          {batch.code || batch.id}
+                        </span>
                       </div>
-                    ) : !trainingPlan ? (
-                      <div className="muted">
-                        Training name:{" "}
-                        <strong>
-                          {batch.request?.training_plan
-                            ? `Plan #${batch.request.training_plan}`
-                            : "—"}
-                        </strong>
-                      </div>
-                    ) : (
-                      <>
-                        <div>
-                          <strong>Training Name:</strong>{" "}
-                          {trainingPlan.training_name || "-"}
-                        </div>
-                        <div>
-                          <strong>No. of Days:</strong>{" "}
-                          {trainingPlan.no_of_days || "-"}
-                        </div>
-                      </>
-                    )}
-                  </div>
-
-                  {/* Session duration configuration */}
-                  <div
-                    style={{
-                      padding: 12,
-                      borderRadius: 6,
-                      background: "#eff6ff",
-                    }}
-                  >
-                    <h4 style={{ marginTop: 0 }}>Set session duration</h4>
-                    <div
-                      style={{
-                        fontSize: 13,
-                        color: "#6b7280",
-                        marginBottom: 8,
-                      }}
-                    >
-                      Duration of one training session. This will also be used
-                      to compute the attendance recording window.
-                    </div>
-
-                    <div style={{ display: "flex", flexWrap: "wrap", gap: 12 }}>
-                      <label style={{ fontWeight: 600 }}>
-                        Duration (Hours):
-                      </label>
-                      <select
-                        className="input"
-                        value={durationMode}
-                        onChange={(e) => {
-                          const val = e.target.value;
-                          setDurationMode(val);
-                          if (val === "1" || val === "2" || val === "3") {
-                            setCustomHours("");
-                            setCustomMinutes("");
-                          }
-                        }}
-                      >
-                        <option value="1">1 Hour</option>
-                        <option value="2">2 Hours</option>
-                        <option value="3">3 Hours</option>
-                        <option value="custom">Custom</option>
-                      </select>
-
-                      {durationMode === "custom" && (
-                        <div
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 8,
-                            flexWrap: "wrap",
-                          }}
-                        >
-                          <div>
-                            <input
-                              type="number"
-                              min={0}
-                              max={8}
-                              className="input"
-                              style={{ width: 80 }}
-                              placeholder="Hours"
-                              value={customHours}
-                              onChange={(e) =>
-                                setCustomHours(e.target.value.slice(0, 2))
-                              }
-                            />{" "}
-                            <span style={{ fontSize: 12, color: "#6b7280" }}>
-                              (0–8)
-                            </span>
-                          </div>
-                          <div>
-                            <input
-                              type="number"
-                              min={0}
-                              max={59}
-                              className="input"
-                              style={{ width: 80 }}
-                              placeholder="Minutes"
-                              value={customMinutes}
-                              onChange={(e) =>
-                                setCustomMinutes(e.target.value.slice(0, 2))
-                              }
-                            />{" "}
-                            <span style={{ fontSize: 12, color: "#6b7280" }}>
-                              (0–59)
-                            </span>
-                          </div>
-                        </div>
-                      )}
-                    </div>
-
-                    <div style={{ marginTop: 10 }}>
-                      <button
-                        className="btn"
-                        onClick={handleSaveDuration}
-                        disabled={savingDuration}
-                      >
-                        {savingDuration ? "Saving…" : "Save Duration"}
-                      </button>
-                      {batch?.time_of_training && (
+                      <div style={{ marginBottom: 4 }}>
+                        <strong>Status:</strong>{" "}
                         <span
                           style={{
-                            marginLeft: 10,
-                            fontSize: 13,
-                            color: "#6b7280",
+                            fontWeight: 700,
+                            color: "#fff",
+                            background: statusBadgeColor(batch.status),
+                            borderRadius: 999,
+                            padding: "3px 10px",
+                            fontSize: 12,
                           }}
                         >
-                          Current:{" "}
-                          <strong>{batch.time_of_training || "Not set"}</strong>
+                          {(batch.status || "-").toUpperCase()}
                         </span>
+                      </div>
+                      <div style={{ marginBottom: 4 }}>
+                        <strong>Centre:</strong>{" "}
+                        {batch.centre?.venue_name || "—"}
+                      </div>
+                      <div style={{ marginBottom: 4 }}>
+                        <strong>Start Date:</strong> {fmtDate(batch.start_date)}{" "}
+                        | <strong>End Date:</strong> {fmtDate(batch.end_date)}
+                      </div>
+                    </div>
+
+                    {/* Training Plan info */}
+                    <div
+                      style={{
+                        padding: 10,
+                        borderRadius: 6,
+                        background: "#f9fafb",
+                        marginBottom: 12,
+                      }}
+                    >
+                      {loadingPlan && !trainingPlan ? (
+                        <div className="table-spinner">
+                          Loading training plan information…
+                        </div>
+                      ) : !trainingPlan ? (
+                        <div className="muted">
+                          Training name:{" "}
+                          <strong>
+                            {batch.request.training_plan
+                              ? `${batch.request.training_plan.training_name}`
+                              : "—"}
+                          </strong>
+                        </div>
+                      ) : (
+                        <>
+                          <div>
+                            <strong>Training Name:</strong>{" "}
+                            {trainingPlan.training_name || "-"}
+                          </div>
+                          <div>
+                            <strong>No. of Days:</strong>{" "}
+                            {trainingPlan.no_of_days || "-"}
+                          </div>
+                        </>
                       )}
                     </div>
-                  </div>
 
-                  {/* Attendance Manager entry */}
-                  <div
-                    style={{
-                      marginTop: 16,
-                      paddingTop: 12,
-                      borderTop: "1px solid #e5e7eb",
-                      display: "flex",
-                      justifyContent: "flex-end",
-                    }}
-                  >
-                    <button
-                      className="btn btn-primary"
-                      onClick={handleOpenAttendanceManager}
-                      disabled={openingManager}
+                    {/* Session duration configuration */}
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 6,
+                        background: "#eff6ff",
+                      }}
                     >
-                      {openingManager
-                        ? "Opening…"
-                        : "Open Batch Attendance Manager"}
-                    </button>
-                  </div>
-                </>
-              )}
+                      <h4 style={{ marginTop: 0 }}>Set session duration</h4>
+                      <div
+                        style={{
+                          fontSize: 13,
+                          color: "#6b7280",
+                          marginBottom: 8,
+                        }}
+                      >
+                        Duration of one training session. This will also be used
+                        to compute the attendance recording window.
+                      </div>
+
+                      <div
+                        style={{ display: "flex", flexWrap: "wrap", gap: 12 }}
+                      >
+                        <label style={{ fontWeight: 600 }}>
+                          Duration (Hours):
+                        </label>
+                        <select
+                          className="input"
+                          value={durationMode}
+                          onChange={(e) => {
+                            const val = e.target.value;
+                            setDurationMode(val);
+                            if (val === "1" || val === "2" || val === "3") {
+                              setCustomHours("");
+                              setCustomMinutes("");
+                            }
+                          }}
+                          disabled={isBatchEnded} // SURGICAL ADDITION
+                        >
+                          <option value="1">1 Hour</option>
+                          <option value="2">2 Hours</option>
+                          <option value="3">3 Hours</option>
+                          <option value="custom">Custom</option>
+                        </select>
+
+                        {durationMode === "custom" && (
+                          <div
+                            style={{
+                              display: "flex",
+                              alignItems: "center",
+                              gap: 8,
+                              flexWrap: "wrap",
+                            }}
+                          >
+                            <div>
+                              <input
+                                type="number"
+                                min={0}
+                                max={8}
+                                className="input"
+                                style={{ width: 80 }}
+                                placeholder="Hours"
+                                value={customHours}
+                                disabled={isBatchEnded} // SURGICAL ADDITION
+                                onChange={(e) =>
+                                  setCustomHours(e.target.value.slice(0, 2))
+                                }
+                              />{" "}
+                              <span style={{ fontSize: 12, color: "#6b7280" }}>
+                                (0–8)
+                              </span>
+                            </div>
+                            <div>
+                              <input
+                                type="number"
+                                min={0}
+                                max={59}
+                                className="input"
+                                style={{ width: 80 }}
+                                placeholder="Minutes"
+                                value={customMinutes}
+                                disabled={isBatchEnded} // SURGICAL ADDITION
+                                onChange={(e) =>
+                                  setCustomMinutes(e.target.value.slice(0, 2))
+                                }
+                              />{" "}
+                              <span style={{ fontSize: 12, color: "#6b7280" }}>
+                                (0–59)
+                              </span>
+                            </div>
+                          </div>
+                        )}
+                      </div>
+
+                      <div style={{ marginTop: 10 }}>
+                        <button
+                          className="btn"
+                          onClick={handleSaveDuration}
+                          disabled={savingDuration || isBatchEnded} // SURGICAL ADDITION
+                        >
+                          {savingDuration ? "Saving…" : "Save Duration"}
+                        </button>
+                        {batch?.time_of_training && (
+                          <span
+                            style={{
+                              marginLeft: 10,
+                              fontSize: 13,
+                              color: "#6b7280",
+                            }}
+                          >
+                            Current:{" "}
+                            <strong>
+                              {batch.time_of_training || "Not set"}
+                            </strong>
+                          </span>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Attendance Manager entry */}
+                    <div
+                      style={{
+                        marginTop: 16,
+                        paddingTop: 12,
+                        borderTop: "1px solid #e5e7eb",
+                        display: "flex",
+                        justifyContent: isBatchEnded
+                          ? "space-between"
+                          : "flex-end", // SURGICAL MODIFICATION
+                        alignItems: "center",
+                      }}
+                    >
+                      {/* SURGICAL ADDITION: Show red warning if batch is ended */}
+                      {isBatchEnded && (
+                        <div
+                          style={{
+                            color: "#dc2626",
+                            fontWeight: 600,
+                            fontSize: 14,
+                          }}
+                        >
+                          Batch has ended. Attendance recording is disabled.
+                        </div>
+                      )}
+
+                      <button
+                        className={`btn ${isBatchEnded ? "btn-outline" : "btn-primary"}`} // Visual feedback
+                        onClick={handleOpenAttendanceManager}
+                        disabled={openingManager || isBatchEnded} // SURGICAL DISABLE
+                      >
+                        {openingManager
+                          ? "Opening…"
+                          : "Open Batch Attendance Manager"}
+                      </button>
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
-          </div>
-        </main>
+          </main>
+          <Footer />
+        </div>
       </div>
+      <style>{`     .content-area {
+  display: flex;
+  flex: 1;              
+  min-width: 0;
+}
+  .content-area {
+  display: flex;
+  flex: 1;
+  min-width: 0;
+}
+
+/* ADD THIS */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 100vh;
+}
+
+/* ADD THIS */
+.main-area main {
+  flex: 1;
+}
+
+/* ADD THIS */
+footer {
+  margin-top: auto;
+}
+
+`}</style>
     </div>
   );
 }

@@ -9,6 +9,9 @@ import {
   ROLE_WELCOME_MESSAGES,
 } from "../../../utils/roleUtils";
 
+import Header from "../layout/header";
+import Footer from "../layout/footer";
+
 /* ─── tiny helpers ─────────────────────────────────────────── */
 function InfoItem({ label, value, children }) {
   return (
@@ -313,225 +316,498 @@ export default function DmmuBatchClosureReview() {
   ═══════════════════════════════════════════════════════════ */
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
 
-      <div className="main-area">
-        <div className="dashboard-header">
-          <h2 className="dashboard-title">{roleMessage}</h2>
-        </div>
+        <div className="main-area">
+          <div className="dashboard-header">
+            <h2 className="dashboard-title">{roleMessage}</h2>
+          </div>
 
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            {/* Header */}
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 20,
-                gap: 8,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>DMMU Review — Batch #{batchId}</h2>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => fetchBatch(false)}
-                >
-                  Refresh
-                </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => navigate(-1)}
-                >
-                  Back
-                </button>
-              </div>
-            </div>
-
-            {/* ════════ STATUS BANNERS ════════ */}
-            {isReviewStatus && (
-              <div className="alert alert-info">
-                <strong>Attention:</strong> This batch has been submitted for
-                closure by the Training Partner. Please review the costs and
-                media below, then Approve or Reject.
-              </div>
-            )}
-            {batch?.status === "REJECTED" && (
-              <div className="alert alert-error">
-                <strong>Status:</strong> This batch was rejected. <br />
-                <strong>Reason:</strong>{" "}
-                {batch.rejection_reason || "No reason provided."}
-              </div>
-            )}
-
-            {/* ════════ BATCH & TRAINING PLAN DETAILS ════════ */}
-            <div className="cl-card">
-              <div className="cl-card-title">📖 Training & Batch Overview</div>
-              <div className="info-grid">
-                <InfoItem
-                  label="Batch Code"
-                  value={batch?.code || `#${batchId}`}
-                />
-                <InfoItem label="Status">
-                  <span
-                    className={`status-badge status-${String(batch?.status || "").toLowerCase()}`}
-                  >
-                    {batch?.status}
-                  </span>
-                </InfoItem>
-                <InfoItem label="Participant Type" value={trainingType} />
-                <InfoItem label="Batch Type" value={batch?.batch_type} />
-                <InfoItem
-                  label="Start Date"
-                  value={fmtDate(batch?.start_date)}
-                />
-                <InfoItem label="End Date" value={fmtDate(batch?.end_date)} />
-
-                <div
-                  style={{
-                    gridColumn: "1 / -1",
-                    borderTop: "1px solid #e2e8f0",
-                    margin: "8px 0",
-                  }}
-                />
-
-                <InfoItem label="Training Plan" value={tp?.training_name} />
-                <InfoItem
-                  label="Training Level"
-                  value={tp?.level_of_training}
-                />
-                <InfoItem label="Training Type" value={tp?.type_of_training} />
-                <InfoItem label="No. of Days" value={tp?.no_of_days} />
-                <InfoItem
-                  label="District"
-                  value={req?.district?.district_name_en}
-                />
-                <InfoItem label="Block" value={req?.block?.block_name_en} />
-              </div>
-            </div>
-
-            {/* ════════ CENTRE DETAILS ════════ */}
-            <div className="cl-card">
-              <div className="cl-card-title">🏢 Centre & Facilities</div>
-              <div className="info-grid">
-                <InfoItem label="Venue Name" value={centre?.venue_name} />
-                <InfoItem label="Centre Type" value={centre?.centre_type} />
-                <InfoItem label="Address" value={centre?.venue_address} />
-                <InfoItem
-                  label="Training Halls"
-                  value={`${centre?.training_hall_count || 0} (Capacity: ${centre?.training_hall_capacity || 0})`}
-                />
-                <InfoItem
-                  label="Toilets / Bathrooms"
-                  value={centre?.toilets_bathrooms}
-                />
-                <InfoItem
-                  label="Power & Water"
-                  value={centre?.power_water_facility}
-                />
-              </div>
+          <main style={{ padding: 18 }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              {/* Header */}
               <div
                 style={{
                   display: "flex",
-                  gap: 12,
-                  marginTop: 16,
-                  flexWrap: "wrap",
+                  alignItems: "center",
+                  marginBottom: 20,
+                  gap: 8,
                 }}
               >
-                <span
-                  className={`facility-badge ${centre?.medical_kit ? "yes" : "no"}`}
-                >
-                  Medical Kit
-                </span>
-                <span
-                  className={`facility-badge ${centre?.open_space ? "yes" : "no"}`}
-                >
-                  Open Space
-                </span>
-                <span
-                  className={`facility-badge ${centre?.field_visit_facility ? "yes" : "no"}`}
-                >
-                  Field Visit
-                </span>
-                <span
-                  className={`facility-badge ${centre?.transport_facility ? "yes" : "no"}`}
-                >
-                  Transport
-                </span>
-                <span
-                  className={`facility-badge ${centre?.dining_facility ? "yes" : "no"}`}
-                >
-                  Dining Room
-                </span>
+                <h2 style={{ margin: 0 }}>DMMU Review — Batch #{batchId}</h2>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => fetchBatch(false)}
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate(-1)}
+                  >
+                    Back
+                  </button>
+                </div>
               </div>
-              {/* Nested Centre Rooms */}
-              {centre?.rooms?.length > 0 && (
-                <div style={{ marginTop: 20 }}>
-                  <h5 style={{ margin: "0 0 10px 0", color: "#334155" }}>
-                    Training Halls / Rooms
-                  </h5>
-                  <table className="table" style={{ maxWidth: 400 }}>
-                    <thead style={{ background: "#f8fafc" }}>
-                      <tr>
-                        <th style={{ padding: "6px 10px" }}>Room Name</th>
-                        <th style={{ padding: "6px 10px" }}>Capacity</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {centre.rooms.map((r) => (
-                        <tr key={r.id}>
-                          <td style={{ padding: "6px 10px" }}>{r.room_name}</td>
-                          <td style={{ padding: "6px 10px" }}>
-                            {r.room_capacity}
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
+
+              {/* ════════ STATUS BANNERS ════════ */}
+              {isReviewStatus && (
+                <div className="alert alert-info">
+                  <strong>Attention:</strong> This batch has been submitted for
+                  closure by the Training Partner. Please review the costs and
+                  media below, then Approve or Reject.
+                </div>
+              )}
+              {batch?.status === "REJECTED" && (
+                <div className="alert alert-error">
+                  <strong>Status:</strong> This batch was rejected. <br />
+                  <strong>Reason:</strong>{" "}
+                  {batch.rejection_reason || "No reason provided."}
                 </div>
               )}
 
-              {/* Nested Centre Pictures */}
-              {centre?.submissions?.length > 0 && (
-                <div style={{ marginTop: 20 }}>
-                  <h5 style={{ margin: "0 0 10px 0", color: "#334155" }}>
-                    Centre Media / Documents
-                  </h5>
-                  <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    {centre.submissions.map((sub) => {
-                      const src = normalizeMediaUrl(sub.file);
+              {/* ════════ BATCH & TRAINING PLAN DETAILS ════════ */}
+              <div className="cl-card">
+                <div className="cl-card-title">
+                  📖 Training & Batch Overview
+                </div>
+                <div className="info-grid">
+                  <InfoItem
+                    label="Batch Code"
+                    value={batch?.code || `#${batchId}`}
+                  />
+                  <InfoItem label="Status">
+                    <span
+                      className={`status-badge status-${String(batch?.status || "").toLowerCase()}`}
+                    >
+                      {batch?.status}
+                    </span>
+                  </InfoItem>
+                  <InfoItem label="Participant Type" value={trainingType} />
+                  <InfoItem label="Batch Type" value={batch?.batch_type} />
+                  <InfoItem
+                    label="Start Date"
+                    value={fmtDate(batch?.start_date)}
+                  />
+                  <InfoItem label="End Date" value={fmtDate(batch?.end_date)} />
+
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      borderTop: "1px solid #e2e8f0",
+                      margin: "8px 0",
+                    }}
+                  />
+
+                  <InfoItem label="Training Plan" value={tp?.training_name} />
+                  <InfoItem
+                    label="Training Level"
+                    value={tp?.level_of_training}
+                  />
+                  <InfoItem
+                    label="Training Type"
+                    value={tp?.type_of_training}
+                  />
+                  <InfoItem label="No. of Days" value={tp?.no_of_days} />
+                  <InfoItem
+                    label="District"
+                    value={req?.district?.district_name_en}
+                  />
+                  <InfoItem label="Block" value={req?.block?.block_name_en} />
+                </div>
+              </div>
+
+              {/* ════════ CENTRE DETAILS ════════ */}
+              <div className="cl-card">
+                <div className="cl-card-title">🏢 Centre & Facilities</div>
+                <div className="info-grid">
+                  <InfoItem label="Venue Name" value={centre?.venue_name} />
+                  <InfoItem label="Centre Type" value={centre?.centre_type} />
+                  <InfoItem label="Address" value={centre?.venue_address} />
+                  <InfoItem
+                    label="Training Halls"
+                    value={`${centre?.training_hall_count || 0} (Capacity: ${centre?.training_hall_capacity || 0})`}
+                  />
+                  <InfoItem
+                    label="Toilets / Bathrooms"
+                    value={centre?.toilets_bathrooms}
+                  />
+                  <InfoItem
+                    label="Power & Water"
+                    value={centre?.power_water_facility}
+                  />
+                </div>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    marginTop: 16,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    className={`facility-badge ${centre?.medical_kit ? "yes" : "no"}`}
+                  >
+                    Medical Kit
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.open_space ? "yes" : "no"}`}
+                  >
+                    Open Space
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.field_visit_facility ? "yes" : "no"}`}
+                  >
+                    Field Visit
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.transport_facility ? "yes" : "no"}`}
+                  >
+                    Transport
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.dining_facility ? "yes" : "no"}`}
+                  >
+                    Dining Room
+                  </span>
+                </div>
+                {/* Nested Centre Rooms */}
+                {centre?.rooms?.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <h5 style={{ margin: "0 0 10px 0", color: "#334155" }}>
+                      Training Halls / Rooms
+                    </h5>
+                    <table className="table" style={{ maxWidth: 400 }}>
+                      <thead style={{ background: "#f8fafc" }}>
+                        <tr>
+                          <th style={{ padding: "6px 10px" }}>Room Name</th>
+                          <th style={{ padding: "6px 10px" }}>Capacity</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {centre.rooms.map((r) => (
+                          <tr key={r.id}>
+                            <td style={{ padding: "6px 10px" }}>
+                              {r.room_name}
+                            </td>
+                            <td style={{ padding: "6px 10px" }}>
+                              {r.room_capacity}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+
+                {/* Nested Centre Pictures */}
+                {centre?.submissions?.length > 0 && (
+                  <div style={{ marginTop: 20 }}>
+                    <h5 style={{ margin: "0 0 10px 0", color: "#334155" }}>
+                      Centre Media / Documents
+                    </h5>
+                    <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
+                      {centre.submissions.map((sub) => {
+                        const src = normalizeMediaUrl(sub.file);
+                        const isImage =
+                          src && !src.toLowerCase().endsWith(".pdf");
+                        return (
+                          <div
+                            key={sub.id}
+                            style={{
+                              border: "1px solid #cbd5e1",
+                              borderRadius: 8,
+                              overflow: "hidden",
+                              width: 120,
+                            }}
+                          >
+                            {isImage ? (
+                              <img
+                                src={src}
+                                alt="Centre Media"
+                                style={{
+                                  width: "100%",
+                                  height: 80,
+                                  objectFit: "cover",
+                                  cursor: "zoom-in",
+                                }}
+                                onClick={() => setMediaPreviewSrc(src)}
+                              />
+                            ) : (
+                              <div
+                                onClick={() => window.open(src, "_blank")}
+                                style={{
+                                  height: 80,
+                                  display: "flex",
+                                  alignItems: "center",
+                                  justifyContent: "center",
+                                  cursor: "pointer",
+                                  background: "#e2e8f0",
+                                }}
+                              >
+                                <span style={{ fontSize: 11, fontWeight: 600 }}>
+                                  View PDF
+                                </span>
+                              </div>
+                            )}
+                            <div
+                              style={{
+                                padding: "4px",
+                                fontSize: "10px",
+                                textAlign: "center",
+                                background: "#f8fafc",
+                                fontWeight: 600,
+                                color: "#475569",
+                              }}
+                            >
+                              {sub.category}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              {/* ════════ MASTER TRAINERS & SCHEDULES ════════ */}
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+                  gap: 20,
+                }}
+              >
+                <div className="cl-card">
+                  <div className="cl-card-title">🧑‍🏫 Master Trainers</div>
+                  {batch?.master_trainers?.length > 0 ? (
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Designation</th>
+                          <th>Mobile</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {batch.master_trainers.map((mt) => (
+                          <tr key={mt.id}>
+                            <td style={{ fontWeight: 500 }}>{mt.full_name}</td>
+                            <td>{mt.designation}</td>
+                            <td>{mt.mobile_no}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="empty-msg">
+                      No master trainers assigned.
+                    </div>
+                  )}
+                </div>
+
+                <div className="cl-card">
+                  <div className="cl-card-title">📅 Batch Schedules</div>
+                  {batch?.schedules?.length > 0 ? (
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Start Time</th>
+                          <th>Remarks</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {batch.schedules.map((s) => (
+                          <tr key={s.id}>
+                            <td style={{ fontWeight: 500 }}>
+                              {fmtDate(s.schedule_date)}
+                            </td>
+                            <td>{s.start_time || "—"}</td>
+                            <td>{s.remarks || "—"}</td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  ) : (
+                    <div className="empty-msg">No schedules found.</div>
+                  )}
+                </div>
+              </div>
+
+              {/* ════════ DAILY ATTENDANCE RECORDS ════════ */}
+              <div className="cl-card">
+                <div className="cl-card-title">📝 Daily Attendance Records</div>
+                {batch?.attendances?.length > 0 ? (
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: 16,
+                    }}
+                  >
+                    {batch.attendances.map((att) => (
+                      <div
+                        key={att.id}
+                        style={{
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 8,
+                          background: "#f8fafc",
+                          overflow: "hidden",
+                        }}
+                      >
+                        <div
+                          style={{
+                            padding: "12px 16px",
+                            background: "#e2e8f0",
+                            display: "flex",
+                            justifyContent: "space-between",
+                            alignItems: "center",
+                          }}
+                        >
+                          <div style={{ fontWeight: 600, color: "#1e293b" }}>
+                            Day: {fmtDate(att.date)}
+                          </div>
+                          {att.csv_upload ? (
+                            <a
+                              href={normalizeMediaUrl(att.csv_upload)}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{
+                                fontSize: 13,
+                                color: "#2563eb",
+                                textDecoration: "none",
+                                fontWeight: 600,
+                              }}
+                            >
+                              📥 Download CSV
+                            </a>
+                          ) : (
+                            <span style={{ fontSize: 13, color: "#94a3b8" }}>
+                              No CSV Uploaded
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Participant Records Table */}
+                        {att.participant_records?.length > 0 ? (
+                          <div
+                            style={{
+                              padding: 12,
+                              overflowX: "auto",
+                              maxHeight: 200,
+                              background: "#fff",
+                            }}
+                          >
+                            <table className="table" style={{ fontSize: 13 }}>
+                              <thead style={{ background: "#f1f5f9" }}>
+                                <tr>
+                                  <th style={{ padding: "6px 10px" }}>
+                                    Participant Name
+                                  </th>
+                                  <th style={{ padding: "6px 10px" }}>Role</th>
+                                  <th style={{ padding: "6px 10px" }}>
+                                    Status
+                                  </th>
+                                </tr>
+                              </thead>
+                              <tbody>
+                                {att.participant_records.map((pr) => (
+                                  <tr key={pr.id}>
+                                    <td style={{ padding: "6px 10px" }}>
+                                      {pr.participant_name}
+                                    </td>
+                                    <td style={{ padding: "6px 10px" }}>
+                                      {pr.participant_role}
+                                    </td>
+                                    <td style={{ padding: "6px 10px" }}>
+                                      <span
+                                        style={{
+                                          padding: "2px 8px",
+                                          borderRadius: 12,
+                                          fontSize: 11,
+                                          fontWeight: "bold",
+                                          background: pr.present
+                                            ? "#dcfce7"
+                                            : "#fee2e2",
+                                          color: pr.present
+                                            ? "#166534"
+                                            : "#991b1b",
+                                        }}
+                                      >
+                                        {pr.present ? "Present" : "Absent"}
+                                      </span>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          </div>
+                        ) : (
+                          <div
+                            style={{
+                              padding: 12,
+                              fontSize: 13,
+                              color: "#64748b",
+                              background: "#fff",
+                            }}
+                          >
+                            No participant records found for this day.
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="empty-msg">No attendance recorded.</div>
+                )}
+              </div>
+
+              {/* ════════ BATCH MEDIA GALLERY ════════ */}
+              <div className="cl-card">
+                <div className="cl-card-title">
+                  📸 Batch Media (Photos & Docs)
+                </div>
+                {batch?.batch_pictures?.length > 0 ? (
+                  <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
+                    {batch.batch_pictures.map((m) => {
+                      const src = normalizeMediaUrl(m.file);
                       const isImage =
                         src && !src.toLowerCase().endsWith(".pdf");
                       return (
                         <div
-                          key={sub.id}
+                          key={m.id}
                           style={{
-                            border: "1px solid #cbd5e1",
+                            width: 140,
+                            background: "#f1f5f9",
                             borderRadius: 8,
                             overflow: "hidden",
-                            width: 120,
+                            border: "1px solid #cbd5e1",
                           }}
                         >
                           {isImage ? (
                             <img
                               src={src}
-                              alt="Centre Media"
+                              alt={m.category}
+                              onClick={() => setMediaPreviewSrc(src)}
                               style={{
                                 width: "100%",
-                                height: 80,
+                                height: 100,
                                 objectFit: "cover",
                                 cursor: "zoom-in",
                               }}
-                              onClick={() => setMediaPreviewSrc(src)}
                             />
                           ) : (
                             <div
                               onClick={() => window.open(src, "_blank")}
                               style={{
-                                height: 80,
+                                height: 100,
                                 display: "flex",
                                 alignItems: "center",
                                 justifyContent: "center",
@@ -539,548 +815,300 @@ export default function DmmuBatchClosureReview() {
                                 background: "#e2e8f0",
                               }}
                             >
-                              <span style={{ fontSize: 11, fontWeight: 600 }}>
+                              <span
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: "#334155",
+                                }}
+                              >
                                 View PDF
                               </span>
                             </div>
                           )}
                           <div
                             style={{
-                              padding: "4px",
-                              fontSize: "10px",
+                              padding: "8px",
+                              fontSize: 12,
                               textAlign: "center",
-                              background: "#f8fafc",
                               fontWeight: 600,
                               color: "#475569",
                             }}
                           >
-                            {sub.category}
+                            {m.category}
                           </div>
                         </div>
                       );
                     })}
                   </div>
+                ) : (
+                  <div className="empty-msg">
+                    No media uploaded by Contact Person.
+                  </div>
+                )}
+              </div>
+
+              {/* ════════ PARTICIPANTS COST TABLE (READ-ONLY) ════════ */}
+              <div className="cl-card">
+                <div className="cl-card-title">
+                  💰 Successful Participants — Cost Breakup
+                  <span className="count-badge">
+                    {successfulParticipants.length}
+                  </span>
+                </div>
+
+                {successfulParticipants.length === 0 ? (
+                  <div className="empty-msg">
+                    No successful participants found (must have ≥80% attendance
+                    & not dropped out).
+                  </div>
+                ) : (
+                  <div style={{ overflowX: "auto" }}>
+                    <table className="table">
+                      <thead>
+                        <tr>
+                          <th>#</th>
+                          <th>Participant Name</th>
+                          <th>Gender</th>
+                          <th>Age</th>
+                          <th>Category</th>
+                          <th>Mobile</th>
+                          <th>Attendance %</th>
+                          <th>TA (₹)</th>
+                          <th>DA (₹)</th>
+                          <th>Row Total (₹)</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {successfulParticipants.map((p, i) => (
+                          <tr key={p.id}>
+                            <td>{i + 1}</td>
+                            <td style={{ fontWeight: 600, color: "#0f172a" }}>
+                              {p.display_name}
+                            </td>
+                            <td>{p.gender}</td>
+                            <td>{p.age}</td>
+                            <td>{p.category}</td>
+                            <td>{p.mobile}</td>
+                            <td>
+                              <span
+                                style={{
+                                  background: "#dcfce7",
+                                  color: "#166534",
+                                  padding: "3px 8px",
+                                  borderRadius: 20,
+                                  fontSize: 12,
+                                  fontWeight: "bold",
+                                }}
+                              >
+                                {p.attendance_pct}%
+                              </span>
+                            </td>
+                            <td>₹{fmt(p.hra)}</td>
+                            <td>₹{fmt(p.ta_da)}</td>
+                            <td>
+                              <strong style={{ color: "#1e40af" }}>
+                                ₹{fmt(p.total_cost)}
+                              </strong>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                      <tfoot>
+                        <tr>
+                          <td
+                            colSpan={5}
+                            style={{
+                              textAlign: "right",
+                              fontWeight: 700,
+                              color: "#2b4e72",
+                              padding: "10px",
+                            }}
+                          >
+                            Subtotal:
+                          </td>
+                          <td
+                            style={{
+                              fontWeight: 700,
+                              color: "#2b4e72",
+                              padding: "10px",
+                              fontSize: 16,
+                            }}
+                          >
+                            ₹{fmt(participantSubtotal)}
+                          </td>
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )}
+              </div>
+
+              {/* ════════ GRAND TOTAL CARD (READ-ONLY) ════════ */}
+              <div className="grand-total-card">
+                <div className="grand-total-title">Master Invoice Summary</div>
+
+                <div className="grand-total-row">
+                  <span>
+                    Participant Costs ({successfulParticipants.length}{" "}
+                    participants)
+                  </span>
+                  <span>₹{fmt(participantSubtotal)}</span>
+                </div>
+
+                {batchCosting?.is_exposure_visit && (
+                  <div className="grand-total-row">
+                    <span>Exposure Visit Cost</span>
+                    <span>₹{fmt(batchCosting.exposure_visit_cost || 0)}</span>
+                  </div>
+                )}
+
+                {batchCosting?.is_field_visit && (
+                  <div className="grand-total-row">
+                    <span>Field Visit Cost</span>
+                    <span>₹{fmt(batchCosting.field_visit_cost || 0)}</span>
+                  </div>
+                )}
+
+                <div className="grand-total-divider" />
+
+                <div className="grand-total-row grand-total-final">
+                  <span>Grand Total Requested by TP</span>
+                  <span>₹{fmt(batchCosting?.grand_total_cost || 0)}</span>
+                </div>
+              </div>
+
+              {/* ════════ APPROVE / REJECT ACTION BAR ════════ */}
+              {isReviewStatus && (
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 12,
+                    marginTop: 24,
+                    marginBottom: 32,
+                  }}
+                >
+                  <button
+                    className="btn btn-outline"
+                    style={{
+                      borderColor: "#ef4444",
+                      color: "#b91c1c",
+                      fontWeight: "bold",
+                    }}
+                    disabled={actionLoading}
+                    onClick={() => setRejectModalOpen(true)}
+                  >
+                    Reject Batch
+                  </button>
+                  <button
+                    className="btn btn-primary btn-lg"
+                    style={{ background: "#10b981", borderColor: "#10b981" }}
+                    onClick={handleApprove}
+                    disabled={actionLoading}
+                  >
+                    {actionLoading ? "Processing…" : "Approve and Close Batch"}
+                  </button>
                 </div>
               )}
             </div>
+          </main>
+          <Footer />
+        </div>
 
-            {/* ════════ MASTER TRAINERS & SCHEDULES ════════ */}
+        {/* Lightbox for media preview */}
+        {mediaPreviewSrc && (
+          <div
+            onClick={() => setMediaPreviewSrc(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 4000,
+              cursor: "zoom-out",
+            }}
+          >
+            <img
+              src={mediaPreviewSrc}
+              alt="Preview"
+              style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 6 }}
+            />
+          </div>
+        )}
+
+        {/* Reject Modal */}
+        {rejectModalOpen && (
+          <div
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.5)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 4000,
+            }}
+          >
             <div
               style={{
-                display: "grid",
-                gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
-                gap: 20,
+                background: "#fff",
+                width: 500,
+                padding: 24,
+                borderRadius: 10,
+                boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
               }}
             >
-              <div className="cl-card">
-                <div className="cl-card-title">🧑‍🏫 Master Trainers</div>
-                {batch?.master_trainers?.length > 0 ? (
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Name</th>
-                        <th>Designation</th>
-                        <th>Mobile</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {batch.master_trainers.map((mt) => (
-                        <tr key={mt.id}>
-                          <td style={{ fontWeight: 500 }}>{mt.full_name}</td>
-                          <td>{mt.designation}</td>
-                          <td>{mt.mobile_no}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="empty-msg">No master trainers assigned.</div>
-                )}
-              </div>
-
-              <div className="cl-card">
-                <div className="cl-card-title">📅 Batch Schedules</div>
-                {batch?.schedules?.length > 0 ? (
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Start Time</th>
-                        <th>Remarks</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {batch.schedules.map((s) => (
-                        <tr key={s.id}>
-                          <td style={{ fontWeight: 500 }}>
-                            {fmtDate(s.schedule_date)}
-                          </td>
-                          <td>{s.start_time || "—"}</td>
-                          <td>{s.remarks || "—"}</td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                ) : (
-                  <div className="empty-msg">No schedules found.</div>
-                )}
-              </div>
-            </div>
-
-            {/* ════════ DAILY ATTENDANCE RECORDS ════════ */}
-            <div className="cl-card">
-              <div className="cl-card-title">📝 Daily Attendance Records</div>
-              {batch?.attendances?.length > 0 ? (
-                <div
-                  style={{ display: "flex", flexDirection: "column", gap: 16 }}
-                >
-                  {batch.attendances.map((att) => (
-                    <div
-                      key={att.id}
-                      style={{
-                        border: "1px solid #cbd5e1",
-                        borderRadius: 8,
-                        background: "#f8fafc",
-                        overflow: "hidden",
-                      }}
-                    >
-                      <div
-                        style={{
-                          padding: "12px 16px",
-                          background: "#e2e8f0",
-                          display: "flex",
-                          justifyContent: "space-between",
-                          alignItems: "center",
-                        }}
-                      >
-                        <div style={{ fontWeight: 600, color: "#1e293b" }}>
-                          Day: {fmtDate(att.date)}
-                        </div>
-                        {att.csv_upload ? (
-                          <a
-                            href={normalizeMediaUrl(att.csv_upload)}
-                            target="_blank"
-                            rel="noreferrer"
-                            style={{
-                              fontSize: 13,
-                              color: "#2563eb",
-                              textDecoration: "none",
-                              fontWeight: 600,
-                            }}
-                          >
-                            📥 Download CSV
-                          </a>
-                        ) : (
-                          <span style={{ fontSize: 13, color: "#94a3b8" }}>
-                            No CSV Uploaded
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Participant Records Table */}
-                      {att.participant_records?.length > 0 ? (
-                        <div
-                          style={{
-                            padding: 12,
-                            overflowX: "auto",
-                            maxHeight: 200,
-                            background: "#fff",
-                          }}
-                        >
-                          <table className="table" style={{ fontSize: 13 }}>
-                            <thead style={{ background: "#f1f5f9" }}>
-                              <tr>
-                                <th style={{ padding: "6px 10px" }}>
-                                  Participant Name
-                                </th>
-                                <th style={{ padding: "6px 10px" }}>Role</th>
-                                <th style={{ padding: "6px 10px" }}>Status</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {att.participant_records.map((pr) => (
-                                <tr key={pr.id}>
-                                  <td style={{ padding: "6px 10px" }}>
-                                    {pr.participant_name}
-                                  </td>
-                                  <td style={{ padding: "6px 10px" }}>
-                                    {pr.participant_role}
-                                  </td>
-                                  <td style={{ padding: "6px 10px" }}>
-                                    <span
-                                      style={{
-                                        padding: "2px 8px",
-                                        borderRadius: 12,
-                                        fontSize: 11,
-                                        fontWeight: "bold",
-                                        background: pr.present
-                                          ? "#dcfce7"
-                                          : "#fee2e2",
-                                        color: pr.present
-                                          ? "#166534"
-                                          : "#991b1b",
-                                      }}
-                                    >
-                                      {pr.present ? "Present" : "Absent"}
-                                    </span>
-                                  </td>
-                                </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                        </div>
-                      ) : (
-                        <div
-                          style={{
-                            padding: 12,
-                            fontSize: 13,
-                            color: "#64748b",
-                            background: "#fff",
-                          }}
-                        >
-                          No participant records found for this day.
-                        </div>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="empty-msg">No attendance recorded.</div>
-              )}
-            </div>
-
-            {/* ════════ BATCH MEDIA GALLERY ════════ */}
-            <div className="cl-card">
-              <div className="cl-card-title">
-                📸 Batch Media (Photos & Docs)
-              </div>
-              {batch?.batch_pictures?.length > 0 ? (
-                <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                  {batch.batch_pictures.map((m) => {
-                    const src = normalizeMediaUrl(m.file);
-                    const isImage = src && !src.toLowerCase().endsWith(".pdf");
-                    return (
-                      <div
-                        key={m.id}
-                        style={{
-                          width: 140,
-                          background: "#f1f5f9",
-                          borderRadius: 8,
-                          overflow: "hidden",
-                          border: "1px solid #cbd5e1",
-                        }}
-                      >
-                        {isImage ? (
-                          <img
-                            src={src}
-                            alt={m.category}
-                            onClick={() => setMediaPreviewSrc(src)}
-                            style={{
-                              width: "100%",
-                              height: 100,
-                              objectFit: "cover",
-                              cursor: "zoom-in",
-                            }}
-                          />
-                        ) : (
-                          <div
-                            onClick={() => window.open(src, "_blank")}
-                            style={{
-                              height: 100,
-                              display: "flex",
-                              alignItems: "center",
-                              justifyContent: "center",
-                              cursor: "pointer",
-                              background: "#e2e8f0",
-                            }}
-                          >
-                            <span
-                              style={{
-                                fontSize: 13,
-                                fontWeight: 600,
-                                color: "#334155",
-                              }}
-                            >
-                              View PDF
-                            </span>
-                          </div>
-                        )}
-                        <div
-                          style={{
-                            padding: "8px",
-                            fontSize: 12,
-                            textAlign: "center",
-                            fontWeight: 600,
-                            color: "#475569",
-                          }}
-                        >
-                          {m.category}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              ) : (
-                <div className="empty-msg">
-                  No media uploaded by Contact Person.
-                </div>
-              )}
-            </div>
-
-            {/* ════════ PARTICIPANTS COST TABLE (READ-ONLY) ════════ */}
-            <div className="cl-card">
-              <div className="cl-card-title">
-                💰 Successful Participants — Cost Breakup
-                <span className="count-badge">
-                  {successfulParticipants.length}
-                </span>
-              </div>
-
-              {successfulParticipants.length === 0 ? (
-                <div className="empty-msg">
-                  No successful participants found (must have ≥80% attendance &
-                  not dropped out).
-                </div>
-              ) : (
-                <div style={{ overflowX: "auto" }}>
-                  <table className="table">
-                    <thead>
-                      <tr>
-                        <th>#</th>
-                        <th>Participant Name</th>
-                        <th>Gender</th>
-                        <th>Age</th>
-                        <th>Category</th>
-                        <th>Mobile</th>
-                        <th>Attendance %</th>
-                        <th>TA (₹)</th>
-                        <th>DA (₹)</th>
-                        <th>Row Total (₹)</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {successfulParticipants.map((p, i) => (
-                        <tr key={p.id}>
-                          <td>{i + 1}</td>
-                          <td style={{ fontWeight: 600, color: "#0f172a" }}>
-                            {p.display_name}
-                          </td>
-                          <td>{p.gender}</td>
-                          <td>{p.age}</td>
-                          <td>{p.category}</td>
-                          <td>{p.mobile}</td>
-                          <td>
-                            <span
-                              style={{
-                                background: "#dcfce7",
-                                color: "#166534",
-                                padding: "3px 8px",
-                                borderRadius: 20,
-                                fontSize: 12,
-                                fontWeight: "bold",
-                              }}
-                            >
-                              {p.attendance_pct}%
-                            </span>
-                          </td>
-                          <td>₹{fmt(p.hra)}</td>
-                          <td>₹{fmt(p.ta_da)}</td>
-                          <td>
-                            <strong style={{ color: "#1e40af" }}>
-                              ₹{fmt(p.total_cost)}
-                            </strong>
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                    <tfoot>
-                      <tr>
-                        <td
-                          colSpan={5}
-                          style={{
-                            textAlign: "right",
-                            fontWeight: 700,
-                            color: "#2b4e72",
-                            padding: "10px",
-                          }}
-                        >
-                          Subtotal:
-                        </td>
-                        <td
-                          style={{
-                            fontWeight: 700,
-                            color: "#2b4e72",
-                            padding: "10px",
-                            fontSize: 16,
-                          }}
-                        >
-                          ₹{fmt(participantSubtotal)}
-                        </td>
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
-            </div>
-
-            {/* ════════ GRAND TOTAL CARD (READ-ONLY) ════════ */}
-            <div className="grand-total-card">
-              <div className="grand-total-title">Master Invoice Summary</div>
-
-              <div className="grand-total-row">
-                <span>
-                  Participant Costs ({successfulParticipants.length}{" "}
-                  participants)
-                </span>
-                <span>₹{fmt(participantSubtotal)}</span>
-              </div>
-
-              {batchCosting?.is_exposure_visit && (
-                <div className="grand-total-row">
-                  <span>Exposure Visit Cost</span>
-                  <span>₹{fmt(batchCosting.exposure_visit_cost || 0)}</span>
-                </div>
-              )}
-
-              {batchCosting?.is_field_visit && (
-                <div className="grand-total-row">
-                  <span>Field Visit Cost</span>
-                  <span>₹{fmt(batchCosting.field_visit_cost || 0)}</span>
-                </div>
-              )}
-
-              <div className="grand-total-divider" />
-
-              <div className="grand-total-row grand-total-final">
-                <span>Grand Total Requested by TP</span>
-                <span>₹{fmt(batchCosting?.grand_total_cost || 0)}</span>
-              </div>
-            </div>
-
-            {/* ════════ APPROVE / REJECT ACTION BAR ════════ */}
-            {isReviewStatus && (
+              <h3 style={{ margin: "0 0 16px 0", color: "#b91c1c" }}>
+                Reject Batch Closure
+              </h3>
+              <p style={{ fontSize: 14, color: "#475569", marginBottom: 12 }}>
+                Please provide a reason for rejecting this batch. It will be
+                sent back to the Training Partner.
+              </p>
+              <textarea
+                className="cost-input"
+                style={{ width: "100%", height: 100, marginBottom: 16 }}
+                placeholder="Reason for rejection..."
+                value={rejectionReason}
+                onChange={(e) => setRejectionReason(e.target.value)}
+                disabled={actionLoading}
+              />
               <div
-                style={{
-                  display: "flex",
-                  justifyContent: "flex-end",
-                  gap: 12,
-                  marginTop: 24,
-                  marginBottom: 32,
-                }}
+                style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}
               >
                 <button
                   className="btn btn-outline"
-                  style={{
-                    borderColor: "#ef4444",
-                    color: "#b91c1c",
-                    fontWeight: "bold",
-                  }}
+                  onClick={() => setRejectModalOpen(false)}
                   disabled={actionLoading}
-                  onClick={() => setRejectModalOpen(true)}
                 >
-                  Reject Batch
+                  Cancel
                 </button>
                 <button
-                  className="btn btn-primary btn-lg"
-                  style={{ background: "#10b981", borderColor: "#10b981" }}
-                  onClick={handleApprove}
+                  className="btn btn-primary"
+                  style={{ background: "#ef4444" }}
+                  onClick={handleReject}
                   disabled={actionLoading}
                 >
-                  {actionLoading ? "Processing…" : "Approve and Close Batch"}
+                  {actionLoading ? "Rejecting..." : "Confirm Rejection"}
                 </button>
               </div>
-            )}
-          </div>
-        </main>
-      </div>
-
-      {/* Lightbox for media preview */}
-      {mediaPreviewSrc && (
-        <div
-          onClick={() => setMediaPreviewSrc(null)}
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.8)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 4000,
-            cursor: "zoom-out",
-          }}
-        >
-          <img
-            src={mediaPreviewSrc}
-            alt="Preview"
-            style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 6 }}
-          />
-        </div>
-      )}
-
-      {/* Reject Modal */}
-      {rejectModalOpen && (
-        <div
-          style={{
-            position: "fixed",
-            inset: 0,
-            background: "rgba(0,0,0,0.5)",
-            display: "flex",
-            alignItems: "center",
-            justifyContent: "center",
-            zIndex: 4000,
-          }}
-        >
-          <div
-            style={{
-              background: "#fff",
-              width: 500,
-              padding: 24,
-              borderRadius: 10,
-              boxShadow: "0 10px 25px rgba(0,0,0,0.2)",
-            }}
-          >
-            <h3 style={{ margin: "0 0 16px 0", color: "#b91c1c" }}>
-              Reject Batch Closure
-            </h3>
-            <p style={{ fontSize: 14, color: "#475569", marginBottom: 12 }}>
-              Please provide a reason for rejecting this batch. It will be sent
-              back to the Training Partner.
-            </p>
-            <textarea
-              className="cost-input"
-              style={{ width: "100%", height: 100, marginBottom: 16 }}
-              placeholder="Reason for rejection..."
-              value={rejectionReason}
-              onChange={(e) => setRejectionReason(e.target.value)}
-              disabled={actionLoading}
-            />
-            <div
-              style={{ display: "flex", justifyContent: "flex-end", gap: 12 }}
-            >
-              <button
-                className="btn btn-outline"
-                onClick={() => setRejectModalOpen(false)}
-                disabled={actionLoading}
-              >
-                Cancel
-              </button>
-              <button
-                className="btn btn-primary"
-                style={{ background: "#ef4444" }}
-                onClick={handleReject}
-                disabled={actionLoading}
-              >
-                {actionLoading ? "Rejecting..." : "Confirm Rejection"}
-              </button>
             </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* ════════════════════════════════════════════════════════
+        {/* ════════════════════════════════════════════════════════
          STYLES
       ════════════════════════════════════════════════════════ */}
-      <style>{`
+        <style>{`
+.content-area {
+  display: flex;
+  flex: 1;              
+  min-width: 0;
+}
+
 /* ── LAYOUT ── */
 .dashboard-header { display: flex; align-items: center; margin-bottom: 16px; }
 .dashboard-title { margin-top: 25px; margin-left: 30px; color: #2b4e72; }
@@ -1184,6 +1212,7 @@ export default function DmmuBatchClosureReview() {
   .info-grid { grid-template-columns: 1fr; }
 }
       `}</style>
+      </div>
     </div>
   );
 }

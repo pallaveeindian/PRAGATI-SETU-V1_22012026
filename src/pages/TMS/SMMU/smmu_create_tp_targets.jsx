@@ -77,6 +77,9 @@ export default function SmmuCreatePartnerTargets() {
 
   const [isModalOpen, setIsModalOpen] = useState(false);
 
+  const [filterFY, setFilterFY] = useState("");
+  const [filterModule, setFilterModule] = useState("");
+
   // map helpers
   const plansById = useMemo(() => {
     const m = {};
@@ -147,7 +150,7 @@ export default function SmmuCreatePartnerTargets() {
         if (payload) {
           try {
             window.localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-          } catch (e) { }
+          } catch (e) {}
           if (payload.user_id) {
             setEffectiveUserId(payload.user_id);
             return payload.user_id;
@@ -691,6 +694,16 @@ export default function SmmuCreatePartnerTargets() {
     if (assignedPage < totalPages) setAssignedPage((p) => p + 1);
   }
 
+  const filteredAssignedTargets = useMemo(() => {
+    return assignedTargets.filter((t) => {
+      const fyMatch = !filterFY || t.financial_year === filterFY;
+      const moduleMatch =
+        !filterModule || String(t.training_plan) === String(filterModule);
+
+      return fyMatch && moduleMatch;
+    });
+  }, [assignedTargets, filterFY, filterModule]);
+
   const showDistrictRow =
     form.target_type === "DISTRICT" || form.target_type === "MODULE";
   const showModuleRow = form.target_type === "MODULE";
@@ -794,7 +807,7 @@ export default function SmmuCreatePartnerTargets() {
                               editingTarget &&
                               (editingTarget.training_plan === p.id ||
                                 String(editingTarget.training_plan) ===
-                                String(p.id));
+                                  String(p.id));
 
                             const rowClickable =
                               !isAssigned || isAssignedToThisEditingTarget;
@@ -820,7 +833,7 @@ export default function SmmuCreatePartnerTargets() {
                                 <td className="plan-td plan-td-training">
                                   <span>{p.training_name}</span>
 
-                                  {isAssigned && (
+                                  {/* {isAssigned && (
                                     <span
                                       className="plan-badge"
                                       title={`Assigned to ${assigned.partnerName || "partner"
@@ -831,7 +844,7 @@ export default function SmmuCreatePartnerTargets() {
                                         ? ` — ${assigned.partnerName}`
                                         : ""}
                                     </span>
-                                  )}
+                                  )} */}
                                 </td>
 
                                 <td className="plan-td">
@@ -924,7 +937,7 @@ export default function SmmuCreatePartnerTargets() {
                               editingTarget &&
                               (editingTarget.training_plan === m.id ||
                                 String(editingTarget.training_plan) ===
-                                String(m.id));
+                                  String(m.id));
                             return (
                               <option
                                 key={m.id}
@@ -942,7 +955,11 @@ export default function SmmuCreatePartnerTargets() {
                           })}
                         </select>
                         <div
-                          style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
+                          style={{
+                            fontSize: 13,
+                            color: "#6c757d",
+                            marginTop: 6,
+                          }}
                           className="palette-muted"
                         >
                           Tip: click a module row on the left to auto-select it
@@ -1013,11 +1030,15 @@ export default function SmmuCreatePartnerTargets() {
                           {form.theme || "(inferred on save)"}
                         </div>
                         <div
-                          style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}
+                          style={{
+                            fontSize: 13,
+                            color: "#6c757d",
+                            marginTop: 6,
+                          }}
                           className="palette-input"
                         >
-                          For THEME targets, theme will be auto-inferred from your
-                          SMMU assignment or the selected module.
+                          For THEME targets, theme will be auto-inferred from
+                          your SMMU assignment or the selected module.
                         </div>
                       </div>
                     )}
@@ -1126,7 +1147,8 @@ export default function SmmuCreatePartnerTargets() {
                       <div
                         style={{
                           marginTop: 12,
-                          color: message.type === "error" ? "#d9534f" : "#28a745",
+                          color:
+                            message.type === "error" ? "#d9534f" : "#28a745",
                         }}
                         className="tms-message" /* UI CHANGE */
                       >
@@ -1136,7 +1158,10 @@ export default function SmmuCreatePartnerTargets() {
                   </form>
 
                   {/* ASSIGNED TARGET LIST */}
-                  <div style={styles.assignedList} className="tms-assigned-card">
+                  <div
+                    style={styles.assignedList}
+                    className="tms-assigned-card"
+                  >
                     <h6
                       style={{ margin: "8px 0", paddingLeft: "8px" }}
                       className="tms-section-title"
@@ -1171,11 +1196,13 @@ export default function SmmuCreatePartnerTargets() {
                         {/* HEADER */}
                         <div className="tms-modal-header">
                           <h5>Assigned Targets</h5>
-                          <button onClick={() => setIsModalOpen(false)}>✖</button>
+                          <button onClick={() => setIsModalOpen(false)}>
+                            ✖
+                          </button>
                         </div>
 
                         {/* BODY */}
-                        <div style={{ maxHeight: 400, overflow: "auto" }}>
+                        {/* <div style={{ maxHeight: 400, overflow: "auto" }}>
                           {loading.targets ? (
                             <div style={{ padding: 12 }}>Loading targets…</div>
                           ) : assignedTargets.length ? (
@@ -1221,6 +1248,113 @@ export default function SmmuCreatePartnerTargets() {
                             ))
                           ) : (
                             <div style={{ padding: 12 }}>No targets found.</div>
+                          )}
+                        </div> */}
+
+                        {/* BODY */}
+                        <div
+                          style={{
+                            maxHeight: 400,
+                            overflow: "auto",
+                            padding: 10,
+                          }}
+                        >
+                          {/* FILTERS */}
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: 10,
+                              marginBottom: 10,
+                            }}
+                          >
+                            <select
+                              value={filterFY}
+                              onChange={(e) => setFilterFY(e.target.value)}
+                              style={{ flex: 1 }}
+                            >
+                              <option value="">All Financial Years</option>
+                              <option value="2024-25">2024-25</option>
+                              <option value="2025-26">2025-26</option>
+                              <option value="2026-27">2026-27</option>
+                            </select>
+
+                            <select
+                              value={filterModule}
+                              onChange={(e) => setFilterModule(e.target.value)}
+                              style={{ flex: 1 }}
+                            >
+                              <option value="">All Modules</option>
+                              {plans.map((p) => (
+                                <option key={p.id} value={p.id}>
+                                  {p.training_name}
+                                </option>
+                              ))}
+                            </select>
+                          </div>
+
+                          {/* TABLE */}
+                          {loading.targets ? (
+                            <div>Loading targets…</div>
+                          ) : filteredAssignedTargets.length ? (
+                            <table style={{ width: "100%", fontSize: 13 }}>
+                              <thead>
+                                <tr style={{ background: "#e4ecf5" }}>
+                                  <th>S.No</th>
+                                  <th>TP Name</th>
+                                  <th>Batch</th>
+                                  <th>Module</th>
+                                  <th>District</th>
+                                  <th>FY</th>
+                                  <th>Action</th> {/* NEW */}
+                                </tr>
+                              </thead>
+
+                              <tbody>
+                                {filteredAssignedTargets.map((t, index) => (
+                                  <tr
+                                    key={t.id}
+                                    style={{ borderBottom: "1px solid #eee" }}
+                                  >
+                                    <td>{index + 1}</td>
+
+                                    <td>
+                                      {t.partner_name ||
+                                        t.partner_full?.name ||
+                                        "—"}
+                                    </td>
+
+                                    <td>{t.target_count}</td>
+
+                                    <td>
+                                      {t.training_plan_name ||
+                                        t.training_plan_full?.training_name ||
+                                        "—"}
+                                    </td>
+
+                                    <td>
+                                      {t.district_full?.district_name_en || "—"}
+                                    </td>
+
+                                    <td>{t.financial_year}</td>
+
+                                    {/* EDIT BUTTON */}
+                                    <td>
+                                      <button
+                                        className="btn tms-btn-edit"
+                                        onClick={() => {
+                                          editAssignedTarget(t);
+                                          setIsModalOpen(false); // modal close + form open
+                                        }}
+                                      >
+                                        Edit
+                                      </button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                          ) : (
+                            <div>No data found.</div>
                           )}
                         </div>
 
@@ -1282,7 +1416,10 @@ export default function SmmuCreatePartnerTargets() {
                   <div style={{ marginTop: 12 }} className="tms-activity">
                     {" "}
                     {/* UI CHANGE */}
-                    <h6 style={{ margin: "8px 0" }} className="tms-section-title">
+                    <h6
+                      style={{ margin: "8px 0" }}
+                      className="tms-section-title"
+                    >
                       {" "}
                       {/* UI CHANGE */}
                       Recent activity
@@ -1565,9 +1702,9 @@ PLAN COLUMN CARD
 
 /* table wrapper */
 .plan-table-wrapper{
-  max-height: 420px;      /* LIMIT HEIGHT */
-  overflow-y: auto;       /* ENABLE VERTICAL SCROLL */
-  overflow-x: auto;       /* ENABLE HORIZONTAL IF NEEDED */
+  max-height: 750px;      
+  overflow-y: auto;      
+  overflow-x: auto;       
   border: 1px solid #e5e7eb;
   border-radius: 8px;
 }
@@ -1693,7 +1830,7 @@ PLAN COLUMN CARD
 
 .tms-modal {
   background: #fff;
-  width: 600px;
+  width: 1000px;
   max-width: 90%;
   border-radius: 10px;
   overflow: hidden;

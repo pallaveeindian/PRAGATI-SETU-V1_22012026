@@ -45,7 +45,7 @@ export const decryptPayload = (responseData) => {
     console.error("API Decryption failed:", error);
     return responseData;
   }
-}
+};
 
 // ------------------------
 // Axios instance
@@ -589,8 +589,7 @@ export const TMS_API = {
   tpcpCentreDetails: makeCrud("/tms/tpcp_to_centre/details/"),
   trainingPlans: makeCrud("/tms/training-plans/"),
 
-
-  // TMS REPORT 
+  // TMS REPORT
   trainingReports: makeCrud("/tms/cmp-training-report/"),
   // Master trainer + certificates
   masterTrainers: makeCrud("/tms/master-trainers/"),
@@ -695,6 +694,14 @@ export const TMS_API = {
         `/tms/dmmu/batches/${encodeURIComponent(batchId)}/attendance-by-date/`,
         { params },
       ),
+  },
+
+  firstLogin: {
+    status: () => api.get("/tms/first-login/change-password/"),
+    verifyPassword: (data) =>
+      api.post("/tms/first-login/password-verify/", data),
+    changePassword: (data) =>
+      api.post("/tms/first-login/change-password/", data),
   },
 };
 

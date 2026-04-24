@@ -28,7 +28,7 @@ function saveCache(scope, payload) {
       getCacheKey(scope),
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch { }
+  } catch {}
 }
 
 function loadCache(scope) {
@@ -50,7 +50,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) return Number(cached);
-  } catch { }
+  } catch {}
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -429,10 +429,12 @@ export default function TrainingBatchList() {
             <h2 className="dashboard-title">{roleMessage}</h2>
           </div> */}
 
-          <main style={{
-            padding: 18,
-            minHeight: "100vh",
-          }}>
+          <main
+            style={{
+              padding: 18,
+              minHeight: "100vh",
+            }}
+          >
             <div style={{ maxWidth: 1200, margin: "0 auto" }}>
               {/* ================= FILTERS ================= */}
 
@@ -581,7 +583,10 @@ export default function TrainingBatchList() {
                           className="input"
                           value={filters.partner}
                           onChange={(e) =>
-                            setFilters((f) => ({ ...f, partner: e.target.value }))
+                            setFilters((f) => ({
+                              ...f,
+                              partner: e.target.value,
+                            }))
                           }
                         >
                           <option value="">Training Partner</option>
@@ -649,10 +654,12 @@ export default function TrainingBatchList() {
                         {[
                           "DRAFT",
                           "PENDING",
+                          "REJECTED",
                           "ONGOING",
                           "SCHEDULED",
                           "COMPLETED",
-                          "REJECTED",
+                          "REVIEW",
+                          "CLOSED",
                         ].map((s) => (
                           <option key={s} value={s}>
                             {s}
@@ -695,7 +702,10 @@ export default function TrainingBatchList() {
                         justifyContent: "center",
                       }}
                     >
-                      <button className="btn btn-primary" onClick={fetchBatches}>
+                      <button
+                        className="btn btn-primary"
+                        onClick={fetchBatches}
+                      >
                         Fetch Batches
                       </button>
                     </div>
@@ -760,7 +770,9 @@ export default function TrainingBatchList() {
                           <td>{renderCentreName(b.centre)}</td>
                           <td>{b.centre?.partner?.name || "-"}</td>
                           <td>{b.request?.block?.block_name_en || "-"}</td>
-                          <td>{b.request?.district?.district_name_en || "-"}</td>
+                          <td>
+                            {b.request?.district?.district_name_en || "-"}
+                          </td>
 
                           <td>
                             <button
@@ -790,22 +802,28 @@ export default function TrainingBatchList() {
                             {/* ── STATUS + ROLE BASED ROUTING ── */}
                             {["bmmu", "dmmu", "smmu"].includes(role) && (
                               <>
-                                {String(b.status).toUpperCase() === "REVIEW" && (
+                                {String(b.status).toUpperCase() ===
+                                  "REVIEW" && (
                                   <button
                                     className="btn-sm btn-flat"
                                     onClick={() =>
                                       role === "dmmu"
-                                        ? navigate(`/tms/dmmu/tr-closure/${b.id}`)
+                                        ? navigate(
+                                            `/tms/dmmu/tr-closure/${b.id}`,
+                                          )
                                         : navigate(
-                                          `/tms/batch-certificate/${b.id}`,
-                                        )
+                                            `/tms/batch-certificate/${b.id}`,
+                                          )
                                     }
                                   >
-                                    {role === "dmmu" ? "Closure" : "Certificate"}
+                                    {role === "dmmu"
+                                      ? "Closure"
+                                      : "Certificate"}
                                   </button>
                                 )}
 
-                                {String(b.status).toUpperCase() === "CLOSED" && (
+                                {String(b.status).toUpperCase() ===
+                                  "CLOSED" && (
                                   <button
                                     className="btn-sm btn-flat"
                                     onClick={() =>
@@ -1146,7 +1164,6 @@ export default function TrainingBatchList() {
 
 }
 `}</style>
-
     </div>
   );
 }

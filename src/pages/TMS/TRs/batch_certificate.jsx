@@ -5,6 +5,8 @@ import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
+import Header from "../layout/header";
+import Footer from "../layout/footer";
 
 const CERT_CACHE_KEY = "tms_batch_certificate_cache_v1";
 
@@ -355,130 +357,139 @@ export default function BatchCertificate() {
 
   return (
     <div className="app-shell">
-      <LeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1000, margin: "20px auto" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 12,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>{headerTitle}</h2>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button className="btn-secondary" onClick={() => navigate(-1)}>
-                  Back
-                </button>
-                <button
-                  className="btn"
-                  onClick={() => setRefreshToken((t) => t + 1)}
-                >
-                  Refresh
-                </button>
+      <Header />
+      <div className="content-area">
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          <main style={{ padding: 18 }}>
+            <div style={{ maxWidth: 1000, margin: "20px auto" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 12,
+                }}
+              >
+                <h2 style={{ margin: 0 }}>{headerTitle}</h2>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  <button
+                    className="btn-secondary"
+                    onClick={() => navigate(-1)}
+                  >
+                    Back
+                  </button>
+                  <button
+                    className="btn"
+                    onClick={() => setRefreshToken((t) => t + 1)}
+                  >
+                    Refresh
+                  </button>
+                </div>
               </div>
-            </div>
 
-            {loading ? (
-              <div style={{ padding: 40, textAlign: "center" }}>Loading...</div>
-            ) : !batchDetail ? (
-              <div style={{ padding: 40 }}>Unable to load batch details.</div>
-            ) : (
-              <>
-                {/* Batch Info */}
-                <div
-                  style={{
-                    background: "#fff",
-                    padding: 16,
-                    borderRadius: 8,
-                    marginBottom: 20,
-                  }}
-                >
-                  <h3>Batch Details</h3>
-                  <div style={{ fontSize: 14, lineHeight: 1.6 }}>
-                    <div>
-                      <strong>Code:</strong> {batchDetail.code}
-                    </div>
-                    <div>
-                      <strong>Status:</strong> {batchDetail.status}
-                    </div>
-                    <div>
-                      <strong>Level:</strong> {requestLevel}
-                    </div>
-                    <div>
-                      <strong>Dates:</strong> {batchDetail.start_date} to{" "}
-                      {batchDetail.end_date}
+              {loading ? (
+                <div style={{ padding: 40, textAlign: "center" }}>
+                  Loading...
+                </div>
+              ) : !batchDetail ? (
+                <div style={{ padding: 40 }}>Unable to load batch details.</div>
+              ) : (
+                <>
+                  {/* Batch Info */}
+                  <div
+                    style={{
+                      background: "#fff",
+                      padding: 16,
+                      borderRadius: 8,
+                      marginBottom: 20,
+                    }}
+                  >
+                    <h3>Batch Details</h3>
+                    <div style={{ fontSize: 14, lineHeight: 1.6 }}>
+                      <div>
+                        <strong>Code:</strong> {batchDetail.code}
+                      </div>
+                      <div>
+                        <strong>Status:</strong> {batchDetail.status}
+                      </div>
+                      <div>
+                        <strong>Level:</strong> {requestLevel}
+                      </div>
+                      <div>
+                        <strong>Dates:</strong> {batchDetail.start_date} to{" "}
+                        {batchDetail.end_date}
+                      </div>
                     </div>
                   </div>
-                </div>
 
-                {/* Main Content */}
-                <div
-                  style={{ background: "#fff", padding: 20, borderRadius: 8 }}
-                >
-                  <h3>Batch Closure Certificate</h3>
+                  {/* Main Content */}
+                  <div
+                    style={{ background: "#fff", padding: 20, borderRadius: 8 }}
+                  >
+                    <h3>Batch Closure Certificate</h3>
 
-                  {!isBatchClosed ? (
-                    <div
-                      style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}
-                    >
-                      Batch is not CLOSED yet. Certificate generation and
-                      uploads are disabled.
-                    </div>
-                  ) : (
-                    <div>
-                      {/* 1. Generate Button (Only visible to the assigned authority) */}
-                      {canGenerate && (
-                        <button
-                          className="btn"
-                          onClick={() => setShowFinancialModal(true)}
-                          disabled={generating}
-                          style={{ marginBottom: 20 }}
-                        >
-                          {generating
-                            ? "Generating..."
-                            : "Generate Batch Certificate (PDF)"}
-                        </button>
-                      )}
+                    {!isBatchClosed ? (
+                      <div
+                        style={{ color: "#dc2626", fontSize: 13, marginTop: 8 }}
+                      >
+                        Batch is not CLOSED yet. Certificate generation and
+                        uploads are disabled.
+                      </div>
+                    ) : (
+                      <div>
+                        {/* 1. Generate Button (Only visible to the assigned authority) */}
+                        {canGenerate && (
+                          <button
+                            className="btn"
+                            onClick={() => setShowFinancialModal(true)}
+                            disabled={generating}
+                            style={{ marginBottom: 20 }}
+                          >
+                            {generating
+                              ? "Generating..."
+                              : "Generate Batch Certificate (PDF)"}
+                          </button>
+                        )}
 
-                      {isSMMU && !canGenerate && (
-                        <div
-                          style={{
-                            marginBottom: 16,
-                            fontSize: 13,
-                            color: "#475569",
-                          }}
-                        >
-                          Signed certificates will be generated and uploaded by
-                          the respective authorities.
-                        </div>
-                      )}
+                        {isSMMU && !canGenerate && (
+                          <div
+                            style={{
+                              marginBottom: 16,
+                              fontSize: 13,
+                              color: "#475569",
+                            }}
+                          >
+                            Signed certificates will be generated and uploaded
+                            by the respective authorities.
+                          </div>
+                        )}
 
-                      {/* 2. Upload & Status Table (Always visible if CLOSED) */}
-                      {renderReportTable()}
+                        {/* 2. Upload & Status Table (Always visible if CLOSED) */}
+                        {renderReportTable()}
 
-                      {uploadError && (
-                        <div
-                          style={{
-                            color: "#dc2626",
-                            marginTop: 12,
-                            fontSize: 13,
-                          }}
-                        >
-                          {uploadError}
-                        </div>
-                      )}
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
-        </main>
+                        {uploadError && (
+                          <div
+                            style={{
+                              color: "#dc2626",
+                              marginTop: 12,
+                              fontSize: 13,
+                            }}
+                          >
+                            {uploadError}
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </div>
+                </>
+              )}
+            </div>
+          </main>
+          <Footer />
+        </div>
       </div>
 
       {/* ========================================================================
@@ -554,6 +565,34 @@ export default function BatchCertificate() {
           </div>
         </div>
       )}
+      <style>{`.content-area {
+  display: flex;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Sidebar */
+.content-area > nav {
+  flex-shrink: 0;
+}
+
+/* Main area column */
+.main-area {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0;
+}
+
+/* Main content takes available space */
+.main-area > main {
+  flex: 1;
+}
+
+/* Footer always pushed to bottom */
+.main-area > footer {
+  margin-top: auto;
+}`}</style>
     </div>
   );
 }

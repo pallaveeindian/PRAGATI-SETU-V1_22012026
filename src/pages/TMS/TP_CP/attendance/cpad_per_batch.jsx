@@ -5,6 +5,8 @@ import TmsLeftNav from "../../layout/tms_LeftNav";
 // import TopNav from "../../layout/tms_TopNav";
 import { AuthContext } from "../../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../../api/axios";
+import Header from "../../layout/header";
+import Footer from "../../layout/footer";
 
 const BATCHDETAIL_CACHE_PREFIX = "tms_cp_batch_detail_v1::";
 const SCHEDULE_CACHE_PREFIX = "tms_cp_batch_schedule_v1::";
@@ -721,271 +723,286 @@ export default function CpAdPerBatch() {
 
   return (
     <div className="app-shell">
-      <TmsLeftNav
-        collapsed={navCollapsed}
-        onToggle={() => setNavCollapsed((v) => !v)}
-      />
-      <div className="main-area">
-        {/* <TopNav
+      <Header />
+      <div className="content-area">
+        <TmsLeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
+        <div className="main-area">
+          {/* <TopNav
           left={
             <div className="app-title">
               Pragati Setu — Batch Attendance (CP)
             </div>
           }
         /> */}
-        <main style={{ padding: 18 }}>
-          <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-            <div
-              style={{
-                display: "flex",
-                alignItems: "center",
-                marginBottom: 12,
-                gap: 8,
-              }}
-            >
-              <h2 style={{ margin: 0 }}>Attendance — Batch #{batchId}</h2>
-              <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                <button
-                  className="btn"
-                  onClick={() => {
-                    try {
-                      localStorage.removeItem(
-                        BATCHDETAIL_CACHE_PREFIX + batchId,
-                      );
-                      localStorage.removeItem(SCHEDULE_CACHE_PREFIX + batchId);
-                      localStorage.removeItem(EKYC_CACHE_PREFIX + batchId);
-                      localStorage.removeItem(ATT_TODAY_CACHE_PREFIX + batchId);
-                    } catch {}
-                    setAttendanceToday(null);
-                    setAttendanceList([]);
-                    setMissingDates([]);
-                    fetchBatch(true);
-                    fetchSchedule(true);
-                    fetchEkyc(true);
-                    fetchAttendanceToday(true);
-                    fetchAttendanceList();
-                  }}
-                >
-                  Refresh
-                </button>
-                <button
-                  className="btn btn-outline"
-                  onClick={() => navigate(-1)}
-                >
-                  Back
-                </button>
-              </div>
-            </div>
-
-            <div style={{ background: "#fff", borderRadius: 8, padding: 18 }}>
-              {loadingBatch && !batch ? (
-                <div className="table-spinner">Loading batch details…</div>
-              ) : !batch ? (
-                <div className="muted">
-                  Batch not found. Please go back and try again.
+          <main style={{ padding: 18 }}>
+            <div style={{ maxWidth: 1100, margin: "0 auto" }}>
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  gap: 8,
+                }}
+              >
+                <h2 style={{ margin: 0 }}>Attendance — Batch #{batchId}</h2>
+                <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
+                  <button
+                    className="btn"
+                    onClick={() => {
+                      try {
+                        localStorage.removeItem(
+                          BATCHDETAIL_CACHE_PREFIX + batchId,
+                        );
+                        localStorage.removeItem(
+                          SCHEDULE_CACHE_PREFIX + batchId,
+                        );
+                        localStorage.removeItem(EKYC_CACHE_PREFIX + batchId);
+                        localStorage.removeItem(
+                          ATT_TODAY_CACHE_PREFIX + batchId,
+                        );
+                      } catch {}
+                      setAttendanceToday(null);
+                      setAttendanceList([]);
+                      setMissingDates([]);
+                      fetchBatch(true);
+                      fetchSchedule(true);
+                      fetchEkyc(true);
+                      fetchAttendanceToday(true);
+                      fetchAttendanceList();
+                    }}
+                  >
+                    Refresh
+                  </button>
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate(-1)}
+                  >
+                    Back
+                  </button>
                 </div>
-              ) : (
-                <>
-                  <div style={{ marginBottom: 10 }}>
-                    <div>
-                      <strong>Batch Code:</strong>{" "}
-                      <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
-                        {batch.code || batch.id}
-                      </span>
-                    </div>
-                    <div>
-                      <strong>Today:</strong> {today}
-                    </div>
-                    <div>
-                      <strong>Time of training:</strong>{" "}
-                      {batch.time_of_training || "Not set"}
-                    </div>
-                  </div>
+              </div>
 
-                  {loadingSchedule ? (
-                    <div className="table-spinner">Loading batch schedule…</div>
-                  ) : !schedule ? (
-                    <div
-                      style={{
-                        padding: 10,
-                        borderRadius: 6,
-                        background: "#fef3c7",
-                        color: "#92400e",
-                        fontSize: 13,
-                        marginBottom: 10,
-                      }}
-                    >
-                      No schedule found for this batch. Please set start time in
-                      EKYC screen first.
-                    </div>
-                  ) : (
-                    <div
-                      style={{
-                        padding: 10,
-                        borderRadius: 6,
-                        background: "#eff6ff",
-                        marginBottom: 10,
-                        fontSize: 13,
-                      }}
-                    >
+              <div style={{ background: "#fff", borderRadius: 8, padding: 18 }}>
+                {loadingBatch && !batch ? (
+                  <div className="table-spinner">Loading batch details…</div>
+                ) : !batch ? (
+                  <div className="muted">
+                    Batch not found. Please go back and try again.
+                  </div>
+                ) : (
+                  <>
+                    <div style={{ marginBottom: 10 }}>
                       <div>
-                        <strong>Schedule Date (first day):</strong>{" "}
-                        {schedule.schedule_date}
+                        <strong>Batch Code:</strong>{" "}
+                        <span style={{ fontWeight: 700, color: "#1d4ed8" }}>
+                          {batch.code || batch.id}
+                        </span>
                       </div>
-                      {/* <div>
+                      <div>
+                        <strong>Today:</strong> {today}
+                      </div>
+                      <div>
+                        <strong>Time of training:</strong>{" "}
+                        {batch.time_of_training || "Not set"}
+                      </div>
+                    </div>
+
+                    {loadingSchedule ? (
+                      <div className="table-spinner">
+                        Loading batch schedule…
+                      </div>
+                    ) : !schedule ? (
+                      <div
+                        style={{
+                          padding: 10,
+                          borderRadius: 6,
+                          background: "#fef3c7",
+                          color: "#92400e",
+                          fontSize: 13,
+                          marginBottom: 10,
+                        }}
+                      >
+                        No schedule found for this batch. Please set start time
+                        in EKYC screen first.
+                      </div>
+                    ) : (
+                      <div
+                        style={{
+                          padding: 10,
+                          borderRadius: 6,
+                          background: "#eff6ff",
+                          marginBottom: 10,
+                          fontSize: 13,
+                        }}
+                      >
+                        <div>
+                          <strong>Schedule Date (first day):</strong>{" "}
+                          {schedule.schedule_date}
+                        </div>
+                        {/* <div>
                         <strong>Daily Start Time:</strong>{" "}
                         {schedule.start_time?.slice(0, 5) || "—"} (24-hour)
                       </div> */}
 
-                      <div>
-                        <strong>Daily Start Time:</strong>{" "}
-                        {formatTo12Hour(schedule.start_time)}
-                      </div>
-                      <div>
-                        Attendance opens at the configured start time each day.
-                      </div>
-                    </div>
-                  )}
-
-                  {loadingEkyc ? (
-                    <div className="table-spinner">Checking EKYC status…</div>
-                  ) : !allEkycVerified ? (
-                    <div
-                      style={{
-                        padding: 10,
-                        borderRadius: 6,
-                        background: "#fee2e2",
-                        color: "#b91c1c",
-                        fontSize: 13,
-                        marginBottom: 12,
-                      }}
-                    >
-                      EKYC verification is not complete yet. Attendance cannot
-                      be recorded until all participants and trainers are
-                      verified. Please complete EKYC first.
-                      <div style={{ marginTop: 8 }}>
-                        <button
-                          className="btn btn-outline"
-                          onClick={() =>
-                            navigate(`/tms/cp/batch-attendance-ekyc/${batchId}`)
-                          }
-                        >
-                          Go to EKYC Screen
-                        </button>
-                      </div>
-                    </div>
-                  ) : null}
-
-                  {/* Catch-up: mark all absent for ALL missing days */}
-                  {attendanceAllowed &&
-                    schedule &&
-                    missingDates.length > 0 &&
-                    !loadingAttendanceList && (
-                      <div
-                        style={{
-                          padding: 12,
-                          borderRadius: 6,
-                          background: "#fee2e2",
-                          color: "#991b1b",
-                          fontSize: 13,
-                          marginBottom: 16,
-                        }}
-                      >
-                        Attendance is not recorded for{" "}
-                        <strong>{missingDates.length}</strong> past day
-                        {missingDates.length > 1 ? "s" : ""} (from{" "}
-                        {fmtDate(missingDates[0])} to{" "}
-                        {fmtDate(missingDates[missingDates.length - 1])}). The
-                        window has expired, so all participants must be marked
-                        absent for those days.
-                        <div style={{ marginTop: 8 }}>
-                          <button
-                            className="btn btn-danger"
-                            disabled={savingAttendance || !participants.length}
-                            onClick={autoMarkAllMissingAbsent}
-                          >
-                            {submitting
-                              ? "Submitting attendance…"
-                              : "Mark all absent for missed days"}
-                          </button>
+                        <div>
+                          <strong>Daily Start Time:</strong>{" "}
+                          {formatTo12Hour(schedule.start_time)}
+                        </div>
+                        <div>
+                          Attendance opens at the configured start time each
+                          day.
                         </div>
                       </div>
                     )}
 
-                  {/* TODAY section */}
-                  {attendanceAllowed &&
-                    schedule &&
-                    missingDates.length === 0 && (
-                      <>
-                        {loadingAttendanceToday ? (
-                          <div className="table-spinner">
-                            Checking today's attendance…
-                          </div>
-                        ) : attendanceToday && attendanceToday.id ? (
-                          <div
-                            style={{
-                              padding: 10,
-                              borderRadius: 6,
-                              background: "#dcfce7",
-                              color: "#166534",
-                              fontSize: 13,
-                              marginBottom: 14,
-                            }}
+                    {loadingEkyc ? (
+                      <div className="table-spinner">Checking EKYC status…</div>
+                    ) : !allEkycVerified ? (
+                      <div
+                        style={{
+                          padding: 10,
+                          borderRadius: 6,
+                          background: "#fee2e2",
+                          color: "#b91c1c",
+                          fontSize: 13,
+                          marginBottom: 12,
+                        }}
+                      >
+                        EKYC verification is not complete yet. Attendance cannot
+                        be recorded until all participants and trainers are
+                        verified. Please complete EKYC first.
+                        <div style={{ marginTop: 8 }}>
+                          <button
+                            className="btn btn-outline"
+                            onClick={() =>
+                              navigate(
+                                `/tms/cp/batch-attendance-ekyc/${batchId}`,
+                              )
+                            }
                           >
-                            Attendance for today ({today}) has already been
-                            recorded.
-                          </div>
-                        ) : (
-                          <div
-                            style={{
-                              padding: 12,
-                              borderRadius: 6,
-                              background: "#f9fafb",
-                              marginBottom: 18,
-                            }}
-                          >
-                            <h4 style={{ marginTop: 0 }}>
-                              Record Attendance for Today ({today})
-                            </h4>
-                            {!canShowAttendanceForm ? (
-                              <div
-                                style={{
-                                  padding: 10,
-                                  borderRadius: 6,
-                                  background: "#e5f3ff",
-                                  color: "#1f2937",
-                                  fontSize: 13,
-                                }}
-                              >
-                                Attendance recording will be enabled when
-                                today's start time is reached and EKYC is
-                                complete.
-                              </div>
-                            ) : (
-                              <form onSubmit={handleSubmitAttendance}>
-                                <div style={{ marginBottom: 12 }}>
-                                  <label
-                                    style={{
-                                      fontWeight: 600,
-                                      marginBottom: 4,
-                                      display: "block",
-                                    }}
-                                  >
-                                    Upload Punch Machine CSV{" "}
-                                    <span style={{ color: "#dc2626" }}>*</span>
-                                  </label>
+                            Go to EKYC Screen
+                          </button>
+                        </div>
+                      </div>
+                    ) : null}
 
-                                  <div
-                                    style={{
-                                      fontSize: 12,
-                                      color: "#b91c1c",
-                                      marginTop: 4,
-                                    }}
-                                  >
-                                    CSV upload is mandatory to submit today’s
-                                    attendance.
-                                  </div>
-                                  {/* <input
+                    {/* Catch-up: mark all absent for ALL missing days */}
+                    {attendanceAllowed &&
+                      schedule &&
+                      missingDates.length > 0 &&
+                      !loadingAttendanceList && (
+                        <div
+                          style={{
+                            padding: 12,
+                            borderRadius: 6,
+                            background: "#fee2e2",
+                            color: "#991b1b",
+                            fontSize: 13,
+                            marginBottom: 16,
+                          }}
+                        >
+                          Attendance is not recorded for{" "}
+                          <strong>{missingDates.length}</strong> past day
+                          {missingDates.length > 1 ? "s" : ""} (from{" "}
+                          {fmtDate(missingDates[0])} to{" "}
+                          {fmtDate(missingDates[missingDates.length - 1])}). The
+                          window has expired, so all participants must be marked
+                          absent for those days.
+                          <div style={{ marginTop: 8 }}>
+                            <button
+                              className="btn btn-danger"
+                              disabled={
+                                savingAttendance || !participants.length
+                              }
+                              onClick={autoMarkAllMissingAbsent}
+                            >
+                              {submitting
+                                ? "Submitting attendance…"
+                                : "Mark all absent for missed days"}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
+                    {/* TODAY section */}
+                    {attendanceAllowed &&
+                      schedule &&
+                      missingDates.length === 0 && (
+                        <>
+                          {loadingAttendanceToday ? (
+                            <div className="table-spinner">
+                              Checking today's attendance…
+                            </div>
+                          ) : attendanceToday && attendanceToday.id ? (
+                            <div
+                              style={{
+                                padding: 10,
+                                borderRadius: 6,
+                                background: "#dcfce7",
+                                color: "#166534",
+                                fontSize: 13,
+                                marginBottom: 14,
+                              }}
+                            >
+                              Attendance for today ({today}) has already been
+                              recorded.
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                padding: 12,
+                                borderRadius: 6,
+                                background: "#f9fafb",
+                                marginBottom: 18,
+                              }}
+                            >
+                              <h4 style={{ marginTop: 0 }}>
+                                Record Attendance for Today ({today})
+                              </h4>
+                              {!canShowAttendanceForm ? (
+                                <div
+                                  style={{
+                                    padding: 10,
+                                    borderRadius: 6,
+                                    background: "#e5f3ff",
+                                    color: "#1f2937",
+                                    fontSize: 13,
+                                  }}
+                                >
+                                  Attendance recording will be enabled when
+                                  today's start time is reached and EKYC is
+                                  complete.
+                                </div>
+                              ) : (
+                                <form onSubmit={handleSubmitAttendance}>
+                                  <div style={{ marginBottom: 12 }}>
+                                    <label
+                                      style={{
+                                        fontWeight: 600,
+                                        marginBottom: 4,
+                                        display: "block",
+                                      }}
+                                    >
+                                      Upload Punch Machine CSV{" "}
+                                      <span style={{ color: "#dc2626" }}>
+                                        *
+                                      </span>
+                                    </label>
+
+                                    <div
+                                      style={{
+                                        fontSize: 12,
+                                        color: "#b91c1c",
+                                        marginTop: 4,
+                                      }}
+                                    >
+                                      CSV upload is mandatory to submit today’s
+                                      attendance.
+                                    </div>
+                                    {/* <input
                                     type="file"
                                     accept=".csv"
                                     onChange={(e) => {
@@ -994,285 +1011,302 @@ export default function CpAdPerBatch() {
                                     }}
                                   /> */}
 
-                                  <input
-                                    type="file"
-                                    accept=".csv"
-                                    onChange={(e) => {
-                                      const file = e.target.files?.[0] || null;
+                                    <input
+                                      type="file"
+                                      accept=".csv"
+                                      onChange={(e) => {
+                                        const file =
+                                          e.target.files?.[0] || null;
 
-                                      const error = validateCsvFile(file);
+                                        const error = validateCsvFile(file);
 
-                                      if (error) {
-                                        setCsvError(error);
-                                        setCsvFile(null);
-                                      } else {
-                                        setCsvError("");
-                                        setCsvFile(file);
-                                      }
-                                    }}
-                                  />
-                                  {csvError && (
+                                        if (error) {
+                                          setCsvError(error);
+                                          setCsvFile(null);
+                                        } else {
+                                          setCsvError("");
+                                          setCsvFile(file);
+                                        }
+                                      }}
+                                    />
+                                    {csvError && (
+                                      <div
+                                        style={{
+                                          color: "#dc2626",
+                                          fontSize: 12,
+                                          marginTop: 4,
+                                        }}
+                                      >
+                                        {csvError}
+                                      </div>
+                                    )}
                                     <div
                                       style={{
-                                        color: "#dc2626",
                                         fontSize: 12,
+                                        color: "#6b7280",
                                         marginTop: 4,
                                       }}
                                     >
-                                      {csvError}
+                                      Optional - upload one CSV file for today's
+                                      punch records.
+                                    </div>
+                                  </div>
+
+                                  <h4>Participants</h4>
+                                  {participants.length === 0 ? (
+                                    <div className="muted">
+                                      No participants configured for this batch.
+                                    </div>
+                                  ) : (
+                                    <div
+                                      style={{
+                                        maxHeight: 400,
+                                        overflow: "auto",
+                                      }}
+                                    >
+                                      <table className="table table-compact">
+                                        <thead>
+                                          <tr>
+                                            <th>Name</th>
+                                            <th>Role</th>
+                                            <th>Present</th>
+                                          </tr>
+                                        </thead>
+                                        <tbody>
+                                          {participants.map((p) => (
+                                            <tr key={p.key}>
+                                              <td>{p.name}</td>
+                                              <td>
+                                                {p.participant_role ===
+                                                "trainer"
+                                                  ? "Master Trainer"
+                                                  : "Trainee"}
+                                              </td>
+                                              <td>
+                                                <input
+                                                  type="checkbox"
+                                                  checked={
+                                                    !!participantPresence[p.key]
+                                                  }
+                                                  onChange={(e) =>
+                                                    setParticipantPresence(
+                                                      (prev) => ({
+                                                        ...prev,
+                                                        [p.key]:
+                                                          e.target.checked,
+                                                      }),
+                                                    )
+                                                  }
+                                                />
+                                              </td>
+                                            </tr>
+                                          ))}
+                                        </tbody>
+                                      </table>
                                     </div>
                                   )}
+
                                   <div
                                     style={{
-                                      fontSize: 12,
-                                      color: "#6b7280",
-                                      marginTop: 4,
+                                      marginTop: 12,
+                                      display: "flex",
+                                      justifyContent: "flex-end",
                                     }}
                                   >
-                                    Optional - upload one CSV file for today's
-                                    punch records.
+                                    <button
+                                      type="submit"
+                                      className="btn btn-success"
+                                      disabled={
+                                        savingAttendance ||
+                                        !participants.length ||
+                                        !csvFile ||
+                                        csvError
+                                      }
+                                    >
+                                      {savingAttendance
+                                        ? "Submitting…"
+                                        : "Submit Attendance"}
+                                    </button>
                                   </div>
-                                </div>
+                                </form>
+                              )}
+                            </div>
+                          )}
+                        </>
+                      )}
 
-                                <h4>Participants</h4>
-                                {participants.length === 0 ? (
-                                  <div className="muted">
-                                    No participants configured for this batch.
-                                  </div>
-                                ) : (
-                                  <div
-                                    style={{
-                                      maxHeight: 400,
-                                      overflow: "auto",
-                                    }}
-                                  >
-                                    <table className="table table-compact">
-                                      <thead>
-                                        <tr>
-                                          <th>Name</th>
-                                          <th>Role</th>
-                                          <th>Present</th>
-                                        </tr>
-                                      </thead>
-                                      <tbody>
-                                        {participants.map((p) => (
-                                          <tr key={p.key}>
-                                            <td>{p.name}</td>
-                                            <td>
-                                              {p.participant_role === "trainer"
-                                                ? "Master Trainer"
-                                                : "Trainee"}
-                                            </td>
-                                            <td>
-                                              <input
-                                                type="checkbox"
-                                                checked={
-                                                  !!participantPresence[p.key]
-                                                }
-                                                onChange={(e) =>
-                                                  setParticipantPresence(
-                                                    (prev) => ({
-                                                      ...prev,
-                                                      [p.key]: e.target.checked,
-                                                    }),
-                                                  )
-                                                }
-                                              />
-                                            </td>
-                                          </tr>
-                                        ))}
-                                      </tbody>
-                                    </table>
-                                  </div>
-                                )}
-
-                                <div
-                                  style={{
-                                    marginTop: 12,
-                                    display: "flex",
-                                    justifyContent: "flex-end",
-                                  }}
-                                >
-                                  <button
-                                    type="submit"
-                                    className="btn btn-success"
-                                    disabled={
-                                      savingAttendance ||
-                                      !participants.length ||
-                                      !csvFile ||
-                                      csvError
-                                    }
-                                  >
-                                    {savingAttendance
-                                      ? "Submitting…"
-                                      : "Submit Attendance"}
-                                  </button>
-                                </div>
-                              </form>
-                            )}
-                          </div>
-                        )}
-                      </>
-                    )}
-
-                  {/* HISTORICAL section */}
-                  <div
-                    style={{
-                      padding: 12,
-                      borderRadius: 6,
-                      background: "#ffffff",
-                      border: "1px solid #e5e7eb",
-                    }}
-                  >
-                    <h4 style={{ marginTop: 0 }}>Attendance Records</h4>
-                    {loadingAttendanceList ? (
-                      <div className="table-spinner">
-                        Loading attendance records…
-                      </div>
-                    ) : attendanceList.length === 0 ? (
-                      <div className="muted">
-                        No attendance records found for this batch yet.
-                      </div>
-                    ) : (
-                      <div style={{ marginBottom: 10 }}>
-                        <table className="table table-compact">
-                          <thead>
-                            <tr>
-                              <th>Date</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {attendanceList.map((a) => (
-                              <tr key={a.id}>
-                                <td>
-                                  <button
-                                    className="btn-sm btn-flat"
-                                    type="button"
-                                    onClick={() =>
-                                      fetchParticipantRecordsForDate(a.date)
-                                    }
-                                  >
-                                    {fmtDate(a.date)}
-                                  </button>
-                                </td>
+                    {/* HISTORICAL section */}
+                    <div
+                      style={{
+                        padding: 12,
+                        borderRadius: 6,
+                        background: "#ffffff",
+                        border: "1px solid #e5e7eb",
+                      }}
+                    >
+                      <h4 style={{ marginTop: 0 }}>Attendance Records</h4>
+                      {loadingAttendanceList ? (
+                        <div className="table-spinner">
+                          Loading attendance records…
+                        </div>
+                      ) : attendanceList.length === 0 ? (
+                        <div className="muted">
+                          No attendance records found for this batch yet.
+                        </div>
+                      ) : (
+                        <div style={{ marginBottom: 10 }}>
+                          <table className="table table-compact">
+                            <thead>
+                              <tr>
+                                <th>Date</th>
                               </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )}
-
-                    {selectedDate && (
-                      <div
-                        style={{
-                          marginTop: 10,
-                          paddingTop: 10,
-                          borderTop: "1px solid #e5e7eb",
-                        }}
-                      >
-                        <h5>Attendance on {fmtDate(selectedDate)}</h5>
-                        {loadingSelectedRecords ? (
-                          <div className="table-spinner">
-                            Loading participant records…
-                          </div>
-                        ) : selectedDateRecords.length === 0 ? (
-                          <div className="muted">No records for this date.</div>
-                        ) : (
-                          <div
-                            style={{
-                              maxHeight: 400,
-                              overflow: "auto",
-                            }}
-                          >
-                            <table className="table table-compact">
-                              <thead>
-                                <tr>
-                                  <th>Name</th>
-                                  <th>Role</th>
-                                  <th>Status</th>
+                            </thead>
+                            <tbody>
+                              {attendanceList.map((a) => (
+                                <tr key={a.id}>
+                                  <td>
+                                    <button
+                                      className="btn-sm btn-flat"
+                                      type="button"
+                                      onClick={() =>
+                                        fetchParticipantRecordsForDate(a.date)
+                                      }
+                                    >
+                                      {fmtDate(a.date)}
+                                    </button>
+                                  </td>
                                 </tr>
-                              </thead>
-                              <tbody>
-                                {selectedDateRecords.map((r) => (
-                                  <tr key={r.id}>
-                                    <td>{r.participant_name}</td>
-                                    <td>
-                                      {r.participant_role === "trainer"
-                                        ? "Trainer"
-                                        : "Trainee"}
-                                    </td>
-                                    <td>
-                                      <span
-                                        style={{
-                                          fontSize: 12,
-                                          padding: "2px 8px",
-                                          borderRadius: 999,
-                                          background: r.present
-                                            ? "#dcfce7"
-                                            : "#fee2e2",
-                                          color: r.present
-                                            ? "#166534"
-                                            : "#b91c1c",
-                                        }}
-                                      >
-                                        {r.present ? "Present" : "Absent"}
-                                      </span>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-                </>
-              )}
-            </div>
-          </div>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      )}
 
-          {/* Submitting overlay */}
-          {submitting && (
-            <div
-              style={{
-                position: "fixed",
-                inset: 0,
-                background: "rgba(15,23,42,0.4)",
-                display: "flex",
-                alignItems: "center",
-                justifyContent: "center",
-                zIndex: 9999,
-              }}
-            >
+                      {selectedDate && (
+                        <div
+                          style={{
+                            marginTop: 10,
+                            paddingTop: 10,
+                            borderTop: "1px solid #e5e7eb",
+                          }}
+                        >
+                          <h5>Attendance on {fmtDate(selectedDate)}</h5>
+                          {loadingSelectedRecords ? (
+                            <div className="table-spinner">
+                              Loading participant records…
+                            </div>
+                          ) : selectedDateRecords.length === 0 ? (
+                            <div className="muted">
+                              No records for this date.
+                            </div>
+                          ) : (
+                            <div
+                              style={{
+                                maxHeight: 400,
+                                overflow: "auto",
+                              }}
+                            >
+                              <table className="table table-compact">
+                                <thead>
+                                  <tr>
+                                    <th>Name</th>
+                                    <th>Role</th>
+                                    <th>Status</th>
+                                  </tr>
+                                </thead>
+                                <tbody>
+                                  {selectedDateRecords.map((r) => (
+                                    <tr key={r.id}>
+                                      <td>{r.participant_name}</td>
+                                      <td>
+                                        {r.participant_role === "trainer"
+                                          ? "Trainer"
+                                          : "Trainee"}
+                                      </td>
+                                      <td>
+                                        <span
+                                          style={{
+                                            fontSize: 12,
+                                            padding: "2px 8px",
+                                            borderRadius: 999,
+                                            background: r.present
+                                              ? "#dcfce7"
+                                              : "#fee2e2",
+                                            color: r.present
+                                              ? "#166534"
+                                              : "#b91c1c",
+                                          }}
+                                        >
+                                          {r.present ? "Present" : "Absent"}
+                                        </span>
+                                      </td>
+                                    </tr>
+                                  ))}
+                                </tbody>
+                              </table>
+                            </div>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
+            </div>
+
+            {/* Submitting overlay */}
+            {submitting && (
               <div
                 style={{
-                  background: "#ffffff",
-                  borderRadius: 8,
-                  padding: "16px 24px",
-                  minWidth: 260,
-                  textAlign: "center",
-                  boxShadow: "0 10px 25px rgba(15,23,42,0.25)",
+                  position: "fixed",
+                  inset: 0,
+                  background: "rgba(15,23,42,0.4)",
+                  display: "flex",
+                  alignItems: "center",
+                  justifyContent: "center",
+                  zIndex: 9999,
                 }}
               >
                 <div
-                  className="spinner-border"
-                  role="status"
-                  style={{ width: 24, height: 24, marginBottom: 8 }}
+                  style={{
+                    background: "#ffffff",
+                    borderRadius: 8,
+                    padding: "16px 24px",
+                    minWidth: 260,
+                    textAlign: "center",
+                    boxShadow: "0 10px 25px rgba(15,23,42,0.25)",
+                  }}
                 >
-                  <span className="visually-hidden">Loading…</span>
-                </div>
-                <div style={{ fontWeight: 600, marginBottom: 4 }}>
-                  Submitting Attendance
-                </div>
-                <div style={{ fontSize: 13, color: "#4b5563" }}>
-                  {submitMessage}
+                  <div
+                    className="spinner-border"
+                    role="status"
+                    style={{ width: 24, height: 24, marginBottom: 8 }}
+                  >
+                    <span className="visually-hidden">Loading…</span>
+                  </div>
+                  <div style={{ fontWeight: 600, marginBottom: 4 }}>
+                    Submitting Attendance
+                  </div>
+                  <div style={{ fontSize: 13, color: "#4b5563" }}>
+                    {submitMessage}
+                  </div>
                 </div>
               </div>
-            </div>
-          )}
-        </main>
+            )}
+          </main>
+          <Footer />
+        </div>
       </div>
+      <style>{`.content-area {
+  display: flex;
+  flex: 1;
+}
+.main-area {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+     `}</style>
     </div>
   );
 }

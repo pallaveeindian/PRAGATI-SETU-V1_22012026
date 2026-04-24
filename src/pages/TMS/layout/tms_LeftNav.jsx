@@ -43,6 +43,11 @@ const MENU = {
       to: "/tms/training-requests",
       icon: FaChartBar,
     },
+    {
+      label: "Targets vs Achievement",
+      to: "/tms/bmmu/tp-TvA",
+      icon: FaChalkboard,
+    },
     // {
     //   label: "Propose Training Plan",
     //   to: "/tms/tms/bmmu/create-training-plan",
@@ -63,7 +68,7 @@ const MENU = {
         },
       ],
     },
-    { label: "Reports", to: "#", icon: FaClipboardCheck },
+    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
@@ -76,6 +81,11 @@ const MENU = {
       label: "Training Requests",
       to: "/tms/training-requests",
       icon: FaChartBar,
+    },
+    {
+      label: "Targets vs Achievement",
+      to: "/tms/dmmu/tp-TvA",
+      icon: FaChalkboard,
     },
     // {
     //   label: "Training Batches",
@@ -92,7 +102,7 @@ const MENU = {
         },
       ],
     },
-    { label: "Reports", to: "#", icon: FaClipboardCheck },
+    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
   ],
   smmu: [
     { label: "Dashboard", to: "/tms/smmu/dashboard", icon: FaTachometerAlt },
@@ -269,12 +279,8 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
       >
         {/* LOGO */}
 
-
         {/* LEFT: LOGO CLICK ONLY */}
-        <div
-          className="logo-click"
-          onClick={() => navigate("/dashboard")}
-        >
+        <div className="logo-click" onClick={() => navigate("/dashboard")}>
           {/* agar logo image use karna hai to yahan lagao */}
           {/* <img src={logo} alt="logo" /> */}
         </div>
@@ -293,16 +299,11 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
           </button>
 
           {showUserPopup && (
-            <div
-              className="user-popup"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <div className="user-popup" onClick={(e) => e.stopPropagation()}>
               {username}
             </div>
           )}
         </div>
-
-
 
         {/* NAV */}
         <nav className="tms-nav">
@@ -385,7 +386,6 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
               </NavLink>
             );
           })}
-
         </nav>
 
         {/* TOGGLE */}
