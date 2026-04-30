@@ -5,536 +5,556 @@ import SHGList from "./FormComponents/SHGList";
 import api, { LOOKUP_API, EPSAKHI_API } from "../../../api/axios";
 import { AuthContext } from "../../../contexts/AuthContext";
 import {
-    FaUser,
-    FaPhoneAlt,
-    FaIdCard,
-    FaUsers,
-    FaLayerGroup,
-    FaCheckCircle,
-    FaLock,
-    FaSpinner,
-    FaBuilding,
-    FaTags,
-    FaMapMarkerAlt,
+  FaUser,
+  FaPhoneAlt,
+  FaIdCard,
+  FaUsers,
+  FaLayerGroup,
+  FaCheckCircle,
+  FaLock,
+  FaSpinner,
+  FaBuilding,
+  FaTags,
+  FaMapMarkerAlt,
+  FaEye,
+  FaEyeSlash,
 } from "react-icons/fa";
 import PanchayatsList from "./FormComponents/PanchayatsList";
 
 // Password for CRP Account Validation
 function validatePassword(pass) {
-    return {
-        length: pass.length >= 8,
-        upper: /[A-Z]/.test(pass),
-        lower: /[a-z]/.test(pass),
-        number: /[0-9]/.test(pass),
-        special: /[!@#$%^&*]/.test(pass),
-    };
+  return {
+    length: pass.length >= 8,
+    upper: /[A-Z]/.test(pass),
+    lower: /[a-z]/.test(pass),
+    number: /[0-9]/.test(pass),
+    special: /[!@#$%^&*]/.test(pass),
+  };
 }
 
 function generateThUrid() {
-    const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    let body = "";
-    for (let i = 0; i < 11; i++) {
-        body += chars.charAt(Math.floor(Math.random() * chars.length));
-    }
-    return `TH_${body}`;
+  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+  let body = "";
+  for (let i = 0; i < 11; i++) {
+    body += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  return `TH_${body}`;
 }
 
 export default function CRPForm() {
-    const { user } = useContext(AuthContext) || {};
-    const [geoFilters, setGeoFilters] = useState({
-        district_id: null,
-        block_id: null,
-    });
+  const { user } = useContext(AuthContext) || {};
+  const [geoFilters, setGeoFilters] = useState({
+    district_id: null,
+    block_id: null,
+  });
 
-    const [selectedMember, setSelectedMember] = useState(null);
-    const [password, setPassword] = useState("");
-    const [clf_code, setCLFCode] = useState("");
-    const [subcat, setSubCat] = useState("");
-    const [mobileInput, setMobileInput] = useState("");
-    const [passwordRules, setPasswordRules] = useState({
+  const [selectedMember, setSelectedMember] = useState(null);
+  const [password, setPassword] = useState("");
+  const [clf_code, setCLFCode] = useState("");
+  const [subcat, setSubCat] = useState("");
+  const [mobileInput, setMobileInput] = useState("");
+  const [passwordRules, setPasswordRules] = useState({
+    length: false,
+    upper: false,
+    lower: false,
+    number: false,
+    special: false,
+  });
+  const [creating, setCreating] = useState(false);
+
+  const [successData, setSuccessData] = useState(null);
+  const [errorData, setErrorData] = useState(null);
+
+  const panchayatSection = useRef(null);
+  const [showSuccessModal, setShowSuccessModal] = useState(false);
+
+  const [clfLoading, setClfLoading] = useState(false);
+  const [clfDisplay, setClfDisplay] = useState("");
+  const [clfError, setClfError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+
+  // AUTO FETCH CRP
+  async function autoFetchCLF(member) {
+    if (!member || !geoFilters.block_id) return;
+
+    try {
+      setClfLoading(true);
+      setClfError("");
+      setClfDisplay("");
+      setCLFCode("");
+
+      const res = await LOOKUP_API.upsrlmFindClf({
+        block_id: geoFilters.block_id,
+        member_code: member.member_code,
+      });
+
+      const data = res.data;
+
+      setCLFCode(data.clf_code);
+      setClfDisplay(`${data.name} | ${data.clfCategory}`);
+    } catch (err) {
+      if (err.response?.status === 404) {
+        setClfError("No CLF found for this member");
+      } else {
+        setClfError("Failed to fetch CLF");
+      }
+    } finally {
+      setClfLoading(false);
+    }
+  }
+
+  // -------------------------------------------------
+  // CREATE CRP FLOW
+  // -------------------------------------------------
+  async function handleCreateCRP() {
+    if (creating) return;
+    const rules = validatePassword(password);
+    setPasswordRules(rules);
+
+    if (!Object.values(rules).every(Boolean)) {
+      return;
+    }
+
+    if (!selectedMember) {
+      alert("Select a member first");
+      return;
+    }
+
+    if (!clf_code) {
+      alert("CLF Code is mandatory");
+      return;
+    }
+
+    try {
+      setCreating(true);
+
+      // -----------------------------------
+      // CHECK DUPLICATE CRP
+      // -----------------------------------
+
+      const existing = await EPSAKHI_API.crp.list({
+        lokos_member_code: selectedMember.member_code,
+      });
+
+      if (existing.data?.count > 0) {
+        throw new Error("CRP already exists for this member");
+      }
+
+      const mobile = selectedMember.mobile_number || mobileInput;
+
+      if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
+        alert("Enter a valid 10 digit mobile number");
+        setCreating(false);
+        return;
+      }
+
+      // -----------------------------------
+      // CREATE master_user
+      // -----------------------------------
+      const userPayload = {
+        username: `crp_${selectedMember.member_code}`,
+        password: password,
+        role: 6,
+        TH_urid: generateThUrid(),
+        is_active: 1,
+        is_suspended: 0,
+        is_locked: 0,
+        created_by: user?.id,
+      };
+      const userRes = await api.post("/lookups/users/create/", {
+        username: `crp_${selectedMember.member_code}`,
+        password: password,
+        role: 6,
+        TH_urid: generateThUrid(),
+        is_active: 1,
+        is_suspended: 0,
+        is_locked: 0,
+        created_by: user?.id,
+      });
+
+      const masterUserId = userRes.data?.id;
+
+      if (!masterUserId) throw new Error("Master user creation failed");
+
+      // -----------------------------------
+      // CREATE CRP PROFILE
+      // -----------------------------------
+
+      const crpPayload = {
+        name: selectedMember.member_name,
+        mobile_number: selectedMember.mobile_number || mobileInput,
+        category: selectedMember.social_category,
+
+        district_write: selectedMember.district_id,
+        block_write: selectedMember.block_id,
+        panchayat_write: selectedMember.panchayat_id,
+
+        lokos_shg_code: selectedMember.shg_code,
+        lokos_member_code: selectedMember.member_code,
+
+        nodal_clf: clf_code,
+        subcategory: subcat,
+
+        master_user_id: masterUserId,
+
+        created_by: user?.id,
+      };
+
+      const crpRes = await EPSAKHI_API.crp.create(crpPayload);
+
+      const data = {
+        username: userPayload.username,
+        password: userPayload.password,
+        crp: crpRes.data,
+      };
+
+      setSuccessData(data);
+      setShowSuccessModal(true);
+
+      setPassword("");
+      setSelectedMember(null);
+      setMobileInput("");
+      setCLFCode("");
+      setSubCat("");
+      setPasswordRules({
         length: false,
         upper: false,
         lower: false,
         number: false,
         special: false,
-    });
-    const [creating, setCreating] = useState(false);
+      });
+    } catch (err) {
+      const apiError =
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        JSON.stringify(err?.response?.data) ||
+        err.message;
 
-    const [successData, setSuccessData] = useState(null);
-    const [errorData, setErrorData] = useState(null);
-
-    const panchayatSection = useRef(null);
-    const [showSuccessModal, setShowSuccessModal] = useState(false);
-
-    const [clfLoading, setClfLoading] = useState(false);
-    const [clfDisplay, setClfDisplay] = useState("");
-    const [clfError, setClfError] = useState("");
-
-    // AUTO FETCH CRP
-    async function autoFetchCLF(member) {
-        if (!member || !geoFilters.block_id) return;
-
-        try {
-            setClfLoading(true);
-            setClfError("");
-            setClfDisplay("");
-            setCLFCode("");
-
-            const res = await LOOKUP_API.upsrlmFindClf({
-                block_id: geoFilters.block_id,
-                member_code: member.member_code,
-            });
-
-            const data = res.data;
-
-            setCLFCode(data.clf_code);
-            setClfDisplay(`${data.name} | ${data.clfCategory}`);
-        } catch (err) {
-            if (err.response?.status === 404) {
-                setClfError("No CLF found for this member");
-            } else {
-                setClfError("Failed to fetch CLF");
-            }
-        } finally {
-            setClfLoading(false);
-        }
+      setErrorData(apiError);
+    } finally {
+      setCreating(false);
     }
+  }
 
-    // -------------------------------------------------
-    // CREATE CRP FLOW
-    // -------------------------------------------------
-    async function handleCreateCRP() {
-        if (creating) return;
-        const rules = validatePassword(password);
-        setPasswordRules(rules);
-
-        if (!Object.values(rules).every(Boolean)) {
-            return;
-        }
-
-        if (!selectedMember) {
-            alert("Select a member first");
-            return;
-        }
-
-        if (!clf_code) {
-            alert("CLF Code is mandatory");
-            return;
-        }
-
-        try {
-            setCreating(true);
-
-            // -----------------------------------
-            // CHECK DUPLICATE CRP
-            // -----------------------------------
-
-            const existing = await EPSAKHI_API.crp.list({
-                lokos_member_code: selectedMember.member_code,
-            });
-
-            if (existing.data?.count > 0) {
-                throw new Error("CRP already exists for this member");
-            }
-
-            const mobile = selectedMember.mobile_number || mobileInput;
-
-            if (!mobile || !/^[6-9]\d{9}$/.test(mobile)) {
-                alert("Enter a valid 10 digit mobile number");
-                setCreating(false);
-                return;
-            }
-
-            // -----------------------------------
-            // CREATE master_user
-            // -----------------------------------
-            const userPayload = {
-                username: `crp_${selectedMember.member_code}`,
-                password: password,
-                role: 6,
-                TH_urid: generateThUrid(),
-                is_active: 1,
-                is_suspended: 0,
-                is_locked: 0,
-                created_by: user?.id,
-            };
-            const userRes = await api.post("/lookups/users/create/", {
-                username: `crp_${selectedMember.member_code}`,
-                password: password,
-                role: 6,
-                TH_urid: generateThUrid(),
-                is_active: 1,
-                is_suspended: 0,
-                is_locked: 0,
-                created_by: user?.id,
-            });
-
-            const masterUserId = userRes.data?.id;
-
-            if (!masterUserId) throw new Error("Master user creation failed");
-
-            // -----------------------------------
-            // CREATE CRP PROFILE
-            // -----------------------------------
-
-            const crpPayload = {
-                name: selectedMember.member_name,
-                mobile_number: selectedMember.mobile_number || mobileInput,
-                category: selectedMember.social_category,
-
-                district_write: selectedMember.district_id,
-                block_write: selectedMember.block_id,
-                panchayat_write: selectedMember.panchayat_id,
-
-                lokos_shg_code: selectedMember.shg_code,
-                lokos_member_code: selectedMember.member_code,
-
-                nodal_clf: clf_code,
-                subcategory: subcat,
-
-                master_user_id: masterUserId,
-
-                created_by: user?.id,
-            };
-
-            const crpRes = await EPSAKHI_API.crp.create(crpPayload);
-
-            const data = {
-                username: userPayload.username,
-                password: userPayload.password,
-                crp: crpRes.data,
-            };
-
-            setSuccessData(data);
-            setShowSuccessModal(true);
-
-            setPassword("");
-            setSelectedMember(null);
-            setMobileInput("");
-            setCLFCode("");
-            setSubCat("");
-            setPasswordRules({
-                length: false,
-                upper: false,
-                lower: false,
-                number: false,
-                special: false,
-            });
-        } catch (err) {
-            const apiError =
-                err?.response?.data?.detail ||
-                err?.response?.data?.message ||
-                JSON.stringify(err?.response?.data) ||
-                err.message;
-
-            setErrorData(apiError);
-        } finally {
-            setCreating(false);
-        }
+  useEffect(() => {
+    if (successData && panchayatSection.current) {
+      panchayatSection.current.scrollIntoView({ behavior: "smooth" });
     }
+  }, [successData]);
 
-    useEffect(() => {
-        if (successData && panchayatSection.current) {
-            panchayatSection.current.scrollIntoView({ behavior: "smooth" });
-        }
-    }, [successData]);
+  return (
+    <div className="crpform-epsms-dashboard">
+      {/* Row 1 */}
+      <div className="epsms-grid-row one-col">
+        <div className="epsms-card">
+          <GeoFilters onChange={setGeoFilters} />
+        </div>
+      </div>
 
-    return (
-        <div className="crpform-epsms-dashboard">
-            {/* Row 1 */}
-            <div className="epsms-grid-row one-col">
-                <div className="epsms-card">
-                    <GeoFilters onChange={setGeoFilters} />
-                </div>
+      {/* Row 2 */}
+      <div className="epsms-grid-row three-col">
+        <div className="epsms-card">
+          <SHGList
+            blockId={geoFilters.block_id}
+            onSelectMember={(memberData) => {
+              setSelectedMember(memberData);
+              autoFetchCLF(memberData);
+            }}
+          />
+        </div>
+      </div>
+
+      {/* Row 3 */}
+      <div className="epsms-grid-row one-col">
+        <div className="epsms-card selected-crp-card">
+          <h3 className="crp-title">
+            <FaCheckCircle /> Selected CRP
+          </h3>
+
+          {!selectedMember && (
+            <div className="crp-placeholder">
+              Select a member from the SHG list to create CRP
             </div>
+          )}
 
-            {/* Row 2 */}
-            <div className="epsms-grid-row three-col">
-                <div className="epsms-card">
-                    <SHGList
-                        blockId={geoFilters.block_id}
-                        onSelectMember={(memberData) => {
-                            setSelectedMember(memberData);
-                            autoFetchCLF(memberData);
-                        }}
-                    />
+          {selectedMember && (
+            <div className="crp-details-grid">
+              <div className="crp-detail">
+                <FaUser className="crp-icon" />
+                <div>
+                  <span className="crp-label">Name</span>
+                  <span className="crp-value">
+                    {selectedMember.member_name}
+                  </span>
                 </div>
+              </div>
+
+              <div className="crp-detail">
+                <FaPhoneAlt className="crp-icon" />
+                <div>
+                  <span className="crp-label">Mobile Number</span>
+                  <span className="crp-value">
+                    {selectedMember?.mobile_number ||
+                      mobileInput ||
+                      "Not Available"}
+                  </span>
+                </div>
+              </div>
+
+              <div className="crp-detail">
+                <FaLayerGroup className="crp-icon" />
+                <div>
+                  <span className="crp-label">Social Category</span>
+                  <span className="crp-value">
+                    {selectedMember.social_category}
+                  </span>
+                </div>
+              </div>
+
+              <div className="crp-detail">
+                <FaIdCard className="crp-icon" />
+                <div>
+                  <span className="crp-label">Member Code</span>
+                  <span className="crp-value">
+                    {selectedMember.member_code}
+                  </span>
+                </div>
+              </div>
+
+              <div className="crp-detail">
+                <FaUsers className="crp-icon" />
+                <div>
+                  <span className="crp-label">SHG Code</span>
+                  <span className="crp-value">{selectedMember.shg_code}</span>
+                </div>
+              </div>
             </div>
+          )}
 
-            {/* Row 3 */}
-            <div className="epsms-grid-row one-col">
-                <div className="epsms-card selected-crp-card">
-                    <h3 className="crp-title">
-                        <FaCheckCircle /> Selected CRP
-                    </h3>
+          <div className="crp-extra-inputs">
+            {/* Mobile Input only if missing */}
+            {selectedMember && !selectedMember.mobile_number && (
+              <div className="crp-input-group">
+                <label>
+                  <FaPhoneAlt /> Mobile Number
+                </label>
 
-                    {!selectedMember && (
-                        <div className="crp-placeholder">
-                            Select a member from the SHG list to create CRP
-                        </div>
-                    )}
-
-                    {selectedMember && (
-                        <div className="crp-details-grid">
-                            <div className="crp-detail">
-                                <FaUser className="crp-icon" />
-                                <div>
-                                    <span className="crp-label">Name</span>
-                                    <span className="crp-value">
-                                        {selectedMember.member_name}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="crp-detail">
-                                <FaPhoneAlt className="crp-icon" />
-                                <div>
-                                    <span className="crp-label">Mobile Number</span>
-                                    <span className="crp-value">
-                                        {selectedMember?.mobile_number ||
-                                            mobileInput ||
-                                            "Not Available"}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="crp-detail">
-                                <FaLayerGroup className="crp-icon" />
-                                <div>
-                                    <span className="crp-label">Social Category</span>
-                                    <span className="crp-value">
-                                        {selectedMember.social_category}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="crp-detail">
-                                <FaIdCard className="crp-icon" />
-                                <div>
-                                    <span className="crp-label">Member Code</span>
-                                    <span className="crp-value">
-                                        {selectedMember.member_code}
-                                    </span>
-                                </div>
-                            </div>
-
-                            <div className="crp-detail">
-                                <FaUsers className="crp-icon" />
-                                <div>
-                                    <span className="crp-label">SHG Code</span>
-                                    <span className="crp-value">{selectedMember.shg_code}</span>
-                                </div>
-                            </div>
-                        </div>
-                    )}
-
-                    <div className="crp-extra-inputs">
-                        {/* Mobile Input only if missing */}
-                        {selectedMember && !selectedMember.mobile_number && (
-                            <div className="crp-input-group">
-                                <label>
-                                    <FaPhoneAlt /> Mobile Number
-                                </label>
-
-                                <input
-                                    type="tel"
-                                    maxLength="10"
-                                    pattern="[6-9]{1}[0-9]{9}"
-                                    placeholder="Enter mobile number of CRP"
-                                    value={mobileInput}
-                                    onChange={(e) => setMobileInput(e.target.value)}
-                                />
-                            </div>
-                        )}
-
-                        {/* Nodal CLF Code */}
-                        <div className="crp-input-group">
-                            <label>
-                                <FaBuilding /> Nodal CLF Code{" "}
-                                <span className="required">*</span>
-                            </label>
-
-                            <div className="clf-input-wrapper">
-                                <input
-                                    type="text"
-                                    placeholder="Auto fetching CLF..."
-                                    value={clf_code}
-                                    readOnly
-                                />
-
-                                {clfLoading && <FaSpinner className="spin clf-spinner" />}
-                            </div>
-
-                            {/* CLF DISPLAY */}
-                            {clfDisplay && (
-                                <div className="clf-display">
-                                    <FaCheckCircle /> {clfDisplay}
-                                </div>
-                            )}
-
-                            {/* ERROR */}
-                            {clfError && <div className="clf-error">⚠ {clfError}</div>}
-                        </div>
-
-                        {/* Subcategory */}
-                        <div className="crp-input-group">
-                            <label>
-                                <FaTags /> CRP Subcategory (Optional)
-                            </label>
-                            <input
-                                type="text"
-                                placeholder="Enter Sub Category of CRP (Optional)"
-                                value={subcat}
-                                onChange={(e) => setSubCat(e.target.value)}
-                            />
-                        </div>
-                        {/* Alt Number */}
-                        <div className="crp-input-group">
-                            <label>
-                                <FaPhoneAlt />  Alternate Mobile Number
-                            </label>
-
-                            <input
-                                type="tel"
-                                maxLength="10"
-                                pattern="[6-9]{1}[0-9]{9}"
-                                placeholder="Enter mobile number of CRP"
-                            />
-                        </div>
-                    </div>
-                    <div className="crp-password-box">
-                        <label className="password-label">
-                            <FaLock /> Set CRP Account Password
-                        </label>
-
-                        <input
-                            type="password"
-                            value={password}
-                            onChange={(e) => {
-                                const val = e.target.value;
-                                setPassword(val);
-                                setPasswordRules(validatePassword(val));
-                            }}
-                            placeholder="Enter secure password"
-                            className="password-input"
-                        />
-
-                        {password && (
-                            <div className="password-rules">
-                                {!passwordRules.length && <div>• At least 8 characters</div>}
-                                {!passwordRules.upper && <div>• One uppercase letter</div>}
-                                {!passwordRules.lower && <div>• One lowercase letter</div>}
-                                {!passwordRules.number && <div>• One number</div>}
-                                {!passwordRules.special && <div>• One special character</div>}
-                            </div>
-                        )}
-
-                        <button
-                            className="create-crp-btn"
-                            onClick={handleCreateCRP}
-                            disabled={creating || !selectedMember}
-                        >
-                            {creating ? (
-                                <>
-                                    <FaSpinner className="spin" /> Creating...
-                                </>
-                            ) : (
-                                <>
-                                    <FaCheckCircle /> Create CRP Account
-                                </>
-                            )}
-                        </button>
-                    </div>
-                </div>
-            </div>
-
-            {/* Row 4 */}
-            <div className="epsms-grid-row one-col">
-                <div ref={panchayatSection} className="epsms-card">
-                    {successData && (
-                        <h3 className="crp-title">
-                            <FaMapMarkerAlt /> Assign Panchayats to CRP
-                        </h3>
-                    )}
-                    {successData && (
-                        <PanchayatsList
-                            crpData={successData}
-                            blockId={geoFilters.block_id}
-                        />
-                    )}
-                </div>
-            </div>
-
-            {/* SUCCESS MODAL */}
-            {showSuccessModal && successData && (
-                <div className="crp-success-modal">
-                    <div className="crp-success-card">
-                        <h3 className="crp-title">
-                            <FaCheckCircle /> CRP Account Created!
-                        </h3>
-
-                        <div className="success-details">
-                            <div>
-                                <b>Username:</b> {successData.username}
-                            </div>
-                            <div>
-                                <b>Password:</b> {successData.password}
-                            </div>
-                            <div>
-                                <b>Name:</b> {successData.crp.name}
-                            </div>
-                            <div>
-                                <b>Mobile:</b> {successData.crp.mobile_number}
-                            </div>
-                            <div>
-                                <b>Category:</b> {successData.crp.category}
-                            </div>
-                            <div>
-                                <b>SHG Code:</b> {successData.crp.lokos_shg_code}
-                            </div>
-                            <div>
-                                <b>Member Code:</b> {successData.crp.lokos_member_code}
-                            </div>
-                        </div>
-
-                        <button
-                            className="close-success-btn"
-                            onClick={() => {
-                                setShowSuccessModal(false);
-
-                                setTimeout(() => {
-                                    panchayatSection.current?.scrollIntoView({
-                                        behavior: "smooth",
-                                    });
-                                }, 100);
-                            }}
-                        >
-                            Close
-                        </button>
-                    </div>
-                </div>
+                <input
+                  type="tel"
+                  maxLength="10"
+                  pattern="[6-9]{1}[0-9]{9}"
+                  placeholder="Enter mobile number of CRP"
+                  value={mobileInput}
+                  onChange={(e) => setMobileInput(e.target.value)}
+                />
+              </div>
             )}
 
-            {/* ERROR MODAL */}
-            {errorData && (
-                <div className="crp-success-modal">
-                    <div className="crp-success-card">
-                        <h3 style={{ color: "red" }}>❌ CRP Creation Failed</h3>
+            {/* Nodal CLF Code */}
+            <div className="crp-input-group">
+              <label>
+                <FaBuilding /> Nodal CLF Code{" "}
+                <span className="required">*</span>
+              </label>
 
-                        <div className="success-details">{errorData}</div>
+              <div className="clf-input-wrapper">
+                <input
+                  type="text"
+                  placeholder="Auto fetching CLF..."
+                  value={clf_code}
+                  readOnly
+                />
 
-                        <button
-                            className="close-success-btn"
-                            onClick={() => setErrorData(null)}
-                        >
-                            Close
-                        </button>
-                    </div>
+                {clfLoading && <FaSpinner className="spin clf-spinner" />}
+              </div>
+
+              {/* CLF DISPLAY */}
+              {clfDisplay && (
+                <div className="clf-display">
+                  <FaCheckCircle /> {clfDisplay}
                 </div>
+              )}
+
+              {/* ERROR */}
+              {clfError && <div className="clf-error">⚠ {clfError}</div>}
+            </div>
+
+            {/* Subcategory */}
+            <div className="crp-input-group">
+              <label>
+                <FaTags /> CRP Subcategory (Optional)
+              </label>
+              <input
+                type="text"
+                placeholder="Enter Sub Category of CRP (Optional)"
+                value={subcat}
+                onChange={(e) => setSubCat(e.target.value)}
+              />
+            </div>
+            {/* Alt Number */}
+            <div className="crp-input-group">
+              <label>
+                <FaPhoneAlt /> Alternate Mobile Number
+              </label>
+
+              <input
+                type="tel"
+                maxLength="10"
+                pattern="[6-9]{1}[0-9]{9}"
+                placeholder="Enter mobile number of CRP"
+              />
+            </div>
+          </div>
+          <div className="crp-password-box">
+            <label className="password-label">
+              <FaLock /> Set CRP Account Password
+            </label>
+
+            <div style={{ position: "relative" }}>
+              <input
+                type={showPassword ? "text" : "password"}
+                value={password}
+                onChange={(e) => {
+                  const val = e.target.value;
+                  setPassword(val);
+                  setPasswordRules(validatePassword(val));
+                }}
+                placeholder="Enter secure password"
+                className="password-input"
+                style={{ paddingRight: "40px" }}
+              />
+
+              <span
+                onClick={() => setShowPassword(!showPassword)}
+                style={{
+                  position: "absolute",
+                  right: "10px",
+                  top: "50%",
+                  transform: "translateY(-50%)",
+                  cursor: "pointer",
+                  color: "#666",
+                }}
+              >
+                {showPassword ? <FaEyeSlash /> : <FaEye />}
+              </span>
+            </div>
+
+            {password && (
+              <div className="password-rules">
+                {!passwordRules.length && <div>• At least 8 characters</div>}
+                {!passwordRules.upper && <div>• One uppercase letter</div>}
+                {!passwordRules.lower && <div>• One lowercase letter</div>}
+                {!passwordRules.number && <div>• One number</div>}
+                {!passwordRules.special && <div>• One special character</div>}
+              </div>
             )}
 
-            {/* ---- styles ---- */}
-            <style>{`
+            <button
+              className="create-crp-btn"
+              onClick={handleCreateCRP}
+              disabled={creating || !selectedMember}
+            >
+              {creating ? (
+                <>
+                  <FaSpinner className="spin" /> Creating...
+                </>
+              ) : (
+                <>
+                  <FaCheckCircle /> Create CRP Account
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Row 4 */}
+      <div className="epsms-grid-row one-col">
+        <div ref={panchayatSection} className="epsms-card">
+          {successData && (
+            <h3 className="crp-title">
+              <FaMapMarkerAlt /> Assign Panchayats to CRP
+            </h3>
+          )}
+          {successData && (
+            <PanchayatsList
+              crpData={successData}
+              blockId={geoFilters.block_id}
+            />
+          )}
+        </div>
+      </div>
+
+      {/* SUCCESS MODAL */}
+      {showSuccessModal && successData && (
+        <div className="crp-success-modal">
+          <div className="crp-success-card">
+            <h3 className="crp-title">
+              <FaCheckCircle /> CRP Account Created!
+            </h3>
+
+            <div className="success-details">
+              <div>
+                <b>Username:</b> {successData.username}
+              </div>
+              <div>
+                <b>Password:</b> {successData.password}
+              </div>
+              <div>
+                <b>Name:</b> {successData.crp.name}
+              </div>
+              <div>
+                <b>Mobile:</b> {successData.crp.mobile_number}
+              </div>
+              <div>
+                <b>Category:</b> {successData.crp.category}
+              </div>
+              <div>
+                <b>SHG Code:</b> {successData.crp.lokos_shg_code}
+              </div>
+              <div>
+                <b>Member Code:</b> {successData.crp.lokos_member_code}
+              </div>
+            </div>
+
+            <button
+              className="close-success-btn"
+              onClick={() => {
+                setShowSuccessModal(false);
+
+                setTimeout(() => {
+                  panchayatSection.current?.scrollIntoView({
+                    behavior: "smooth",
+                  });
+                }, 100);
+              }}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ERROR MODAL */}
+      {errorData && (
+        <div className="crp-success-modal">
+          <div className="crp-success-card">
+            <h3 style={{ color: "red" }}>❌ CRP Creation Failed</h3>
+
+            <div className="success-details">{errorData}</div>
+
+            <button
+              className="close-success-btn"
+              onClick={() => setErrorData(null)}
+            >
+              Close
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* ---- styles ---- */}
+      <style>{`
         .crpform-epsms-dashboard {
           display: flex;
           flex-direction: column;
@@ -915,6 +935,6 @@ export default function CRPForm() {
 
         }        
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

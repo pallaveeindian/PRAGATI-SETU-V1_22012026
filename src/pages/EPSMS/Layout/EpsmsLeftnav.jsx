@@ -247,6 +247,7 @@ export default function EpsmsLeftnav({
         .epsms-toggle {
           height: 40px;
           border: none;
+          width: 100%; 
           background: var(--epsms-red);
           border-top: 1px solid var(--epsms-muted);
           cursor: pointer;

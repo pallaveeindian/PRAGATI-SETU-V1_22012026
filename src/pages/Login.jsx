@@ -24,6 +24,7 @@ import bmsLogo from "../assets/bms_logo.png";
 import tmsLogo from "../assets/TMS/tms_logo.png";
 import ldmsLogo from "../assets/ldms_logo.png";
 import esmLogo from "../assets/ems_logo.png";
+import { text } from "@fortawesome/fontawesome-svg-core";
 
 /* -------------------------------------------------
    ROLE → ROUTES
@@ -373,6 +374,7 @@ export default function Login() {
               type="text"
               className="form-input captcha-input"
               placeholder="Enter captcha"
+              style={{ textTransform: "uppercase" }}
               value={captchaValue}
               onChange={(e) => setCaptchaValue(e.target.value)}
             />
