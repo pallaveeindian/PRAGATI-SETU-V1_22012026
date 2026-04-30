@@ -40,10 +40,10 @@ const ROLE_TMS_ROUTE = {
 };
 
 const ROLE_LDMS_ROUTE = {
-  bmmu: "/future-updates",
-  dmmu: "/future-updates",
-  smmu: "/future-updates",
-  default: "/future-updates",
+  bmmu: "/ldms/bmmu/dashboard",
+  dmmu: "/ldms/dmmu/dashboard",
+  smmu: "/ldms/smmu/dashboard",
+  default: "/ldms",
 };
 
 const ROLE_EPSMS_ROUTE = {
