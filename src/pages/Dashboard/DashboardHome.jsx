@@ -1262,7 +1262,7 @@ export default function DashboardHome() {
             <button
               className="btn"
               style={{ marginTop: 8 }}
-              onClick={() => navigate("/login")}
+              onClick={() => navigate("/")}
             >
               Go to Login
             </button>

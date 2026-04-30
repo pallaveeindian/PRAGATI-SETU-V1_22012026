@@ -11,7 +11,7 @@ export default function Footer() {
     en: {
       brandDesc:
         "Pragati Setu is a unified digital platform for monitoring, analytics, and governance, empowering Self Help Groups and rural institutions across Uttar Pradesh.",
-      lastUpdated: "Last Updated: 26 Jan, 2026",
+      lastUpdated: "Last Updated: 30 Apr, 2026",
 
       col1: "Pragati Setu",
       col1Links: [
@@ -57,7 +57,7 @@ export default function Footer() {
     hi: {
       brandDesc:
         "प्रगति सेतु एक एकीकृत डिजिटल प्लेटफ़ॉर्म है जो निगरानी, विश्लेषण और शासन को सशक्त बनाता है, तथा उत्तर प्रदेश में स्वयं सहायता समूहों और ग्रामीण संस्थाओं को मजबूत करता है।",
-      lastUpdated: "अंतिम अपडेट: 26 जनवरी, 2026",
+      lastUpdated: "अंतिम अपडेट: 30 अप्रैल, 2026",
 
       col1: "प्रगति सेतु",
       col1Links: [
@@ -129,7 +129,9 @@ export default function Footer() {
           <h4>{t.col1}</h4>
           <ul>
             {t.col1Links.map((item, i) => (
-              <li key={i}>{item}</li>
+              <li key={i}>
+                <a href="#">{item}</a>
+              </li>
             ))}
           </ul>
         </div>
@@ -139,7 +141,9 @@ export default function Footer() {
           <h4>{t.col2}</h4>
           <ul>
             {t.col2Links.map((item, i) => (
-              <li key={i}>{item}</li>
+              <li key={i}>
+                <a href="#">{item}</a>
+              </li>
             ))}
           </ul>
         </div>
@@ -149,14 +153,20 @@ export default function Footer() {
           <h4>{t.col3}</h4>
           <ul>
             {t.col3Links.map((item, i) => (
-              <li key={i}>{item}</li>
+              <li key={i}>
+                <a href="#">{item}</a>
+              </li>
             ))}
           </ul>
         </div>
 
         {/* COLUMN 5 */}
         <div className="footer-col right">
-          <img src={bdoLogo} alt="" style={{ width: "80px", marginTop: "20px" }} />
+          <img
+            src={bdoLogo}
+            alt=""
+            style={{ width: "80px", marginTop: "20px" }}
+          />
           <div className="powered-by">
             <p>
               {t.powered}
@@ -184,7 +194,16 @@ export default function Footer() {
 
       {/* ===== STYLES ===== */}
       <style>{`
-        .ps-footer {
+        .footer-col li a {
+          color: #334155;
+          text-decoration: none;
+        }
+
+        .footer-col li a:hover {
+          text-decoration: underline;
+        }
+
+                .ps-footer {
           background: #ffffff;
           color: #334155;
           font-size: 14px;

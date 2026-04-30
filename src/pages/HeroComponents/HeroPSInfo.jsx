@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import aboutImg from "../../assets/Hero/About/ps_diag.png";
 import aboutMobImg from "../../assets/ps-diag_mob_screen.png";
 
@@ -7,7 +8,8 @@ import { LanguageContext } from "../LanguageContext.jsx";
 
 export default function Info() {
   const { lang } = useContext(LanguageContext);
-
+  const navigate = useNavigate();
+  
   const content = {
     en: {
       title: "Purpose of Pragati Setu",
@@ -43,17 +45,26 @@ export default function Info() {
         <p className="aboutus-text">{t.p2}</p>
         <p className="aboutus-text">{t.p3}</p>
 
-        <button className="aboutus-btn">{t.btn}</button>
+        <button className="aboutus-btn" onClick={() => navigate("/about-us")}>
+          {t.btn}
+        </button>
       </div>
 
       {/* RIGHT */}
       <div className="aboutus-right">
-        <img src={aboutImg} alt="Pragati Setu Overview" className="desktop-img" />
-        <img src={aboutMobImg} alt="Pragati Setu Overview Mobile" className="mobile-img" />
+        <img
+          src={aboutImg}
+          alt="Pragati Setu Overview"
+          className="desktop-img"
+        />
+        <img
+          src={aboutMobImg}
+          alt="Pragati Setu Overview Mobile"
+          className="mobile-img"
+        />
       </div>
 
       {/* STYLES SAME AS YOURS */}
-
 
       {/* ================= STYLES ================= */}
       <style>{`

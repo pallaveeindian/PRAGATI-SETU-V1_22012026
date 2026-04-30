@@ -42,7 +42,7 @@ export default function TopNav({ left = null, right = null }) {
       }
     } finally {
       // ALWAYS redirect to Home after logout
-      navigate("/login", { replace: true });
+      navigate("/", { replace: true });
     }
   };
 

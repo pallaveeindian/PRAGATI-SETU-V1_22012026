@@ -127,6 +127,7 @@ export const AuthProvider = ({ children }) => {
     // Reset state
     setUser(null);
     setIsAuthenticated(false);
+    window.location.href = "/";
   };
 
   /**

@@ -331,6 +331,11 @@ export const LOOKUP_API = {
   users: makeCrud("/lookups/users/"),
 
   // SHG / VO / CLF master lists (DB backed)
+
+  //  find CLF
+  upsrlmFindClf: (params) =>
+    api.get(`/lookups/find-clf-by-member/`, { params }),
+
   clfList: makeCrud("/lookups/clf-list/"),
   voList: makeCrud("/lookups/vo-list/"),
   shgList: makeCrud("/lookups/shg-list/"),
@@ -473,8 +478,14 @@ export const LOOKUP_API = {
 
 export const EPSAKHI_API = {
   // CRP master + mapping
-  crp: makeCrud("/epsakhi/crps/"),
-  crpPanchayatMap: makeCrud("/epsakhi/crp-panchayat-mapping/"),
+  crp: makeCrud("/epsakhi/crp/"),
+  crpPanchayatMap: makeCrud("/epsakhi/crud-panchayats-under-crp/"),
+
+  // ✅ ADDED from source: CRP List with panchayats (fixes CRPTable.jsx error)
+  crpPanchList: (params) => api.get(`/epsakhi/crp-panch-list/`, { params }),
+
+  // ✅ ADDED from source: CRP Panchayat bulk operations
+  crpPanchayatBulk: (data) => api.post("/epsakhi/crp-panchayat-bulk/", data),
 
   // BeneficiaryRecorded + related enterprise forms
   beneficiaryRecorded: makeCrud("/epsakhi/beneficiary-recorded/"),
@@ -494,81 +505,63 @@ export const EPSAKHI_API = {
   // ------------------------
 
   // Beneficiaries under SHG (LokOS) → BeneficiaryRecorded join
-  // GET /epsakhi/beneficiary-recorded/by-shg/<shg_code>/
   beneficiaryRecordedByShg: (shgCode, params) =>
     api.get(
       `/epsakhi/beneficiary-recorded/by-shg/${encodeURIComponent(shgCode)}/`,
       { params },
     ),
 
-  // Detail by member code
-  // GET /epsakhi/beneficiary-recorded/by-member/<member_code>/
   beneficiaryRecordedByMember: (memberCode, params) =>
     api.get(
-      `/epsakhi/beneficiary-recorded/by-member/${encodeURIComponent(
-        memberCode,
-      )}/`,
+      `/epsakhi/beneficiary-recorded/by-member/${encodeURIComponent(memberCode)}/`,
       { params },
     ),
 
   // CRP → Panchayats linkage
-  // POST /epsakhi/crp/<id>/link-panchayats/
   crpLinkPanchayats: (crpId, data) =>
     api.post(
       `/epsakhi/crp/${encodeURIComponent(crpId)}/link-panchayats/`,
       data,
     ),
 
-  // GET /epsakhi/crp/<id>/panchayats/
   crpPanchayats: (crpId, params) =>
     api.get(`/epsakhi/crp/${encodeURIComponent(crpId)}/panchayats/`, {
       params,
     }),
 
-  // CRP detail by LokOS member code
   crpDetailByMember: (memberCode, params) =>
     api.get(`/epsakhi/crp/by-member/${encodeURIComponent(memberCode)}/`, {
       params,
     }),
 
-  // CRP detail by MasterUser (login) id
   crpDetailByUserId: (userId, params) =>
     api.get(`/epsakhi/crp/by-user-id/${encodeURIComponent(userId)}/`, {
       params,
     }),
 
-  // Panchayats under CRP (by CRP id or user id)
-  // GET /epsakhi/panchayats-under-crp/<crp_id>/
   panchayatsUnderCrp: (crpId, params) =>
     api.get(`/epsakhi/panchayats-under-crp/${encodeURIComponent(crpId)}/`, {
       params,
     }),
 
-  // GET /epsakhi/panchayats-under-crp/id/<user_id>/
   panchayatsUnderCrpByUserId: (userId, params) =>
     api.get(`/epsakhi/panchayats-under-crp/id/${encodeURIComponent(userId)}/`, {
       params,
     }),
 
   // UPSRLM SHG wrappers used by app (epSakhi views wrapping core UPSRLM)
-  // GET /epsakhi/upsrlm-shg-list/<block_id>/
   upsrlmShgList: (blockId, params) =>
     api.get(`/upsrlm-shg-list/${encodeURIComponent(blockId)}/`, {
       params,
     }),
-  // GET /epsakhi/upsrlm-shg-detail/<shg_code>/
   upsrlmShgDetail: (shgCode, params) =>
     api.get(`/upsrlm-shg-detail/${encodeURIComponent(shgCode)}/`, {
       params,
     }),
-  // GET /epsakhi/upsrlm-shg-members/<shg_code>/
   upsrlmShgMembers: (shgCode, params) =>
     api.get(`/upsrlm-shg-members/${encodeURIComponent(shgCode)}/`, {
       params,
     }),
-
-  // Export endpoints for reporting, etc (if present)
-  // You can hang any future custom epSakhi URLs here.
 };
 
 // ------------------------

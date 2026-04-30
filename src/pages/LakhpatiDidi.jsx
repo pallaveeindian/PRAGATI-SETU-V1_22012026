@@ -52,26 +52,43 @@ export default function LakhpatiDidi() {
 
       <main className="home-hero">
         <div className="about-section">
+          {/* LEFT CONTENT */}
           <div className="about-left">
-            <h1>
+            <h1 className="hero-title">
               <span className="contrast-color-two">{t.title1}</span>{" "}
               <span className="contrast-color-one">{t.title2}</span>
             </h1>
 
-            <div className="pragati-card">
-              <p>{t.p1}</p>
+            <div className="hero-content">
+              <div className="pragati-card">
+                <p>{t.p1}</p>
+              </div>
+
+              <div className="pragati-card">
+                <p>{t.p2}</p>
+              </div>
+
+              <div className="pragati-card">
+                <p>{t.p3}</p>
+              </div>
             </div>
 
-            <div className="pragati-card">
-              <p>{t.p2}</p>
-            </div>
-
-            <div className="pragati-card">
-              <p>{t.p3}</p>
+            {/* CTA BUTTON */}
+            <div className="aboutus-wrapper">
+              <a
+                href="https://lokos.dord.gov.in/lakhpatiDidiImpact"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="aboutus-btn"
+              >
+                About Lakhpati Didi Initiative
+              </a>
             </div>
           </div>
+
+          {/* RIGHT IMAGE */}
           <div className="about-right">
-            <img src={aboutImg} alt="Lakhpati Didi" />
+            <img src={aboutImg} alt="Lakhpati Didi Initiative" />
           </div>
         </div>
       </main>
@@ -82,155 +99,196 @@ export default function LakhpatiDidi() {
 
       {/* ================= STYLES ================= */}
       <style>{`
-                         /* ===== ABOUT LAYOUT ===== */
-                   .about-section {
-                     max-width: 1400px;
-                     margin: 60px auto;
-                     display: grid;
-                     grid-template-columns: 1.1fr 0.9fr;
-                     gap: 40px;
-                     align-items: center;
-                   }
-                   
-                   .about-left h1 {
-                     font-size: 38px;
-                     font-weight: 800;
-                     margin-bottom: 18px;
-                     color: #0f172a;
-                   }
-                   
-                   .about-left p {
-                     font-size: 17px;
-                     line-height: 1.8;
-                     color: #334155;
-                     margin-bottom: 14px;
-                   }
-                   
-                   /* IMAGE SIZE FIX */
-                   .about-right {
-                     display: flex;
-                     justify-content: center;
-                   }
-                   
-                   .about-right img {
-                     width: 100%;
-                     max-width: 780px;
-                     height: auto;
-                     object-fit: contain;
-                     border-radius: 16px;
-                   }
-                        .contrast-color-one {
-      color: #ff7a00;
+
+/* ===== ABOUT LAYOUT ===== */
+.about-section {
+  max-width: 1400px;
+  margin: 60px auto;
+  display: grid;
+  grid-template-columns: 1.1fr 0.9fr;
+  gap: 40px;
+  align-items: center;
+}
+
+/* LEFT CONTENT */
+.about-left {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.about-left h1 {
+  font-size: 38px;
+  font-weight: 800;
+  margin-bottom: 10px;
+  color: #0f172a;
+}
+
+.about-left p {
+  font-size: 17px;
+  line-height: 1.8;
+  color: #334155;
+  margin: 0;
+}
+
+/* IMAGE */
+.about-right {
+  display: flex;
+  justify-content: center;
+}
+
+.about-right img {
+  width: 100%;
+  max-width: 780px;
+  height: auto;
+  object-fit: contain;
+  border-radius: 16px;
+}
+
+/* COLORS */
+.contrast-color-one {
+  color: #ff7a00;
+}
+
+.contrast-color-two {
+  color: #0f172a;
+}
+
+/* ===== CARDS ===== */
+.pragati-card {
+  max-width: 100%;
+  padding: 22px 24px;
+  background: #ffffff;
+  border: 2px solid #ff7a00;
+  border-radius: 14px;
+  margin: 12px 0;
+  box-shadow: 0 4px 10px rgba(255, 122, 0, 0.18);
+  transition: all 0.25s ease;
+}
+
+.pragati-card p {
+  font-size: 17px;
+  line-height: 1.7;
+  color: #333;
+}
+
+.pragati-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 6px 14px rgba(255, 122, 0, 0.25);
+}
+
+/* ===== BUTTON FIX ===== */
+.aboutus-wrapper {
+  display: flex;
+  justify-content: flex-start; /* left aligned (cleaner) */
+  margin-top: 10px;
+}
+
+.aboutus-btn {
+  text-decoration: none;
+  background: linear-gradient(135deg, #c95835, #a94428);
+  color: white;
+  padding: 12px 22px;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 15px;
+  transition: all 0.25s ease;
+  box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+  display: inline-block;
+}
+
+.aboutus-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 14px rgba(0,0,0,0.2);
+}
+
+.aboutus-btn:active {
+  transform: translateY(0);
+}
+
+/* ===== ROOT ===== */
+.home-shell {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: linear-gradient(
+    180deg,
+    #ffffff 0%,
+    #fff6f8 35%,
+    #f9e3e6 60%,
+    #f4cfd6 75%,
+    #ebb8c4 100%
+  );
+}
+
+/* FONT SCALE */
+:root {
+  --font-scale: 1;
+}
+
+body {
+  font-size: calc(16px * var(--font-scale));
+}
+
+/* HERO */
+.home-hero {
+  width: 100%;
+}
+
+/* FOOTER */
+.home-footer {
+  text-align: center;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+/* ===== RESPONSIVE ===== */
+@media (max-width: 992px) {
+  .about-section {
+    grid-template-columns: 1fr;
+    gap: 30px;
+    padding: 0 10px;
   }
 
-  .contrast-color-two {
-      color: #0f172a;
-  }
-                      .pragati-card {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 30px 35px;
-      background: #ffffff;
-      border: 2px solid #ff7a00;
-      /* Orange Border */
-      border-radius: 16px;
-      box-shadow: 0 5px 5px rgba(255, 122, 0, 0.25);
-      /* Orange Shadow */
-      transition: all 0.3s ease;
+  .about-left {
+    align-items: center;
+    text-align: center;
   }
 
-  .pragati-card p {
-      font-size: 18px;
-      line-height: 1.7;
-      color: #333;
-      margin: 0; 
+  .about-left h1 {
+    font-size: 28px;
   }
 
-  /* Hover Effect */
-  .pragati-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 2px 5px rgba(255, 122, 0, 0.35);
+  .about-left p {
+    font-size: 16px;
   }
 
-                           /* ===== Root shell ===== */
-                           .home-shell {
-                             display: flex;
-                             flex-direction: column;
-                             min-height: 100vh;
-                             background: linear-gradient(180deg,
-              #ffffff 0%,
-              #fff6f8 35%,
-              #f9e3e6 60%,
-              #f4cfd6 75%,
-              #ebb8c4 100%);
-                           }
-                   
-                           /* ================= GLOBAL FONT SCALING ================= */
-                           :root {
-                             --font-scale: 1;
-                           }
-                   
-                           body {
-                             font-size: calc(16px * var(--font-scale));
-                           }
-                   
-                           /* ===== HERO ===== */
-                           .home-hero {
-                             width: 100%;
-                             overflow-x: visible;
-                           }
-                   
-                           .hero-inner {
-                             width: 100%;
-                           }
-                   
-                           /* ===== FOOTER ===== */
-                           .home-footer {
-                             text-align: center;
-                             font-size: 28px;
-                             font-weight: 800;
-                           }
-                              @media (max-width: 992px) {
-      .about-section {
-          grid-template-columns: 1fr;
-          gap: 30px;
-          padding-left: 5px;
-          padding-right: 5px
-      }
-
-      .about-left h1 {
-          font-size: 28px;
-          text-align: center;
-      }
-
-      .about-left h3 {
-          font-size: 20px;
-      }
-
-      .about-left p {
-          font-size: 16px;
-      }
-           .pragati-card {
-    margin: 20px;
-    padding: 22px;
+  .pragati-card {
+    margin: 10px 0;
+    padding: 20px;
   }
 
   .pragati-card p {
     font-size: 16px;
   }
+
+  .aboutus-wrapper {
+    justify-content: center; /* center on mobile */
+  }
 }
 
 @media (max-width: 480px) {
   .pragati-card {
-    padding: 18px;
+    padding: 16px;
     border-radius: 12px;
   }
 
   .pragati-card p {
     font-size: 15px;
   }
-      }
-                         `}</style>
+}
+
+`}</style>
     </div>
   );
 }

@@ -66,7 +66,9 @@ export default function HeroContactUs() {
           </p>
 
           <p className="contact-link">
-            <a href="tel:+9101205202521">+91-XXX-XXXXXXX</a>
+            <a href="tel:+919236434631">+91-9236434631</a>
+            <br></br>
+            <a href="tel:+918840961627">+91-8840961627</a>
           </p>
         </div>
 
@@ -78,7 +80,7 @@ export default function HeroContactUs() {
           <p className="contact-desc">{t.writeDesc}</p>
 
           <p className="contact-link">
-            <a href="#">support.psetu.gov.in</a>
+            <a href="mailto:bdopmuit@gmail.com">bdopmuit@gmail.com</a>
           </p>
         </div>
       </div>

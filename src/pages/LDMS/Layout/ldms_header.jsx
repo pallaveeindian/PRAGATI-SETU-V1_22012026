@@ -26,7 +26,7 @@ export default function LdmsHeader() {
     } catch (e) {
     } finally {
       clearAuth();
-      window.location.href = "/login";
+      window.location.href = "/";
     }
   };
 

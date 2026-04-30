@@ -6,7 +6,6 @@ import Login from "./pages/Login";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ProtectedRoute from "./routes/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext";
-
 import { LanguageProvider } from "../src/pages/LanguageContext.jsx";
 
 // Homepage
@@ -52,9 +51,7 @@ import TrainingRequestDetail from "./pages/TMS/TRs/training_req_detail";
 import TrainingBatchList from "./pages/TMS/TRs/training_batch_list";
 import TrainingBatchDetail from "./pages/TMS/TRs/training_batch_detail";
 import BatchCertificate from "./pages/TMS/TRs/batch_certificate";
-
 import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
-
 import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
 import DmmuRequestClosure from "./pages/TMS/DMMU/dmmu_request_closure";
 
@@ -82,22 +79,11 @@ import DmmuTargetAchievement from "./pages/TMS/DMMU/dmmu_tp_tvs";
 // import ServerMaintenance from "./components/ErrorPages/ServerMaintenance";
 import ErrorPage from "./components/ErrorPages/ErrorPage";
 import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
-// tiny placeholder landing for /tms
-function TmsLanding() {
-  return (
-    <div className="app-shell">
-      <main className="dashboard-main center">
-        <div className="card">
-          <h2>TMS — Landing</h2>
-          <p className="muted">
-            Training Management module landing — choose a TMS link from the left
-            nav.
-          </p>
-        </div>
-      </main>
-    </div>
-  );
-}
+
+// EPSMS (CRP-EP Mapping Form)
+import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
+import CRPForm from "./pages/EPSMS/RecordForm/CRPForm";
+import ViewRecCRPs from "./pages/EPSMS/ViewRecordedCRPs/ViewRecCRPs";
 
 export default function App() {
   const { authReady } = useAuth();
@@ -346,6 +332,17 @@ export default function App() {
             {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
           </Route>
         </Route>
+
+        {/* EPSMS */}
+        <Route
+          element={<ProtectedRoute allowedRoles={["crp_record", "dmmu"]} />}
+        >
+          <Route path="/epsms" element={<EpsmsLayout />}>
+            <Route path="crp-form" element={<CRPForm />} />
+            <Route path="recorded-crps" element={<ViewRecCRPs />} />
+          </Route>
+        </Route>
+
         {/* 404 */}
         {/* <Route path="*" element={<div>404</div>} /> */}
         <Route path="*" element={<ErrorPage />} />
