@@ -29,9 +29,7 @@ export default function SCSubmitDock({
   const [sbTypeId, setSbTypeId] = useState(null);
   const [trainingSupportId, setTrainingSupportId] = useState(null);
   const getMemberCode = (member) =>
-    member?.member_code ||
-    member?.lokos_member_code ||
-    member?.id;
+    member?.member_code || member?.lokos_member_code || member?.id;
 
   /* -------- Load block -------- */
   useEffect(() => {
@@ -55,7 +53,7 @@ export default function SCSubmitDock({
       const sb = res.data.support_bucket;
 
       setSupportBucketId(sb.id);
-      setSbTypeId(sb.bucket_type.id);
+      setSbTypeId(sb.bucket_type?.id || sb.bucket_type);
       setTrainingSupportId(sb.training_support?.id || null);
     }
 
@@ -74,6 +72,14 @@ export default function SCSubmitDock({
   async function handleSubmit(mode = "PENDING") {
     try {
       const isExisting = !!supportBucketId;
+
+      const SBTYPE_MAP = {
+        Subsidy: 17,
+        Grant: 18,
+        "Debt (Credit)": 19,
+        Training: 20,
+      };
+
       setSubmitting(true);
       setShowLoader(true);
 
@@ -91,18 +97,17 @@ export default function SCSubmitDock({
           return;
         }
         /* 1️⃣ Update SBType */
-        await LDMS_API.SBTypes.update(sbTypeId, {
-          bucket_type:
-            supportData.bucketType === "Others"
-              ? supportData.customBucket
-              : supportData.bucketType,
-          updated_by: user.id,
-        });
+        let finalSbTypeId = sbTypeId;
+
+        if (supportData.bucketType !== "Others") {
+          finalSbTypeId = SBTYPE_MAP[supportData.bucketType];
+        }
 
         /* 2️⃣ Update Support Bucket */
         await LDMS_API.SupportBuckets.partialUpdate(supportBucketId, {
-          department: department.id,
+          department: department?.id || department,
           scheme: scheme.id,
+          bucket_type: finalSbTypeId,
           benefit_name: supportData.benefitName,
           benefit_amount: supportData.benefitAmount,
           benefit_description: supportData.description || "",
@@ -157,8 +162,10 @@ export default function SCSubmitDock({
 
         /* 4.4 Create newly selected PLDs */
         await Promise.all(
-        beneficiaries
-          .filter(({ member }) => !existingByMember.has(getMemberCode(member)))
+          beneficiaries
+            .filter(
+              ({ member }) => !existingByMember.has(getMemberCode(member)),
+            )
             .map(({ member, shg }) =>
               LDMS_API.recorPLDS.create({
                 lokos_shg_code: shg.code,
@@ -204,16 +211,22 @@ export default function SCSubmitDock({
           ? supportData.customBucket
           : supportData.bucketType;
 
-      const sbTypeRes = await LDMS_API.SBTypes.create({
-        bucket_type: finalBucketType,
-        created_by: user.id,
-      });
+      let createdSbTypeId;
 
-      const createdSbTypeId = sbTypeRes.data.id;
+      if (supportData.bucketType === "Others") {
+        const sbTypeRes = await LDMS_API.SBTypes.create({
+          bucket_type: supportData.customBucket,
+          created_by: user.id,
+        });
+
+        createdSbTypeId = sbTypeRes.data.id;
+      } else {
+        createdSbTypeId = SBTYPE_MAP[supportData.bucketType] || sbTypeId;
+      }
 
       /* ---------- 2. Support Bucket ---------- */
       const bucketRes = await LDMS_API.SupportBuckets.create({
-        department: department.id,
+        department: department?.id || department,
         scheme: scheme.id,
         bucket_type: createdSbTypeId,
         benefit_name: supportData.benefitName,
@@ -288,8 +301,9 @@ export default function SCSubmitDock({
         alert("Submitted for approval successfully!");
       }
     } catch (err) {
-      console.error(err);
-      alert("Something went wrong during submission.");
+      console.error("FULL ERROR:", err);
+      console.error("SERVER RESPONSE:", err?.response?.data);
+      alert(JSON.stringify(err?.response?.data || "Unknown error"));
     } finally {
       setSubmitting(false);
       setShowLoader(false);
@@ -337,10 +351,9 @@ export default function SCSubmitDock({
       alert("Support Map deleted successfully.");
       window.location.href = "/ldms/support-map-list";
     } catch (err) {
-      console.error(err);
-      alert(
-        "Deletion failed.\nSome records may still exist.\nPlease contact administrator.",
-      );
+      console.error("FULL ERROR:", err);
+      console.error("SERVER RESPONSE:", err?.response?.data);
+      alert(JSON.stringify(err?.response?.data || "Unknown error"));
     } finally {
       setShowLoader(false);
       setLoadingText("");

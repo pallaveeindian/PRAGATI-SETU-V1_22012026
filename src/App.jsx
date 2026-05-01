@@ -8,6 +8,10 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 import { useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "../src/pages/LanguageContext.jsx";
 
+// import ServerMaintenance from "./components/ErrorPages/ServerMaintenance";
+import ErrorPage from "./components/ErrorPages/ErrorPage";
+import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
+
 // Homepage
 import AboutUs from "./pages/AboutUs";
 import BeneficiaryProfiling from "./pages/BeneficiaryProfiling";
@@ -21,7 +25,7 @@ import UserManual from "./pages/UserManual";
 import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
 import WhatsNew from "./pages/WhatsNew";
 
-// TMS dashboards
+// TMS
 import BmmuTmsDashboard from "./pages/TMS/BMMU/bmmu_tms_dashboard";
 import DmmuTmsDashboard from "./pages/TMS/DMMU/dmmu_tms_dashboard";
 import SmmuTmsDashboard from "./pages/TMS/SMMU/smmu_tms_dashboard";
@@ -34,6 +38,10 @@ import CpBatchDetail from "./pages/TMS/TP_CP/cp_batch_detail";
 import CpAdPerBatchEkyc from "./pages/TMS/TP_CP/attendance/cpad_per_batch_ekyc";
 import CpAdPerBatch from "./pages/TMS/TP_CP/attendance/cpad_per_batch";
 import CpBatchClosure from "./pages/TMS/TP_CP/cp_batch_closure";
+import TrainingReport from "./pages/TMS/TrainingReport/TrainingReport";
+import SmmuTargetAchievement from "./pages/TMS/SMMU/smmu_tp_tva";
+import BmmuTargetAchievement from "./pages/TMS/BMMU/bmmu_tp_tvs";
+import DmmuTargetAchievement from "./pages/TMS/DMMU/dmmu_tp_tvs";
 
 // Training Partner screens
 import TpCentreList from "./pages/TMS/TP/tp_centre_list";
@@ -55,7 +63,7 @@ import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
 import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
 import DmmuRequestClosure from "./pages/TMS/DMMU/dmmu_request_closure";
 
-// LDMS Dashboards
+// LDMS
 import LdmsLayout from "./pages/LDMS/Layout/LdmsLayout";
 import BmmuLdmsDashboard from "./pages/LDMS/BMMU/bmmu_ldms_dashboard";
 import BlockMap from "./pages/LDMS/BMMU/bmmu_dashboard_blk_map";
@@ -72,13 +80,9 @@ import SupportBucketList from "./pages/LDMS/Support Map/record_support_list";
 import RecordSupportDetail from "./pages/LDMS/Support Map/record_support_detail";
 import DmmuLdmsApprove from "./pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
-import TrainingReport from "./pages/TMS/TrainingReport/TrainingReport";
-import SmmuTargetAchievement from "./pages/TMS/SMMU/smmu_tp_tva";
-import BmmuTargetAchievement from "./pages/TMS/BMMU/bmmu_tp_tvs";
-import DmmuTargetAchievement from "./pages/TMS/DMMU/dmmu_tp_tvs";
-// import ServerMaintenance from "./components/ErrorPages/ServerMaintenance";
-import ErrorPage from "./components/ErrorPages/ErrorPage";
-import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
+import MeetingsList from "./pages/LDMS/Meetings Map/ldms_meetings_list";
+import DLCCMeetCreate from "./pages/LDMS/Meetings Map/dlcc_meet_create.jsx";
+import DLCCMeetUpload from "./pages/LDMS/Meetings Map/dlcc_meet_upload.jsx";
 
 // EPSMS (CRP-EP Mapping Form)
 import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
@@ -289,47 +293,68 @@ export default function App() {
           {/* <Route path="/tms/*" element={<TmsLanding />} /> */}
           <Route path="/error" element={<ErrorPage />} />
         </Route>
+
         {/* ----- LDMS Routes (GLOBAL LAYOUT APPLIED) ----- */}
         <Route element={<ProtectedRoute />}>
           <Route path="/ldms" element={<LdmsLayout />}>
             {/* BMMU Routes */}
-            <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
-            <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
+            <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
+              <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
+              <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
+            </Route>
+
             {/* DMMU Routes */}
-            <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
-            <Route
-              path="dmmu/approve-support/:id"
-              element={<DmmuLdmsApprove />}
-            />
+            <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
+              <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
+              <Route
+                path="dmmu/approve-support/:id"
+                element={<DmmuLdmsApprove />}
+              />
+              <Route path="meetings-dlcc/create" element={<DLCCMeetCreate />} />
+              <Route
+                path="meetings-dlcc/upload/:id"
+                element={<DLCCMeetUpload />}
+              />
+            </Route>
+
             {/* SMMU Routes */}
-            <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
+            <Route element={<ProtectedRoute allowedRoles="smmu" />}>
+              <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
+            </Route>
+
             {/* Global Routes */}
-            <Route path="support-capture" element={<SupportCapture />} />
             <Route
-              path="support-map/edit/:supportApprovalId"
-              element={<SupportCapture />}
-            />
-            <Route path="scheme-dictionary" element={<SchemeDictionary />} />
-            <Route path="demand-analytics" element={<DemandAnalytics />} />
-            <Route path="support-map-list" element={<SupportBucketList />} />
-            <Route
-              path="support-map-detail/:id"
-              element={<RecordSupportDetail />}
-            />
-            <Route path="supported-pld-list" element={<SupPLDList />} />
-            <Route
-              path="supported-pld-list/detail/:pldId"
-              element={<SupPLDDetail />}
-            />
-            <Route path="reports" element={<LdmsReports />} />
-            <Route path="dash-block/:blockId" element={<BlockMap />} />
-            <Route
-              path="dash-district/:districtId"
-              element={<DmmuBlockMap />}
-            />
-            {/* future LDMS pages */}
-            {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
-            {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
+              element={
+                <ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />
+              }
+            >
+              <Route path="support-capture" element={<SupportCapture />} />
+              <Route
+                path="support-map/edit/:supportApprovalId"
+                element={<SupportCapture />}
+              />
+              <Route path="scheme-dictionary" element={<SchemeDictionary />} />
+              <Route path="demand-analytics" element={<DemandAnalytics />} />
+              <Route path="support-map-list" element={<SupportBucketList />} />
+              <Route
+                path="support-map-detail/:id"
+                element={<RecordSupportDetail />}
+              />
+              <Route path="supported-pld-list" element={<SupPLDList />} />
+              <Route
+                path="supported-pld-list/detail/:pldId"
+                element={<SupPLDDetail />}
+              />
+              <Route path="reports" element={<LdmsReports />} />
+              <Route path="dash-block/:blockId" element={<BlockMap />} />
+              <Route
+                path="dash-district/:districtId"
+                element={<DmmuBlockMap />}
+              />
+              <Route path="meetings-list" element={<MeetingsList />} />
+              {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
+              {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
+            </Route>
           </Route>
         </Route>
 

@@ -10,6 +10,7 @@ import {
 } from "../utils/storage";
 
 import CryptoJS from "crypto-js";
+import { data } from "react-router-dom";
 const API_ENCRYPTION_KEY = import.meta.env.VITE_API_ENCRYPTION_KEY;
 
 // ------------------------
@@ -733,6 +734,28 @@ export const LDMS_API = {
     api.get(`/ldms/reports/recorded-beneficiaries/`, {
       params,
     }),
+
+  // DLCC Meet endpoints
+
+  // DLCC Meet Create
+  CreateDLCCMeet: (data) => api.post("/ldms/dlcc-meetings/create/", data),
+
+  // DLCC Meet Schedule Update (Multipart for File Upload)
+  UpdateDLCCMeetSchedule: (scheduleId, formData) =>
+    api.patch(
+      `/ldms/dlcc-meetings/schedule/${encodeURIComponent(scheduleId)}/update/`,
+      formData,
+      {
+        headers: {
+          "Content-Type": "multipart/form-data",
+        },
+      },
+    ),
+
+  // DLCC Meet List and Detail
+  DLCCMeetList: (params) => api.get("/ldms/dlcc-meetings/", { params }),
+  DLCCMeetDetail: (meetId) =>
+    api.get(`/ldms/dlcc-meetings/${encodeURIComponent(meetId)}/detail/`),
 };
 
 // ------------------------
