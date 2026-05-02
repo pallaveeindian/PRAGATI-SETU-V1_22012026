@@ -1,7 +1,6 @@
-// src/pages/LDMS/Layout/ldms_header.jsx
-import React, { useContext, useState } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { AUTH_API } from "../../../api/axios";
+import { AUTH_API, LDMS_API } from "../../../api/axios"; // Imported LDMS_API
 import { clearAuth } from "../../../utils/storage";
 import ldmsLogo from "../../../assets/ldms_logo.png";
 import NotifNew from "../../../assets/SiteAssets/new.gif";
@@ -14,6 +13,10 @@ export default function LdmsHeader({ onBurgerClick }) {
   const [showUserMenu, setShowUserMenu] = useState(false);
   const [burgerOpen, setBurgerOpen] = useState(false);
 
+  // --- NEW: Notification State ---
+  const [notifications, setNotifications] = useState([]);
+  const [unreadCount, setUnreadCount] = useState(0);
+
   const handleBurger = () => {
     setBurgerOpen(!burgerOpen);
     onBurgerClick();
@@ -22,12 +25,57 @@ export default function LdmsHeader({ onBurgerClick }) {
   const username = user?.username || user?.name || user?.email || "User";
   const avatarLetter = username.charAt(0).toUpperCase();
 
-  const notifications = [
-    { text: "New AEP plan submitted in your block", isNew: true },
-    { text: "VPRP data updated for FY 2024", isNew: false },
-    { text: "15 new PLDs registered today", isNew: true },
-    { text: "Support benefits synced successfully", isNew: false },
-  ];
+  // --- NEW: Fetch Notifications Logic ---
+  const fetchNotifications = async () => {
+    try {
+      // Fetch the first page of notifications
+      const res = await LDMS_API.NotificationsList({ page: 1 });
+      const data = res?.data?.results || res?.data || [];
+
+      // Keep only top 5 for the dropdown
+      const top5 = data.slice(0, 5);
+      setNotifications(top5);
+
+      // Calculate unread count (from the visible dropdown items)
+      setUnreadCount(top5.filter((n) => !n.is_read).length);
+    } catch (error) {
+      console.error("Failed to fetch notifications", error);
+    }
+  };
+
+  // --- NEW: Auto-Refresh Interval (5 seconds) ---
+  useEffect(() => {
+    if (user) {
+      fetchNotifications(); // Initial fetch
+      const intervalId = setInterval(fetchNotifications, 5000);
+      return () => clearInterval(intervalId); // Cleanup on unmount
+    }
+  }, [user]);
+
+  // --- NEW: Handle Mark as Read ---
+  const handleNotificationClick = async (notif) => {
+    if (!notif.is_read) {
+      try {
+        await LDMS_API.MarkNotificationRead(notif.id);
+
+        // Optimistically update the UI instantly without waiting for the next 5s tick
+        setNotifications((prev) =>
+          prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
+        );
+        setUnreadCount((prev) => Math.max(0, prev - 1));
+      } catch (error) {
+        console.error("Failed to mark notification as read", error);
+      }
+    }
+  };
+
+  // Helper to strip/truncate long descriptions
+  const truncateText = (text, maxLength = 45) => {
+    if (!text) return "";
+    return text.length > maxLength
+      ? text.substring(0, maxLength) + "..."
+      : text;
+  };
 
   const handleLogout = async () => {
     try {
@@ -43,7 +91,7 @@ export default function LdmsHeader({ onBurgerClick }) {
     <header className="ldms-header">
       {/* -------- LEFT -------- */}
       <div className="ldms-header-left">
-        <img src={ldmsLogo} className="ldms-applogo" />
+        <img src={ldmsLogo} className="ldms-applogo" alt="LDMS Logo" />
         <span className="ldms-govt-badge" />
         <h1 className="ldms-title">
           Lakhpati Didi <span>Management System</span>
@@ -75,23 +123,53 @@ export default function LdmsHeader({ onBurgerClick }) {
             title="Notifications"
           >
             <FaBell />
-            <span className="ldms-notification-badge">
-              +{notifications.filter((n) => n.isNew).length}
-            </span>
+            {unreadCount > 0 && (
+              <span className="ldms-notification-badge">
+                {unreadCount > 9 ? "9+" : unreadCount}
+              </span>
+            )}
           </button>
 
           {showNotifications && (
             <div className="ldms-notification-panel pop-animate">
               <div className="ldms-notification-header">Notifications</div>
-              {notifications.map((n, i) => (
-                <div key={i} className="ldms-notification-item">
-                  {n.text}
 
-                  {n.isNew && (
-                    <img src={NotifNew} className="ldms-notif-new" alt="new" />
-                  )}
-                </div>
-              ))}
+              <div className="ldms-notification-list">
+                {notifications.length === 0 ? (
+                  <div className="ldms-notif-empty">No new notifications</div>
+                ) : (
+                  notifications.map((n) => (
+                    <div
+                      key={n.id}
+                      className={`ldms-notification-item ${!n.is_read ? "unread" : ""}`}
+                      onClick={() => handleNotificationClick(n)}
+                    >
+                      <div className="ldms-notif-content">
+                        <strong className="ldms-notif-title">{n.title}</strong>
+                        <span className="ldms-notif-text">
+                          {truncateText(n.message)}
+                        </span>
+                      </div>
+
+                      {/* ONLY show new.gif if it is UNREAD */}
+                      {!n.is_read && (
+                        <img
+                          src={NotifNew}
+                          className="ldms-notif-new"
+                          alt="new"
+                        />
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+
+              {/* Show More Link */}
+              <div className="ldms-notif-footer">
+                <a href="#" onClick={() => setShowNotifications(false)}>
+                  Show all notifications
+                </a>
+              </div>
             </div>
           )}
         </div>
@@ -138,11 +216,7 @@ export default function LdmsHeader({ onBurgerClick }) {
           justify-content: space-between;
           padding: 0 20px;
           z-index: 50;
-
-          /* subtle depth */
           box-shadow: 0 4px 12px rgba(0,0,0,0.12);
-
-          /* smoother UI feel */
           transition: background 0.2s ease, box-shadow 0.2s ease;
         }
 
@@ -151,12 +225,10 @@ export default function LdmsHeader({ onBurgerClick }) {
           width: 40px;                 
           margin-right: -5px;
           margin-left: -7px;
-
-          background: #ffffff;         /* gives clean base for transparent logo */
-          border-radius: 50%;          /* true circle */
-          padding: 1px;                /* space between logo & border */
-
-          box-shadow: 0 2px 6px rgba(0,0,0,0.15); /* subtle elevation */
+          background: #ffffff;         
+          border-radius: 50%;          
+          padding: 1px;                
+          box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
         }
 
         .ldms-header-left {
@@ -222,15 +294,11 @@ export default function LdmsHeader({ onBurgerClick }) {
           cursor: pointer;
           padding: 6px 10px;
           border-radius: 8px;
-
           display: flex;
           align-items: center;
           justify-content: center;
-
-          transition: 
-            transform 0.15s ease,
-            box-shadow 0.15s ease,
-            background 0.2s ease;
+          transition: transform 0.15s ease, box-shadow 0.15s ease, background 0.2s ease;
+          color: #fff;
         }
 
         .ldms-notification-badge {
@@ -241,9 +309,8 @@ export default function LdmsHeader({ onBurgerClick }) {
           color: #fff;
           font-size: 10px;
           font-weight: 700;
-          padding: 2px 6px;
+          padding: 2px 5px;
           border-radius: 10px;
-
           box-shadow: 0 2px 6px rgba(0,0,0,0.25);
         }
 
@@ -269,9 +336,9 @@ export default function LdmsHeader({ onBurgerClick }) {
           position: absolute;
           right: 0;
           top: 44px;
-          width: 300px;
-          background: var(--ldms-red);
-          border: 1px solid #fff;
+          width: 320px;
+          background: #ffffff;
+          border: 1px solid var(--ldms-border);
           border-radius: 10px;
           box-shadow: 0 14px 36px rgba(0,0,0,0.16);
           overflow: hidden;
@@ -279,35 +346,95 @@ export default function LdmsHeader({ onBurgerClick }) {
         }
 
         .ldms-notification-header {
-          padding: 12px;
-          font-weight: 700;
+          padding: 12px 16px;
+          font-weight: 800;
           font-size: 14px;
           background: var(--ldms-red-light);
           color: var(--ldms-red);
+          border-bottom: 1px solid var(--ldms-border);
+        }
+
+        .ldms-notification-list {
+          max-height: 350px;
+          overflow-y: auto;
+        }
+
+        .ldms-notif-empty {
+          padding: 20px;
+          text-align: center;
+          font-size: 13px;
+          color: var(--ldms-text-muted);
         }
 
         .ldms-notification-item {
           position: relative;
-          padding: 10px 12px;
-          font-size: 13px;
-          border-top: 1px solid #f3f4f6;
-          color: #fff;
+          padding: 12px 16px;
+          border-bottom: 1px solid #f3f4f6;
           transition: background 0.15s ease;
+          cursor: pointer;
+          display: flex;
+          justify-content: space-between;
+          align-items: flex-start;
+          gap: 10px;
         }
 
-        .ldms-notif-new {
-          position: absolute;
-          top: 4px;
-          right: 6px;
-          width: 28px;
-          background: var(--ldms-red-light);
-          border-radius: 6px;  
-          box-shadow: 0 4px 10px rgba(0,0,0,0.18);                 
+        .ldms-notification-item:last-child {
+          border-bottom: none;
         }
 
         .ldms-notification-item:hover {
+          background: #f9fafb;
+        }
+
+        .ldms-notification-item.unread {
           background: #fff5f5;
+        }
+        .ldms-notification-item.unread:hover {
+          background: #fdecea;
+        }
+
+        .ldms-notif-content {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+          width: 100%;
+        }
+
+        .ldms-notif-title {
+          font-size: 13px;
           color: var(--ldms-red);
+          line-height: 1.2;
+        }
+
+        .ldms-notif-text {
+          font-size: 12px;
+          color: var(--ldms-text-dark);
+          line-height: 1.4;
+        }
+
+        .ldms-notif-new {
+          width: 28px;
+          flex-shrink: 0;
+          border-radius: 4px;  
+          box-shadow: 0 2px 4px rgba(0,0,0,0.1);                 
+        }
+
+        .ldms-notif-footer {
+          background: #f9fafb;
+          border-top: 1px solid #e5e7eb;
+          padding: 10px;
+          text-align: center;
+        }
+
+        .ldms-notif-footer a {
+          color: var(--ldms-red);
+          font-size: 13px;
+          font-weight: 700;
+          text-decoration: none;
+        }
+
+        .ldms-notif-footer a:hover {
+          text-decoration: underline;
         }
 
         /* User */
@@ -337,7 +464,6 @@ export default function LdmsHeader({ onBurgerClick }) {
           justify-content: center;
           font-weight: 800;
           font-size: 14px;
-
           box-shadow: 0 2px 6px rgba(0,0,0,0.18);
         }
 
@@ -346,7 +472,6 @@ export default function LdmsHeader({ onBurgerClick }) {
           font-weight: 600;
           color: #ffffff;
           max-width: 140px;
-
           white-space: nowrap;
           overflow: hidden;
           text-overflow: ellipsis;
@@ -366,7 +491,7 @@ export default function LdmsHeader({ onBurgerClick }) {
 
         .ldms-logout-btn {
           width: 100%;
-          padding: 10px 14px;
+          padding: 10px 24px;
           background: #ffffff;
           border: none;
           color: var(--ldms-red);
@@ -380,7 +505,6 @@ export default function LdmsHeader({ onBurgerClick }) {
         }
 
         /* ---------------- BURGER BUTTON ---------------- */
-
         .ldms-burger {
           display: none;
           width: 42px;
@@ -394,25 +518,17 @@ export default function LdmsHeader({ onBurgerClick }) {
           justify-content: center;
           flex-direction: column;
           gap: 5px;
-          transition: 
-            transform 0.15s ease,
-            background 0.2s ease,
-            box-shadow 0.2s ease;
+          transition: transform 0.15s ease, background 0.2s ease, box-shadow 0.2s ease;
           box-shadow: 0 4px 12px rgba(0,0,0,0.12);
         }
-
-        /* Burger lines */
 
         .ldms-burger span {
           width: 20px;
           height: 3px;
           background: var(--ldms-red);
           border-radius: 3px;
-          transition: transform 0.32s cubic-bezier(.4,.0,.2,1),
-                      opacity 0.2s ease;
+          transition: transform 0.32s cubic-bezier(.4,.0,.2,1), opacity 0.2s ease;
         }
-
-        /* Hover */
 
         .ldms-burger:hover {
           background: var(--ldms-red);
@@ -427,39 +543,28 @@ export default function LdmsHeader({ onBurgerClick }) {
           transform: scale(0.92);
         }
 
-        /* ---------------- OPEN ANIMATION ---------------- */
-
         /* Top line */
-
         .ldms-burger.open span:nth-child(1) {
           transform: translateY(8px) rotate(45deg);
         }
-
         /* Middle line */
-
         .ldms-burger.open span:nth-child(2) {
           opacity: 0;
           transform: scaleX(0);
         }
-
         /* Bottom line */
-
         .ldms-burger.open span:nth-child(3) {
           transform: translateY(-8px) rotate(-45deg);
         }
 
         /* ---------------- MOBILE ONLY ---------------- */
-
         @media (max-width: 768px) {
-
           .ldms-burger {
             display: flex;
           }
-
           .ldms-header-right {
             display: none;
           }
-
         } 
       `}</style>
     </header>

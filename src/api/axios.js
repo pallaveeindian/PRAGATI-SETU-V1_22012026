@@ -735,6 +735,11 @@ export const LDMS_API = {
       params,
     }),
 
+  // Notification endpoints
+  NotificationsList: (params) => api.get("/ldms/notifications/", { params }),
+  MarkNotificationRead: (notifId) =>
+    api.patch(`/ldms/notifications/${encodeURIComponent(notifId)}/read/`),
+
   // DLCC Meet endpoints
 
   // DLCC Meet Create

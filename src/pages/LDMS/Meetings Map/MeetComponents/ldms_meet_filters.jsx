@@ -2,11 +2,18 @@
 import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaSearch, FaUndo, FaPlus } from "react-icons/fa";
+import { AuthContext } from "../../../../contexts/AuthContext";
 
 export default function MeetFilters({ filters, setFilters }) {
+  const { user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const [localMonth, setLocalMonth] = useState(filters.meetingMonth || "");
   const [localDate, setLocalDate] = useState(filters.notifDate || "");
+
+  const role = user?.role_id;
+  const isBMMU = role == 1;
+  const isDMMU = role == 2;
+  const isSMMU = role == 3;
 
   const handleSearch = () => {
     setFilters((prev) => ({
@@ -62,14 +69,16 @@ export default function MeetFilters({ filters, setFilters }) {
 
       {/* RIGHT SIDE: Action Buttons */}
       <div className="filter-right-group">
-        <button
-          className="nic-btn nic-btn-success"
-          onClick={() =>
-            navigate("/ldms/meetings-dlcc/create")
-          } /* Adjust this route path to match your App.js routing */
-        >
-          <FaPlus /> Create DLCC Appointment
-        </button>
+        {(isDMMU || isSMMU) && (
+          <button
+            className="nic-btn nic-btn-success"
+            onClick={() =>
+              navigate("/ldms/meetings-dlcc/create")
+            } /* Adjust this route path to match your App.js routing */
+          >
+            <FaPlus /> Create DLCC Appointment
+          </button>
+        )}
       </div>
 
       <style>{`
