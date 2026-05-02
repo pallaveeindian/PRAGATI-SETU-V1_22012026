@@ -1,16 +1,17 @@
-// src/pages/LDMS/Meetings Map/ldms_meetings_list.jsx
 import React, { useState } from "react";
 import MeetHeader from "./MeetComponents/ldms_meet_header";
 import MeetFilters from "./MeetComponents/ldms_meet_filters";
 import MeetTable from "./MeetComponents/ldms_meet_table";
 
 export default function MeetingsList() {
+  // Global shared state for all sub-components
   const [globalFilters, setGlobalFilters] = useState({
     districtId: "",
     blockId: "",
     meetingMonth: "",
     notifDate: "",
-    meetingType: "DLCC", // default
+    meetingType: "DLCC", // Defaults to DLCC
+    onlyAspirational: false,
   });
 
   return (
@@ -18,7 +19,8 @@ export default function MeetingsList() {
       {/* Row 1 */}
       <div className="ldms-grid-row one-col">
         <div className="ldms-card">
-          <MeetHeader />
+          {/* Header now receives global state to update district/block */}
+          <MeetHeader filters={globalFilters} setFilters={setGlobalFilters} />
         </div>
       </div>
 

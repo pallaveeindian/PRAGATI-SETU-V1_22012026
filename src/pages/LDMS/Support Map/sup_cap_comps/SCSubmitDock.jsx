@@ -345,8 +345,13 @@ export default function SCSubmitDock({
       /* 4️⃣ Delete Support Bucket */
       await LDMS_API.SupportBuckets.destroy(supportBucketId);
 
-      /* 5️⃣ Delete SBType */
-      await LDMS_API.SBTypes.destroy(sbTypeId);
+      /* 5️⃣ Delete SBType ONLY if it is a custom 'Others-' type */
+      if (
+        supportData?.bucketType &&
+        supportData.bucketType.startsWith("Others-")
+      ) {
+        await LDMS_API.SBTypes.destroy(sbTypeId);
+      }
 
       alert("Support Map deleted successfully.");
       window.location.href = "/ldms/support-map-list";

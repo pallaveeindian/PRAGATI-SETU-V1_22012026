@@ -1,16 +1,23 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import { LDMS_API } from "../../../api/axios";
+import { AuthContext } from "../../../contexts/AuthContext"; // Adjust path if needed
 import {
   FaUpload,
   FaArrowLeft,
   FaSpinner,
-  FaCalendarCheck,
+  FaBuilding,
+  FaMapMarkedAlt,
 } from "react-icons/fa";
 
-export default function DLCCMeetUpload() {
+export default function MeetUpload() {
   const navigate = useNavigate();
   const { id } = useParams(); // Retrieves the specific meeting ID from the URL
+  const { user } = useContext(AuthContext) || {};
+
+  const role = user?.role_id;
+  const isBMMU = role == 1;
+  const isDMMU = role == 2;
 
   const [meetingDate, setMeetingDate] = useState("");
   const [file, setFile] = useState(null);
@@ -35,10 +42,10 @@ export default function DLCCMeetUpload() {
         return;
       }
 
-      if (selectedFile.size > 5 * 1024 * 1024) {
+      if (selectedFile.size > 20 * 1024 * 1024) {
         setMessage({
           type: "error",
-          text: "File is too large. Maximum allowed size is 5MB.",
+          text: "File is too large. Maximum allowed size is 20MB.",
         });
         setFile(null);
         e.target.value = null;
@@ -47,6 +54,8 @@ export default function DLCCMeetUpload() {
 
       setFile(selectedFile);
       setMessage({ type: "", text: "" });
+    } else {
+      setFile(null);
     }
   };
 
@@ -75,11 +84,19 @@ export default function DLCCMeetUpload() {
         formData.append("mom", file);
       }
 
-      await LDMS_API.UpdateDLCCMeetSchedule(id, formData);
+      // Automatically route to the correct DRF ViewSet based on Role
+      if (isBMMU) {
+        // Axios will automatically handle the multipart boundary when passing FormData to patch
+        await LDMS_API.blccMeetings.partialUpdate(id, formData);
+      } else if (isDMMU) {
+        await LDMS_API.dlccMeetings.partialUpdate(id, formData);
+      } else {
+        throw new Error("You do not have permission to update meetings.");
+      }
 
       setMessage({
         type: "success",
-        text: "Meeting details updated securely!",
+        text: `${isBMMU ? "BLCC" : "DLCC"} Meeting updated securely!`,
       });
 
       setTimeout(() => {
@@ -92,7 +109,6 @@ export default function DLCCMeetUpload() {
       let errorText = "An error occurred while updating.";
       if (error?.response?.data) {
         if (typeof error.response.data === "object") {
-          // DRF usually returns field-specific errors
           const fieldErrors = Object.values(error.response.data).flat();
           errorText = fieldErrors[0] || errorText;
         } else {
@@ -106,14 +122,20 @@ export default function DLCCMeetUpload() {
     }
   };
 
+  // Dynamic UI variables based on role
+  const pageTitle = isBMMU
+    ? "Update BLCC Meeting & Upload MoM"
+    : "Update DLCC Meeting & Upload MoM";
+  const PageIcon = isBMMU ? FaMapMarkedAlt : FaBuilding;
+
   return (
     <div className="nic-detail-dashboard">
       <div className="nic-detail-card">
         {/* Header Section */}
         <div className="nic-card-header">
           <div className="header-title">
-            <FaCalendarCheck className="title-icon" />
-            <h2>Update Meeting Schedule & Upload MoM</h2>
+            <PageIcon className="title-icon" />
+            <h2>{pageTitle}</h2>
           </div>
           <button
             className="nic-btn nic-btn-secondary"
@@ -160,8 +182,8 @@ export default function DLCCMeetUpload() {
                 disabled={loading}
               />
               <small className="help-text">
-                Max 5MB. Strict security check enabled. Allowed: PDF, DOC, DOCX,
-                JPG, PNG.
+                Max 20MB. Strict security check enabled. Allowed: PDF, DOC,
+                DOCX, JPG, PNG.
               </small>
             </div>
           </div>

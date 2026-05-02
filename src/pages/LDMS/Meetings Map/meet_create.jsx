@@ -1,54 +1,68 @@
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
 import { useNavigate } from "react-router-dom";
-import { LDMS_API } from "../../../api/axios"; // Adjust path to your axios.js if needed
-import { FaSave, FaArrowLeft, FaSpinner, FaBuilding } from "react-icons/fa";
+import { LDMS_API } from "../../../api/axios";
+import { AuthContext } from "../../../contexts/AuthContext"; 
+import {
+  FaSave,
+  FaArrowLeft,
+  FaSpinner,
+  FaBuilding,
+  FaMapMarkedAlt,
+} from "react-icons/fa";
 
-export default function DLCCMeetCreate() {
+export default function MeetCreate() {
   const navigate = useNavigate();
+  const { user } = useContext(AuthContext) || {};
 
-  const [formData, setFormData] = useState({
-    notif_date_from: "",
-    notif_date_to: "",
-    meeting_month: "",
-    no_of_meetings: "",
-  });
+  const role = user?.role_id;
+  const isBMMU = role == 1;
+  const isDMMU = role == 2;
+
+  const [meetingDate, setMeetingDate] = useState("");
+  const [file, setFile] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState({ type: "", text: "" });
 
-  const handleChange = (e) => {
-    setFormData({ ...formData, [e.target.name]: e.target.value });
-    // Clear message on typing
-    if (message.text) setMessage({ type: "", text: "" });
+  const handleFileChange = (e) => {
+    const selectedFile = e.target.files[0];
+    if (selectedFile) {
+      // Basic frontend validation matching your backend magic bytes check
+      const validExtensions = ["pdf", "doc", "docx", "png", "jpg", "jpeg"];
+      const fileExtension = selectedFile.name.split(".").pop().toLowerCase();
+
+      if (!validExtensions.includes(fileExtension)) {
+        setMessage({
+          type: "error",
+          text: "Invalid file type. Please upload a PDF, Word document, or Image.",
+        });
+        setFile(null);
+        e.target.value = null; // Clear the input
+        return;
+      }
+
+      if (selectedFile.size > 20 * 1024 * 1024) {
+        setMessage({
+          type: "error",
+          text: "File is too large. Maximum allowed size is 20MB.",
+        });
+        setFile(null);
+        e.target.value = null;
+        return;
+      }
+
+      setFile(selectedFile);
+      setMessage({ type: "", text: "" });
+    } else {
+      setFile(null);
+    }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    if (
-      !formData.notif_date_from ||
-      !formData.notif_date_to ||
-      !formData.meeting_month ||
-      !formData.no_of_meetings
-    ) {
-      setMessage({ type: "error", text: "All fields are strictly required." });
-      return;
-    }
-
-    // Ensure 'To' date is not strictly before 'From' date
-    if (new Date(formData.notif_date_from) > new Date(formData.notif_date_to)) {
-      setMessage({
-        type: "error",
-        text: "Notification 'To' date cannot be before 'From' date.",
-      });
-      return;
-    }
-
-    if (parseInt(formData.no_of_meetings) <= 0) {
-      setMessage({
-        type: "error",
-        text: "Number of meetings must be at least 1.",
-      });
+    if (!meetingDate) {
+      setMessage({ type: "error", text: "Meeting Date is strictly required." });
       return;
     }
 
@@ -56,40 +70,57 @@ export default function DLCCMeetCreate() {
     setMessage({ type: "", text: "" });
 
     try {
-      const payload = {
-        // Combine into the required "YYYY-MM-DD,YYYY-MM-DD" format
-        notif_date: `${formData.notif_date_from},${formData.notif_date_to}`,
-        meeting_month: formData.meeting_month,
-        no_of_meetings: parseInt(formData.no_of_meetings),
-      };
+      const formData = new FormData();
+      formData.append("meeting_date", meetingDate);
 
-      await LDMS_API.CreateDLCCMeet(payload);
+      if (file) {
+        formData.append("mom", file);
+      }
+
+      // Automatically route to the correct DRF ViewSet based on Role
+      if (isBMMU) {
+        await LDMS_API.blccMeetings.createMultipart(formData);
+      } else if (isDMMU) {
+        await LDMS_API.dlccMeetings.createMultipart(formData);
+      } else {
+        throw new Error("You do not have permission to schedule meetings.");
+      }
 
       setMessage({
         type: "success",
-        text: "DLCC Meeting appointment scheduled successfully!",
+        text: `${isBMMU ? "BLCC" : "DLCC"} Meeting created successfully!`,
       });
 
-      // Clear form on success, wait briefly, then navigate back
-      setFormData({
-        notif_date_from: "",
-        notif_date_to: "",
-        meeting_month: "",
-        no_of_meetings: "",
-      });
+      // Clear form on success
+      setMeetingDate("");
+      setFile(null);
+
       setTimeout(() => {
         navigate(-1); // Go back to the list
       }, 1500);
     } catch (error) {
       console.error("Failed to create meeting:", error);
-      const errorText =
-        error?.response?.data?.error ||
-        "Failed to schedule meetings. Please check your permissions.";
+
+      let errorText =
+        "Failed to schedule meeting. Please check your permissions.";
+      if (error?.response?.data) {
+        if (typeof error.response.data === "object") {
+          const fieldErrors = Object.values(error.response.data).flat();
+          errorText = fieldErrors[0] || errorText;
+        } else {
+          errorText = error.response.data;
+        }
+      }
+
       setMessage({ type: "error", text: errorText });
     } finally {
       setLoading(false);
     }
   };
+
+  // Dynamic UI variables based on role
+  const pageTitle = isBMMU ? "Schedule BLCC Meeting" : "Schedule DLCC Meeting";
+  const PageIcon = isBMMU ? FaMapMarkedAlt : FaBuilding;
 
   return (
     <div className="nic-detail-dashboard">
@@ -97,8 +128,8 @@ export default function DLCCMeetCreate() {
         {/* Header Section */}
         <div className="nic-card-header">
           <div className="header-title">
-            <FaBuilding className="title-icon" />
-            <h2>Schedule DLCC Meeting Notification</h2>
+            <PageIcon className="title-icon" />
+            <h2>{pageTitle}</h2>
           </div>
           <button
             className="nic-btn nic-btn-secondary"
@@ -123,77 +154,36 @@ export default function DLCCMeetCreate() {
           <div className="nic-form-row">
             <div className="nic-form-group">
               <label>
-                Notice Period (From) <span className="text-danger">*</span>
+                Meeting Date <span className="text-danger">*</span>
               </label>
               <input
                 type="date"
-                name="notif_date_from"
-                value={formData.notif_date_from}
-                onChange={handleChange}
+                value={meetingDate}
+                onChange={(e) => {
+                  setMeetingDate(e.target.value);
+                  if (message.text) setMessage({ type: "", text: "" });
+                }}
                 className="nic-input"
                 required
                 disabled={loading}
               />
               <small className="help-text">
-                Start date of the notification window.
+                The date the meeting is scheduled to occur.
               </small>
             </div>
 
             <div className="nic-form-group">
-              <label>
-                Notice Period (To) <span className="text-danger">*</span>
-              </label>
+              <label>Minutes of Meeting (MoM) Document</label>
               <input
-                type="date"
-                name="notif_date_to"
-                value={formData.notif_date_to}
-                min={formData.notif_date_from} // Locks calendar to prevent picking dates before 'From'
-                onChange={handleChange}
-                className="nic-input"
-                required
+                type="file"
+                onChange={handleFileChange}
+                className="nic-input nic-file-input"
+                accept=".pdf,.doc,.docx,.png,.jpg,.jpeg"
                 disabled={loading}
               />
               <small className="help-text">
-                End date of the notification window.
-              </small>
-            </div>
-
-            <div className="nic-form-group">
-              <label>
-                Target Meeting Month <span className="text-danger">*</span>
-              </label>
-              <input
-                type="month"
-                name="meeting_month"
-                value={formData.meeting_month}
-                onChange={handleChange}
-                className="nic-input"
-                required
-                disabled={loading}
-              />
-              <small className="help-text">
-                Month when the meetings will occur.
-              </small>
-            </div>
-
-            <div className="nic-form-group">
-              <label>
-                Number of Meetings <span className="text-danger">*</span>
-              </label>
-              <input
-                type="number"
-                name="no_of_meetings"
-                value={formData.no_of_meetings}
-                onChange={handleChange}
-                className="nic-input"
-                placeholder="e.g., 3"
-                min="1"
-                max="10"
-                required
-                disabled={loading}
-              />
-              <small className="help-text">
-                Blank schedules will be auto-generated.
+                Optional during creation. Max 20MB. Allowed formats: PDF, DOC,
+                DOCX, JPG, PNG.
               </small>
             </div>
           </div>
@@ -210,7 +200,7 @@ export default function DLCCMeetCreate() {
                 </>
               ) : (
                 <>
-                  <FaSave /> Schedule Appointment
+                  <FaSave /> Create Appointment
                 </>
               )}
             </button>
@@ -230,7 +220,7 @@ export default function DLCCMeetCreate() {
           border: 1px solid #d1d5db;
           border-radius: 4px;
           box-shadow: 0 1px 3px rgba(0,0,0,0.1);
-          max-width: 1000px;
+          max-width: 800px;
           margin: 0 auto;
         }
 
@@ -268,8 +258,8 @@ export default function DLCCMeetCreate() {
         }
 
         .nic-form-row {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+          display: flex;
+          flex-direction: column;
           gap: 24px;
           margin-bottom: 32px;
         }
@@ -302,6 +292,25 @@ export default function DLCCMeetCreate() {
           font-size: 14px;
           background: #fff;
           transition: border-color 0.2s;
+        }
+
+        .nic-file-input {
+          padding: 8px 12px;
+        }
+        
+        .nic-file-input::file-selector-button {
+          background: #e5e7eb;
+          border: 1px solid #d1d5db;
+          padding: 4px 12px;
+          border-radius: 4px;
+          color: #374151;
+          font-weight: 600;
+          cursor: pointer;
+          margin-right: 12px;
+          transition: background 0.2s;
+        }
+        .nic-file-input::file-selector-button:hover {
+          background: #d1d5db;
         }
 
         .nic-input:focus {

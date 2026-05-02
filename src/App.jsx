@@ -81,8 +81,8 @@ import RecordSupportDetail from "./pages/LDMS/Support Map/record_support_detail"
 import DmmuLdmsApprove from "./pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
 import MeetingsList from "./pages/LDMS/Meetings Map/ldms_meetings_list";
-import DLCCMeetCreate from "./pages/LDMS/Meetings Map/dlcc_meet_create.jsx";
-import DLCCMeetUpload from "./pages/LDMS/Meetings Map/dlcc_meet_upload.jsx";
+import MeetCreate from "./pages/LDMS/Meetings Map/meet_create.jsx";
+import MeetUpload from "./pages/LDMS/Meetings Map/meet_upload.jsx";
 
 // EPSMS (CRP-EP Mapping Form)
 import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
@@ -304,17 +304,14 @@ export default function App() {
             </Route>
 
             {/* DMMU Routes */}
-            <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
+            <Route element={<ProtectedRoute allowedRoles={["dmmu", "bmmu"]} />}>
               <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
               <Route
                 path="dmmu/approve-support/:id"
                 element={<DmmuLdmsApprove />}
               />
-              <Route path="meetings-dlcc/create" element={<DLCCMeetCreate />} />
-              <Route
-                path="meetings-dlcc/upload/:id"
-                element={<DLCCMeetUpload />}
-              />
+              <Route path="meetings/create" element={<MeetCreate />} />
+              <Route path="meetings/upload/:id" element={<MeetUpload />} />
             </Route>
 
             {/* SMMU Routes */}

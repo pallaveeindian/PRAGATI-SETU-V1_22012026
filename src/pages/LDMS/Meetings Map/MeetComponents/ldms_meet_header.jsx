@@ -11,7 +11,7 @@ import {
 import { AuthContext } from "../../../../contexts/AuthContext";
 import { LOOKUP_API } from "../../../../api/axios";
 
-export default function MeetHeader() {
+export default function MeetHeader({ filters, setFilters }) {
   const { user } = useContext(AuthContext) || {};
   const role = user?.role_id;
 
@@ -19,10 +19,18 @@ export default function MeetHeader() {
   const isDMMU = role == 2;
   const isSMMU = role == 3;
 
-  const [meetingType, setMeetingType] = useState("DLCC");
-  const [districtId, setDistrictId] = useState(null);
-  const [blockId, setBlockId] = useState(null);
-  const [onlyAspirational, setOnlyAspirational] = useState(false);
+  // Extract from parent's global filter state
+  const meetingType = filters?.meetingType || "DLCC";
+  const districtId = filters?.districtId || "";
+  const blockId = filters?.blockId || "";
+  const onlyAspirational = filters?.onlyAspirational || false;
+
+  // Helper to safely update parent filters
+  const updateFilter = (key, value) => {
+    if (setFilters) {
+      setFilters((prev) => ({ ...prev, [key]: value }));
+    }
+  };
 
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
@@ -34,10 +42,25 @@ export default function MeetHeader() {
     LOOKUP_API.userGeoscopeByUserId(user.id)
       .then((res) => {
         const dist = res?.data?.districts?.[0];
-        if (dist) setDistrictId(dist);
+        if (dist) updateFilter("districtId", dist);
       })
       .catch(console.error);
   }, [isDMMU, user?.id]);
+
+  /* ---------- Resolve Block for BMMU ---------- */
+  useEffect(() => {
+    if (!isBMMU || !user?.id) return;
+
+    LOOKUP_API.userGeoscopeByUserId(user.id)
+      .then((res) => {
+        const blk = res?.data?.blocks?.[0];
+        if (blk) {
+          updateFilter("blockId", blk);
+          updateFilter("meetingType", "BLCC"); // Auto-force BLCC for BMMU
+        }
+      })
+      .catch(console.error);
+  }, [isBMMU, user?.id]);
 
   /* ------------------ Load Districts for SMMU ------------------ */
   useEffect(() => {
@@ -91,15 +114,15 @@ export default function MeetHeader() {
             <button
               className={`toggle-btn ${meetingType === "DLCC" ? "active" : ""}`}
               onClick={() => {
-                setMeetingType("DLCC");
-                setBlockId(null);
+                updateFilter("meetingType", "DLCC");
+                updateFilter("blockId", "");
               }}
             >
               <FaBuilding /> DLCC Meetings
             </button>
             <button
               className={`toggle-btn ${meetingType === "BLCC" ? "active" : ""}`}
-              onClick={() => setMeetingType("BLCC")}
+              onClick={() => updateFilter("meetingType", "BLCC")}
             >
               <FaMapMarkedAlt /> BLCC Meetings
             </button>
@@ -113,7 +136,14 @@ export default function MeetHeader() {
         {isSMMU && (
           <div className="filter-item">
             <label>District</label>
-            <select onChange={(e) => setDistrictId(e.target.value)}>
+            <select
+              value={districtId}
+              onChange={(e) => {
+                updateFilter("districtId", e.target.value);
+                updateFilter("blockId", "");
+                updateFilter("meetingType", "DLCC"); // Reset to DLCC when district changes
+              }}
+            >
               <option value="">Select District</option>
               {districts.map((d) => (
                 <option key={d.district_id} value={d.district_id}>
@@ -125,10 +155,22 @@ export default function MeetHeader() {
         )}
 
         {/* Block Selector Logic */}
-        {(isSMMU || (isDMMU && meetingType === "BLCC")) && (
+        {(isSMMU || (isDMMU && meetingType === "BLCC") || isBMMU) && (
           <div className="filter-item">
             <label>Block</label>
-            <select onChange={(e) => setBlockId(e.target.value)}>
+            <select
+              value={blockId}
+              disabled={isBMMU}
+              onChange={(e) => {
+                const val = e.target.value;
+                updateFilter("blockId", val);
+                if (val) {
+                  updateFilter("meetingType", "BLCC"); // Auto-switch to BLCC if block is picked
+                } else {
+                  updateFilter("meetingType", "DLCC"); // Switch back to DLCC if block is cleared
+                }
+              }}
+            >
               <option value="">Select Block</option>
               {blocks.map((b) => (
                 <option key={b.block_id} value={b.block_id}>
@@ -140,12 +182,15 @@ export default function MeetHeader() {
         )}
 
         {/* Aspirational Filter */}
-        {(isSMMU || (isDMMU && meetingType === "BLCC")) && (
+        {(isSMMU || (isDMMU && meetingType === "BLCC") || isBMMU) && (
           <div className="aspirational-filter">
             <input
               type="checkbox"
+              disabled={isBMMU}
               checked={onlyAspirational}
-              onChange={(e) => setOnlyAspirational(e.target.checked)}
+              onChange={(e) =>
+                updateFilter("onlyAspirational", e.target.checked)
+              }
             />
             <span>Aspirational Blocks</span>
           </div>

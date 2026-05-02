@@ -741,26 +741,10 @@ export const LDMS_API = {
     api.patch(`/ldms/notifications/${encodeURIComponent(notifId)}/read/`),
 
   // DLCC Meet endpoints
+  dlccMeetings: makeCrud("/ldms/dlcc-meetings/"),
+  // BLCC Meet endpoints
+  blccMeetings: makeCrud("/ldms/blcc-meetings/"),
 
-  // DLCC Meet Create
-  CreateDLCCMeet: (data) => api.post("/ldms/dlcc-meetings/create/", data),
-
-  // DLCC Meet Schedule Update (Multipart for File Upload)
-  UpdateDLCCMeetSchedule: (scheduleId, formData) =>
-    api.patch(
-      `/ldms/dlcc-meetings/schedule/${encodeURIComponent(scheduleId)}/update/`,
-      formData,
-      {
-        headers: {
-          "Content-Type": "multipart/form-data",
-        },
-      },
-    ),
-
-  // DLCC Meet List and Detail
-  DLCCMeetList: (params) => api.get("/ldms/dlcc-meetings/", { params }),
-  DLCCMeetDetail: (meetId) =>
-    api.get(`/ldms/dlcc-meetings/${encodeURIComponent(meetId)}/detail/`),
 };
 
 // ------------------------
