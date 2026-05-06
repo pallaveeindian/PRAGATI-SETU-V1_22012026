@@ -18,7 +18,7 @@ export const ROLE_WELCOME_MESSAGES = {
   dmmu: "DMMU — Training Management",
   smmu: "SMMU — Training Management",
   training_partner: "Training Partner Dashboard",
-  tp_contact_person: "TP Contact Person Dashboard",
+  tp_contact_person: "TC ID Dashboard",
   master_trainer: "Master Trainer Dashboard",
   crp_ep: "CRP-EP Dashboard",
   crp_ld: "CRP-LD Dashboard",

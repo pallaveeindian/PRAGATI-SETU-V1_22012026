@@ -152,8 +152,8 @@ export default function CpAdPerBatch() {
           return;
         }
       }
-      const resp = await (TMS_API.batchSchedules?.list
-        ? TMS_API.batchSchedules.list({ batch: batchId, page_size: 1 })
+      const resp = await (TMS_API.batchschedule?.list
+        ? TMS_API.batchschedule.list({ batch: batchId, page_size: 1 })
         : api.get(`/tms/batch-schedules/?batch=${batchId}`));
       const data = resp?.data ?? resp ?? {};
       const rec = data.results ? data.results[0] : data[0];
@@ -930,7 +930,8 @@ export default function CpAdPerBatch() {
                     {/* TODAY section */}
                     {attendanceAllowed &&
                       schedule &&
-                      missingDates.length === 0 && (
+                      missingDates.length === 0 &&
+                      (!batch.end_date || today <= batch.end_date) && (
                         <>
                           {loadingAttendanceToday ? (
                             <div className="table-spinner">

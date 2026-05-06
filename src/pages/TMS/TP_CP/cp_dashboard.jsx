@@ -614,7 +614,7 @@ export default function CpDashboard() {
 
   const hasCentre = !!centre;
   const cpName =
-    cpRecord?.name || user?.first_name || user?.username || "Contact Person";
+    cpRecord?.name || user?.first_name || user?.username || "TC ID";
 
   // ONLY SCHEDULED and ONGOING batches for dashboard table
   const visibleBatches = useMemo(
@@ -723,15 +723,15 @@ export default function CpDashboard() {
 
                 {loadingCentreChain ? (
                   <div className="table-spinner">
-                    Loading your contact person and centre mapping…
+                    Loading your TC ID and centre mapping…
                   </div>
                 ) : !cpRecord ? (
                   <div className="muted">
-                    No Contact Person mapping found for this user.
+                    No TC ID mapping found for this user.
                   </div>
                 ) : !centreLink || !hasCentre ? (
                   <div className="muted">
-                    No centre is currently linked to your Contact Person profile.
+                    No centre is currently linked to your TC ID profile.
                   </div>
                 ) : (
                   <div>
@@ -832,7 +832,7 @@ export default function CpDashboard() {
 
                 {!hasCentre ? (
                   <div className="muted">
-                    Link a centre to your Contact Person profile to see batches.
+                    Link a centre to your TC ID profile to see batches.
                   </div>
                 ) : batchesLoading ? (
                   <div className="table-spinner">

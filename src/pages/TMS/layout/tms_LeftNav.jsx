@@ -171,17 +171,17 @@ const MENU = {
       ],
     },
     {
-      label: "Contact Persons",
+      label: "TC IDs",
       to: "/tms/tp/cp-list",
       icon: FaUsers,
     },
     {
-      label: "Register Contact Persons",
+      label: "Register TC ID",
       to: "/tms/tp/cp/create",
       icon: FaUserEdit,
     },
     {
-      label: "Assign Contact Persons",
+      label: "Assign Centre to TC ID",
       to: "/tms/tp/cp/assign",
       icon: FaUserCheck,
     },

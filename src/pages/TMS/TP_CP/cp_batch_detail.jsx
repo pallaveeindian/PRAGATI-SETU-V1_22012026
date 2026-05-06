@@ -231,15 +231,24 @@ export default function CpBatchDetail() {
 
   // --- SURGICAL ADDITION: Check if batch end date has passed ---
   let isBatchEnded = false;
-  if (batch?.end_date) {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0); // Strip time for accurate day comparison
-    const endDate = new Date(batch.end_date);
-    endDate.setHours(0, 0, 0, 0);
-    if (today > endDate) {
-      isBatchEnded = true;
-    }
+  // if (batch?.end_date) {
+  //   const today = new Date();
+  //   today.setHours(0, 0, 0, 0); // Strip time for accurate day comparison
+  //   const endDate = new Date(batch.end_date);
+  //   endDate.setHours(0, 0, 0, 0);
+  //   if (today > endDate) {
+  //     isBatchEnded = true;
+  //   }
+  // }
+  if (
+    batch?.status === "COMPLETED" ||
+    batch?.status === "CLOSED" ||
+    batch?.status === "REVIEW" ||
+    batch?.status === "REJECTED"
+  ) {
+    isBatchEnded = true;
   }
+
   // -------------------------------------------------------------
 
   return (

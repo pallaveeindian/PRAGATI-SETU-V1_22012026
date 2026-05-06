@@ -14,7 +14,7 @@ export default function CpProfile() {
       <div className="main-area">
         <TopNav />
         <main style={{ padding: 18 }}>
-          <h2>Contact Person – My Profile</h2>
+          <h2>TC ID – My Profile</h2>
           <p>
             This is a placeholder page for CP profile. Implement details here.
           </p>

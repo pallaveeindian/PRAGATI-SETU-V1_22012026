@@ -519,7 +519,7 @@ export default function TpTrainingRequestClosure() {
                       );
                     })}
                   </div>
-                ) : <div className="empty-msg">No media uploaded by Contact Person.</div>}
+                ) : <div className="empty-msg">No media uploaded by TC ID.</div>}
               </div>
 
               {/* ════════ PARTICIPANTS COST TABLE ════════ */}

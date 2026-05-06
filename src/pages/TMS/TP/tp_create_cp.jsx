@@ -210,7 +210,7 @@ export default function TpCreateCP() {
         });
       }
     } catch (e) {
-      console.error("Failed to fetch contact person", e);
+      console.error("Failed to fetch TC ID", e);
     }
   }
 
@@ -288,12 +288,12 @@ export default function TpCreateCP() {
     }
 
     if (!masterUserId) {
-      setStatus("Please select or create a user before saving Contact Person");
+      setStatus("Please select or create a user before saving TC ID");
       return;
     }
 
     setStatus(
-      isEditMode ? "Updating contact person…" : "Creating contact person…",
+      isEditMode ? "Updating TC ID…" : "Creating TC ID…",
     );
 
     try {
@@ -322,10 +322,10 @@ export default function TpCreateCP() {
         await fetchContactPersonByMaster(masterUserId);
       }
 
-      setStatus("Contact Person saved successfully ✓");
+      setStatus("TC ID saved successfully ✓");
     } catch (e) {
       console.error(e);
-      alert("Contact Person operation failed");
+      alert("TC ID operation failed");
     }
   }
 
@@ -354,18 +354,18 @@ export default function TpCreateCP() {
           <main style={{ padding: 18 }}>
             <h2 className="tp-title">
               {" "}
-              <FaUserEdit /> Contact Persons Detail Section{" "}
+              <FaUserEdit /> TC ID Create/Update Section{" "}
             </h2>
             <div className="tp-card">
               {loading ? (
-                <p>Loading contact person…</p>
+                <p>Loading TC IDs…</p>
               ) : (
                 <>
                   {!isEditMode && (
                     <div
                       style={{ display: "flex", alignItems: "center", gap: 12 }}
                     >
-                      <h3 style={{ margin: 0 }}>Master Users</h3>
+                      <h3 style={{ margin: 0 }}>TC User IDs</h3>
                       <button
                         type="button"
                         className="tp-btn"
@@ -463,7 +463,7 @@ export default function TpCreateCP() {
 
                   <hr style={{ margin: "24px 0" }} />
 
-                  <h3>Contact Person Details</h3>
+                  <h3>TC Details</h3>
 
                   <input
                     className="input"
@@ -540,8 +540,8 @@ export default function TpCreateCP() {
                     onClick={handleCPSubmit}
                   >
                     {isEditMode
-                      ? "Update Contact Person"
-                      : "Create Contact Person"}
+                      ? "Update TC ID"
+                      : "Create TC ID"}
                   </button>
                   {status && (
                     <div style={{ marginTop: 10, fontSize: 13 }}>{status}</div>

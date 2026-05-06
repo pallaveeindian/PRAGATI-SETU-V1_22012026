@@ -14,7 +14,7 @@ export default function CpAssignedCentre() {
       <div className="main-area">
         <TopNav />
         <main style={{ padding: 18 }}>
-          <h2>Contact Person – Centre Details</h2>
+          <h2>TC ID – Centre Details</h2>
           <p>
             This is a placeholder page for assigned centre details. Implement
             centre view here.

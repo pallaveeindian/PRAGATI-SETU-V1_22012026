@@ -97,7 +97,7 @@ function AssignModal({
             color: "#2b4e72", // UPDATED UI
           }}
         >
-          {initialData ? "Edit Assignment" : "Assign Centre to Contact Person"}
+          {initialData ? "Edit Assignment" : "Assign Centre to TC ID"}
         </h3>
 
         {/* CONTACT PERSON */}
@@ -107,12 +107,12 @@ function AssignModal({
             color: "#2b4e72", // UPDATED UI
           }}
         >
-          Contact Person
+          TC
         </label>
 
         {loadingCP ? (
           <p style={{ fontSize: 13, color: "#5a8cc2" }}>
-            Loading contact persons…
+            Loading TC IDs…
           </p>
         ) : (
           <select
@@ -126,7 +126,7 @@ function AssignModal({
               marginTop: 6, // UPDATED UI
             }}
           >
-            <option value="">Select Contact Person</option>
+            <option value="">Select TC ID</option>
 
             {contactPersons.map((cp) => (
               <option key={cp.id} value={cp.id}>
@@ -354,7 +354,7 @@ export default function TpCpAssignment() {
                     setModalOpen(true);
                   }}
                 >
-                  + Assign Centre to Contact Person
+                  + Assign Centre to TC ID
                 </button>
               </div>
 
@@ -380,7 +380,7 @@ export default function TpCpAssignment() {
                       <tr>
                         <th>S.No</th>
                         <th>Centre</th>
-                        <th>Contact Person</th>
+                        <th>TC</th>
                         <th>Action</th> {/* UPDATED UI */}
                       </tr>
                     </thead>

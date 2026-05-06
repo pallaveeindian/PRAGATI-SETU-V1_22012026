@@ -843,7 +843,7 @@ export default function DmmuBatchClosureReview() {
                   </div>
                 ) : (
                   <div className="empty-msg">
-                    No media uploaded by Contact Person.
+                    No media uploaded by TC.
                   </div>
                 )}
               </div>

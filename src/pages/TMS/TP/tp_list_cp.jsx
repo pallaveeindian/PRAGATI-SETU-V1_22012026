@@ -74,7 +74,7 @@ function CPViewModal({ open, cp, onClose }) {
     <div className="tp-modal-backdrop">
       <div className="tp-modal" style={{ maxWidth: 900 }}>
         <div style={{ display: "flex", justifyContent: "space-between" }}>
-          <h3>Contact Person Details</h3>
+          <h3>TC Details</h3>
           <button className="tp-btn-outline" onClick={onClose}>
             <FaArrowLeft /> Back
           </button>
@@ -206,7 +206,7 @@ export default function TpListCP() {
       setCps((prev) => prev.filter((x) => x.id !== cp.id));
     } catch (e) {
       console.error(e);
-      alert("Failed to delete contact person");
+      alert("Failed to delete TC ID");
     } finally {
       setDeletingId(null);
     }
@@ -235,7 +235,7 @@ export default function TpListCP() {
                   }}
                 >
                   <h2 className="tp-page-title">
-                    <FaUser /> Contact Persons
+                    <FaUser /> TC IDs
                   </h2>
 
                   <button
@@ -243,8 +243,7 @@ export default function TpListCP() {
                     style={{ marginLeft: "auto" }}
                     onClick={() => navigate("/tms/tp/cp/create")}
                   >
-                    <FaUserPlus style={{ marginRight: 6 }} /> Create Contact
-                    Person
+                    <FaUserPlus style={{ marginRight: 6 }} /> Register New TC ID
                   </button>
                 </div>
 
@@ -265,7 +264,7 @@ export default function TpListCP() {
                       </tr>
                     ) : cps.length === 0 ? (
                       <tr>
-                        <td colSpan={5}>No contact persons found</td>
+                        <td colSpan={5}>No TC IDs found</td>
                       </tr>
                     ) : (
                       cps.map((cp, i) => (

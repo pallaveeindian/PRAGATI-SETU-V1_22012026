@@ -132,7 +132,7 @@ export default function TpDashboard() {
           <div className="tp-page tp-dashboard">
             <h2 className="tp-title">Training Partner Dashboard</h2>
             <div className="tp-subtitle">
-              Overview of training centres, contact persons, requests and batches.
+              Overview of training centres, TCs, requests and batches.
             </div>
             {loading ? (
               <div className="muted">Loading dashboard…</div>
@@ -148,7 +148,7 @@ export default function TpDashboard() {
                   />
 
                   <TPStatCard
-                    title="Contact Persons"
+                    title="TC IDs"
                     value={counts.contactPersons}
                     icon={<FaUsers />}
                   />

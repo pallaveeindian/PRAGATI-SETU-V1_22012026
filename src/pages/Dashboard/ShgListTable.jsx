@@ -1,6 +1,6 @@
 // src/pages/Dashboard/ShgListTable.jsx
 import React, { useEffect, useState } from "react";
-import { EPSAKHI_API } from "../../api/axios";
+import { EPSAKHI_API, LOOKUP_API } from "../../api/axios";
 import { faEye } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 
@@ -29,15 +29,48 @@ export default function ShgListTable({
   const [search, setSearch] = useState("");
   const [ordering, setOrdering] = useState("");
 
+  const [panchayats, setPanchayats] = useState([]);
+  const [villages, setVillages] = useState([]);
+  const [selectedGp, setSelectedGp] = useState("");
+  const [selectedVillage, setSelectedVillage] = useState("");
+  const [loadingGps, setLoadingGps] = useState(false);
+  const [loadingVillages, setLoadingVillages] = useState(false);
+
+  useEffect(() => {
+    if (!blockId) return;
+    setLoadingGps(true);
+    LOOKUP_API.panchayatsByBlock(blockId, {
+      params: { page_size: 5000 },
+    })
+      .then((r) => setPanchayats(r.data?.results || r.data || []))
+      .catch((e) => console.error("Failed to load GPs", e))
+      .finally(() => setLoadingGps(false));
+  }, [blockId]);
+
+  useEffect(() => {
+    setSelectedVillage("");
+    setVillages([]);
+    if (!selectedGp) return;
+    setLoadingVillages(true);
+    LOOKUP_API.villagesByPanchayat(selectedGp, {
+      params: { page_size: 5000 },
+    })
+      .then((r) => setVillages(r.data?.results || r.data || []))
+      .catch((e) => console.error("Failed to load villages", e))
+      .finally(() => setLoadingVillages(false));
+  }, [selectedGp]);
+
   async function load(page = 1, { force = false } = {}) {
     if (!blockId) return;
 
     const pageSize = meta.page_size || 20;
+    const effectiveSearch = selectedVillage || selectedGp || search || "";
+
     const cacheKey = JSON.stringify({
       blockId,
       page,
       page_size: pageSize,
-      search: search || "",
+      search: effectiveSearch,
       ordering: ordering || "",
     });
 
@@ -57,7 +90,7 @@ export default function ShgListTable({
         block_id: blockId,
         page,
         page_size: pageSize,
-        search: search || undefined,
+        search: effectiveSearch || undefined,
         ordering: ordering || undefined,
       };
 
@@ -113,7 +146,7 @@ export default function ShgListTable({
       load(1, { force: false });
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [blockId, search, ordering]);
+  }, [blockId, search, ordering, selectedGp, selectedVillage]);
 
   if (!blockId) {
     return (
@@ -188,8 +221,44 @@ export default function ShgListTable({
           display: "flex",
           gap: 10,
           marginBottom: 14,
+          flexWrap: "wrap",
         }}
       >
+        <select
+          className="custom-select"
+          value={selectedGp}
+          onChange={(e) => setSelectedGp(e.target.value)}
+          disabled={loadingGps}
+        >
+          <option value="">
+            {loadingGps ? "Loading GPs..." : "Filter by Gram Panchayats"}
+          </option>
+          {panchayats.map((gp) => (
+            <option
+              key={gp.id || gp.panchayat_id}
+              value={gp.id || gp.panchayat_id}
+            >
+              {gp.panchayat_name_en || gp.name || `GP ${gp.id}`}
+            </option>
+          ))}
+        </select>
+
+        <select
+          className="custom-select"
+          value={selectedVillage}
+          onChange={(e) => setSelectedVillage(e.target.value)}
+          disabled={!selectedGp || loadingVillages}
+        >
+          <option value="">
+            {loadingVillages ? "Loading Villages..." : "Filter by Villages"}
+          </option>
+          {villages.map((v) => (
+            <option key={v.id || v.village_id} value={v.id || v.village_id}>
+              {v.village_name_english || v.name || `Village ${v.id}`}
+            </option>
+          ))}
+        </select>
+
         <input
           type="text"
           className="search-input"
