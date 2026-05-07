@@ -26,6 +26,7 @@ import BmmuTmsDashboard from "./pages/TMS/BMMU/bmmu_tms_dashboard";
 import DmmuTmsDashboard from "./pages/TMS/DMMU/dmmu_tms_dashboard";
 import SmmuTmsDashboard from "./pages/TMS/SMMU/smmu_tms_dashboard";
 import SmmuCreatePartnerTargets from "./pages/TMS/SMMU/smmu_create_tp_targets";
+import SmmuBulkUploadTargets from "./pages/TMS/SMMU/smmu_bulk_upload_targets";
 import TpDashboard from "./pages/TMS/TP/tp_dashboard";
 import MtDashboard from "./pages/TMS/MT/mt_dashboard";
 import CpDashboard from "./pages/TMS/TP_CP/cp_dashboard";
@@ -135,6 +136,10 @@ export default function App() {
             <Route
               path="/tms/smmu/partner-targets"
               element={<SmmuCreatePartnerTargets />}
+            />
+            <Route
+              path="/tms/smmu/bulk-assign-targets"
+              element={<SmmuBulkUploadTargets />}
             />
             <Route
               path="/tms/smmu/tp-TvA"

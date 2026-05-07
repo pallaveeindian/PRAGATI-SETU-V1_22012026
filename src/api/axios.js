@@ -635,6 +635,13 @@ export const TMS_API = {
     "/tms/batch-participant-certificates/",
   ),
 
+  // SMMU TP Targets bulk upload
+  bulkUploadTargets: {
+    create: (data, config = {}) =>
+      // Change 'axios.post' to 'api.post' and revert the path to start with '/tms/'
+      api.post("/tms/tp-targets/bulk-upload/", data, config),
+  },
+
   // ------------------------
   // Dashboards / reports
   // ------------------------

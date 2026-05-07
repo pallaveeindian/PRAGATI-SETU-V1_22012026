@@ -7,7 +7,7 @@ import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getAccessToken } from "../../../utils/storage"; // used for JWT decode display
-
+import { useNavigate } from "react-router-dom";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
 
@@ -36,7 +36,8 @@ export default function SmmuCreatePartnerTargets() {
   const [tokenUserId, setTokenUserId] = useState(null);
   const accessToken = getAccessToken();
   const [navCollapsed, setNavCollapsed] = useState(false);
-
+  const navigate = useNavigate();
+  
   // lists and state
   const [themes, setThemes] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -749,6 +750,14 @@ export default function SmmuCreatePartnerTargets() {
                   }}
                   className="tms-header-actions"
                 >
+                  {/* NEW BULK ASSIGNMENT BUTTON */}
+                  <button
+                    className="btn tms-btn-primary"
+                    onClick={() => navigate("/tms/smmu/bulk-assign-targets")}
+                    style={{ padding: "8px 10px", borderRadius: 6 }}
+                  >
+                    Bulk Assignment
+                  </button>
                   <button
                     className="btn tms-refresh-btn"
                     onClick={handleRefresh}
