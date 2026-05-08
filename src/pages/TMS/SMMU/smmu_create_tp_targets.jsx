@@ -37,7 +37,7 @@ export default function SmmuCreatePartnerTargets() {
   const accessToken = getAccessToken();
   const [navCollapsed, setNavCollapsed] = useState(false);
   const navigate = useNavigate();
-  
+
   // lists and state
   const [themes, setThemes] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -72,6 +72,7 @@ export default function SmmuCreatePartnerTargets() {
   });
 
   const [assignedTargets, setAssignedTargets] = useState([]);
+  const [assignedTargetsFull, setAssignedTargetsFull] = useState([]);
   const [assignedPage, setAssignedPage] = useState(1);
   const [assignedPageSize, setAssignedPageSize] = useState(10);
   const [assignedTotal, setAssignedTotal] = useState(0);
@@ -95,20 +96,43 @@ export default function SmmuCreatePartnerTargets() {
   }, [partners]);
 
   // assigned plan -> target info map (for highlighting)
+  // const assignedPlanMap = useMemo(() => {
+  //   // map planId -> { partnerId, partnerName, targetId }
+  //   const m = {};
+  //   assignedTargets.forEach((t) => {
+  //     const pid = t.training_plan || t.training_plan_id || null;
+  //     if (!pid) return;
+  //     m[pid] = {
+  //       partnerId: t.partner,
+  //       partnerName: partnersById[t.partner]?.name || t.partner_name || null,
+  //       targetId: t.id,
+  //     };
+  //   });
+  //   return m;
+  // }, [assignedTargets, partnersById]);
+
   const assignedPlanMap = useMemo(() => {
-    // map planId -> { partnerId, partnerName, targetId }
     const m = {};
-    assignedTargets.forEach((t) => {
+
+    assignedTargetsFull.forEach((t) => {
       const pid = t.training_plan || t.training_plan_id || null;
+
       if (!pid) return;
+
       m[pid] = {
         partnerId: t.partner,
-        partnerName: partnersById[t.partner]?.name || t.partner_name || null,
+        partnerName:
+          partnersById[t.partner]?.name ||
+          t.partner_name ||
+          null,
         targetId: t.id,
       };
     });
+
     return m;
-  }, [assignedTargets, partnersById]);
+  }, [assignedTargetsFull, partnersById]);
+
+
 
   // decode token on mount (to show token's user)
   useEffect(() => {
@@ -151,7 +175,7 @@ export default function SmmuCreatePartnerTargets() {
         if (payload) {
           try {
             window.localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-          } catch (e) {}
+          } catch (e) { }
           if (payload.user_id) {
             setEffectiveUserId(payload.user_id);
             return payload.user_id;
@@ -339,75 +363,195 @@ export default function SmmuCreatePartnerTargets() {
   /**
    * Fetch a paginated list for the right-hand assigned list (paged)
    */
+  // async function fetchAssignedTargets(page = 1, pageSize = 10) {
+  //   setLoading((s) => ({ ...s, targets: true }));
+  //   try {
+  //     const offset = (page - 1) * pageSize;
+  //     const res = await TMS_API.trainingPartnerTargets.list({
+  //       limit: pageSize,
+  //       created_by: effectiveUserId,
+  //       offset,
+  //     });
+  //     const data = res?.data ?? res;
+  //     const results = data?.results || [];
+  //     const hydrated = results.map((t) => {
+  //       const partnerObj = partnersById[t.partner] || t.partner_obj || null;
+  //       const planObj =
+  //         plansById[t.training_plan] || t.training_plan_obj || null;
+  //       return {
+  //         ...t,
+  //         partner_name: partnerObj?.name || t.partner_name || "",
+  //         training_plan_name:
+  //           planObj?.training_name || t.training_plan_name || null,
+  //       };
+  //     });
+  //     setAssignedTargets(hydrated); // this is paginated list for UI
+  //     setAssignedTotal(data?.count || 0);
+  //   } catch (err) {
+  //     console.error("fetchAssignedTargets", err);
+  //     setAssignedTargets([]);
+  //     setAssignedTotal(0);
+  //   } finally {
+  //     setLoading((s) => ({ ...s, targets: false }));
+  //   }
+  // }
+
   async function fetchAssignedTargets(page = 1, pageSize = 10) {
     setLoading((s) => ({ ...s, targets: true }));
+
     try {
+      // ✅ resolve uid safely
+      const uid =
+        effectiveUserId ??
+        (await resolveUserId());
+
       const offset = (page - 1) * pageSize;
-      const res = await TMS_API.trainingPartnerTargets.list({
-        limit: pageSize,
-        created_by: effectiveUserId,
-        offset,
-      });
+
+      const res =
+        await TMS_API.trainingPartnerTargets.list({
+          limit: pageSize,
+          created_by: uid,
+          offset,
+        });
+
       const data = res?.data ?? res;
+
       const results = data?.results || [];
+
       const hydrated = results.map((t) => {
-        const partnerObj = partnersById[t.partner] || t.partner_obj || null;
+        const partnerObj =
+          partnersById[t.partner] ||
+          t.partner_obj ||
+          null;
+
         const planObj =
-          plansById[t.training_plan] || t.training_plan_obj || null;
+          plansById[t.training_plan] ||
+          t.training_plan_obj ||
+          null;
+
         return {
           ...t,
-          partner_name: partnerObj?.name || t.partner_name || "",
+
+          partner_name:
+            partnerObj?.name ||
+            t.partner_name ||
+            "",
+
           training_plan_name:
-            planObj?.training_name || t.training_plan_name || null,
+            planObj?.training_name ||
+            t.training_plan_name ||
+            null,
         };
       });
-      setAssignedTargets(hydrated); // this is paginated list for UI
+
+      // ✅ ONLY CURRENT USER TARGETS
+      setAssignedTargets(hydrated);
+
       setAssignedTotal(data?.count || 0);
+
     } catch (err) {
       console.error("fetchAssignedTargets", err);
+
       setAssignedTargets([]);
       setAssignedTotal(0);
+
     } finally {
-      setLoading((s) => ({ ...s, targets: false }));
+      setLoading((s) => ({
+        ...s,
+        targets: false,
+      }));
     }
   }
+
 
   /**
    * Fetch all assigned targets (large limit) to build highlight map.
    * This is separate because paginated assignedTargets is used by the right panel.
    */
+  // async function fetchAssignedTargetsForHighlight() {
+  //   try {
+  //     const res = await TMS_API.trainingPartnerTargets.list({
+  //       limit: 10000,
+  //       offset: 0,
+  //     });
+  //     const data = res?.data ?? res;
+  //     const results = data?.results || [];
+  //     // hydrate partner name where available
+  //     const hydrated = results.map((t) => {
+  //       const partnerObj = partnersById[t.partner] || t.partner_obj || null;
+  //       const planObj =
+  //         plansById[t.training_plan] || t.training_plan_obj || null;
+  //       return {
+  //         ...t,
+  //         partner_name: partnerObj?.name || t.partner_name || "",
+  //         training_plan_name:
+  //           planObj?.training_name || t.training_plan_name || null,
+  //       };
+  //     });
+  //     setAssignedTargets((prev) => {
+  //       // keep paginated assignedTargets separate — we'll merge paginated results by re-calling fetchAssignedTargets
+  //       // but for highlighting we set a separate internal state: we'll temporarily use assignedTargets state since UI uses it for both.
+  //       // NOTE: we keep full list in a hidden ref by setting assignedTargetsFull; but to keep change minimal we will set a dedicated state below.
+  //       return hydrated; // this temporarily sets full list for assignedPlanMap; caller will re-fetch paginated list separately
+  //     });
+  //   } catch (err) {
+  //     console.warn("fetchAssignedTargetsForHighlight failed", err);
+  //   }
+  // }
+
+  // handle field changes
+
   async function fetchAssignedTargetsForHighlight() {
     try {
       const res = await TMS_API.trainingPartnerTargets.list({
         limit: 10000,
         offset: 0,
       });
+
       const data = res?.data ?? res;
+
       const results = data?.results || [];
-      // hydrate partner name where available
+
       const hydrated = results.map((t) => {
-        const partnerObj = partnersById[t.partner] || t.partner_obj || null;
+        const partnerObj =
+          partnersById[t.partner] ||
+          t.partner_obj ||
+          null;
+
         const planObj =
-          plansById[t.training_plan] || t.training_plan_obj || null;
+          plansById[t.training_plan] ||
+          t.training_plan_obj ||
+          null;
+
         return {
           ...t,
-          partner_name: partnerObj?.name || t.partner_name || "",
+          partner_name:
+            partnerObj?.name ||
+            t.partner_name ||
+            "",
+
           training_plan_name:
-            planObj?.training_name || t.training_plan_name || null,
+            planObj?.training_name ||
+            t.training_plan_name ||
+            null,
         };
       });
-      setAssignedTargets((prev) => {
-        // keep paginated assignedTargets separate — we'll merge paginated results by re-calling fetchAssignedTargets
-        // but for highlighting we set a separate internal state: we'll temporarily use assignedTargets state since UI uses it for both.
-        // NOTE: we keep full list in a hidden ref by setting assignedTargetsFull; but to keep change minimal we will set a dedicated state below.
-        return hydrated; // this temporarily sets full list for assignedPlanMap; caller will re-fetch paginated list separately
-      });
+
+      // ✅ IMPORTANT
+      // ONLY STORE IN assignedTargetsFull
+      // DO NOT TOUCH assignedTargets
+
+      setAssignedTargetsFull(hydrated);
+
     } catch (err) {
-      console.warn("fetchAssignedTargetsForHighlight failed", err);
+      console.warn(
+        "fetchAssignedTargetsForHighlight failed",
+        err
+      );
     }
   }
 
-  // handle field changes
+
   function handleChange(e) {
     const { name, value } = e.target;
     setForm((f) => ({ ...f, [name]: value }));
@@ -695,15 +839,37 @@ export default function SmmuCreatePartnerTargets() {
     if (assignedPage < totalPages) setAssignedPage((p) => p + 1);
   }
 
+  // const filteredAssignedTargets = useMemo(() => {
+  //   return assignedTargets.filter((t) => {
+  //     const fyMatch = !filterFY || t.financial_year === filterFY;
+  //     const moduleMatch =
+  //       !filterModule || String(t.training_plan) === String(filterModule);
+
+  //     return fyMatch && moduleMatch;
+  //   });
+  // }, [assignedTargets, filterFY, filterModule]);
+
+
   const filteredAssignedTargets = useMemo(() => {
     return assignedTargets.filter((t) => {
-      const fyMatch = !filterFY || t.financial_year === filterFY;
+      const fyMatch =
+        !filterFY ||
+        t.financial_year === filterFY;
+
       const moduleMatch =
-        !filterModule || String(t.training_plan) === String(filterModule);
+        !filterModule ||
+        String(t.training_plan) ===
+        String(filterModule);
 
       return fyMatch && moduleMatch;
     });
-  }, [assignedTargets, filterFY, filterModule]);
+  }, [
+    assignedTargets,
+    filterFY,
+    filterModule,
+  ]);
+
+
 
   const showDistrictRow =
     form.target_type === "DISTRICT" || form.target_type === "MODULE";
@@ -816,7 +982,7 @@ export default function SmmuCreatePartnerTargets() {
                               editingTarget &&
                               (editingTarget.training_plan === p.id ||
                                 String(editingTarget.training_plan) ===
-                                  String(p.id));
+                                String(p.id));
 
                             const rowClickable =
                               !isAssigned || isAssignedToThisEditingTarget;
@@ -946,7 +1112,7 @@ export default function SmmuCreatePartnerTargets() {
                               editingTarget &&
                               (editingTarget.training_plan === m.id ||
                                 String(editingTarget.training_plan) ===
-                                  String(m.id));
+                                String(m.id));
                             return (
                               <option
                                 key={m.id}
