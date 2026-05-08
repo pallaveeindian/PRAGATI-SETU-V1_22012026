@@ -32,27 +32,29 @@ export default function SmmuTargetAchievement() {
 
   // Pagination States
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [totalItems, setTotalItems] = useState(0); // SURGICAL ADDITION: Track total API records
+  const rowsPerPage = 25; // SURGICAL ADDITION: Match backend pagination
 
   /* ---------------- API Fetch ---------------- */
-  async function fetchTargetsWithAchievements(e) {
-    if (e) e.preventDefault();
+  async function fetchTargetsWithAchievements(page = 1) {
     setLoading(true);
 
     try {
-      // Using the deeply nested API view you just updated
-      // limit=5000 ensures we get a broad dataset for local filtering/exporting
+      // SURGICAL ADDITION: Send page parameter instead of limit: 5000
       const resp = await TMS_API.trainingPartnerTargets.list({
         ach: 1,
         year: financialYear,
         district: selectedDistrict || undefined,
         training_plan: selectedPlan || undefined,
-        limit: 5000,
+        page: page,
       });
 
+      // SURGICAL ADDITION: DRF Pagination returns results inside .results and total in .count
       const items = resp?.data?.results || resp?.data || [];
+      const count = resp?.data?.count || items.length;
+
       setTargetsData(items);
-      setCurrentPage(1);
+      setTotalItems(count);
     } catch (error) {
       console.error("Failed to fetch targets vs achievements:", error);
       setTargetsData([]);
@@ -60,6 +62,12 @@ export default function SmmuTargetAchievement() {
       setLoading(false);
     }
   }
+
+  // SURGICAL ADDITION: Re-fetch whenever currentPage changes
+  useEffect(() => {
+    fetchTargetsWithAchievements(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   // Initial load
   useEffect(() => {
@@ -150,58 +158,41 @@ export default function SmmuTargetAchievement() {
     });
   }, [processedData, searchPartner]);
 
-  /* ---------------- Pagination ---------------- */
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
+  /* ---------------- Pagination Math ---------------- */
+  // SURGICAL ADDITION: Calculate total pages based on backend count, not local array length
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    return filteredData.slice(start, end);
-  }, [filteredData, currentPage]);
+  // SURGICAL ADDITION: The data is already paginated by the server!
+  const paginatedData = filteredData;
 
-  /* ---------------- Export CSV ---------------- */
-  function exportToCSV() {
-    if (filteredData.length === 0) return alert("No data to export.");
+  /* ---------------- Export Excel (Server Side) ---------------- */
+  async function exportToExcel() {
+    try {
+      // Note: Adjust the endpoint below to perfectly match your Axios router path for this ViewSet
+      const endpoint = "/tms/training-partner-targets/";
 
-    const headers = [
-      "ID",
-      "Financial Year",
-      "Training Partner",
-      "Target Type",
-      "Module/Plan",
-      "District",
-      "Theme",
-      "Target Count",
-      "Achieved Count",
-      "Progress (%)",
-    ];
+      const response = await api.get(endpoint, {
+        params: {
+          ach: 1,
+          year: financialYear,
+          district: selectedDistrict || undefined,
+          training_plan: selectedPlan || undefined,
+          export: "excel", // Triggers your new backend list() override
+        },
+        responseType: "blob", // CRITICAL: Tells Axios to expect a binary file, not JSON
+      });
 
-    const rows = filteredData.map((r) => [
-      r.id,
-      r.financial_year || "-",
-      `"${r.partnerName}"`,
-      r.target_type || "-",
-      `"${r.planName}"`,
-      `"${r.districtName}"`,
-      `"${r.theme || "-"}"`,
-      r.targetCount,
-      r.achievedCount,
-      `${r.progressPct}%`,
-    ]);
-
-    const csvContent = [
-      headers.join(","),
-      ...rows.map((e) => e.join(",")),
-    ].join("\n");
-    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute("download", `Target_vs_Achievement_${financialYear}.csv`);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+      const url = window.URL.createObjectURL(new Blob([response.data]));
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `Targets_Export_${financialYear}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to download Excel file.");
+    }
   }
 
   /* ---------------- UI Render ---------------- */
@@ -247,7 +238,15 @@ export default function SmmuTargetAchievement() {
                   Filters & Export
                 </h4>
                 <form
-                  onSubmit={fetchTargetsWithAchievements}
+                  // SURGICAL ADDITION: Reset to page 1 on fresh filter search
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (currentPage === 1) {
+                      fetchTargetsWithAchievements(1);
+                    } else {
+                      setCurrentPage(1); // Will trigger useEffect fetch
+                    }
+                  }}
                   style={{
                     display: "flex",
                     gap: "12px",
@@ -393,10 +392,10 @@ export default function SmmuTargetAchievement() {
                     <button
                       type="button"
                       className="btnView"
-                      onClick={exportToCSV}
+                      onClick={exportToExcel}
                       style={{ background: "#10b981" }} // Green for export
                     >
-                      Export CSV
+                      Export Excel
                     </button>
                   </div>
                 </form>
@@ -473,18 +472,26 @@ export default function SmmuTargetAchievement() {
                               {r.partnerName}
                             </td>
                             <td>
-                              <div style={{ fontSize: "14px", color: "#0f172a" }}>
+                              <div
+                                style={{ fontSize: "14px", color: "#0f172a" }}
+                              >
                                 {r.planName}
                               </div>
-                              <div style={{ fontSize: "12px", color: "#64748b" }}>
+                              <div
+                                style={{ fontSize: "12px", color: "#64748b" }}
+                              >
                                 Theme: {r.theme || "—"}
                               </div>
                             </td>
                             <td>{r.districtName}</td>
-                            <td style={{ fontWeight: "bold", color: "#3d6ba6" }}>
+                            <td
+                              style={{ fontWeight: "bold", color: "#3d6ba6" }}
+                            >
                               {r.targetCount}
                             </td>
-                            <td style={{ fontWeight: "bold", color: "#10b981" }}>
+                            <td
+                              style={{ fontWeight: "bold", color: "#10b981" }}
+                            >
                               {r.achievedCount}
                             </td>
                             <td>
@@ -633,7 +640,10 @@ export default function SmmuTargetAchievement() {
                             return (
                               <span
                                 key={pageNum}
-                                style={{ alignSelf: "center", color: "#64748b" }}
+                                style={{
+                                  alignSelf: "center",
+                                  color: "#64748b",
+                                }}
                               >
                                 ...
                               </span>

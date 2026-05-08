@@ -5,7 +5,8 @@ import LeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API, LOOKUP_API } from "../../../api/axios";
+// SURGICAL ADDITION: Import default 'api' for the blob export
+import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 
 /* ================= GEO ================= */
 function getGeoscope() {
@@ -34,8 +35,10 @@ export default function DmmuTargetAchievement() {
     district_id: "",
   });
 
+  // SURGICAL ADDITION: Match pagination state with backend
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [totalItems, setTotalItems] = useState(0);
+  const rowsPerPage = 25;
 
   /* ================= AUTO DISTRICT ================= */
   useEffect(() => {
@@ -57,8 +60,8 @@ export default function DmmuTargetAchievement() {
   }, [user]);
 
   /* ================= FETCH ================= */
-  async function fetchTargetsWithAchievements(e) {
-    if (e) e.preventDefault();
+  // SURGICAL ADDITION: Accept page parameter
+  async function fetchTargetsWithAchievements(page = 1) {
     if (!filters.district_id) return;
 
     setLoading(true);
@@ -69,12 +72,15 @@ export default function DmmuTargetAchievement() {
         year: financialYear,
         district: filters.district_id,
         training_plan: selectedPlan || undefined,
-        limit: 5000,
+        page: page, // SURGICAL ADDITION: Send page param instead of limit
       });
 
+      // SURGICAL ADDITION: Capture backend count for pagination math
       const items = resp?.data?.results || resp?.data || [];
+      const count = resp?.data?.count || items.length;
+
       setTargetsData(items);
-      setCurrentPage(1);
+      setTotalItems(count);
     } catch (error) {
       console.error("Failed:", error);
       setTargetsData([]);
@@ -82,6 +88,14 @@ export default function DmmuTargetAchievement() {
       setLoading(false);
     }
   }
+
+  // SURGICAL ADDITION: Re-fetch whenever currentPage changes
+  useEffect(() => {
+    if (filters.district_id) {
+      fetchTargetsWithAchievements(currentPage);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
   /* ================= INIT ================= */
   useEffect(() => {
@@ -98,8 +112,9 @@ export default function DmmuTargetAchievement() {
 
   useEffect(() => {
     if (filters.district_id) {
-      fetchTargetsWithAchievements();
+      fetchTargetsWithAchievements(1); // Fetch page 1 when district mounts
     }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [filters.district_id]);
 
   /* ================= PROCESS ================= */
@@ -143,44 +158,46 @@ export default function DmmuTargetAchievement() {
   }, [processedData, searchPartner, filters.district_id]);
 
   /* ================= PAGINATION ================= */
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
+  // SURGICAL ADDITION: Calculate total pages from backend API count
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    return filteredData.slice(start, start + rowsPerPage);
-  }, [filteredData, currentPage]);
+  // SURGICAL ADDITION: Data is already paginated by backend
+  const paginatedData = filteredData;
 
   /* ================= EXPORT ================= */
-  function exportToCSV() {
-    if (!filteredData.length) return alert("No data");
+  // SURGICAL ADDITION: Server-Side Excel Export
+  async function exportToExcel() {
+    try {
+      const endpoint = "/tms/training-partner-targets/";
 
-    const headers = [
-      "Partner",
-      "Plan",
-      "District",
-      "Target",
-      "Achieved",
-      "Progress",
-    ];
+      const response = await api.get(endpoint, {
+        params: {
+          ach: 1,
+          year: financialYear,
+          district: filters.district_id,
+          training_plan: selectedPlan || undefined,
+          export: "excel", // Triggers backend list() override
+        },
+        responseType: "blob", // CRITICAL for binary files
+      });
 
-    const rows = filteredData.map((r) => [
-      r.partnerName,
-      r.planName,
-      r.districtName,
-      r.targetCount,
-      r.achievedCount,
-      r.progressPct + "%",
-    ]);
+      // Apply the exact MIME type fix here as well
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+      );
 
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "DMM_Target_Achievement.csv";
-    a.click();
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `DMM_Targets_Export_${financialYear}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to download Excel file.");
+    }
   }
 
   /* ================= UI ================= */
@@ -201,7 +218,15 @@ export default function DmmuTargetAchievement() {
               <div className="card-ui">
                 <form
                   className="filter-form"
-                  onSubmit={fetchTargetsWithAchievements}
+                  // SURGICAL ADDITION: Form submit resets page to 1
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (currentPage === 1) {
+                      fetchTargetsWithAchievements(1);
+                    } else {
+                      setCurrentPage(1);
+                    }
+                  }}
                 >
                   <div>
                     <label>Financial Year</label>
@@ -246,21 +271,28 @@ export default function DmmuTargetAchievement() {
                     <label>Search Partner</label>
                     <input
                       value={searchPartner}
-                      onChange={(e) => setSearchPartner(e.target.value)}
+                      onChange={(e) => {
+                        setSearchPartner(e.target.value);
+                        setCurrentPage(1);
+                      }}
                     />
                   </div>
 
                   <div className="actions">
-                    <button type="submit" className="btnPrimary">
+                    <button
+                      type="submit"
+                      className="btnPrimary"
+                      disabled={loading}
+                    >
                       {loading ? "Fetching..." : "Fetch Data"}
                     </button>
 
                     <button
                       type="button"
                       className="btnView"
-                      onClick={exportToCSV}
+                      onClick={exportToExcel} // SURGICAL ADDITION
                     >
-                      Export CSV
+                      Export Excel
                     </button>
                   </div>
                 </form>
@@ -280,35 +312,58 @@ export default function DmmuTargetAchievement() {
                 </thead>
 
                 <tbody>
-                  {paginatedData.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.partnerName}</td>
-                      <td>{r.planName}</td>
-                      <td>{r.districtName}</td>
-                      <td>{r.targetCount}</td>
-                      <td>{r.achievedCount}</td>
-                      <td>{r.progressPct}%</td>
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        style={{ textAlign: "center", padding: "20px" }}
+                      >
+                        Loading data...
+                      </td>
                     </tr>
-                  ))}
+                  ) : paginatedData.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        style={{ textAlign: "center", padding: "20px" }}
+                      >
+                        No targets found.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedData.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.partnerName}</td>
+                        <td>{r.planName}</td>
+                        <td>{r.districtName}</td>
+                        <td>{r.targetCount}</td>
+                        <td>{r.achievedCount}</td>
+                        <td>{r.progressPct}%</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
 
               {/* PAGINATION */}
-              <div style={{ marginTop: 10 }}>
-                Page {currentPage} / {totalPages}
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                >
-                  Prev
-                </button>
-                <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  Next
-                </button>
-              </div>
+              {!loading && filteredData.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  Page {currentPage} / {totalPages}
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    style={{ marginLeft: 10, marginRight: 5 }}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           </main>
           <Footer />
@@ -393,10 +448,12 @@ export default function DmmuTargetAchievement() {
         background:#3d6ba6;
         color:#fff;
         padding:10px;
+        text-align:left;
       }
 
       .training-table td{
         padding:10px;
+        border-bottom:1px solid #e4ecf5;
       }
       `}</style>
     </div>

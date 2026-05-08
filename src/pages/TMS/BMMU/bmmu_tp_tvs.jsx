@@ -5,16 +5,8 @@ import LeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API } from "../../../api/axios";
-
-/* ================= GEO SCOPE ================= */
-function getGeoscope() {
-  try {
-    return JSON.parse(localStorage.getItem("ps_user_geoscope"));
-  } catch {
-    return null;
-  }
-}
+// SURGICAL ADDITION: Import default 'api' for the blob export
+import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
 
 export default function BmmuTargetAchievement() {
   const { user } = useContext(AuthContext) || {};
@@ -27,19 +19,45 @@ export default function BmmuTargetAchievement() {
   const [searchPartner, setSearchPartner] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
 
+  const [geoscope, setGeoscope] = useState(null);
+  const [isGeoReady, setIsGeoReady] = useState(false);
+
   const [plans, setPlans] = useState([]);
 
+  // SURGICAL ADDITION: Match pagination state with backend
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
+  const [totalItems, setTotalItems] = useState(0);
+  const rowsPerPage = 25;
 
-  /* ================= USER GEO ================= */
-  const geoscope = getGeoscope();
-  const userDistrict = geoscope?.district_id || "";
-  const userBlock = geoscope?.block_id || "";
+  /* ================= FETCH USER GEO FROM API ================= */
+  useEffect(() => {
+    async function loadGeoscope() {
+      // Adjust .id or .user_id based on your exact AuthContext structure
+      const userId = user?.id || user?.user_id;
 
+      if (userId) {
+        try {
+          const resp = await LOOKUP_API.userGeoscopeByUserId(userId);
+          // Handle depending on if your API is paginated or returns a flat object
+          const geoData = resp?.data?.results?.[0] || resp?.data || {};
+          setGeoscope(geoData);
+        } catch (error) {
+          console.error("Failed to fetch Geoscope from API:", error);
+        }
+      }
+      setIsGeoReady(true); // Flag that we are done trying to fetch geo
+    }
+
+    loadGeoscope();
+  }, [user]);
+
+  // Derive district and block from the new state
+  const userDistrict = geoscope?.districts?.[0] || user?.district_id || "";
+  const userBlock = geoscope?.blocks?.[0] || "";
+  
   /* ================= FETCH DATA ================= */
-  async function fetchTargetsWithAchievements(e) {
-    if (e) e.preventDefault();
+  // SURGICAL ADDITION: Accept page parameter
+  async function fetchTargetsWithAchievements(page = 1) {
     setLoading(true);
 
     try {
@@ -49,15 +67,17 @@ export default function BmmuTargetAchievement() {
 
         // 🔒 FORCE FILTER FOR BMM
         district: userDistrict,
-        block: userBlock,
 
         training_plan: selectedPlan || undefined,
-        limit: 5000,
+        page: page, // SURGICAL ADDITION: Send page param instead of limit
       });
 
+      // SURGICAL ADDITION: Capture backend count for pagination math
       const items = resp?.data?.results || resp?.data || [];
+      const count = resp?.data?.count || items.length;
+
       setTargetsData(items);
-      setCurrentPage(1);
+      setTotalItems(count);
     } catch (error) {
       console.error("Failed:", error);
       setTargetsData([]);
@@ -66,11 +86,14 @@ export default function BmmuTargetAchievement() {
     }
   }
 
+  // SURGICAL ADDITION: Re-fetch whenever currentPage changes
+  useEffect(() => {
+    fetchTargetsWithAchievements(currentPage);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
+
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
-    fetchTargetsWithAchievements();
-
-    // Fetch plans
     TMS_API.trainingPlans
       .list({ limit: 500 })
       .then((res) => {
@@ -78,6 +101,15 @@ export default function BmmuTargetAchievement() {
       })
       .catch(() => setPlans([]));
   }, []);
+
+  // --- SURGICAL ADDITION: Wait for Geo before fetching targets ---
+  useEffect(() => {
+    if (isGeoReady) {
+      // Only fetch once the geoscope API call is finished
+      fetchTargetsWithAchievements(1);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isGeoReady]);
 
   /* ================= PROCESS DATA ================= */
   const processedData = useMemo(() => {
@@ -122,47 +154,50 @@ export default function BmmuTargetAchievement() {
 
       return true;
     });
-  }, [processedData, searchPartner]);
+  }, [processedData, searchPartner, userDistrict, userBlock]);
 
   /* ================= PAGINATION ================= */
-  const totalPages = Math.max(1, Math.ceil(filteredData.length / rowsPerPage));
+  // SURGICAL ADDITION: Calculate total pages from backend API count
+  const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
 
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    return filteredData.slice(start, start + rowsPerPage);
-  }, [filteredData, currentPage]);
+  // SURGICAL ADDITION: Data is already paginated by backend
+  const paginatedData = filteredData;
 
   /* ================= EXPORT ================= */
-  function exportToCSV() {
-    if (!filteredData.length) return alert("No data");
+  // SURGICAL ADDITION: Server-Side Excel Export
+  async function exportToExcel() {
+    try {
+      const endpoint = "/tms/training-partner-targets/";
 
-    const headers = [
-      "Partner",
-      "Plan",
-      "District",
-      "Target",
-      "Achieved",
-      "Progress",
-    ];
+      const response = await api.get(endpoint, {
+        params: {
+          ach: 1,
+          year: financialYear,
+          district: userDistrict,
+          block: userBlock,
+          training_plan: selectedPlan || undefined,
+          export: "excel", // Triggers backend list() override
+        },
+        responseType: "blob", // CRITICAL for binary files
+      });
 
-    const rows = filteredData.map((r) => [
-      r.partnerName,
-      r.planName,
-      r.districtName,
-      r.targetCount,
-      r.achievedCount,
-      r.progressPct + "%",
-    ]);
+      // Apply the exact MIME type fix here as well
+      const url = window.URL.createObjectURL(
+        new Blob([response.data], {
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+      );
 
-    const csv = [headers.join(","), ...rows.map((r) => r.join(","))].join("\n");
-
-    const blob = new Blob([csv], { type: "text/csv" });
-    const url = URL.createObjectURL(blob);
-
-    const a = document.createElement("a");
-    a.href = url;
-    a.download = "BMM_Target_Achievement.csv";
-    a.click();
+      const link = document.createElement("a");
+      link.href = url;
+      link.setAttribute("download", `BMM_Targets_Export_${financialYear}.xlsx`);
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    } catch (error) {
+      console.error("Export failed:", error);
+      alert("Failed to download Excel file.");
+    }
   }
 
   /* ================= UI ================= */
@@ -181,13 +216,23 @@ export default function BmmuTargetAchievement() {
               {/* FILTER */}
               <div className="card-ui">
                 <form
-                  onSubmit={fetchTargetsWithAchievements}
+                  // SURGICAL ADDITION: Form submit resets page to 1
+                  onSubmit={(e) => {
+                    e.preventDefault();
+                    if (currentPage === 1) {
+                      fetchTargetsWithAchievements(1);
+                    } else {
+                      setCurrentPage(1);
+                    }
+                  }}
                   style={{ display: "flex", gap: 12, flexWrap: "wrap" }}
                 >
                   <select
                     value={financialYear}
                     onChange={(e) => setFinancialYear(e.target.value)}
                   >
+                    <option value="2023-24">2023-24</option>
+                    <option value="2024-25">2024-25</option>
                     <option value="2025-26">2025-26</option>
                     <option value="2026-27">2026-27</option>
                   </select>
@@ -207,15 +252,18 @@ export default function BmmuTargetAchievement() {
                   <input
                     placeholder="Search Partner"
                     value={searchPartner}
-                    onChange={(e) => setSearchPartner(e.target.value)}
+                    onChange={(e) => {
+                      setSearchPartner(e.target.value);
+                      setCurrentPage(1);
+                    }}
                   />
 
-                  <button type="submit">
+                  <button type="submit" disabled={loading}>
                     {loading ? "Loading..." : "Fetch"}
                   </button>
 
-                  <button type="button" onClick={exportToCSV}>
-                    Export
+                  <button type="button" onClick={exportToExcel}>
+                    Export Excel
                   </button>
                 </form>
               </div>
@@ -234,35 +282,58 @@ export default function BmmuTargetAchievement() {
                 </thead>
 
                 <tbody>
-                  {paginatedData.map((r) => (
-                    <tr key={r.id}>
-                      <td>{r.partnerName}</td>
-                      <td>{r.planName}</td>
-                      <td>{r.districtName}</td>
-                      <td>{r.targetCount}</td>
-                      <td>{r.achievedCount}</td>
-                      <td>{r.progressPct}%</td>
+                  {loading ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        style={{ textAlign: "center", padding: "20px" }}
+                      >
+                        Loading data...
+                      </td>
                     </tr>
-                  ))}
+                  ) : paginatedData.length === 0 ? (
+                    <tr>
+                      <td
+                        colSpan={6}
+                        style={{ textAlign: "center", padding: "20px" }}
+                      >
+                        No targets found.
+                      </td>
+                    </tr>
+                  ) : (
+                    paginatedData.map((r) => (
+                      <tr key={r.id}>
+                        <td>{r.partnerName}</td>
+                        <td>{r.planName}</td>
+                        <td>{r.districtName}</td>
+                        <td>{r.targetCount}</td>
+                        <td>{r.achievedCount}</td>
+                        <td>{r.progressPct}%</td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
 
               {/* PAGINATION */}
-              <div style={{ marginTop: 10 }}>
-                Page {currentPage} / {totalPages}
-                <button
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => p - 1)}
-                >
-                  Prev
-                </button>
-                <button
-                  disabled={currentPage === totalPages}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  Next
-                </button>
-              </div>
+              {!loading && filteredData.length > 0 && (
+                <div style={{ marginTop: 10 }}>
+                  Page {currentPage} / {totalPages}
+                  <button
+                    disabled={currentPage === 1}
+                    onClick={() => setCurrentPage((p) => p - 1)}
+                    style={{ marginLeft: 10, marginRight: 5 }}
+                  >
+                    Prev
+                  </button>
+                  <button
+                    disabled={currentPage === totalPages}
+                    onClick={() => setCurrentPage((p) => p + 1)}
+                  >
+                    Next
+                  </button>
+                </div>
+              )}
             </div>
           </main>
           <Footer />

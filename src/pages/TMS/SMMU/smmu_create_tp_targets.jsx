@@ -95,22 +95,6 @@ export default function SmmuCreatePartnerTargets() {
     return m;
   }, [partners]);
 
-  // assigned plan -> target info map (for highlighting)
-  // const assignedPlanMap = useMemo(() => {
-  //   // map planId -> { partnerId, partnerName, targetId }
-  //   const m = {};
-  //   assignedTargets.forEach((t) => {
-  //     const pid = t.training_plan || t.training_plan_id || null;
-  //     if (!pid) return;
-  //     m[pid] = {
-  //       partnerId: t.partner,
-  //       partnerName: partnersById[t.partner]?.name || t.partner_name || null,
-  //       targetId: t.id,
-  //     };
-  //   });
-  //   return m;
-  // }, [assignedTargets, partnersById]);
-
   const assignedPlanMap = useMemo(() => {
     const m = {};
 
@@ -121,18 +105,13 @@ export default function SmmuCreatePartnerTargets() {
 
       m[pid] = {
         partnerId: t.partner,
-        partnerName:
-          partnersById[t.partner]?.name ||
-          t.partner_name ||
-          null,
+        partnerName: partnersById[t.partner]?.name || t.partner_name || null,
         targetId: t.id,
       };
     });
 
     return m;
   }, [assignedTargetsFull, partnersById]);
-
-
 
   // decode token on mount (to show token's user)
   useEffect(() => {
@@ -175,7 +154,7 @@ export default function SmmuCreatePartnerTargets() {
         if (payload) {
           try {
             window.localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-          } catch (e) { }
+          } catch (e) {}
           if (payload.user_id) {
             setEffectiveUserId(payload.user_id);
             return payload.user_id;
@@ -197,6 +176,8 @@ export default function SmmuCreatePartnerTargets() {
     (async () => {
       await resolveUserId();
 
+      let loadedThemes = [];
+
       // load plans cache if present
       const cacheRaw = localStorage.getItem(PLANS_CACHE_KEY);
       if (cacheRaw) {
@@ -205,25 +186,28 @@ export default function SmmuCreatePartnerTargets() {
           if (parsed && Array.isArray(parsed.plans)) {
             setPlans(parsed.plans);
             setThemes(parsed.themes || []);
+            loadedThemes = parsed.themes || [];
             console.debug("Loaded plans/themes from cache");
           }
         } catch (e) {
           console.warn("plans cache corrupted, ignoring", e);
           localStorage.removeItem(PLANS_CACHE_KEY);
         }
-      } else {
+      }
+
+      if (!loadedThemes.length) {
         // no cache: fetch themes & plans now (first-time)
-        await fetchThemesAndPlans(); // also writes cache on success
+        loadedThemes = await fetchThemesAndPlans(); // also writes cache on success
       }
 
       // fetch partners/districts and assigned targets (for highlighting)
       await Promise.all([
         fetchPartners(),
         fetchDistricts(),
-        fetchAssignedTargetsForHighlight(),
+        fetchAssignedTargetsForHighlight(loadedThemes),
       ]);
       // fetch paginated assigned targets for right panel
-      await fetchAssignedTargets(1, assignedPageSize);
+      await fetchAssignedTargets(1, assignedPageSize, loadedThemes);
     })();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -240,26 +224,14 @@ export default function SmmuCreatePartnerTargets() {
     );
   }, [plans, searchQ]);
 
-  // refresh assigned targets when page changes
+  // --- SURGICAL ADDITION: TRIGGER FETCH ON FILTERS & PAGINATION ---
   useEffect(() => {
-    fetchAssignedTargets(assignedPage, assignedPageSize);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [assignedPage, assignedPageSize]);
-
-  async function loadInitial() {
-    setLoading((s) => ({ ...s, refresh: true }));
-    try {
-      await Promise.all([
-        fetchThemesAndPlans(true),
-        fetchPartners(),
-        fetchDistricts(),
-        fetchAssignedTargetsForHighlight(),
-      ]);
-      await fetchAssignedTargets(1, assignedPageSize);
-    } finally {
-      setLoading((s) => ({ ...s, refresh: false }));
+    // Only fire if themes have been loaded
+    if (themes && themes.length > 0) {
+      fetchAssignedTargets(assignedPage, assignedPageSize, themes);
     }
-  }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [assignedPage, assignedPageSize, filterFY, filterModule]);
 
   /**
    * Fetch themes + plans and write to cache.
@@ -271,7 +243,7 @@ export default function SmmuCreatePartnerTargets() {
       // If we already have plans in state and force===false, skip (caller chooses)
       if (!force && plans && plans.length > 0) {
         setLoading((s) => ({ ...s, themes: false, plans: false }));
-        return;
+        return themes;
       }
 
       const expert = effectiveUserId || user?.id || user?.user_id || null;
@@ -323,10 +295,13 @@ export default function SmmuCreatePartnerTargets() {
       } catch (e) {
         console.warn("Failed to write plans cache", e);
       }
+
+      return themeResults;
     } catch (err) {
       console.error("fetchThemesAndPlans", err);
       setThemes([]);
       setPlans([]);
+      return [];
     } finally {
       setLoading((s) => ({ ...s, themes: false, plans: false }));
     }
@@ -360,197 +335,119 @@ export default function SmmuCreatePartnerTargets() {
     }
   }
 
-  /**
-   * Fetch a paginated list for the right-hand assigned list (paged)
-   */
-  // async function fetchAssignedTargets(page = 1, pageSize = 10) {
-  //   setLoading((s) => ({ ...s, targets: true }));
-  //   try {
-  //     const offset = (page - 1) * pageSize;
-  //     const res = await TMS_API.trainingPartnerTargets.list({
-  //       limit: pageSize,
-  //       created_by: effectiveUserId,
-  //       offset,
-  //     });
-  //     const data = res?.data ?? res;
-  //     const results = data?.results || [];
-  //     const hydrated = results.map((t) => {
-  //       const partnerObj = partnersById[t.partner] || t.partner_obj || null;
-  //       const planObj =
-  //         plansById[t.training_plan] || t.training_plan_obj || null;
-  //       return {
-  //         ...t,
-  //         partner_name: partnerObj?.name || t.partner_name || "",
-  //         training_plan_name:
-  //           planObj?.training_name || t.training_plan_name || null,
-  //       };
-  //     });
-  //     setAssignedTargets(hydrated); // this is paginated list for UI
-  //     setAssignedTotal(data?.count || 0);
-  //   } catch (err) {
-  //     console.error("fetchAssignedTargets", err);
-  //     setAssignedTargets([]);
-  //     setAssignedTotal(0);
-  //   } finally {
-  //     setLoading((s) => ({ ...s, targets: false }));
-  //   }
-  // }
-
-  async function fetchAssignedTargets(page = 1, pageSize = 10) {
+  // --- SURGICAL ADDITION: FETCH TARGETS STRICTLY BY ASSIGNED THEME INSTEAD OF CREATED_BY ---
+  async function fetchAssignedTargets(
+    page = 1,
+    pageSize = 10,
+    explicitThemes = null,
+  ) {
     setLoading((s) => ({ ...s, targets: true }));
 
     try {
-      // ✅ resolve uid safely
-      const uid =
-        effectiveUserId ??
-        (await resolveUserId());
-
+      const uid = effectiveUserId ?? (await resolveUserId());
       const offset = (page - 1) * pageSize;
 
-      const res =
-        await TMS_API.trainingPartnerTargets.list({
-          limit: pageSize,
-          created_by: uid,
-          offset,
+      const currentThemes = explicitThemes || themes;
+      let themeNameFilter = undefined;
+
+      if (currentThemes && currentThemes.length > 0) {
+        themeNameFilter = currentThemes[0].theme_name;
+      } else {
+        // Fallback fetch if themes not loaded yet
+        const thRes = await TMS_API.trainingThemes.list({
+          expert: uid,
+          limit: 200,
         });
+        const thData = thRes?.data?.results || [];
+        if (thData.length > 0) {
+          themeNameFilter = thData[0].theme_name;
+          setThemes(thData);
+        }
+      }
+
+      const res = await TMS_API.trainingPartnerTargets.list({
+        limit: pageSize,
+        offset,
+        theme: themeNameFilter, // 🔒 FETCH BY THEME INSTEAD OF CREATED_BY
+        financial_year: filterFY || undefined, // Server-side filter
+        training_plan: filterModule || undefined, // Server-side filter
+      });
 
       const data = res?.data ?? res;
-
       const results = data?.results || [];
 
       const hydrated = results.map((t) => {
-        const partnerObj =
-          partnersById[t.partner] ||
-          t.partner_obj ||
-          null;
-
+        const partnerObj = partnersById[t.partner] || t.partner_obj || null;
         const planObj =
-          plansById[t.training_plan] ||
-          t.training_plan_obj ||
-          null;
+          plansById[t.training_plan] || t.training_plan_obj || null;
 
         return {
           ...t,
-
-          partner_name:
-            partnerObj?.name ||
-            t.partner_name ||
-            "",
-
+          partner_name: partnerObj?.name || t.partner_name || "",
           training_plan_name:
-            planObj?.training_name ||
-            t.training_plan_name ||
-            null,
+            planObj?.training_name || t.training_plan_name || null,
         };
       });
 
-      // ✅ ONLY CURRENT USER TARGETS
       setAssignedTargets(hydrated);
-
       setAssignedTotal(data?.count || 0);
-
     } catch (err) {
       console.error("fetchAssignedTargets", err);
-
       setAssignedTargets([]);
       setAssignedTotal(0);
-
     } finally {
-      setLoading((s) => ({
-        ...s,
-        targets: false,
-      }));
+      setLoading((s) => ({ ...s, targets: false }));
     }
   }
 
-
-  /**
-   * Fetch all assigned targets (large limit) to build highlight map.
-   * This is separate because paginated assignedTargets is used by the right panel.
-   */
-  // async function fetchAssignedTargetsForHighlight() {
-  //   try {
-  //     const res = await TMS_API.trainingPartnerTargets.list({
-  //       limit: 10000,
-  //       offset: 0,
-  //     });
-  //     const data = res?.data ?? res;
-  //     const results = data?.results || [];
-  //     // hydrate partner name where available
-  //     const hydrated = results.map((t) => {
-  //       const partnerObj = partnersById[t.partner] || t.partner_obj || null;
-  //       const planObj =
-  //         plansById[t.training_plan] || t.training_plan_obj || null;
-  //       return {
-  //         ...t,
-  //         partner_name: partnerObj?.name || t.partner_name || "",
-  //         training_plan_name:
-  //           planObj?.training_name || t.training_plan_name || null,
-  //       };
-  //     });
-  //     setAssignedTargets((prev) => {
-  //       // keep paginated assignedTargets separate — we'll merge paginated results by re-calling fetchAssignedTargets
-  //       // but for highlighting we set a separate internal state: we'll temporarily use assignedTargets state since UI uses it for both.
-  //       // NOTE: we keep full list in a hidden ref by setting assignedTargetsFull; but to keep change minimal we will set a dedicated state below.
-  //       return hydrated; // this temporarily sets full list for assignedPlanMap; caller will re-fetch paginated list separately
-  //     });
-  //   } catch (err) {
-  //     console.warn("fetchAssignedTargetsForHighlight failed", err);
-  //   }
-  // }
-
-  // handle field changes
-
-  async function fetchAssignedTargetsForHighlight() {
+  // --- SURGICAL ADDITION: FULL HIGHLIGHT ARRAY FETCHED BY THEME ---
+  async function fetchAssignedTargetsForHighlight(explicitThemes = null) {
     try {
+      const uid = effectiveUserId ?? (await resolveUserId());
+
+      const currentThemes = explicitThemes || themes;
+      let themeNameFilter = undefined;
+
+      if (currentThemes && currentThemes.length > 0) {
+        themeNameFilter = currentThemes[0].theme_name;
+      } else {
+        const thRes = await TMS_API.trainingThemes.list({
+          expert: uid,
+          limit: 200,
+        });
+        const thData = thRes?.data?.results || [];
+        if (thData.length > 0) {
+          themeNameFilter = thData[0].theme_name;
+          setThemes(thData);
+        }
+      }
+
       const res = await TMS_API.trainingPartnerTargets.list({
         limit: 10000,
-        offset: 0,
+        theme: themeNameFilter, // 🔒 FETCH BY THEME INSTEAD OF CREATED_BY
       });
 
       const data = res?.data ?? res;
-
       const results = data?.results || [];
 
       const hydrated = results.map((t) => {
-        const partnerObj =
-          partnersById[t.partner] ||
-          t.partner_obj ||
-          null;
-
+        const partnerObj = partnersById[t.partner] || t.partner_obj || null;
         const planObj =
-          plansById[t.training_plan] ||
-          t.training_plan_obj ||
-          null;
+          plansById[t.training_plan] || t.training_plan_obj || null;
 
         return {
           ...t,
-          partner_name:
-            partnerObj?.name ||
-            t.partner_name ||
-            "",
-
+          partner_name: partnerObj?.name || t.partner_name || "",
           training_plan_name:
-            planObj?.training_name ||
-            t.training_plan_name ||
-            null,
+            planObj?.training_name || t.training_plan_name || null,
         };
       });
 
-      // ✅ IMPORTANT
-      // ONLY STORE IN assignedTargetsFull
-      // DO NOT TOUCH assignedTargets
-
       setAssignedTargetsFull(hydrated);
-
     } catch (err) {
-      console.warn(
-        "fetchAssignedTargetsForHighlight failed",
-        err
-      );
+      console.warn("fetchAssignedTargetsForHighlight failed", err);
     }
   }
-
 
   function handleChange(e) {
     const { name, value } = e.target;
@@ -637,7 +534,6 @@ export default function SmmuCreatePartnerTargets() {
     if (form.district_id) p.district = Number(form.district_id);
     if (form.theme) p.theme = form.theme;
 
-    // still try multi-variant created_by fields (but backend may ignore)
     if (uid != null) {
       p.created_by = uid;
       p.updated_by = uid;
@@ -672,7 +568,6 @@ export default function SmmuCreatePartnerTargets() {
 
     setSaving(true);
 
-    setSaving(true);
     try {
       const uid = effectiveUserId ?? (await resolveUserId());
       const payload = buildPayloadForSubmit(uid);
@@ -705,8 +600,8 @@ export default function SmmuCreatePartnerTargets() {
 
       // After save: re-fetch assigned highlight map and paginated targets
       await Promise.all([
-        fetchAssignedTargetsForHighlight(),
-        fetchAssignedTargets(assignedPage, assignedPageSize),
+        fetchAssignedTargetsForHighlight(themes),
+        fetchAssignedTargets(assignedPage, assignedPageSize, themes),
       ]);
       setEditingTarget(null);
     } catch (err) {
@@ -734,13 +629,13 @@ export default function SmmuCreatePartnerTargets() {
   async function handleRefresh() {
     setLoading((s) => ({ ...s, refresh: true }));
     try {
+      const freshThemes = await fetchThemesAndPlans(true);
       await Promise.all([
-        fetchThemesAndPlans(true),
         fetchPartners(),
         fetchDistricts(),
-        fetchAssignedTargetsForHighlight(),
+        fetchAssignedTargetsForHighlight(freshThemes),
       ]);
-      await fetchAssignedTargets(assignedPage, assignedPageSize);
+      await fetchAssignedTargets(assignedPage, assignedPageSize, freshThemes);
       setMessage({ type: "success", text: "Refreshed" });
     } catch (e) {
       console.error("refresh", e);
@@ -753,12 +648,6 @@ export default function SmmuCreatePartnerTargets() {
   // styles: now plan list and form sit horizontally (responsive)
   const styles = {
     container: { margin: "20px auto", padding: "16px 16px" },
-    // layoutRow: {
-    //   display: "flex",
-    //   gap: 20,
-    //   alignItems: "center",
-    //   flexWrap: "wrap",
-    // },
     planColumn: { flex: "1 1 640px" },
     card: {
       background: "#fff",
@@ -800,24 +689,6 @@ export default function SmmuCreatePartnerTargets() {
       background: "#fff",
       height: 40,
     },
-    // btnPrimary: {
-    //   padding: "10px 12px",
-    //   borderRadius: 6,
-    //   border: "none",
-    //   cursor: "pointer",
-    //   fontWeight: 600,
-    //   background: "#0b2540",
-    //   color: "#fff",
-    // },
-    // btnSecondary: {
-    //   padding: "10px 12px",
-    //   borderRadius: 6,
-    //   border: "1px solid #dfe4e8",
-    //   cursor: "pointer",
-    //   fontWeight: 600,
-    //   background: "#fff",
-    //   color: "#0b2540",
-    // },
     smallMuted: { color: "#6c757d", fontSize: 13 },
     badge: {
       display: "inline-block",
@@ -839,38 +710,6 @@ export default function SmmuCreatePartnerTargets() {
     if (assignedPage < totalPages) setAssignedPage((p) => p + 1);
   }
 
-  // const filteredAssignedTargets = useMemo(() => {
-  //   return assignedTargets.filter((t) => {
-  //     const fyMatch = !filterFY || t.financial_year === filterFY;
-  //     const moduleMatch =
-  //       !filterModule || String(t.training_plan) === String(filterModule);
-
-  //     return fyMatch && moduleMatch;
-  //   });
-  // }, [assignedTargets, filterFY, filterModule]);
-
-
-  const filteredAssignedTargets = useMemo(() => {
-    return assignedTargets.filter((t) => {
-      const fyMatch =
-        !filterFY ||
-        t.financial_year === filterFY;
-
-      const moduleMatch =
-        !filterModule ||
-        String(t.training_plan) ===
-        String(filterModule);
-
-      return fyMatch && moduleMatch;
-    });
-  }, [
-    assignedTargets,
-    filterFY,
-    filterModule,
-  ]);
-
-
-
   const showDistrictRow =
     form.target_type === "DISTRICT" || form.target_type === "MODULE";
   const showModuleRow = form.target_type === "MODULE";
@@ -885,12 +724,6 @@ export default function SmmuCreatePartnerTargets() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div> */}
-          {/* <TopNav
-          left={<div className="app-title">Pragati Setu — TMS (SMMU)</div>}
-        /> */}
           <main style={{ padding: 18 }}>
             <div style={styles.container}>
               <div
@@ -916,7 +749,6 @@ export default function SmmuCreatePartnerTargets() {
                   }}
                   className="tms-header-actions"
                 >
-                  {/* NEW BULK ASSIGNMENT BUTTON */}
                   <button
                     className="btn tms-btn-primary"
                     onClick={() => navigate("/tms/smmu/bulk-assign-targets")}
@@ -982,7 +814,7 @@ export default function SmmuCreatePartnerTargets() {
                               editingTarget &&
                               (editingTarget.training_plan === p.id ||
                                 String(editingTarget.training_plan) ===
-                                String(p.id));
+                                  String(p.id));
 
                             const rowClickable =
                               !isAssigned || isAssignedToThisEditingTarget;
@@ -1007,19 +839,6 @@ export default function SmmuCreatePartnerTargets() {
 
                                 <td className="plan-td plan-td-training">
                                   <span>{p.training_name}</span>
-
-                                  {/* {isAssigned && (
-                                    <span
-                                      className="plan-badge"
-                                      title={`Assigned to ${assigned.partnerName || "partner"
-                                        }`}
-                                    >
-                                      Assigned
-                                      {assigned.partnerName
-                                        ? ` — ${assigned.partnerName}`
-                                        : ""}
-                                    </span>
-                                  )} */}
                                 </td>
 
                                 <td className="plan-td">
@@ -1112,7 +931,7 @@ export default function SmmuCreatePartnerTargets() {
                               editingTarget &&
                               (editingTarget.training_plan === m.id ||
                                 String(editingTarget.training_plan) ===
-                                String(m.id));
+                                  String(m.id));
                             return (
                               <option
                                 key={m.id}
@@ -1292,13 +1111,11 @@ export default function SmmuCreatePartnerTargets() {
                       style={{ display: "flex", gap: 10 }}
                       className="tms-btn-group"
                     >
-                      {" "}
-                      {/* UI CHANGE */}
                       <button
                         type="submit"
                         disabled={saving}
                         style={{ ...styles.btnPrimary, flex: 1 }}
-                        className="tms-btn-primary" /* UI CHANGE */
+                        className="tms-btn-primary"
                       >
                         {saving
                           ? editingTarget
@@ -1312,7 +1129,7 @@ export default function SmmuCreatePartnerTargets() {
                         type="button"
                         onClick={resetForm}
                         style={{ ...styles.btnSecondary, flex: 1 }}
-                        className="tms-btn-secondary" /* UI CHANGE */
+                        className="tms-btn-secondary"
                       >
                         Reset
                       </button>
@@ -1325,7 +1142,7 @@ export default function SmmuCreatePartnerTargets() {
                           color:
                             message.type === "error" ? "#d9534f" : "#28a745",
                         }}
-                        className="tms-message" /* UI CHANGE */
+                        className="tms-message"
                       >
                         {message.text}
                       </div>
@@ -1361,10 +1178,11 @@ export default function SmmuCreatePartnerTargets() {
                         onClick={() => setIsModalOpen(true)}
                         style={{ padding: "6px 12px", borderRadius: 6 }}
                       >
-                        View
+                        View All (Modal)
                       </button>
                     </div>
                   </div>
+
                   {isModalOpen && (
                     <div className="tms-modal-overlay">
                       <div className="tms-modal">
@@ -1375,56 +1193,6 @@ export default function SmmuCreatePartnerTargets() {
                             ✖
                           </button>
                         </div>
-
-                        {/* BODY */}
-                        {/* <div style={{ maxHeight: 400, overflow: "auto" }}>
-                          {loading.targets ? (
-                            <div style={{ padding: 12 }}>Loading targets…</div>
-                          ) : assignedTargets.length ? (
-                            assignedTargets.map((t) => (
-                              <div
-                                key={t.id}
-                                style={{
-                                  padding: 10,
-                                  borderBottom: "1px solid #eee",
-                                  display: "flex",
-                                  justifyContent: "space-between",
-                                }}
-                              >
-                                <div>
-                                  <div style={{ fontSize: 13 }}>
-                                    {t.target_type} —{" "}
-                                    {t.training_plan_name ||
-                                      (t.training_plan &&
-                                        t.training_plan.training_name) ||
-                                      t.theme ||
-                                      ""}
-                                  </div>
-
-                                  <div style={{ fontSize: 12, color: "#666" }}>
-                                    FY: {t.financial_year || "—"}
-                                  </div>
-                                </div>
-
-                                <div style={{ textAlign: "right" }}>
-                                  <div style={{ fontSize: 13 }}>
-                                    {progressForTarget(t)}
-                                  </div>
-
-                                  <button
-                                    className="btn tms-btn-edit"
-                                    onClick={() => editAssignedTarget(t)}
-                                    style={{ marginTop: 6 }}
-                                  >
-                                    Edit
-                                  </button>
-                                </div>
-                              </div>
-                            ))
-                          ) : (
-                            <div style={{ padding: 12 }}>No targets found.</div>
-                          )}
-                        </div> */}
 
                         {/* BODY */}
                         <div
@@ -1444,7 +1212,10 @@ export default function SmmuCreatePartnerTargets() {
                           >
                             <select
                               value={filterFY}
-                              onChange={(e) => setFilterFY(e.target.value)}
+                              onChange={(e) => {
+                                setFilterFY(e.target.value);
+                                setAssignedPage(1);
+                              }}
                               style={{ flex: 1 }}
                             >
                               <option value="">All Financial Years</option>
@@ -1455,7 +1226,10 @@ export default function SmmuCreatePartnerTargets() {
 
                             <select
                               value={filterModule}
-                              onChange={(e) => setFilterModule(e.target.value)}
+                              onChange={(e) => {
+                                setFilterModule(e.target.value);
+                                setAssignedPage(1);
+                              }}
                               style={{ flex: 1 }}
                             >
                               <option value="">All Modules</option>
@@ -1470,7 +1244,7 @@ export default function SmmuCreatePartnerTargets() {
                           {/* TABLE */}
                           {loading.targets ? (
                             <div>Loading targets…</div>
-                          ) : filteredAssignedTargets.length ? (
+                          ) : assignedTargets.length ? (
                             <table style={{ width: "100%", fontSize: 13 }}>
                               <thead>
                                 <tr style={{ background: "#e4ecf5" }}>
@@ -1480,17 +1254,20 @@ export default function SmmuCreatePartnerTargets() {
                                   <th>Module</th>
                                   <th>District</th>
                                   <th>FY</th>
-                                  <th>Action</th> {/* NEW */}
+                                  <th>Action</th>
                                 </tr>
                               </thead>
 
                               <tbody>
-                                {filteredAssignedTargets.map((t, index) => (
+                                {assignedTargets.map((t, index) => (
                                   <tr
                                     key={t.id}
                                     style={{ borderBottom: "1px solid #eee" }}
                                   >
-                                    <td>{index + 1}</td>
+                                    <td>
+                                      {(assignedPage - 1) * assignedPageSize +
+                                        (index + 1)}
+                                    </td>
 
                                     <td>
                                       {t.partner_name ||
@@ -1581,6 +1358,7 @@ export default function SmmuCreatePartnerTargets() {
                             <option value={5}>5</option>
                             <option value={10}>10</option>
                             <option value={25}>25</option>
+                            <option value={50}>50</option>
                           </select>
                         </div>
                       </div>
@@ -1589,19 +1367,13 @@ export default function SmmuCreatePartnerTargets() {
 
                   {/* RECENT ACTIVITY */}
                   <div style={{ marginTop: 12 }} className="tms-activity">
-                    {" "}
-                    {/* UI CHANGE */}
                     <h6
                       style={{ margin: "8px 0" }}
                       className="tms-section-title"
                     >
-                      {" "}
-                      {/* UI CHANGE */}
                       Recent activity
                     </h6>
                     <div className="tms-muted-text" style={{ fontSize: 13 }}>
-                      {" "}
-                      {/* UI CHANGE */}
                       {recentActivity.length ? (
                         <ul style={{ marginTop: 6 }}>
                           {recentActivity.map((r, i) => (
@@ -1969,7 +1741,7 @@ PLAN COLUMN CARD
   display: grid;
   grid-template-columns: 1fr 1fr; /* desktop side-by-side */
   gap: 20px;
-  alignItems: "center",
+  align-items: center;
 }
 
 @media (max-width: 768px){
