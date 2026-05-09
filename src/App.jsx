@@ -356,3 +356,27 @@ export default function App() {
     </LanguageProvider>
   );
 }
+
+// // MAINTAINANCE MODE - ONLY FUTURE UPDATES PAGE ACTIVE
+// import React from "react";
+// import { Routes, Route, Navigate } from "react-router-dom";
+// import SiteDevErrorPage from "./components/ErrorPages/ServerMaintenance";
+// import { LanguageProvider } from "./pages/LanguageContext";
+// import ServerMaintenance from "./components/ErrorPages/ServerMaintenance";
+
+// export default function App() {
+//   return (
+//     <LanguageProvider>
+//       <Routes>
+//         {/* ONLY ACTIVE PAGE */}
+//         <Route path="/server-maintainance" element={<ServerMaintenance />} />
+
+//         {/* DISABLE EVERYTHING ELSE */}
+//         <Route
+//           path="*"
+//           element={<Navigate to="/server-maintainance" replace />}
+//         />
+//       </Routes>
+//     </LanguageProvider>
+//   );
+// }
