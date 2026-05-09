@@ -1,10 +1,9 @@
 // src/pages/TMS/layout/tms_LeftNav.jsx
-import React, { useContext, useState } from "react";
-import { useEffect } from "react";
+import React, { useContext, useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../contexts/AuthContext";
+import { TMS_API } from "../../../api/axios"; 
 import logo from "../../../assets/TMS/tms_logo.png";
-// import TopNav from "./tms_TopNav";
 import {
   FaTachometerAlt,
   FaUsers,
@@ -48,16 +47,6 @@ const MENU = {
       to: "/tms/bmmu/tp-TvA",
       icon: FaChalkboard,
     },
-    // {
-    //   label: "Propose Training Plan",
-    //   to: "/tms/tms/bmmu/create-training-plan",
-    //   icon: FaBook,
-    // },
-    // {
-    //   label: "Training Batches",
-    //   to: "/tms/batches-list/",
-    //   icon: FaBook,
-    // },
     {
       label: "Training Batches",
       icon: FaBook,
@@ -87,11 +76,6 @@ const MENU = {
       to: "/tms/dmmu/tp-TvA",
       icon: FaChalkboard,
     },
-    // {
-    //   label: "Training Batches",
-    //   to: "/tms/batches-list/",
-    //   icon: FaBook,
-    // },
     {
       label: "Training Batches",
       icon: FaBook,
@@ -121,7 +105,6 @@ const MENU = {
       to: "/tms/smmu/tp-TvA",
       icon: FaChalkboard,
     },
-
     {
       label: "Training Batches",
       icon: FaBook,
@@ -155,11 +138,6 @@ const MENU = {
       to: "/tms/training-requests",
       icon: FaChartBar,
     },
-    // {
-    //   label: "Training Batches",
-    //   to: "/tms/batches-list/",
-    //   icon: FaBook,
-    // },
     {
       label: "Training Batches",
       icon: FaBook,
@@ -199,11 +177,6 @@ const MENU = {
       to: "/tms/cp/dashboard",
       icon: FaTachometerAlt,
     },
-    // {
-    //   label: "Training Batches",
-    //   to: "/tms/cp/batch-list",
-    //   icon: FaBook,
-    // },
     {
       label: "Training Batches",
       icon: FaBook,
@@ -253,8 +226,12 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   const username = user?.username || user?.name || "Guest";
   const initial = username.charAt(0).toUpperCase();
   const [showUserPopup, setShowUserPopup] = useState(false);
-  //  NEW
   const [openDropdown, setOpenDropdown] = useState(null);
+
+  // 👈 NEW: State to hold Organization Name
+  const [orgName, setOrgName] = useState(() => {
+    return sessionStorage.getItem(`tp_org_name_${user?.id}`) || "";
+  });
 
   useEffect(() => {
     const handleClick = () => setShowUserPopup(false);
@@ -267,6 +244,30 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
       document.removeEventListener("click", handleClick);
     };
   }, [showUserPopup]);
+
+  // 👈 NEW: Fetch Organization Name if the user is a Training Partner
+  useEffect(() => {
+    if (roleKey === "training_partner" && user?.id && !orgName) {
+      const fetchOrgName = async () => {
+        try {
+          // Passing user ID to filter/search.
+          const res = await TMS_API.trainingPartners.list({ search: user.id });
+          const partner = res?.data?.results?.find(
+            (p) => p.master_user === user.id,
+          );
+
+          if (partner?.name) {
+            setOrgName(partner.name);
+            sessionStorage.setItem(`tp_org_name_${user.id}`, partner.name);
+          }
+        } catch (error) {
+          console.error("Failed to fetch organization name:", error);
+        }
+      };
+      fetchOrgName();
+    }
+  }, [roleKey, user?.id, orgName]);
+
   return (
     <>
       <button className="tms-mobile-burger" onClick={() => setMobileOpen(true)}>
@@ -281,7 +282,6 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
 
         {/* LEFT: LOGO CLICK ONLY */}
         <div className="logo-click" onClick={() => navigate("/dashboard")}>
-          {/* agar logo image use karna hai to yahan lagao */}
           {/* <img src={logo} alt="logo" /> */}
         </div>
 
@@ -295,36 +295,63 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
             }}
           >
             <div className="avatar">{initial}</div>
-            <span className="username-text">{username}</span>
+
+            {/* 👈 NEW: Render Username + Org Name seamlessly */}
+            <div
+              className="username-text"
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "flex-start",
+                textAlign: "left",
+              }}
+            >
+              <span
+                style={{
+                  width: "100%",
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                }}
+              >
+                {username}
+              </span>
+              {orgName && (
+                <span
+                  style={{
+                    fontSize: "10px",
+                    fontWeight: "400",
+                    opacity: 0.9,
+                    width: "100%",
+                    overflow: "hidden",
+                    textOverflow: "ellipsis",
+                    whiteSpace: "wrap",
+                  }}
+                >
+                  {orgName}
+                </span>
+              )}
+            </div>
           </button>
 
           {showUserPopup && (
             <div className="user-popup" onClick={(e) => e.stopPropagation()}>
-              {username}
+              <div style={{ fontWeight: "bold" }}>{username}</div>
+              {/* 👈 NEW: Show Org Name in the popup dropdown */}
+              {orgName && (
+                <div
+                  style={{ fontSize: "12px", marginTop: "4px", color: "#666" }}
+                >
+                  {orgName}
+                </div>
+              )}
             </div>
           )}
         </div>
 
         {/* NAV */}
         <nav className="tms-nav">
-          {/* {menu.map((item) => (
-            <NavLink
-              key={item.label}
-              to={item.to}
-              onClick={() => setMobileOpen(false)}
-              className={({ isActive }) =>
-                "tms-nav-item" + (isActive ? " active" : "")
-              }
-            >
-              <span className="nav-icon">
-                <item.icon size={20} />
-              </span>
-              <span className="nav-label">{item.label}</span>
-            </NavLink>
-          ))} */}
-
           {menu.map((item) => {
-            //  NEW: HANDLE DROPDOWN MENU
+            // HANDLE DROPDOWN MENU
             if (item.children) {
               const isOpen = openDropdown === item.label;
 
@@ -369,7 +396,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
               );
             }
 
-            //
+            // Standard NavItem
             return (
               <NavLink
                 key={item.label}
@@ -427,10 +454,10 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   font-size: 12px;
   font-weight: 600;
   box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  width: 100%;          /*  fit inside sidebar */
+  width: 100%;          /* fit inside sidebar */
   max-width: 100%;
   overflow: hidden;
-  margin: 6px 0;        /*  remove side overflow */
+  margin: 6px 0;        /* remove side overflow */
 }
 
 .username-text {
@@ -513,7 +540,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   scrollbar-width: thin; 
 }
 
-/*  scrollbar */
+/* scrollbar */
 .tms-nav::-webkit-scrollbar {
   width: 6px;
 }
@@ -579,7 +606,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
 /* Toggle */
 .tms-toggle {
   height: 40px;
-  width: 100%;              /*  IMPORTANT */
+  width: 100%;             /* IMPORTANT */
   border: none;
   background: #002073;
   border-top: 1px solid #e5e7eb;
@@ -587,7 +614,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   font-size: 14px;
   color: #fff;
   transition: background 0.2s ease;
-  display: flex;            /*  center alignment */
+  display: flex;           /* center alignment */
   align-items: center;
   justify-content: center;
 }

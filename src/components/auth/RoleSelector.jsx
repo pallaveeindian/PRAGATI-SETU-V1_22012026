@@ -8,8 +8,8 @@ export const ADMIN_ROLES = [
 ];
 
 export const GENERAL_ROLES = [
-  { id: "training_partner", label: "TP" },
-  { id: "tp_contact_person", label: "TC" },
+  { id: "training_partner", label: "TRAINING PARTNER" },
+  { id: "tp_contact_person", label: "TRAINING CENTRE" },
 ];
 
 export default function RoleSelector({
