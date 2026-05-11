@@ -217,9 +217,9 @@ export default function DmmuBlockMap({
             }}
           >
             <strong>{tooltipData.block_name}</strong>
-            <div>VOs: {tooltipData.totals?.total_vos ?? "—"}</div>
             <div>CLFs: {tooltipData.totals?.total_clfs ?? "—"}</div>
-            <div>SHGs: {tooltipData.totals?.total_shgs ?? "—"}</div>
+            <div>VOs: {tooltipData.totals?.total_vos ?? "—"}</div>            
+            <div>SHGs: {tooltipData.totals?.total_shgs ?? "—"}</div>            
             <div>
               Rural Households: {tooltipData.totals?.total_rural_hh ?? "—"}
             </div>
@@ -238,8 +238,8 @@ export default function DmmuBlockMap({
             <tr>
               <th>#</th>
               <th>Block</th>
-              <th>VOs</th>
               <th>CLFs</th>
+              <th>VOs</th>              
               <th>SHGs</th>
               <th>Rural HouseHolds</th>
               <th>Households under SHGs</th>
@@ -267,8 +267,8 @@ export default function DmmuBlockMap({
                     )}
                   </div>
                 </td>
-                <td>{b.analytics?.totals?.total_vos ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_clfs ?? "—"}</td>
+                <td>{b.analytics?.totals?.total_vos ?? "—"}</td>                
                 <td>{b.analytics?.totals?.total_shgs ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_rural_hh ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_hh_under_shgs ?? "—"}</td>

@@ -130,21 +130,21 @@ export default function SmmuUpMap({ onDistrictSelect }) {
       {/* ================= KPI CARDS ================= */}
       <div className="kpi-row">
         <div className="kpi-card">
-          <FaUsers className="kpi-icon red" />
-          <div>
-            <div className="kpi-label">Total VOs</div>
-            <div className="kpi-value">
-              <AnimatedNumber value={stateTotals?.total_vos} />
-            </div>
-          </div>
-        </div>
-
-        <div className="kpi-card">
           <FaLayerGroup className="kpi-icon red" />
           <div>
             <div className="kpi-label">Total CLFs</div>
             <div className="kpi-value">
               <AnimatedNumber value={stateTotals?.total_clfs} />
+            </div>
+          </div>
+        </div>
+
+        <div className="kpi-card">
+          <FaUsers className="kpi-icon red" />
+          <div>
+            <div className="kpi-label">Total VOs</div>
+            <div className="kpi-value">
+              <AnimatedNumber value={stateTotals?.total_vos} />
             </div>
           </div>
         </div>
@@ -211,8 +211,8 @@ export default function SmmuUpMap({ onDistrictSelect }) {
               }}
             >
               <strong>{tooltipData.district_name}</strong>
-              <div>VOs: {tooltipData.total_vos}</div>
               <div>CLFs: {tooltipData.total_clfs}</div>
+              <div>VOs: {tooltipData.total_vos}</div>
               <div>SHGs: {tooltipData.total_shgs}</div>
               <div>Rural Households: {tooltipData.total_rural_hh ?? "—"}</div>
               <div>
@@ -229,8 +229,8 @@ export default function SmmuUpMap({ onDistrictSelect }) {
               <tr>
                 <th>#</th>
                 <th>District</th>
-                <th>VOs</th>
                 <th>CLFs</th>
+                <th>VOs</th>
                 <th>SHGs</th>
                 <th>Rural Households</th>
                 <th>Households under SHGs</th>
@@ -247,8 +247,8 @@ export default function SmmuUpMap({ onDistrictSelect }) {
                 >
                   <td>{i + 1}</td>
                   <td>{d.district_name}</td>
-                  <td>{d.total_vos}</td>
                   <td>{d.total_clfs}</td>
+                  <td>{d.total_vos}</td>
                   <td>{d.total_shgs}</td>
                   <td>{d.total_rural_hh ?? "—"}</td>
                   <td>{d.total_hh_under_shgs ?? "—"}</td>
