@@ -18,7 +18,13 @@ import {
 
 /* ===================== CONSTANTS ===================== */
 
-const STEPS = ["Basic", "Address", "Facilities", "Rooms Availability", "Photos"];
+const STEPS = [
+  "Basic",
+  "Address",
+  "Facilities",
+  "Rooms Availability",
+  "Photos",
+];
 const EMPTY_ROOM = { room_name: "", room_capacity: 20 };
 const EMPTY_MEDIA = {
   category: "OTHER",
@@ -32,7 +38,10 @@ function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
   if (!open) return null;
 
   return (
-    <div className="tp-modal-backdrop" style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}>
+    <div
+      className="tp-modal-backdrop"
+      style={{ backgroundColor: "rgba(255, 255, 255, 0.5)" }}
+    >
       <div className="tp-modal-card" style={{ maxWidth: 500 }}>
         <h3>
           Confirm Training Centre{" "}
@@ -252,7 +261,7 @@ export default function TpCentreRegistration() {
       }
 
       // 3. Process Media independently
-      for (const m of media) {
+      for (const [index, m] of media.entries()) {
         if (m.id && !m.file) continue;
 
         if (m.file) {
@@ -260,7 +269,15 @@ export default function TpCentreRegistration() {
           fd.append("partner", partnerId);
           fd.append("centre", finalCentreId);
           fd.append("category", m.category);
-          fd.append("file", m.file);
+
+          // --- SURGICAL RENAME START ---
+          const ext = m.file.name.split(".").pop(); // Extract original extension
+          const newFileName = `${m.category}_${index + 1}.${ext}`; // Format: <picture_type>_<s.no.>.<ext>
+
+          // Append the file using the third argument to force the new filename
+          fd.append("file", m.file, newFileName);
+          // --- SURGICAL RENAME END ---
+
           fd.append("created_by", user.id);
           fd.append("is_active", "1");
           if (m.notes) fd.append("notes", m.notes);
@@ -984,6 +1001,36 @@ export default function TpCentreRegistration() {
                           {/* Existing file preview (ONLY when no new file selected) */}
                           {m.id && !m.file && (
                             <div style={{ marginBottom: 6 }}>
+                              {/* --- SURGICAL THUMBNAIL ADDITION START --- */}
+                              {m.existing_url &&
+                                !m.existing_url
+                                  .toLowerCase()
+                                  .includes(".pdf") && (
+                                  <div style={{ marginBottom: 10 }}>
+                                    <a
+                                      href={m.existing_url}
+                                      target="_blank"
+                                      rel="noopener noreferrer"
+                                      title="Click to view full image"
+                                    >
+                                      <img
+                                        src={m.existing_url}
+                                        alt="Preview"
+                                        style={{
+                                          width: "100px",
+                                          height: "100px",
+                                          objectFit: "cover",
+                                          borderRadius: "6px",
+                                          border: "1px solid #ccc",
+                                          boxShadow:
+                                            "0 2px 4px rgba(0,0,0,0.1)",
+                                        }}
+                                      />
+                                    </a>
+                                  </div>
+                                )}
+                              {/* --- SURGICAL THUMBNAIL ADDITION END --- */}
+
                               <button
                                 onClick={async () => {
                                   try {
@@ -1114,8 +1161,9 @@ export default function TpCentreRegistration() {
                   <strong>Instructions for Photos:</strong>
                   <ul style={{ margin: "5px 0 0 20px", padding: 0 }}>
                     <li>
-                      <strong>Photo Category:</strong> Select the appropriate category
-                      (e.g., CENTRE_FRONT, CCTV_SECURITY) for each file.
+                      <strong>Photo Category:</strong> Select the appropriate
+                      category (e.g., CENTRE_FRONT, CCTV_SECURITY) for each
+                      file.
                     </li>
                     <li>
                       <strong>Upload:</strong> Only JPG/JPEG or PDF formats are
