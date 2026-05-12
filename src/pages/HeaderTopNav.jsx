@@ -160,10 +160,12 @@ export default function TopNavigation() {
 
             {/* REPORT */}
             <li className="menu-item">
-              <span>Report</span>
-              <ul className="dropdown-menu single">
-                <li>Coming Soon</li>
-              </ul>
+              <Link
+                to="/Public-Reports"
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                Reports
+              </Link>
             </li>
 
             {/* RESOURCE CENTRE */}

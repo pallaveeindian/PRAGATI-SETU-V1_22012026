@@ -19,6 +19,7 @@ import MonitoringandAnlytics from "./pages/MonitoringandAnlytics";
 import PowerBIAnalytics from "./pages/PowerBiAnalytics";
 import UserManual from "./pages/UserManual";
 import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
+import PublicReports from "./pages/PublicReports";
 import WhatsNew from "./pages/WhatsNew";
 
 // TMS dashboards
@@ -117,6 +118,7 @@ export default function App() {
           element={<FrequentlyAskedQuestions />}
         />
         <Route path="/what's-new" element={<WhatsNew />} />
+        <Route path="/public-reports" element={<PublicReports />} />
         <Route path="/login" element={<Login />} />
         {/* Protected routes */}
         <Route element={<ProtectedRoute />}>
@@ -190,9 +192,14 @@ export default function App() {
               path="/tms/tp/tr-closure/:id"
               element={<TpTrainingRequestClosure />}
             />
-            <Route
+            {/* AFTER UIDAI API */}
+            {/* <Route
               path="/tms/tp/batches/create/:id"
               element={<TpCreateBatch />}
+            /> */}
+            <Route
+              path="/tms/tp/batches/create/:id"
+              element={<SiteDevErrorPage />}
             />
             <Route path="/tms/tp/cp-list" element={<TpListCP />} />
             <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
@@ -284,9 +291,14 @@ export default function App() {
               />
             }
           >
-            <Route
+            {/* AFTER UIDAI API */}
+            {/* <Route
               path="/tms/batch-detail/:id"
               element={<TrainingBatchDetail />}
+            /> */}
+            <Route
+              path="/tms/batch-detail/:id"
+              element={<SiteDevErrorPage />}
             />
           </Route>
 
