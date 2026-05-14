@@ -11,9 +11,9 @@ const NAV_CONFIG = [
     id: "tms",
     label: "Training Management Portal (TMS)",
     subLinks: [
-      { id: "tms_users", label: "Trainee Demographics" },
-      { id: "tms_training", label: "Capacity Building Metrics" },
-      { id: "tms_software", label: "System Utilization" },
+      { id: "tms_users", label: "Overall Demographics" },
+      { id: "tms_training", label: "Login Status" },
+      { id: "tms_software", label: "Cadre Selection Status" },
     ],
   },
   {

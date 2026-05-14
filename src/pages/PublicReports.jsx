@@ -1,5 +1,5 @@
-// src/pages/PublicReports.jsx
-import React, { useEffect, useContext, useState } from "react";
+// 1. IMPORT useCallback
+import React, { useEffect, useContext, useState, useCallback } from "react";
 import up_logo from "../assets/upgov_logo.jpg";
 import TopNavigation from "./HeaderTopNav.jsx";
 import GovHeader from "./GovHeader.jsx";
@@ -19,10 +19,16 @@ export default function PublicReports() {
     subTab: null,
   });
 
-  // Function to pass to ReportHeader
-  const handleNavSelection = (tab, subTab) => {
-    setCurrentReport({ tab, subTab });
-  };
+  // 2. WRAP IN useCallback AND ADD SAFETY CHECK
+  const handleNavSelection = useCallback((tab, subTab) => {
+    setCurrentReport((prev) => {
+      // If the tab and subTab are exactly the same, do nothing. This breaks any infinite loops.
+      if (prev.tab === tab && prev.subTab === subTab) {
+        return prev;
+      }
+      return { tab, subTab };
+    });
+  }, []); // Empty dependency array means this function never changes
 
   /* ================= FONT SIZE CONTROLS ================= */
   const setFontScale = (scale) => {
@@ -36,9 +42,11 @@ export default function PublicReports() {
   /* ================= LANGUAGE CONTENT ================= */
   const content = {
     en: {
+      title1: "Portal Activity",
       title2: "Reports",
     },
     hi: {
+      title1: "पोर्टल गतिविधि",
       title2: "रिपोर्ट",
     },
   };
@@ -76,7 +84,6 @@ export default function PublicReports() {
 
       {/* ================= STYLES ================= */}
       <style>{`
-
         /* ===== ROOT ===== */
         .home-shell {
           display: flex;
@@ -117,7 +124,7 @@ export default function PublicReports() {
 
         /* ===== MAIN LAYOUT ===== */
         .page-main {
-          flex: 1; /* Pushes footer to the bottom */
+          flex: 1; 
           width: 100%;
           max-width: 1400px;
           margin: 0 auto;
@@ -129,22 +136,6 @@ export default function PublicReports() {
           flex-direction: column;
           gap: 30px;
           margin-bottom: 60px;
-        }
-
-        /* ===== PLACEHOLDER STYLES (To be removed later) ===== */
-        .placeholder-box {
-          padding: 40px;
-          background: rgba(255, 255, 255, 0.6);
-          border: 2px dashed #ff7a00;
-          border-radius: 18px;
-          text-align: center;
-          color: #334155;
-        }
-
-        .placeholder-box h3 {
-          margin-top: 0;
-          color: #0f172a;
-          font-size: 24px;
         }
 
         /* ===== FOOTER ===== */
@@ -160,12 +151,7 @@ export default function PublicReports() {
           .page-title {
             font-size: 30px;
           }
-          
-          .placeholder-box {
-            padding: 20px;
-          }
         }
-
       `}</style>
     </div>
   );
