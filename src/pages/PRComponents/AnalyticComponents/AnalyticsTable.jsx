@@ -158,7 +158,8 @@ export default function AnalyticsTable({
     );
 
     // Export mapping
-    const exportData = records.map((row) => ({
+    const exportData = records.map((row, idx) => ({
+      sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
       username: row.username,
       role: row.role_name.replace(/_/g, " ").toUpperCase(),
       district: row.district_name_en || "-",
@@ -167,6 +168,7 @@ export default function AnalyticsTable({
       status: row.must_change_password ? "Pending Change" : "Changed",
     }));
     const exportHeaders = [
+      { label: "S.No.", key: "sno" },
       { label: "Username", key: "username" },
       { label: "Role", key: "role" },
       { label: "District", key: "district" },
@@ -189,6 +191,7 @@ export default function AnalyticsTable({
           <table className="gov-data-table">
             <thead>
               <tr>
+                <th>S.No.</th>
                 <th>Username</th>
                 <th>Role</th>
                 <th>District</th>
@@ -200,7 +203,10 @@ export default function AnalyticsTable({
             <tbody>
               {paginatedData.map((row, idx) => (
                 <tr key={idx}>
-                  <td className="fw-bold">{row.username}</td>
+                  <td className="fw-bold">
+                    {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                  </td>
+                  <td>{row.username}</td>
                   <td>{row.role_name.replace(/_/g, " ").toUpperCase()}</td>
                   <td>{row.district_name_en || "-"}</td>
                   <td>{row.block_name_en || "-"}</td>
@@ -261,7 +267,8 @@ export default function AnalyticsTable({
     );
 
     // Export mapping
-    const exportData = records.map((row) => ({
+    const exportData = records.map((row, idx) => ({
+      sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
       username: row.username,
       district: row.district_name_en || "-",
       block: row.block_name_en || "-",
@@ -270,6 +277,7 @@ export default function AnalyticsTable({
       trainers: row.trainer_count,
     }));
     const exportHeaders = [
+      { label: "S.No.", key: "sno" },
       { label: "Created By", key: "username" },
       { label: "District", key: "district" },
       { label: "Block", key: "block" },
@@ -292,6 +300,7 @@ export default function AnalyticsTable({
           <table className="gov-data-table">
             <thead>
               <tr>
+                <th>S.No.</th>
                 <th>Created By</th>
                 <th>District</th>
                 <th>Block</th>
@@ -303,6 +312,9 @@ export default function AnalyticsTable({
             <tbody>
               {paginatedData.map((row, idx) => (
                 <tr key={idx}>
+                  <td className="fw-bold">
+                    {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                  </td>
                   <td className="fw-bold">{row.username}</td>
                   <td>{row.district_name_en || "-"}</td>
                   <td>{row.block_name_en || "-"}</td>
@@ -373,8 +385,8 @@ export default function AnalyticsTable({
     );
 
     // Export mapping
-    const exportData = plansData.map((row, i) => ({
-      sno: i + 1,
+    const exportData = plansData.map((row, idx) => ({
+      sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
       theme: row.theme_name,
       modules: row.plan_count,
       status: row.plan_count > 0 ? "Active Plans" : "No Plans",

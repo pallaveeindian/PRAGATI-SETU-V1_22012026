@@ -259,7 +259,198 @@ export default function AnalyticsSection({ currentReport }) {
         .table-module { padding: 0; overflow: hidden; }
         .table-header { display: flex; justify-content: space-between; align-items: center; padding: 20px 24px; border-bottom: 1px solid #e2e8f0; }
         .table-header h3 { margin: 0; color: #0f172a; font-size: 18px; }
-        .btn-export { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 600; cursor: pointer; }
+.btn-export {
+  position: relative;
+  height: 46px;
+  min-width: 145px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  cursor: pointer;
+  overflow: hidden;
+
+  background: linear-gradient(
+    135deg,
+    #ff7a00 0%,
+    #ff9100 45%,
+    #46a839 100%
+  );
+
+  box-shadow:
+    0 4px 14px rgba(255, 122, 0, 0.35),
+    0 2px 6px rgba(70, 168, 57, 0.25);
+
+  transition:
+    transform 0.22s ease,
+    box-shadow 0.22s ease,
+    filter 0.22s ease;
+}
+
+/* glossy top layer */
+.btn-export::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+
+  background: linear-gradient(
+    to bottom,
+    rgba(255, 255, 255, 0.28),
+    rgba(255, 255, 255, 0.04)
+  );
+
+  pointer-events: none;
+}
+
+/* glowing hover effect */
+.btn-export::after {
+  content: "";
+  position: absolute;
+  top: -120%;
+  left: -40%;
+  width: 60%;
+  height: 320%;
+
+  background: rgba(255, 255, 255, 0.2);
+  transform: rotate(25deg);
+  transition: left 0.7s ease;
+}
+
+.btn-export:hover::after {
+  left: 130%;
+}
+
+/* =========================
+   HOVER / ACTIVE
+========================= */
+
+.btn-export:hover {
+  transform: translateY(-2px) scale(1.015);
+
+  box-shadow:
+    0 8px 24px rgba(255, 122, 0, 0.45),
+    0 4px 14px rgba(70, 168, 57, 0.35);
+
+  filter: brightness(1.03);
+}
+
+.btn-export:active {
+  transform: scale(0.97);
+}
+
+.btn-export:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+/* =========================
+   CONTENT SLIDE SYSTEM
+========================= */
+
+.btn-export-content {
+  position: relative;
+  height: 92px;
+  width: 100%;
+
+  transform: translateY(-46px);
+  transition: transform 0.32s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.btn-export:hover .btn-export-content {
+  transform: translateY(0);
+}
+
+/* =========================
+   ICON SECTION
+========================= */
+
+.btn-export-icon-wrap,
+.btn-export-text-wrap {
+  height: 46px;
+  width: 100%;
+
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-export-icon {
+  width: 24px;
+  height: 24px;
+  fill: #ffffff;
+
+  opacity: 0;
+  transform: scale(0.6);
+
+  transition:
+    opacity 0.25s ease,
+    transform 0.25s ease;
+}
+
+.btn-export:hover .btn-export-icon {
+  opacity: 1;
+  transform: scale(1);
+}
+
+/* =========================
+   TEXT SECTION
+========================= */
+
+.btn-export-text {
+  color: #ffffff;
+  font-size: 13px;
+  font-weight: 1000;
+  letter-spacing: 0.4px;
+
+  text-transform: uppercase;
+
+  transition:
+    opacity 0.2s ease,
+    transform 0.2s ease;
+}
+
+.btn-export:hover .btn-export-text {
+  opacity: 0;
+  transform: translateY(8px);
+}
+
+/* =========================
+   FOCUS ACCESSIBILITY
+========================= */
+
+.btn-export:focus-visible {
+  outline: 3px solid rgba(255, 255, 255, 0.9);
+  outline-offset: 3px;
+}
+
+/* =========================
+   ICON HEARTBEAT
+========================= */
+
+.btn-export:hover .btn-export-icon {
+  animation: exportPulse 1.2s infinite;
+}
+
+@keyframes exportPulse {
+  0% {
+    transform: scale(1);
+  }
+
+  20% {
+    transform: scale(0.9);
+  }
+
+  40% {
+    transform: scale(1.08);
+  }
+
+  60% {
+    transform: scale(0.96);
+  }
+
+  100% {
+    transform: scale(1);
+  }
+}
         .table-responsive { overflow-x: auto; }
         .gov-data-table { width: 100%; border-collapse: collapse; text-align: left; }
         .gov-data-table th, .gov-data-table td { padding: 14px 20px; border-bottom: 1px solid #e2e8f0; color: #334155; font-size: 14px; }
