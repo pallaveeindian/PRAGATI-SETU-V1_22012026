@@ -4,6 +4,7 @@ import { AUTH_API, LDMS_API } from "../../../api/axios"; // Imported LDMS_API
 import { clearAuth } from "../../../utils/storage";
 import ldmsLogo from "../../../assets/ldms_logo.png";
 import NotifNew from "../../../assets/SiteAssets/new.gif";
+import NotificationModal from "./NotificationModal";
 import { FaBell, FaBars, FaTimes } from "react-icons/fa";
 
 export default function LdmsHeader({ onBurgerClick }) {
@@ -16,6 +17,9 @@ export default function LdmsHeader({ onBurgerClick }) {
   // --- NEW: Notification State ---
   const [notifications, setNotifications] = useState([]);
   const [unreadCount, setUnreadCount] = useState(0);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [modalSelectedNotif, setModalSelectedNotif] = useState(null);
 
   const handleBurger = () => {
     setBurgerOpen(!burgerOpen);
@@ -54,11 +58,10 @@ export default function LdmsHeader({ onBurgerClick }) {
 
   // --- NEW: Handle Mark as Read ---
   const handleNotificationClick = async (notif) => {
+    // 1. Mark as read instantly in the dropdown
     if (!notif.is_read) {
       try {
         await LDMS_API.MarkNotificationRead(notif.id);
-
-        // Optimistically update the UI instantly without waiting for the next 5s tick
         setNotifications((prev) =>
           prev.map((n) => (n.id === notif.id ? { ...n, is_read: true } : n)),
         );
@@ -67,6 +70,19 @@ export default function LdmsHeader({ onBurgerClick }) {
         console.error("Failed to mark notification as read", error);
       }
     }
+
+    // 2. Open Modal and pass the clicked notification
+    setModalSelectedNotif({ ...notif, is_read: true }); // Ensure it passes as read
+    setIsModalOpen(true);
+    setShowNotifications(false); // Close the dropdown
+  };
+
+  // --- NEW: Handle "Show All" click ---
+  const handleShowAllClick = (e) => {
+    e.preventDefault();
+    setModalSelectedNotif(null); // No specific notification selected
+    setIsModalOpen(true);
+    setShowNotifications(false); // Close the dropdown
   };
 
   // Helper to strip/truncate long descriptions
@@ -88,117 +104,120 @@ export default function LdmsHeader({ onBurgerClick }) {
   };
 
   return (
-    <header className="ldms-header">
-      {/* -------- LEFT -------- */}
-      <div className="ldms-header-left">
-        <img src={ldmsLogo} className="ldms-applogo" alt="LDMS Logo" />
-        <span className="ldms-govt-badge" />
-        <h1 className="ldms-title">
-          Lakhpati Didi <span>Management System</span>
-        </h1>
-      </div>
+    <>
+      <header className="ldms-header">
+        {/* -------- LEFT -------- */}
+        <div className="ldms-header-left">
+          <img src={ldmsLogo} className="ldms-applogo" alt="LDMS Logo" />
+          <span className="ldms-govt-badge" />
+          <h1 className="ldms-title">
+            Lakhpati Didi <span>Management System</span>
+          </h1>
+        </div>
 
-      {/* Mobile Burger */}
-      <button
-        className={`ldms-burger ${burgerOpen ? "open" : ""}`}
-        onClick={handleBurger}
-      >
-        <span className="line line1"></span>
-        <span className="line line2"></span>
-        <span className="line line3"></span>
-      </button>
+        {/* Mobile Burger */}
+        <button
+          className={`ldms-burger ${burgerOpen ? "open" : ""}`}
+          onClick={handleBurger}
+        >
+          <span className="line line1"></span>
+          <span className="line line2"></span>
+          <span className="line line3"></span>
+        </button>
 
-      {/* -------- RIGHT -------- */}
-      <div
-        className={`ldms-header-right ${showMobileMenu ? "mobile-open" : ""}`}
-      >
-        {/* Notifications */}
-        <div className="ldms-notification-wrapper">
-          <button
-            className="ldms-icon-btn"
-            onClick={() => {
-              setShowNotifications((v) => !v);
-              setShowUserMenu(false);
-            }}
-            title="Notifications"
-          >
-            <FaBell />
-            {unreadCount > 0 && (
-              <span className="ldms-notification-badge">
-                {unreadCount > 9 ? "9+" : unreadCount}
-              </span>
-            )}
-          </button>
+        {/* -------- RIGHT -------- */}
+        <div
+          className={`ldms-header-right ${showMobileMenu ? "mobile-open" : ""}`}
+        >
+          {/* Notifications */}
+          <div className="ldms-notification-wrapper">
+            <button
+              className="ldms-icon-btn"
+              onClick={() => {
+                setShowNotifications((v) => !v);
+                setShowUserMenu(false);
+              }}
+              title="Notifications"
+            >
+              <FaBell />
+              {unreadCount > 0 && (
+                <span className="ldms-notification-badge">
+                  {unreadCount > 9 ? "9+" : unreadCount}
+                </span>
+              )}
+            </button>
 
-          {showNotifications && (
-            <div className="ldms-notification-panel pop-animate">
-              <div className="ldms-notification-header">Notifications</div>
+            {showNotifications && (
+              <div className="ldms-notification-panel pop-animate">
+                <div className="ldms-notification-header">Notifications</div>
 
-              <div className="ldms-notification-list">
-                {notifications.length === 0 ? (
-                  <div className="ldms-notif-empty">No new notifications</div>
-                ) : (
-                  notifications.map((n) => (
-                    <div
-                      key={n.id}
-                      className={`ldms-notification-item ${!n.is_read ? "unread" : ""}`}
-                      onClick={() => handleNotificationClick(n)}
-                    >
-                      <div className="ldms-notif-content">
-                        <strong className="ldms-notif-title">{n.title}</strong>
-                        <span className="ldms-notif-text">
-                          {truncateText(n.message)}
-                        </span>
+                <div className="ldms-notification-list">
+                  {notifications.length === 0 ? (
+                    <div className="ldms-notif-empty">No new notifications</div>
+                  ) : (
+                    notifications.map((n) => (
+                      <div
+                        key={n.id}
+                        className={`ldms-notification-item ${!n.is_read ? "unread" : ""}`}
+                        onClick={() => handleNotificationClick(n)}
+                      >
+                        <div className="ldms-notif-content">
+                          <strong className="ldms-notif-title">
+                            {n.title}
+                          </strong>
+                          <span className="ldms-notif-text">
+                            {truncateText(n.message)}
+                          </span>
+                        </div>
+
+                        {/* ONLY show new.gif if it is UNREAD */}
+                        {!n.is_read && (
+                          <img
+                            src={NotifNew}
+                            className="ldms-notif-new"
+                            alt="new"
+                          />
+                        )}
                       </div>
+                    ))
+                  )}
+                </div>
 
-                      {/* ONLY show new.gif if it is UNREAD */}
-                      {!n.is_read && (
-                        <img
-                          src={NotifNew}
-                          className="ldms-notif-new"
-                          alt="new"
-                        />
-                      )}
-                    </div>
-                  ))
-                )}
+                {/* Show More Link */}
+                <div className="ldms-notif-footer">
+                  <a href="#" onClick={handleShowAllClick}>
+                    Show all notifications
+                  </a>
+                </div>
               </div>
+            )}
+          </div>
 
-              {/* Show More Link */}
-              <div className="ldms-notif-footer">
-                <a href="#" onClick={() => setShowNotifications(false)}>
-                  Show all notifications
-                </a>
+          {/* User Menu */}
+          <div className="ldms-user-wrapper">
+            <button
+              className="ldms-user-info"
+              onClick={() => {
+                setShowUserMenu((v) => !v);
+                setShowNotifications(false);
+              }}
+            >
+              <div className="ldms-user-avatar">{avatarLetter}</div>
+              <span className="ldms-user-name">{username}</span>
+            </button>
+
+            {showUserMenu && (
+              <div className="ldms-user-menu pop-animate">
+                <button onClick={handleLogout} className="ldms-logout-btn">
+                  Logout
+                </button>
               </div>
-            </div>
-          )}
+            )}
+          </div>
         </div>
 
-        {/* User Menu */}
-        <div className="ldms-user-wrapper">
-          <button
-            className="ldms-user-info"
-            onClick={() => {
-              setShowUserMenu((v) => !v);
-              setShowNotifications(false);
-            }}
-          >
-            <div className="ldms-user-avatar">{avatarLetter}</div>
-            <span className="ldms-user-name">{username}</span>
-          </button>
-
-          {showUserMenu && (
-            <div className="ldms-user-menu pop-animate">
-              <button onClick={handleLogout} className="ldms-logout-btn">
-                Logout
-              </button>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* -------- STYLES -------- */}
-      <style>{`
+        {/* -------- STYLES -------- */}
+        <style>{`
         :root {
           --ldms-red: #c62828;
           --ldms-red-light: #fdecea;
@@ -567,6 +586,14 @@ export default function LdmsHeader({ onBurgerClick }) {
           }
         } 
       `}</style>
-    </header>
+      </header>
+
+      {/* Render the Modal Outside the Header Flow */}
+      <NotificationModal
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        initialSelectedNotif={modalSelectedNotif}
+      />
+    </>
   );
 }
