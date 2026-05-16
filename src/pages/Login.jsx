@@ -185,10 +185,16 @@ export default function Login() {
     });
 
     if (!result?.success) {
-      setFailedAttempts((prev) => prev + 1);
-      setCaptchaError(
-        result?.error?.detail || "Login failed. Please try again.",
-      );
+      const errorDetail =
+        result?.error?.detail || "Login failed. Please try again.";
+      const isCaptchaIssue = errorDetail.toLowerCase().includes("captcha");
+
+      // 🔥 EXTREME PRECISION CHANGE: Only increment if NOT a captcha error
+      if (!isCaptchaIssue) {
+        setFailedAttempts((prev) => prev + 1);
+      }
+
+      setCaptchaError(errorDetail);
       setCaptchaValue("");
       loadCaptcha();
       return;
@@ -300,19 +306,6 @@ export default function Login() {
                   />{" "}
                   General
                 </label>
-                {/* <label>
-                  <input
-                    type="radio"
-                    value="CRP-EP Mapping"
-                    {...register("userType")}
-                    checked={userType === "CRP-EP Mapping"}
-                    onChange={() => {
-                      setUserType("CRP-EP Mapping");
-                      setRole("");
-                    }}
-                  />
-                  CRP-EP Mapping
-                </label> */}
               </div>
 
               <label className="block-label">Role</label>
@@ -349,11 +342,14 @@ export default function Login() {
             </span>
           </div>
 
-          {failedAttempts > 0 && failedAttempts < MAX_ATTEMPTS && (
-            <div className="error">
-              Wrong password. Attempts left: {MAX_ATTEMPTS - failedAttempts}
-            </div>
-          )}
+          {/* 🔥 EXTREME PRECISION CHANGE: Hide wrong password error if the current error is captcha-related */}
+          {failedAttempts > 0 &&
+            failedAttempts < MAX_ATTEMPTS &&
+            !captchaError?.toLowerCase().includes("captcha") && (
+              <div className="error">
+                Wrong password. Attempts left: {MAX_ATTEMPTS - failedAttempts}
+              </div>
+            )}
 
           <label className="block-label">Captcha</label>
 
@@ -382,11 +378,13 @@ export default function Login() {
 
           {captchaError && <p className="error">{captchaError}</p>}
 
-          {failedAttempts >= MAX_ATTEMPTS && (
-            <div className="error">
-              Password incorrect. Too many failed attempts.
-            </div>
-          )}
+          {/* 🔥 EXTREME PRECISION CHANGE: Hide wrong password max attempts error if the current error is captcha-related */}
+          {failedAttempts >= MAX_ATTEMPTS &&
+            !captchaError?.toLowerCase().includes("captcha") && (
+              <div className="error">
+                Password incorrect. Too many failed attempts.
+              </div>
+            )}
 
           <button className="log-in" type="submit">
             Log In
