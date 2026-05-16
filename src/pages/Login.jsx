@@ -511,9 +511,35 @@ export default function Login() {
       }
 
       .error {
-        font-size: 12px;
-        color: #dc2626;
-        margin-top: 4px;
+        font-size: 18px;
+        font-weight: 800;
+        color: #ffffff;
+        background: linear-gradient(135deg, #ff0000, #dc2626);
+        margin-top: 8px;
+        padding: 12px 16px;
+        border-radius: 10px;
+        border: 3px solid #7f1d1d;
+        box-shadow:
+          0 0 12px rgba(255, 0, 0, 0.8),
+          0 0 24px rgba(220, 38, 38, 0.7);
+        text-align: center;
+        letter-spacing: 0.5px;
+        animation: errorPulse 1s infinite alternate;
+      }
+
+      @keyframes errorPulse {
+        from {
+          transform: scale(1);
+          box-shadow:
+            0 0 12px rgba(255, 0, 0, 0.8),
+            0 0 24px rgba(220, 38, 38, 0.7);
+        }
+        to {
+          transform: scale(1.03);
+          box-shadow:
+            0 0 20px rgba(255, 0, 0, 1),
+            0 0 35px rgba(220, 38, 38, 0.9);
+        }
       }
 
       .captcha-wrapper {
