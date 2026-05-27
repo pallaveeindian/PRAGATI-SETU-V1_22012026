@@ -430,7 +430,7 @@ export default function SmmuTmsDashboard() {
                   </div>
                   <div className="kpi-title">Training Plans</div>
                   <div className="kpi-desc">
-                    Available modules (theme-specific)
+                    Total modules (All themes)
                   </div>
                 </div>
 
@@ -439,7 +439,7 @@ export default function SmmuTmsDashboard() {
                     {loadingKpis ? "…" : animThemes}
                   </div>
                   <div className="kpi-title">Training Themes</div>
-                  <div className="kpi-desc">Theme categories</div>
+                  <div className="kpi-desc">Training Module categories</div>
                 </div>
 
                 <div className="kpi-card">

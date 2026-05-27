@@ -5,7 +5,7 @@ import LeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
-// SURGICAL ADDITION: Import default 'api' for the blob export
+// SURGICAL ADDITION: Import default 'api' for the blob export and patch updates
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 
 /* ================= GEO ================= */
@@ -39,6 +39,11 @@ export default function DmmuTargetAchievement() {
   const [currentPage, setCurrentPage] = useState(1);
   const [totalItems, setTotalItems] = useState(0);
   const rowsPerPage = 25;
+
+  // ================= SURGICAL ADDITION: INLINE EDIT STATE =================
+  const [editingAch, setEditingAch] = useState({ id: null, val: 0 });
+  const [isUpdating, setIsUpdating] = useState(false);
+  // ========================================================================
 
   /* ================= AUTO DISTRICT ================= */
   useEffect(() => {
@@ -164,6 +169,34 @@ export default function DmmuTargetAchievement() {
   // SURGICAL ADDITION: Data is already paginated by backend
   const paginatedData = filteredData;
 
+  /* ================= UPDATE ACHIEVEMENT (SURGICAL ADDITION) ================= */
+  async function handleUpdateAchievement(targetId) {
+    if (editingAch.val < 0) {
+      alert("Achievement count cannot be negative.");
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      // NOTE: Ensure this payload key matches your backend schema for updating achievements
+      const endpoint = `/tms/training-partner-targets/${targetId}/`;
+
+      await api.patch(endpoint, {
+        // Adjust this payload based on how your backend expects to receive achievement updates
+        achieved_count: editingAch.val,
+      });
+
+      alert("Achievement updated successfully!");
+      setEditingAch({ id: null, val: 0 }); // Close edit mode
+      fetchTargetsWithAchievements(currentPage); // Refresh table data
+    } catch (error) {
+      console.error("Update failed:", error);
+      alert("Failed to update achievement.");
+    } finally {
+      setIsUpdating(false);
+    }
+  }
+
   /* ================= EXPORT ================= */
   // SURGICAL ADDITION: Server-Side Excel Export
   async function exportToExcel() {
@@ -232,7 +265,12 @@ export default function DmmuTargetAchievement() {
                     <label>Financial Year</label>
                     <select
                       value={financialYear}
-                      onChange={(e) => setFinancialYear(e.target.value)}
+                      onChange={(e) => {
+                        setFinancialYear(e.target.value);
+                        // SURGICAL ADDITION: Blank the table when Year changes
+                        setTargetsData([]);
+                        setTotalItems(0);
+                      }}
                     >
                       <option>2023-24</option>
                       <option>2024-25</option>
@@ -256,7 +294,12 @@ export default function DmmuTargetAchievement() {
                     <label>Plan</label>
                     <select
                       value={selectedPlan}
-                      onChange={(e) => setSelectedPlan(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedPlan(e.target.value);
+                        // SURGICAL ADDITION: Blank the table when Plan changes
+                        setTargetsData([]);
+                        setTotalItems(0);
+                      }}
                     >
                       <option value="">All</option>
                       {plans.map((p) => (
@@ -308,6 +351,8 @@ export default function DmmuTargetAchievement() {
                     <th>Target</th>
                     <th>Achieved</th>
                     <th>Progress</th>
+                    {/* SURGICAL ADDITION: Show Update column ONLY for 2025-26 */}
+                    {financialYear === "2025-26" && <th>Update Achieved</th>}
                   </tr>
                 </thead>
 
@@ -315,7 +360,7 @@ export default function DmmuTargetAchievement() {
                   {loading ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={financialYear === "2025-26" ? 7 : 6}
                         style={{ textAlign: "center", padding: "20px" }}
                       >
                         Loading data...
@@ -324,10 +369,10 @@ export default function DmmuTargetAchievement() {
                   ) : paginatedData.length === 0 ? (
                     <tr>
                       <td
-                        colSpan={6}
+                        colSpan={financialYear === "2025-26" ? 7 : 6}
                         style={{ textAlign: "center", padding: "20px" }}
                       >
-                        No targets found.
+                        No targets found. Please click "Fetch Data" to load.
                       </td>
                     </tr>
                   ) : (
@@ -339,6 +384,93 @@ export default function DmmuTargetAchievement() {
                         <td>{r.targetCount}</td>
                         <td>{r.achievedCount}</td>
                         <td>{r.progressPct}%</td>
+
+                        {/* SURGICAL ADDITION: Interactive Edit Counter ONLY for 2025-26 */}
+                        {financialYear === "2025-26" && (
+                          <td>
+                            {editingAch.id === r.id ? (
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "6px",
+                                  alignItems: "center",
+                                }}
+                              >
+                                <input
+                                  type="number"
+                                  min="0"
+                                  value={editingAch.val}
+                                  onChange={(e) =>
+                                    setEditingAch({
+                                      ...editingAch,
+                                      val: parseInt(e.target.value) || 0,
+                                    })
+                                  }
+                                  disabled={isUpdating}
+                                  style={{
+                                    width: "60px",
+                                    padding: "4px",
+                                    borderRadius: "4px",
+                                    border: "1px solid #a7c6ed",
+                                  }}
+                                />
+                                <button
+                                  onClick={() => handleUpdateAchievement(r.id)}
+                                  disabled={isUpdating}
+                                  style={{
+                                    background: "#10b981",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    padding: "4px 8px",
+                                    cursor: isUpdating
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  }}
+                                  title="Submit"
+                                >
+                                  {isUpdating ? "..." : "✔️"}
+                                </button>
+                                <button
+                                  onClick={() =>
+                                    setEditingAch({ id: null, val: 0 })
+                                  }
+                                  disabled={isUpdating}
+                                  style={{
+                                    background: "#ef4444",
+                                    color: "#fff",
+                                    border: "none",
+                                    borderRadius: "4px",
+                                    padding: "4px 8px",
+                                    cursor: isUpdating
+                                      ? "not-allowed"
+                                      : "pointer",
+                                  }}
+                                  title="Cancel"
+                                >
+                                  ✖️
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                className="btnPrimary"
+                                style={{
+                                  padding: "4px 8px",
+                                  fontSize: "12px",
+                                  background: "#3b82f6",
+                                }}
+                                onClick={() =>
+                                  setEditingAch({
+                                    id: r.id,
+                                    val: r.achievedCount,
+                                  })
+                                }
+                              >
+                                Add Achievement
+                              </button>
+                            )}
+                          </td>
+                        )}
                       </tr>
                     ))
                   )}

@@ -2,7 +2,7 @@
 import React, { useContext, useState, useEffect } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API } from "../../../api/axios"; 
+import { TMS_API } from "../../../api/axios";
 import logo from "../../../assets/TMS/tms_logo.png";
 import {
   FaTachometerAlt,
@@ -94,6 +94,20 @@ const MENU = {
       label: "Target Assignment",
       to: "/tms/smmu/partner-targets",
       icon: FaBullseye,
+    },
+    {
+      label: "Training Modules",
+      icon: FaChalkboardTeacher,
+      children: [
+        {
+          label: "All Modules list",
+          to: "/tms/smmu/list-training-plans",
+        },
+        {
+          label: "Add New Module",
+          to: "/tms/smmu/create-training-plan",
+        },
+      ],
     },
     {
       label: "Training Requests",

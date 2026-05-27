@@ -56,6 +56,8 @@ import BatchCertificate from "./pages/TMS/TRs/batch_certificate";
 import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
 import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
 import DmmuRequestClosure from "./pages/TMS/DMMU/dmmu_request_closure";
+import SmmuListTrainingPlan from "./pages/TMS/SMMU/smmu_list_training_plan";
+import SmmuCreateTrainingPlan from "./pages/TMS/SMMU/smmu_create_training_plan";
 
 // LDMS Dashboards
 import LdmsLayout from "./pages/LDMS/Layout/LdmsLayout";
@@ -146,6 +148,14 @@ export default function App() {
             <Route
               path="/tms/smmu/tp-TvA"
               element={<SmmuTargetAchievement />}
+            />
+            <Route
+              path="/tms/smmu/list-training-plans"
+              element={<SmmuListTrainingPlan />}
+            />
+            <Route
+              path="/tms/smmu/create-training-plan"
+              element={<SmmuCreateTrainingPlan />}
             />
           </Route>
 
