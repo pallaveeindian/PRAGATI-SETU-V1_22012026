@@ -67,6 +67,7 @@ export default function SHGMembers({ shg, onBack, onSelectMember }) {
             panchayat_id: address.panchayat_id || shg.panchayatId,
             member_name: m.member_name,
             mobile_number: m.member_phones?.[0]?.phone_no || null,
+            shg_name: shg.name || shg.shg_name || "-",
             shg_code: shg.code,
             member_code: m.member_code,
             social_category: m.social_category,

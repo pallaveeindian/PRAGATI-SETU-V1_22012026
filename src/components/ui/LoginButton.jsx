@@ -39,6 +39,12 @@ export default function LoginButton({ closeMenu }) {
       color: "#f59e0b",
       delay: "0.36s",
     },
+    {
+      path: "/login?module=epsms",
+      label: "EPSMS Portal",
+      color: "#9333ea",
+      delay: "0.54s",
+    },
   ];
 
   return (

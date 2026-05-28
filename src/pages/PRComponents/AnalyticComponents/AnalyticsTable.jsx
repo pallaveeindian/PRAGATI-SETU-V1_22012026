@@ -10,6 +10,7 @@ export default function AnalyticsTable({
   loginData,
   cadreData,
   loading,
+  filters,
 }) {
   const [currentPage, setCurrentPage] = useState(1);
 
@@ -148,109 +149,249 @@ export default function AnalyticsTable({
   // VIEW: TMS -> LOGIN STATUS
   // ==========================================
   if (activeTab === "tms" && activeSubTab === "tms_training") {
-    const records = loginData?.all_records || [];
+    const isSummaryView = filters?.district_wise_summary === "1";
+    const isNotLoggedIn = filters?.not_logged_in === "1";
 
-    // Pagination
-    const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
-    const paginatedData = records.slice(
-      (currentPage - 1) * ROWS_PER_PAGE,
-      currentPage * ROWS_PER_PAGE,
-    );
+    if (isSummaryView) {
+      // ----------------------------------------
+      // DISTRICT & BLOCK SUMMARY TABLE
+      // ----------------------------------------
+      const summaryData = loginData?.district_wise_summary || [];
+      const flatData = [];
 
-    // Export mapping
-    const exportData = records.map((row, idx) => ({
-      sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
-      username: row.username,
-      role: row.role_name.replace(/_/g, " ").toUpperCase(),
-      district: row.district_name_en || "-",
-      block: row.block_name_en || "-",
-      login_time: formatDateTime(row.first_login_at),
-      status: row.must_change_password ? "Pending Change" : "Changed",
-    }));
-    const exportHeaders = [
-      { label: "S.No.", key: "sno" },
-      { label: "Username", key: "username" },
-      { label: "Role", key: "role" },
-      { label: "District", key: "district" },
-      { label: "Block", key: "block" },
-      { label: "First Login Time", key: "login_time" },
-      { label: "Password Status", key: "status" },
-    ];
+      // Flatten the nested district -> block backend structure
+      summaryData.forEach((d) => {
+        if (!d.blocks || d.blocks.length === 0) {
+          flatData.push({
+            district: d.district_name_en,
+            block: "-",
+            count: d.district_user_count,
+          });
+        } else {
+          d.blocks.forEach((b) => {
+            flatData.push({
+              district: d.district_name_en,
+              block: b.block_name_en,
+              count: b.user_count,
+            });
+          });
+        }
+      });
 
-    return (
-      <div className="analytics-module table-module">
-        <div className="table-header">
-          <h3>Recent First Logins</h3>
-          <ExportButton
-            data={exportData}
-            headers={exportHeaders}
-            filename="Login_Status.csv"
-          />
-        </div>
-        <div className="table-responsive">
-          <table className="gov-data-table">
-            <thead>
-              <tr>
-                <th>S.No.</th>
-                <th>Username</th>
-                <th>Role</th>
-                <th>District</th>
-                <th>Block</th>
-                <th>First Login Time</th>
-                <th>Password Status</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((row, idx) => (
-                <tr key={idx}>
-                  <td className="fw-bold">
-                    {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
-                  </td>
-                  <td>{row.username}</td>
-                  <td>{row.role_name.replace(/_/g, " ").toUpperCase()}</td>
-                  <td>{row.district_name_en || "-"}</td>
-                  <td>{row.block_name_en || "-"}</td>
-                  <td>{formatDateTime(row.first_login_at)}</td>
-                  <td>
-                    <span
-                      className={`status-badge ${row.must_change_password ? "danger" : "success"}`}
-                    >
-                      {row.must_change_password ? "Pending Change" : "Changed"}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {paginatedData.length === 0 && (
-                <tr>
-                  <td colSpan="6" style={{ textAlign: "center" }}>
-                    No records found for selected filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 && (
-          <div className="pagination-controls">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              Prev
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              Next
-            </button>
+      const totalPages = Math.ceil(flatData.length / ROWS_PER_PAGE);
+      const paginatedData = flatData.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE,
+      );
+
+      const exportData = flatData.map((row, idx) => ({
+        sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
+        district: row.district || "-",
+        block: row.block || "-",
+        count: row.count,
+      }));
+      const exportHeaders = [
+        { label: "S.No.", key: "sno" },
+        { label: "District", key: "district" },
+        { label: "Block", key: "block" },
+        { label: "User Count", key: "count" },
+      ];
+
+      return (
+        <div className="analytics-module table-module">
+          <div className="table-header">
+            <h3>District & Block Wise Summary</h3>
+            <ExportButton
+              data={exportData}
+              headers={exportHeaders}
+              filename="District_Summary.csv"
+            />
           </div>
-        )}
-      </div>
-    );
+          <div className="table-responsive">
+            <table className="gov-data-table">
+              <thead>
+                <tr>
+                  <th>S.No.</th>
+                  <th>District</th>
+                  <th>Block</th>
+                  <th>User Count</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="fw-bold">
+                      {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                    </td>
+                    <td>{row.district}</td>
+                    <td>{row.block}</td>
+                    <td>
+                      <span
+                        className="status-badge"
+                        style={{ background: "#dbeafe", color: "#1e40af" }}
+                      >
+                        {row.count}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {paginatedData.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "center" }}>
+                      No summary data found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Prev
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    } else {
+      // ----------------------------------------
+      // DETAILED RECORDS TABLE
+      // ----------------------------------------
+      const records = loginData?.all_records || [];
+      const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
+      const paginatedData = records.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE,
+      );
+
+      const exportData = records.map((row, idx) => {
+        const base = {
+          sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
+          username: row.username,
+          role: row.role_name.replace(/_/g, " ").toUpperCase(),
+          district: row.district_name_en || "-",
+          block: row.block_name_en || "-",
+        };
+        if (!isNotLoggedIn) {
+          base.login_time = formatDateTime(row.first_login_at);
+          base.status = row.must_change_password ? "Pending Change" : "Changed";
+        }
+        return base;
+      });
+
+      const exportHeaders = [
+        { label: "S.No.", key: "sno" },
+        { label: "Username", key: "username" },
+        { label: "Role", key: "role" },
+        { label: "District", key: "district" },
+        { label: "Block", key: "block" },
+      ];
+      if (!isNotLoggedIn) {
+        exportHeaders.push({ label: "First Login Time", key: "login_time" });
+        exportHeaders.push({ label: "Password Status", key: "status" });
+      }
+
+      return (
+        <div className="analytics-module table-module">
+          <div className="table-header">
+            <h3>
+              {isNotLoggedIn ? "Not Logged In Users" : "Recent First Logins"}
+            </h3>
+            <ExportButton
+              data={exportData}
+              headers={exportHeaders}
+              filename={
+                isNotLoggedIn ? "Not_Logged_In.csv" : "Login_Status.csv"
+              }
+            />
+          </div>
+          <div className="table-responsive">
+            <table className="gov-data-table">
+              <thead>
+                <tr>
+                  <th>S.No.</th>
+                  <th>Username</th>
+                  <th>Role</th>
+                  <th>District</th>
+                  <th>Block</th>
+                  {!isNotLoggedIn && <th>First Login Time</th>}
+                  {!isNotLoggedIn && <th>Password Status</th>}
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="fw-bold">
+                      {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                    </td>
+                    <td>{row.username}</td>
+                    <td>{row.role_name.replace(/_/g, " ").toUpperCase()}</td>
+                    <td>{row.district_name_en || "-"}</td>
+                    <td>{row.block_name_en || "-"}</td>
+                    {!isNotLoggedIn && (
+                      <td>{formatDateTime(row.first_login_at)}</td>
+                    )}
+                    {!isNotLoggedIn && (
+                      <td>
+                        <span
+                          className={`status-badge ${row.must_change_password ? "danger" : "success"}`}
+                        >
+                          {row.must_change_password
+                            ? "Pending Change"
+                            : "Changed"}
+                        </span>
+                      </td>
+                    )}
+                  </tr>
+                ))}
+                {paginatedData.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan={isNotLoggedIn ? "5" : "7"}
+                      style={{ textAlign: "center" }}
+                    >
+                      No records found for selected filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Prev
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
   }
 
   // ==========================================

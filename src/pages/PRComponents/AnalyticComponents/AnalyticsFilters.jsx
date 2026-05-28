@@ -112,6 +112,32 @@ export default function AnalyticsFilters({
       {/* --- EXTRA FILTERS ONLY FOR LOGIN STATUS --- */}
       {activeTab === "tms" && activeSubTab === "tms_training" && (
         <>
+          {/* Login Status Filter */}
+          <div className="filter-group">
+            <label>Login Status</label>
+            <select
+              value={filters.not_logged_in || "0"}
+              onChange={(e) => onFilterChange("not_logged_in", e.target.value)}
+            >
+              <option value="0">Logged In Users</option>
+              <option value="1">Not Logged In Users</option>
+            </select>
+          </div>
+
+          {/* View Mode Filter */}
+          <div className="filter-group">
+            <label>View Mode</label>
+            <select
+              value={filters.district_wise_summary || "0"}
+              onChange={(e) =>
+                onFilterChange("district_wise_summary", e.target.value)
+              }
+            >
+              <option value="0">Detailed Records</option>
+              <option value="1">District & Block Summary</option>
+            </select>
+          </div>
+
           {/* Role Dropdown */}
           <div className="filter-group">
             <label>Role / Cadre</label>

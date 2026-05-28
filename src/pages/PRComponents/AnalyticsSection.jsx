@@ -22,6 +22,8 @@ export default function AnalyticsSection({ currentReport }) {
     date: "",
     start_date: "",
     end_date: "",
+    not_logged_in: "0",
+    district_wise_summary: "0",
   });
 
   const activeTab = currentReport?.tab || "overview";
@@ -100,6 +102,9 @@ export default function AnalyticsSection({ currentReport }) {
     if (filters.start_date)
       queryParams.append("start_date", filters.start_date);
     if (filters.end_date) queryParams.append("end_date", filters.end_date);
+    if (filters.not_logged_in === "1") queryParams.append("not_logged_in", "1");
+    if (filters.district_wise_summary === "1")
+      queryParams.append("district_wise_summary", "1");
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
@@ -138,6 +143,8 @@ export default function AnalyticsSection({ currentReport }) {
     filters.date,
     filters.start_date,
     filters.end_date,
+    filters.not_logged_in,
+    filters.district_wise_summary,
   ]);
 
   // Fetch data whenever the tab changes
@@ -155,6 +162,7 @@ export default function AnalyticsSection({ currentReport }) {
         loginData={loginData}
         cadreData={cadreData}
         loading={loading}
+        filters={filters}
       />
 
       {/* 2. FILTERS / INFO BAR */}
@@ -176,6 +184,7 @@ export default function AnalyticsSection({ currentReport }) {
         loginData={loginData}
         cadreData={cadreData}
         loading={loading}
+        filters={filters}
       />
 
       {/* ================= STYLES (Shared across children) ================= */}

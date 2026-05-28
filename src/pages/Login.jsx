@@ -46,9 +46,17 @@ const ROLE_LDMS_ROUTE = {
   default: "/future-updates",
 };
 
+// const ROLE_EPSMS_ROUTE = {
+//   crp_record: "/epsms/crp-form/",
+//   default: "/epsms",
+// };
+
 const ROLE_EPSMS_ROUTE = {
+  default: "/mou/dashboard",
+};
+
+const ROLE_CRP_ROUTE = {
   crp_record: "/epsms/crp-form/",
-  default: "/epsms",
 };
 
 /* -------------------------------------------------
@@ -117,6 +125,7 @@ export default function Login() {
   const [captchaValue, setCaptchaValue] = useState("");
   const [captchaError, setCaptchaError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+  const isEPSMS = module === "epsms";
 
   const {
     register,
@@ -159,10 +168,26 @@ export default function Login() {
         setTheme("green");
         setUserType("Admin");
         break;
+      // case "crp":
+      //   setTheme("gr-een");
+      //   setUserType("CRP-EP Mapping");
+      //   break;
+
       case "crp":
         setTheme("green");
         setUserType("CRP-EP Mapping");
         break;
+
+      // case "epsms":
+      //   setTheme("purple");
+      //   setUserType("CRP-EP Mapping");
+      //   break;
+      case "epsms":
+        setTheme("purple");
+        setUserType("Admin");
+        setRole("");
+        break;
+
       default:
         setTheme("yellow");
         setUserType("Admin");
@@ -203,8 +228,22 @@ export default function Login() {
     setFailedAttempts(0);
 
     // 🔥 CRP-EP DIRECT BYPASS
-    if (data.userType === "CRP-EP Mapping" || module === "crp") {
-      navigate(ROLE_EPSMS_ROUTE.crp_record, { replace: true });
+    // if (data.userType === "CRP-EP Mapping" || module === "crp") {
+    //   navigate(ROLE_EPSMS_ROUTE.crp_record, { replace: true });
+    //   return;
+    // }
+
+    if (module === "crp") {
+      navigate(ROLE_CRP_ROUTE.crp_record, {
+        replace: true,
+      });
+      return;
+    }
+
+    if (module === "epsms") {
+      navigate(ROLE_EPSMS_ROUTE.default, {
+        replace: true,
+      });
       return;
     }
 
@@ -261,22 +300,38 @@ export default function Login() {
             {module === "esm" && (
               <img src={esmLogo} alt="EMS" className="app-logo" />
             )}
-            {module === "crp" && (
+            {/* {module === "crp" && (
               <img src={esmLogo} alt="EMS" className="app-logo" />
+            )} */}
+            {module === "crp" && (
+              <img src={esmLogo} alt="CRP" className="app-logo" />
+            )}
+
+            {module === "epsms" && (
+              <img src={esmLogo} alt="EPSMS" className="app-logo" />
             )}
           </div>
 
           <div className="form-header-text">
-            <h2>
+            {/* <h2>
               {module === "crp"
                 ? "CRP-EP Mapping Login"
                 : `${module.toUpperCase()} Portal`}
+            </h2> */}
+
+            <h2>
+              {module === "crp"
+                ? "CRP-EP Mapping Login"
+                : module === "epsms"
+                  ? "EPSMS Portal"
+                  : `${module.toUpperCase()} Portal`}
             </h2>
+
             <p>Enter your credentials to continue</p>
           </div>
 
           {/* Hide user type and role if CRP is explicitly selected via URL */}
-          {module !== "crp" && (
+          {/* {module !== "crp" && (
             <>
               <label className="block-label">User Type</label>
               <div className="radio-row">
@@ -319,6 +374,56 @@ export default function Login() {
               {errors.role && userType !== "CRP-EP Mapping" && (
                 <p className="error">{errors.role.message}</p>
               )}
+            </>
+          )} */}
+
+          {module !== "crp" && (
+            <>
+              <label className="block-label">User Type</label>
+
+              <div className="radio-row">
+                {/* EPSMS → ONLY ADMIN */}
+                <label>
+                  <input
+                    type="radio"
+                    value="Admin"
+                    {...register("userType")}
+                    checked={userType === "Admin"}
+                    onChange={() => {
+                      setUserType("Admin");
+                      setRole("");
+                    }}
+                  />{" "}
+                  Admin
+                </label>
+
+                {!isEPSMS && (
+                  <label>
+                    <input
+                      type="radio"
+                      value="General"
+                      {...register("userType")}
+                      checked={userType === "General"}
+                      onChange={() => {
+                        setUserType("General");
+                        setRole("");
+                      }}
+                    />{" "}
+                    General
+                  </label>
+                )}
+              </div>
+
+              <label className="block-label">Role</label>
+
+              <RoleSelector
+                userType={isEPSMS ? "Admin" : userType}
+                value={role}
+                onChange={setRole}
+                disabled={false}
+              />
+
+              {errors.role && <p className="error">{errors.role.message}</p>}
             </>
           )}
 

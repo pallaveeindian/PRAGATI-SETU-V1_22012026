@@ -562,6 +562,14 @@ export const EPSAKHI_API = {
     api.get(`/upsrlm-shg-members/${encodeURIComponent(shgCode)}/`, {
       params,
     }),
+
+  //  MOU FORM CREATE (POST API)
+  mouFormCreate: (data) => api.post("/epsakhi/mou-form/create/", data),
+  mouFormList: (params) => api.get("/epsakhi/mou-enterprise/list/", { params }),
+  mouFormDetail: (id, params) =>
+    api.get(`/epsakhi/mou-form/detail/${encodeURIComponent(id)}/`, { params }),
+
+  mouFormTargetsList: (params) => api.get("/epsakhi/mou-targets/", { params }),
 };
 
 // ------------------------

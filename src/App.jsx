@@ -56,8 +56,6 @@ import BatchCertificate from "./pages/TMS/TRs/batch_certificate";
 import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
 import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
 import DmmuRequestClosure from "./pages/TMS/DMMU/dmmu_request_closure";
-import SmmuListTrainingPlan from "./pages/TMS/SMMU/smmu_list_training_plan";
-import SmmuCreateTrainingPlan from "./pages/TMS/SMMU/smmu_create_training_plan";
 
 // LDMS Dashboards
 import LdmsLayout from "./pages/LDMS/Layout/LdmsLayout";
@@ -88,6 +86,10 @@ import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
 import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
 import CRPForm from "./pages/EPSMS/RecordForm/CRPForm";
 import ViewRecCRPs from "./pages/EPSMS/ViewRecordedCRPs/ViewRecCRPs";
+
+// MOU Form
+import MOULayout from "./pages/EPSMS/MOUForm/MOULayout.jsx";
+import MOUDashboard from "./pages/EPSMS/MOUForm/MOUDashboard.jsx";
 
 export default function App() {
   const { authReady } = useAuth();
@@ -148,14 +150,6 @@ export default function App() {
             <Route
               path="/tms/smmu/tp-TvA"
               element={<SmmuTargetAchievement />}
-            />
-            <Route
-              path="/tms/smmu/list-training-plans"
-              element={<SmmuListTrainingPlan />}
-            />
-            <Route
-              path="/tms/smmu/create-training-plan"
-              element={<SmmuCreateTrainingPlan />}
             />
           </Route>
 
@@ -360,13 +354,20 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* EPSMS */}
+        {/* CRP-EP MAPPING FORM */}
         <Route
           element={<ProtectedRoute allowedRoles={["crp_record", "dmmu"]} />}
         >
           <Route path="/epsms" element={<EpsmsLayout />}>
             <Route path="crp-form" element={<CRPForm />} />
             <Route path="recorded-crps" element={<ViewRecCRPs />} />
+          </Route>
+        </Route>
+
+        {/* EPSMS MOU FORM*/}
+        <Route element={<ProtectedRoute allowedRoles={["bmmu"]} />}>
+          <Route path="/mou" element={<MOULayout />}>
+            <Route path="dashboard" element={<MOUDashboard />} />
           </Route>
         </Route>
 

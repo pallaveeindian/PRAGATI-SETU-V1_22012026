@@ -7,6 +7,7 @@ export default function AnalyticsCharts({
   loginData,
   cadreData,
   loading,
+  filters,
 }) {
   if (loading) {
     return <div className="loading-spinner">Crunching Data...</div>;
@@ -376,6 +377,8 @@ export default function AnalyticsCharts({
     // Safety check if no data
     if (!metrics) return null;
 
+    const isNotLoggedIn = filters?.not_logged_in === "1";
+
     const maxCadreCount = Math.max(
       ...Object.values(metrics.cadre_distribution || { a: 1 }),
     );
@@ -383,32 +386,54 @@ export default function AnalyticsCharts({
     return (
       <div className="charts-container">
         <div className="metrics-grid">
-          <div className="metric-card gradient-blue">
-            <div className="metric-icon">🚀</div>
-            <div className="metric-info">
-              <span className="metric-label">Total First Logins</span>
-              <span className="metric-value">{metrics.total_first_logins}</span>
+          {isNotLoggedIn ? (
+            <div className="metric-card gradient-orange">
+              <div className="metric-icon">🚫</div>
+              <div className="metric-info">
+                <span className="metric-label">Total Not Logged In</span>
+                <span className="metric-value">
+                  {metrics.total_not_logged_in || 0}
+                </span>
+              </div>
             </div>
-          </div>
-          <div className="metric-card gradient-green">
-            <div className="metric-icon">✅</div>
-            <div className="metric-info">
-              <span className="metric-label">Passwords Changed</span>
-              <span className="metric-value">{metrics.passwords_changed}</span>
-            </div>
-          </div>
-          <div className="metric-card gradient-orange">
-            <div className="metric-icon">⏳</div>
-            <div className="metric-info">
-              <span className="metric-label">Pending Change</span>
-              <span className="metric-value">{metrics.passwords_pending}</span>
-            </div>
-          </div>
+          ) : (
+            <>
+              <div className="metric-card gradient-blue">
+                <div className="metric-icon">🚀</div>
+                <div className="metric-info">
+                  <span className="metric-label">Total First Logins</span>
+                  <span className="metric-value">
+                    {metrics.total_first_logins}
+                  </span>
+                </div>
+              </div>
+              <div className="metric-card gradient-green">
+                <div className="metric-icon">✅</div>
+                <div className="metric-info">
+                  <span className="metric-label">Passwords Changed</span>
+                  <span className="metric-value">
+                    {metrics.passwords_changed}
+                  </span>
+                </div>
+              </div>
+              <div className="metric-card gradient-orange">
+                <div className="metric-icon">⏳</div>
+                <div className="metric-info">
+                  <span className="metric-label">Pending Change</span>
+                  <span className="metric-value">
+                    {metrics.passwords_pending}
+                  </span>
+                </div>
+              </div>
+            </>
+          )}
         </div>
 
         <div className="dashboard-row">
           <div className="dashboard-card">
-            <h4 className="card-title">📍 Coverage Logged In</h4>
+            <h4 className="card-title">
+              📍 Coverage {isNotLoggedIn ? "Not Logged In" : "Logged In"}
+            </h4>
             <div
               style={{
                 display: "flex",
