@@ -9,6 +9,7 @@ export default function AnalyticsTable({
   overviewData,
   loginData,
   cadreData,
+  mouData, // --- SURGICAL ADDITION ---
   loading,
   filters,
 }) {
@@ -43,7 +44,7 @@ export default function AnalyticsTable({
   }
 
   // ==========================================
-  // VIEW: GLOBAL OVERVIEW
+  // VIEW: GLOBAL OVERVIEW (Fallbacks)
   // ==========================================
   if (activeTab === "overview") {
     const tms = overviewData?.platform_overview?.TMS;
@@ -122,6 +123,194 @@ export default function AnalyticsTable({
           </table>
         </div>
         {/* Pagination Controls */}
+        {totalPages > 1 && (
+          <div className="pagination-controls">
+            <button
+              disabled={currentPage === 1}
+              onClick={() => setCurrentPage((p) => p - 1)}
+            >
+              Prev
+            </button>
+            <span>
+              Page {currentPage} of {totalPages}
+            </span>
+            <button
+              disabled={currentPage === totalPages}
+              onClick={() => setCurrentPage((p) => p + 1)}
+            >
+              Next
+            </button>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VIEW: EPSAKHI -> MOU ANALYTICS (SURGICAL ADDITION)
+  // ==========================================
+  if (activeTab === "mou_analytics" || activeSubTab === "mou_analytics") {
+    const isSummaryView = filters?.district_wise_summary === "1";
+
+    // Depending on the endpoint logic, data could be in .results or .data
+    const records = mouData?.results || mouData?.data || [];
+
+    const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
+    const paginatedData = records.slice(
+      (currentPage - 1) * ROWS_PER_PAGE,
+      currentPage * ROWS_PER_PAGE,
+    );
+
+    // Dynamic Export Mapping Based on View Mode
+    const exportData = records.map((row, idx) => {
+      const base = {
+        sno: idx + 1,
+        district: row.district_name_en || row.district_name || "Unknown",
+      };
+
+      if (isSummaryView) {
+        base.blocks_involved = row.blocks || 0;
+        base.achieved_mou = row.total_achieved_mou || 0;
+      } else {
+        const target = Number(row.mou_target) || 0;
+        const achieved = Number(row.achieved_mou) || 0;
+        base.fy = row.financial_year || "-";
+        base.target = target;
+        base.achieved = achieved;
+        base.percent =
+          target > 0 ? ((achieved / target) * 100).toFixed(1) + "%" : "0%";
+      }
+      return base;
+    });
+
+    const exportHeaders = isSummaryView
+      ? [
+          { label: "S.No.", key: "sno" },
+          { label: "District", key: "district" },
+          { label: "Blocks Involved", key: "blocks_involved" },
+          { label: "Total Achieved MOUs", key: "achieved_mou" },
+        ]
+      : [
+          { label: "S.No.", key: "sno" },
+          { label: "District", key: "district" },
+          { label: "Financial Year", key: "fy" },
+          { label: "MOU Target", key: "target" },
+          { label: "Achieved MOUs", key: "achieved" },
+          { label: "Achievement %", key: "percent" },
+        ];
+
+    return (
+      <div className="analytics-module table-module">
+        <div className="table-header">
+          <h3>
+            {isSummaryView
+              ? "District & Block Wise MOU Summary"
+              : "District MOU Target & Achievement"}
+          </h3>
+          <ExportButton
+            data={exportData}
+            headers={exportHeaders}
+            filename={isSummaryView ? "MOU_Summary.csv" : "MOU_Achievement.csv"}
+          />
+        </div>
+        <div className="table-responsive">
+          <table className="gov-data-table">
+            <thead>
+              <tr>
+                <th>S.No.</th>
+                <th>District</th>
+                {isSummaryView ? (
+                  <>
+                    <th>Blocks Involved</th>
+                    <th>Total Achieved MOUs</th>
+                  </>
+                ) : (
+                  <>
+                    <th>Financial Year</th>
+                    <th>MOU Target</th>
+                    <th>Achieved MOUs</th>
+                    <th>Achievement %</th>
+                  </>
+                )}
+              </tr>
+            </thead>
+            <tbody>
+              {paginatedData.map((row, index) => {
+                const target = Number(row.mou_target) || 0;
+                const achieved = isSummaryView
+                  ? Number(row.total_achieved_mou) || 0
+                  : Number(row.achieved_mou) || 0;
+                const percent =
+                  target > 0 ? ((achieved / target) * 100).toFixed(1) : 0;
+
+                return (
+                  <tr key={index}>
+                    <td className="fw-bold">
+                      {(currentPage - 1) * ROWS_PER_PAGE + index + 1}
+                    </td>
+                    <td className="fw-bold">
+                      {row.district_name_en || row.district_name || "-"}
+                    </td>
+
+                    {isSummaryView ? (
+                      <>
+                        <td>{row.blocks || 0}</td>
+                        <td>
+                          <span
+                            className="status-badge success"
+                            style={{ background: "#dcfce7", color: "#166534" }}
+                          >
+                            {achieved}
+                          </span>
+                        </td>
+                      </>
+                    ) : (
+                      <>
+                        <td>{row.financial_year || "-"}</td>
+                        <td>{target.toLocaleString("en-IN")}</td>
+                        <td>
+                          <span
+                            className={`status-badge ${achieved >= target && target > 0 ? "success" : "warning"}`}
+                          >
+                            {achieved.toLocaleString("en-IN")}
+                          </span>
+                        </td>
+                        <td>
+                          <strong
+                            style={{
+                              color:
+                                percent >= 100
+                                  ? "#16a34a"
+                                  : percent > 0
+                                    ? "#ea580c"
+                                    : "#64748b",
+                            }}
+                          >
+                            {percent}%
+                          </strong>
+                        </td>
+                      </>
+                    )}
+                  </tr>
+                );
+              })}
+              {paginatedData.length === 0 && (
+                <tr>
+                  <td
+                    colSpan={isSummaryView ? "4" : "6"}
+                    style={{
+                      textAlign: "center",
+                      padding: "30px",
+                      color: "#64748b",
+                    }}
+                  >
+                    No MOU Target or Achievement records found.
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
         {totalPages > 1 && (
           <div className="pagination-controls">
             <button
@@ -480,7 +669,7 @@ export default function AnalyticsTable({
               ))}
               {paginatedData.length === 0 && (
                 <tr>
-                  <td colSpan="6" style={{ textAlign: "center" }}>
+                  <td colSpan="7" style={{ textAlign: "center" }}>
                     No records found for selected filters.
                   </td>
                 </tr>
@@ -617,5 +806,6 @@ export default function AnalyticsTable({
       </div>
     );
   }
+
   return null;
 }

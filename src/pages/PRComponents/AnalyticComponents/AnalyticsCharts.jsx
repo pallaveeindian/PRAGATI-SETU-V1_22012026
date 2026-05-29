@@ -6,6 +6,7 @@ export default function AnalyticsCharts({
   overviewData,
   loginData,
   cadreData,
+  mouData,
   loading,
   filters,
 }) {
@@ -811,6 +812,152 @@ export default function AnalyticsCharts({
                   </div>
                 </div>
               ))}
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // ==========================================
+  // VIEW: EPSAKHI -> MOU ANALYTICS (SURGICAL ADDITION)
+  // ==========================================
+  if (activeTab === "mou_analytics" || activeSubTab === "mou_analytics") {
+    const mouResults = mouData?.results || mouData?.data || [];
+
+    // Calculate aggregated totals
+    const totalTarget = mouResults.reduce(
+      (acc, curr) => acc + (Number(curr.mou_target) || 0),
+      0,
+    );
+    const totalAchieved = mouResults.reduce(
+      (acc, curr) => acc + (Number(curr.achieved_mou) || 0),
+      0,
+    );
+    const achievementPercentage =mouResults.reduce(
+      (acc, curr) => acc + (Number(curr.achievement_percentage) || 0),
+      0,
+    );
+
+    // Get Top 5 Districts by achievement for the chart
+    const topDistricts = [...mouResults]
+      .sort(
+        (a, b) => (Number(b.achieved_mou) || 0) - (Number(a.achieved_mou) || 0),
+      )
+      .slice(0, 5);
+
+    const maxDistrictAchieved = Math.max(
+      ...topDistricts.map((d) => Number(d.achieved_mou) || 0),
+      1,
+    );
+
+    return (
+      <div className="charts-container">
+        {/* ROW 1: METRICS */}
+        <div className="metrics-grid">
+          <div className="metric-card gradient-blue">
+            <div className="metric-icon">🎯</div>
+            <div className="metric-info">
+              <span className="metric-label">Total MOU Target</span>
+              <span className="metric-value">
+                {totalTarget.toLocaleString("en-IN")}
+              </span>
+            </div>
+          </div>
+          <div className="metric-card gradient-green">
+            <div className="metric-icon">✅</div>
+            <div className="metric-info">
+              <span className="metric-label">Total MOUs Achieved</span>
+              <span className="metric-value">
+                {totalAchieved.toLocaleString("en-IN")}
+              </span>
+            </div>
+          </div>
+          <div className="metric-card gradient-orange">
+            <div className="metric-icon">📈</div>
+            <div className="metric-info">
+              <span className="metric-label">State Achievement %</span>
+              <span className="metric-value">{achievementPercentage}%</span>
+            </div>
+          </div>
+        </div>
+
+        {/* ROW 2: CHARTS */}
+        <div className="dashboard-row" style={{ gridTemplateColumns: "1fr" }}>
+          <div className="dashboard-card chart-card">
+            <h4 className="card-title">🏆 Top 5 Districts by Achievement</h4>
+            <div className="css-bar-chart">
+              {topDistricts.length > 0 ? (
+                topDistricts.map((dist, idx) => {
+                  const achieved = Number(dist.achieved_mou) || 0;
+                  return (
+                    <div
+                      className="bar-row"
+                      key={idx}
+                      style={{
+                        display: "flex",
+                        gap: "12px",
+                        alignItems: "center",
+                        marginBottom: "8px",
+                      }}
+                    >
+                      <div
+                        style={{
+                          width: "120px",
+                          fontSize: "12px",
+                          fontWeight: "bold",
+                          color: "#475569",
+                          textAlign: "right",
+                        }}
+                      >
+                        {dist.district_name_en || "UNKNOWN"}
+                      </div>
+                      <div
+                        style={{
+                          flex: 1,
+                          background: "#f1f5f9",
+                          height: "24px",
+                          borderRadius: "4px",
+                          position: "relative",
+                        }}
+                      >
+                        <div
+                          style={{
+                            width: `${(achieved / maxDistrictAchieved) * 100}%`,
+                            height: "100%",
+                            background: "var(--epsms-green, #16a34a)",
+                            borderRadius: "4px",
+                            display: "flex",
+                            alignItems: "center",
+                            paddingLeft: "8px",
+                            minWidth: "30px",
+                          }}
+                        >
+                          <span
+                            style={{
+                              color: "#fff",
+                              fontSize: "12px",
+                              fontWeight: "bold",
+                            }}
+                          >
+                            {achieved}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              ) : (
+                <div
+                  style={{
+                    padding: "20px",
+                    textAlign: "center",
+                    color: "#64748b",
+                  }}
+                >
+                  No district data available.
+                </div>
+              )}
             </div>
           </div>
         </div>

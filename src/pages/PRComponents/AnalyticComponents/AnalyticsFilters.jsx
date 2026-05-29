@@ -19,15 +19,11 @@ export default function AnalyticsFilters({
   onFilterChange,
   onApply,
 }) {
-  // ==========================================
-  // HIDE FILTERS COMPLETELY FOR THESE VIEWS
-  // ==========================================
-  if (
-    activeTab === "overview" ||
-    (activeTab === "tms" && activeSubTab === "tms_users")
-  ) {
-    return null;
-  }
+  // Helper booleans for routing filters
+  const isMouAnalytics =
+    activeTab === "mou_analytics" || activeSubTab === "mou_analytics";
+  const isTmsTraining = activeTab === "tms" && activeSubTab === "tms_training";
+  const showViewMode = isTmsTraining || isMouAnalytics; // Both APIs support district_wise_summary
 
   // ==========================================
   // 1. HIDE FILTERS COMPLETELY FOR DEMOGRAPHICS
@@ -109,8 +105,24 @@ export default function AnalyticsFilters({
         </select>
       </div>
 
-      {/* --- EXTRA FILTERS ONLY FOR LOGIN STATUS --- */}
-      {activeTab === "tms" && activeSubTab === "tms_training" && (
+      {/* --- VIEW MODE (Shared by TMS Login & MOU Analytics) --- */}
+      {showViewMode && (
+        <div className="filter-group">
+          <label>View Mode</label>
+          <select
+            value={filters.district_wise_summary || "0"}
+            onChange={(e) =>
+              onFilterChange("district_wise_summary", e.target.value)
+            }
+          >
+            <option value="0">Detailed Records</option>
+            <option value="1">District & Block Summary</option>
+          </select>
+        </div>
+      )}
+
+      {/* --- EXTRA FILTERS ONLY FOR TMS LOGIN STATUS --- */}
+      {isTmsTraining && (
         <>
           {/* Login Status Filter */}
           <div className="filter-group">
@@ -121,20 +133,6 @@ export default function AnalyticsFilters({
             >
               <option value="0">Logged In Users</option>
               <option value="1">Not Logged In Users</option>
-            </select>
-          </div>
-
-          {/* View Mode Filter */}
-          <div className="filter-group">
-            <label>View Mode</label>
-            <select
-              value={filters.district_wise_summary || "0"}
-              onChange={(e) =>
-                onFilterChange("district_wise_summary", e.target.value)
-              }
-            >
-              <option value="0">Detailed Records</option>
-              <option value="1">District & Block Summary</option>
             </select>
           </div>
 

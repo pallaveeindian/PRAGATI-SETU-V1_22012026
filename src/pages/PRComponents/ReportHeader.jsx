@@ -20,7 +20,7 @@ const NAV_CONFIG = [
     id: "epsms",
     label: "Enterprise Management Portal (EPSMS)",
     subLinks: [
-      { id: "epsms_users", label: "Entrepreneur Demographics" },
+      { id: "mou_analytics", label: "MOU Form Analytics" },
       { id: "epsms_crp", label: "CRP Mapping Form Analytics" },
       { id: "epsms_software", label: "Platform Adoption" },
     ],
