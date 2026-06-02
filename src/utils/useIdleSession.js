@@ -5,12 +5,12 @@ export default function useIdleSession({
   enabled = true,
   refreshAccess,
   logout,
-  idleMaxMs = 2 * 60 * 1000, // 2 min
-  refreshIntervalMs = 1 * 60 * 1000, // 1 min
+  idleMaxMs = 30 * 60 * 1000, // 30 minutes
+  refreshIntervalMs = 5 * 60 * 1000, // 5 minutes
 }) {
   const lastActivityRef = useRef(Date.now());
   const refreshTimerRef = useRef(null);
-  const ACTIVE_WINDOW_MS = 60 * 1000; // 1 min
+  const ACTIVE_WINDOW_MS = 30 * 60 * 1000; // 30 min
 
   // Track user activity
   useEffect(() => {

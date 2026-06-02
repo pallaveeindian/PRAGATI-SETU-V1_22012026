@@ -262,7 +262,7 @@ const MOUDashboard = () => {
 
         .mou-card {
           width: 100%;
-          max-width: 1200px;
+          max-width: 100%;
           background: #ffffff;
           padding: 30px;
           border-radius: 12px;

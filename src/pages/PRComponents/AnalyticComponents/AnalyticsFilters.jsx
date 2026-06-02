@@ -16,6 +16,7 @@ export default function AnalyticsFilters({
   filters,
   districts,
   blocks,
+  passwd_status,
   onFilterChange,
   onApply,
 }) {
@@ -116,7 +117,7 @@ export default function AnalyticsFilters({
             }
           >
             <option value="0">Detailed Records</option>
-            <option value="1">District & Block Summary</option>
+            <option value="1">District Wise Block Count</option>
           </select>
         </div>
       )}
@@ -129,12 +130,35 @@ export default function AnalyticsFilters({
             <label>Login Status</label>
             <select
               value={filters.not_logged_in || "0"}
-              onChange={(e) => onFilterChange("not_logged_in", e.target.value)}
+              onChange={(e) => {
+                onFilterChange("not_logged_in", e.target.value);
+                // Reset password status if switching to Not Logged In
+                if (e.target.value === "1") {
+                  onFilterChange("passwd_status", "");
+                }
+              }}
             >
               <option value="0">Logged In Users</option>
               <option value="1">Not Logged In Users</option>
             </select>
           </div>
+
+          {/* Password Status (Only show if looking at Logged In Users) */}
+          {filters.not_logged_in !== "1" && (
+            <div className="filter-group">
+              <label>Password Status</label>
+              <select
+                value={filters.passwd_status || ""}
+                onChange={(e) =>
+                  onFilterChange("passwd_status", e.target.value)
+                }
+              >
+                <option value="">-- All --</option>
+                <option value="Pending Change">Pending Change</option>
+                <option value="Changed">Changed</option>
+              </select>
+            </div>
+          )}
 
           {/* Role Dropdown */}
           <div className="filter-group">
@@ -198,6 +222,38 @@ export default function AnalyticsFilters({
             />
           </div>
         </>
+      )}
+
+      {/* --- EXTRA FILTERS ONLY FOR TMS CADRE SELECTION (SOFTWARE) --- */}
+      {activeSubTab === "tms_software" && (
+        <div
+          className="filter-group checkbox-group"
+          style={{
+            display: "flex",
+            alignItems: "center",
+            gap: "8px",
+            marginTop: "24px",
+          }}
+        >
+          <input
+            type="checkbox"
+            id="district_wise_cadre_summary"
+            checked={filters.district_wise_cadre_summary === "1"}
+            onChange={(e) =>
+              onFilterChange(
+                "district_wise_cadre_summary",
+                e.target.checked ? "1" : "0",
+              )
+            }
+            style={{ width: "18px", height: "18px", cursor: "pointer" }}
+          />
+          <label
+            htmlFor="district_wise_cadre_summary"
+            style={{ margin: 0, cursor: "pointer" }}
+          >
+            View District-Wise Summary
+          </label>
+        </div>
       )}
 
       <button className="btn-apply-filters" onClick={onApply}>

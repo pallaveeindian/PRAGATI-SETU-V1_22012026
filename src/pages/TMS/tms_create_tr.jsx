@@ -363,6 +363,40 @@ export default function CreateTrainingRequest() {
     geoscopeCached?.districts?.[0] ?? geoscopeCached?.district_id ?? null,
   );
 
+  // 2. Fallback to API if cache missed
+  useEffect(() => {
+    // Check if either ID is missing AND we have a valid user ID to query
+    if ((!blockId || !districtId) && user?.id) {
+      const fetchGeoscope = async () => {
+        try {
+          const response = await LOOKUP_API.userGeoscopeByUserId(user.id);
+          const data = response.data; // Adjust if your axios response structure differs
+
+          // Extract the IDs from the API response using the same logic
+          const fetchedBlockId = data?.blocks?.[0] ?? data?.block_id ?? null;
+          const fetchedDistrictId =
+            data?.districts?.[0] ?? data?.district_id ?? null;
+
+          // Set the state with the newly fetched IDs
+          if (fetchedBlockId) setBlockId(fetchedBlockId);
+          if (fetchedDistrictId) setDistrictId(fetchedDistrictId);
+
+          console.log("Fetched geoscope from API:", {
+            fetchedBlockId,
+            fetchedDistrictId,
+          });
+
+          // OPTIONAL: If you have a function to update your local cache, call it here
+          // updateGeoscopeCache(data);
+        } catch (error) {
+          console.error("Failed to fetch fallback user geoscope:", error);
+        }
+      };
+
+      fetchGeoscope();
+    }
+  }, [blockId, districtId, user?.id]);
+
   // cached lists & allowed IDs
   const [allowedTrainingIds, setAllowedTrainingIds] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -473,12 +507,34 @@ export default function CreateTrainingRequest() {
   }
 
   // Fetch Blocks for DMMU
-  async function fetchBlocksForDistrict(districtId) {
-    if (!districtId) return;
+  async function fetchBlocksForDistrict(rawDistrictId) {
+    if (!rawDistrictId) return;
+
+    // Extract primitive ID if rawDistrictId is nested in an array or object payload
+    let targetId = rawDistrictId;
+    if (Array.isArray(rawDistrictId)) targetId = rawDistrictId[0];
+    if (rawDistrictId && typeof rawDistrictId === "object") {
+      targetId =
+        rawDistrictId.id ??
+        rawDistrictId.district_id ??
+        rawDistrictId.districtId;
+    }
+
+    const parsedId = Number(targetId);
+    if (!targetId || isNaN(parsedId) || parsedId === 0) {
+      console.warn(
+        "fetchBlocksForDistrict aborted: Invalid or unparseable district ID:",
+        rawDistrictId,
+      );
+      return;
+    }
+
     setBlockLoading(true);
     try {
+      // Pass both 'district' and 'district_id' to guarantee coverage for whichever key the backend rules enforce
       const resp = await LOOKUP_API.blocks.list({
-        district: Number(districtId),
+        district: parsedId,
+        district_id: parsedId,
         limit: 500,
       });
       const payload = resp?.data ?? resp ?? {};
@@ -861,10 +917,36 @@ export default function CreateTrainingRequest() {
       form.training_type === "BENEFICIARY" &&
       roleKey === "dmmu"
     ) {
-      fetchBlocksForDistrict(districtId);
+      const canonicalDistrictId =
+        districtId ??
+        geoscopeCached?.districts?.[0] ??
+        geoscopeCached?.district_id ??
+        user?.district_id ??
+        user?.districtId ??
+        (user?.district && typeof user.district === "object"
+          ? (user.district.id ?? user.district.district_id)
+          : user?.district) ??
+        null;
+
+      if (canonicalDistrictId) {
+        fetchBlocksForDistrict(canonicalDistrictId);
+
+        // Safely normalize and sync primitive numeric ID back to local state if empty
+        let targetStateId = canonicalDistrictId;
+        if (Array.isArray(targetStateId)) targetStateId = targetStateId[0];
+        if (targetStateId && typeof targetStateId === "object") {
+          targetStateId =
+            targetStateId.id ??
+            targetStateId.district_id ??
+            targetStateId.districtId;
+        }
+        if (targetStateId && !isNaN(Number(targetStateId)) && !districtId) {
+          setDistrictId(Number(targetStateId));
+        }
+      }
       setParticipantSubStep(0); // start at Block
     }
-  }, [step, form.training_type, roleKey, districtId]);
+  }, [step, form.training_type, roleKey, districtId, geoscopeCached, user]);
 
   // when user goes to Review & Submit (step 3), fetch partners if not loaded
   useEffect(() => {

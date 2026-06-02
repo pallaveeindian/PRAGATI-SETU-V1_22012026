@@ -1,6 +1,12 @@
 // src/App.jsx
 import React from "react";
-import { Routes, Route, Navigate } from "react-router-dom";
+import {
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigationType,
+} from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
@@ -26,6 +32,8 @@ import WhatsNew from "./pages/WhatsNew";
 import BmmuTmsDashboard from "./pages/TMS/BMMU/bmmu_tms_dashboard";
 import DmmuTmsDashboard from "./pages/TMS/DMMU/dmmu_tms_dashboard";
 import SmmuTmsDashboard from "./pages/TMS/SMMU/smmu_tms_dashboard";
+import SmmuCreateTrainingPlan from "./pages/TMS/SMMU/smmu_create_training_plan";
+import SmmuListTrainingPlan from "./pages/TMS/SMMU/smmu_list_training_plan";
 import SmmuCreatePartnerTargets from "./pages/TMS/SMMU/smmu_create_tp_targets";
 import SmmuBulkUploadTargets from "./pages/TMS/SMMU/smmu_bulk_upload_targets";
 import TpDashboard from "./pages/TMS/TP/tp_dashboard";
@@ -92,7 +100,35 @@ import MOULayout from "./pages/EPSMS/MOUForm/MOULayout.jsx";
 import MOUDashboard from "./pages/EPSMS/MOUForm/MOUDashboard.jsx";
 
 export default function App() {
-  const { authReady } = useAuth();
+  // Extract isAuthenticated and logout alongside authReady
+  const { authReady, isAuthenticated, logout } = useAuth();
+  const location = useLocation();
+  const navType = useNavigationType();
+
+  // ==========================================
+  // SECURITY LOGIC: BROWSER BACK/FORWARD LOGOUT
+  // ==========================================
+  React.useEffect(() => {
+    // Only run this check if the user is actively logged in
+    if (!authReady || !isAuthenticated) return;
+
+    // Define the base paths of your secured portal
+    const isPortalRoute =
+      location.pathname.startsWith("/dashboard") ||
+      location.pathname.startsWith("/tms") ||
+      location.pathname.startsWith("/ldms") ||
+      location.pathname.startsWith("/epsms") ||
+      location.pathname.startsWith("/mou") ||
+      location.pathname.startsWith("/error");
+
+    // If the user uses the Browser Back/Forward buttons (which registers as "POP")
+    // and lands on a public route (like / or /login), kill their session instantly.
+    if (navType === "POP" && !isPortalRoute) {
+      if (logout) {
+        logout();
+      }
+    }
+  }, [location.pathname, navType, authReady, isAuthenticated, logout]);
 
   if (!authReady) {
     return <div>Restoring session…</div>;
@@ -150,6 +186,14 @@ export default function App() {
             <Route
               path="/tms/smmu/tp-TvA"
               element={<SmmuTargetAchievement />}
+            />
+            <Route
+              path="/tms/smmu/create-training-plan"
+              element={<SmmuCreateTrainingPlan />}
+            />
+            <Route
+              path="/tms/smmu/list-training-plans"
+              element={<SmmuListTrainingPlan />}
             />
           </Route>
 

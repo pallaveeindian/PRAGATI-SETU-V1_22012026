@@ -346,26 +346,12 @@ export default function AnalyticsTable({
       // DISTRICT & BLOCK SUMMARY TABLE
       // ----------------------------------------
       const summaryData = loginData?.district_wise_summary || [];
-      const flatData = [];
 
-      // Flatten the nested district -> block backend structure
-      summaryData.forEach((d) => {
-        if (!d.blocks || d.blocks.length === 0) {
-          flatData.push({
-            district: d.district_name_en,
-            block: "-",
-            count: d.district_user_count,
-          });
-        } else {
-          d.blocks.forEach((b) => {
-            flatData.push({
-              district: d.district_name_en,
-              block: b.block_name_en,
-              count: b.user_count,
-            });
-          });
-        }
-      });
+      // Map the data to only get the district name and the count of blocks
+      const flatData = summaryData.map((d) => ({
+        district: d.district_name_en,
+        blockCount: d.blocks ? d.blocks.length : 0,
+      }));
 
       const totalPages = Math.ceil(flatData.length / ROWS_PER_PAGE);
       const paginatedData = flatData.slice(
@@ -376,20 +362,19 @@ export default function AnalyticsTable({
       const exportData = flatData.map((row, idx) => ({
         sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
         district: row.district || "-",
-        block: row.block || "-",
-        count: row.count,
+        blockCount: row.blockCount,
       }));
+
       const exportHeaders = [
         { label: "S.No.", key: "sno" },
         { label: "District", key: "district" },
-        { label: "Block", key: "block" },
-        { label: "User Count", key: "count" },
+        { label: "Block Count", key: "blockCount" },
       ];
 
       return (
         <div className="analytics-module table-module">
           <div className="table-header">
-            <h3>District & Block Wise Summary</h3>
+            <h3>District Wise Block Count</h3>
             <ExportButton
               data={exportData}
               headers={exportHeaders}
@@ -402,8 +387,7 @@ export default function AnalyticsTable({
                 <tr>
                   <th>S.No.</th>
                   <th>District</th>
-                  <th>Block</th>
-                  <th>User Count</th>
+                  <th>Block Count</th>
                 </tr>
               </thead>
               <tbody>
@@ -413,20 +397,19 @@ export default function AnalyticsTable({
                       {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
                     </td>
                     <td>{row.district}</td>
-                    <td>{row.block}</td>
                     <td>
                       <span
                         className="status-badge"
                         style={{ background: "#dbeafe", color: "#1e40af" }}
                       >
-                        {row.count}
+                        {row.blockCount}
                       </span>
                     </td>
                   </tr>
                 ))}
                 {paginatedData.length === 0 && (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: "center" }}>
+                    <td colSpan="3" style={{ textAlign: "center" }}>
                       No summary data found.
                     </td>
                   </tr>
@@ -587,119 +570,225 @@ export default function AnalyticsTable({
   // VIEW: TMS -> CADRE SELECTION STATUS
   // ==========================================
   if (activeTab === "tms" && activeSubTab === "tms_software") {
-    const records = cadreData?.data || [];
+    const isCadreSummaryView = filters?.district_wise_cadre_summary === "1";
 
-    // Pagination
-    const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
-    const paginatedData = records.slice(
-      (currentPage - 1) * ROWS_PER_PAGE,
-      currentPage * ROWS_PER_PAGE,
-    );
+    if (isCadreSummaryView) {
+      // ----------------------------------------
+      // DISTRICT WISE CADRE SUMMARY TABLE
+      // ----------------------------------------
+      const summaryData = cadreData?.district_wise_cadre_summary || [];
+      const totalPages = Math.ceil(summaryData.length / ROWS_PER_PAGE);
+      const paginatedData = summaryData.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE,
+      );
 
-    // Export mapping
-    const exportData = records.map((row, idx) => ({
-      sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
-      username: row.username,
-      district: row.district_name_en || "-",
-      block: row.block_name_en || "-",
-      program: row.training_name,
-      beneficiaries: row.beneficiary_count,
-      trainers: row.trainer_count,
-    }));
-    const exportHeaders = [
-      { label: "S.No.", key: "sno" },
-      { label: "Created By", key: "username" },
-      { label: "District", key: "district" },
-      { label: "Block", key: "block" },
-      { label: "Training Program", key: "program" },
-      { label: "Beneficiaries Selected", key: "beneficiaries" },
-      { label: "Trainers Selected", key: "trainers" },
-    ];
+      const exportData = summaryData.map((row, idx) => ({
+        sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
+        district: row.district_name_en || "-",
+        total_beneficiaries: row.total_beneficiaries,
+        total_trainers: row.total_trainers,
+      }));
 
-    return (
-      <div className="analytics-module table-module">
-        <div className="table-header">
-          <h3>Cadre Selection Requests</h3>
-          <ExportButton
-            data={exportData}
-            headers={exportHeaders}
-            filename="Cadre_Selection.csv"
-          />
-        </div>
-        <div className="table-responsive">
-          <table className="gov-data-table">
-            <thead>
-              <tr>
-                <th>S.No.</th>
-                <th>Created By</th>
-                <th>District</th>
-                <th>Block</th>
-                <th>Training Program</th>
-                <th>Beneficiaries Selected</th>
-                <th>Trainers Selected</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.map((row, idx) => (
-                <tr key={idx}>
-                  <td className="fw-bold">
-                    {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
-                  </td>
-                  <td className="fw-bold">{row.username}</td>
-                  <td>{row.district_name_en || "-"}</td>
-                  <td>{row.block_name_en || "-"}</td>
-                  <td>{row.training_name}</td>
-                  <td>
-                    <span
-                      className="status-badge"
-                      style={{ background: "#dbeafe", color: "#1e40af" }}
-                    >
-                      {row.beneficiary_count}
-                    </span>
-                  </td>
-                  <td>
-                    <span
-                      className="status-badge"
-                      style={{ background: "#ffedd5", color: "#9a3412" }}
-                    >
-                      {row.trainer_count}
-                    </span>
-                  </td>
-                </tr>
-              ))}
-              {paginatedData.length === 0 && (
-                <tr>
-                  <td colSpan="7" style={{ textAlign: "center" }}>
-                    No records found for selected filters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-        {totalPages > 1 && (
-          <div className="pagination-controls">
-            <button
-              disabled={currentPage === 1}
-              onClick={() => setCurrentPage((p) => p - 1)}
-            >
-              Prev
-            </button>
-            <span>
-              Page {currentPage} of {totalPages}
-            </span>
-            <button
-              disabled={currentPage === totalPages}
-              onClick={() => setCurrentPage((p) => p + 1)}
-            >
-              Next
-            </button>
+      const exportHeaders = [
+        { label: "S.No.", key: "sno" },
+        { label: "District", key: "district" },
+        { label: "Total Beneficiaries", key: "total_beneficiaries" },
+        { label: "Total Trainers", key: "total_trainers" },
+      ];
+
+      return (
+        <div className="analytics-module table-module">
+          <div className="table-header">
+            <h3>District Wise Cadre Summary</h3>
+            <ExportButton
+              data={exportData}
+              headers={exportHeaders}
+              filename="Cadre_Summary.csv"
+            />
           </div>
-        )}
-      </div>
-    );
-  }
+          <div className="table-responsive">
+            <table className="gov-data-table">
+              <thead>
+                <tr>
+                  <th>S.No.</th>
+                  <th>District</th>
+                  <th>Total Beneficiaries</th>
+                  <th>Total Trainers</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="fw-bold">
+                      {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                    </td>
+                    <td>{row.district_name_en || "-"}</td>
+                    <td>
+                      <span
+                        className="status-badge"
+                        style={{ background: "#dbeafe", color: "#1e40af" }}
+                      >
+                        {row.total_beneficiaries}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className="status-badge"
+                        style={{ background: "#ffedd5", color: "#9a3412" }}
+                      >
+                        {row.total_trainers}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {paginatedData.length === 0 && (
+                  <tr>
+                    <td colSpan="4" style={{ textAlign: "center" }}>
+                      No summary data found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Prev
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    } else {
+      // ----------------------------------------
+      // DETAILED RECORDS TABLE
+      // ----------------------------------------
+      const records = cadreData?.data || [];
+      const totalPages = Math.ceil(records.length / ROWS_PER_PAGE);
+      const paginatedData = records.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE,
+      );
 
+      const exportData = records.map((row, idx) => ({
+        sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
+        username: row.username,
+        district: row.district_name_en || "-",
+        block: row.block_name_en || "-",
+        program: row.training_name,
+        beneficiaries: row.beneficiary_count,
+        trainers: row.trainer_count,
+      }));
+
+      const exportHeaders = [
+        { label: "S.No.", key: "sno" },
+        { label: "Created By", key: "username" },
+        { label: "District", key: "district" },
+        { label: "Block", key: "block" },
+        { label: "Training Program", key: "program" },
+        { label: "Beneficiaries Selected", key: "beneficiaries" },
+        { label: "Trainers Selected", key: "trainers" },
+      ];
+
+      return (
+        <div className="analytics-module table-module">
+          <div className="table-header">
+            <h3>Cadre Selection Requests</h3>
+            <ExportButton
+              data={exportData}
+              headers={exportHeaders}
+              filename="Cadre_Selection.csv"
+            />
+          </div>
+          <div className="table-responsive">
+            <table className="gov-data-table">
+              <thead>
+                <tr>
+                  <th>S.No.</th>
+                  <th>Created By</th>
+                  <th>District</th>
+                  <th>Block</th>
+                  <th>Training Program</th>
+                  <th>Beneficiaries Selected</th>
+                  <th>Trainers Selected</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="fw-bold">
+                      {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                    </td>
+                    <td className="fw-bold">{row.username}</td>
+                    <td>{row.district_name_en || "-"}</td>
+                    <td>{row.block_name_en || "-"}</td>
+                    <td>{row.training_name}</td>
+                    <td>
+                      <span
+                        className="status-badge"
+                        style={{ background: "#dbeafe", color: "#1e40af" }}
+                      >
+                        {row.beneficiary_count}
+                      </span>
+                    </td>
+                    <td>
+                      <span
+                        className="status-badge"
+                        style={{ background: "#ffedd5", color: "#9a3412" }}
+                      >
+                        {row.trainer_count}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {paginatedData.length === 0 && (
+                  <tr>
+                    <td colSpan="7" style={{ textAlign: "center" }}>
+                      No records found for selected filters.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Prev
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    }
+  }
+  
   // ==========================================
   // VIEW: TMS -> OVERALL DEMOGRAPHICS
   // ==========================================

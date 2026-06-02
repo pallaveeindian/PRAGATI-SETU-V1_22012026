@@ -451,7 +451,7 @@ export default function AnalyticsCharts({
                     display: "block",
                   }}
                 >
-                  {metrics.unique_districts_logged_in}
+                  {metrics.unique_districts_represented}
                 </span>
                 <span
                   style={{
@@ -472,7 +472,7 @@ export default function AnalyticsCharts({
                     display: "block",
                   }}
                 >
-                  {metrics.unique_blocks_logged_in}
+                  {metrics.unique_blocks_represented}
                 </span>
                 <span
                   style={{

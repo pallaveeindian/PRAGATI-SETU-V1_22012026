@@ -4,6 +4,7 @@ import AnalyticsFilters from "./AnalyticComponents/AnalyticsFilters";
 import AnalyticsTable from "./AnalyticComponents/AnalyticsTable";
 import api from "../../api/axios";
 import { LOOKUP_API } from "../../api/axios";
+import { filter } from "jszip";
 
 export default function AnalyticsSection({ currentReport }) {
   // --- State for APIs ---
@@ -25,6 +26,8 @@ export default function AnalyticsSection({ currentReport }) {
     end_date: "",
     not_logged_in: "0",
     district_wise_summary: "0",
+    district_wise_cadre_summary: "0",
+    passwd_status: "",
   });
 
   const activeTab = currentReport?.tab || "overview";
@@ -106,6 +109,10 @@ export default function AnalyticsSection({ currentReport }) {
     if (filters.not_logged_in === "1") queryParams.append("not_logged_in", "1");
     if (filters.district_wise_summary === "1")
       queryParams.append("district_wise_summary", "1");
+    if (filters.district_wise_cadre_summary === "1")
+      queryParams.append("district_wise_cadre_summary", "1");
+    if (filters.passwd_status)
+      queryParams.append("passwd_status", filters.passwd_status);
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
@@ -150,6 +157,8 @@ export default function AnalyticsSection({ currentReport }) {
     filters.end_date,
     filters.not_logged_in,
     filters.district_wise_summary,
+    filters.district_wise_cadre_summary,
+    filters.passwd_status,
   ]);
 
   // Fetch data whenever the tab changes
@@ -179,6 +188,7 @@ export default function AnalyticsSection({ currentReport }) {
           filters={filters}
           districts={districts}
           blocks={blocks}
+          passwd_status={filters.passwd_status} // <-- FIXED HERE
           onFilterChange={handleFilterChange}
           onApply={fetchReportData}
         />

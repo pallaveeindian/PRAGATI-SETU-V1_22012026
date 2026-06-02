@@ -164,13 +164,13 @@ export const AuthProvider = ({ children }) => {
 
   // GLOBAL idle session management
   useIdleSession({
-    enabled: isAuthenticated, // only when logged in
+    enabled: isAuthenticated,
     refreshAccess,
     logout,
-    idleMaxMs: 2 * 60 * 1000, // 2 minutes
-    refreshIntervalMs: 1 * 60 * 1000, // 1 minute
+    idleMaxMs: 30 * 60 * 1000, // 30 minutes
+    refreshIntervalMs: 5 * 60 * 1000, // 5 minutes
   });
-
+  
   return (
     <AuthContext.Provider
       value={{
