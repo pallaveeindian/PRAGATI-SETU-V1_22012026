@@ -345,7 +345,7 @@ export default function SmmuCreatePartnerTargets() {
 
     try {
       const uid = effectiveUserId ?? (await resolveUserId());
-      const offset = (page - 1) * pageSize;
+      // offset calculation removed because DRF uses page numbers now
 
       const currentThemes = explicitThemes || themes;
       let themeNameFilter = undefined;
@@ -366,8 +366,8 @@ export default function SmmuCreatePartnerTargets() {
       }
 
       const res = await TMS_API.trainingPartnerTargets.list({
-        limit: pageSize,
-        offset,
+        page: page, // SURGICAL FIX: Send 'page' instead of offset for DRF PageNumberPagination
+        page_size: pageSize, // SURGICAL FIX: Send dynamic page size
         theme: themeNameFilter, // 🔒 FETCH BY THEME INSTEAD OF CREATED_BY
         financial_year: filterFY || undefined, // Server-side filter
         training_plan: filterModule || undefined, // Server-side filter

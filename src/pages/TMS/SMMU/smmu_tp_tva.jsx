@@ -32,24 +32,32 @@ export default function SmmuTargetAchievement() {
 
   // Pagination States
   const [currentPage, setCurrentPage] = useState(1);
-  const [totalItems, setTotalItems] = useState(0); // SURGICAL ADDITION: Track total API records
-  const rowsPerPage = 25; // SURGICAL ADDITION: Match backend pagination
+  const [totalItems, setTotalItems] = useState(0);
+  const rowsPerPage = 25;
 
   /* ---------------- API Fetch ---------------- */
   async function fetchTargetsWithAchievements(page = 1) {
-    setLoading(true);
+    // SURGICAL FIX: Prevent fetch race-condition. Wait for SMMU themes to load.
+    if (roleKey === "smmu" && userThemes === null) return;
 
+    setLoading(true);
     try {
-      // SURGICAL ADDITION: Send page parameter instead of limit: 5000
+      // Format themes array into comma-separated string for backend
+      const themeString =
+        roleKey === "smmu" && userThemes?.length > 0
+          ? userThemes.join(",")
+          : undefined;
+
       const resp = await TMS_API.trainingPartnerTargets.list({
         ach: 1,
         year: financialYear,
         district: selectedDistrict || undefined,
         training_plan: selectedPlan || undefined,
         page: page,
+        themes: themeString, // SURGICAL FIX: Send to backend
+        partner_name: searchPartner || undefined, // SURGICAL FIX: Send to backend
       });
 
-      // SURGICAL ADDITION: DRF Pagination returns results inside .results and total in .count
       const items = resp?.data?.results || resp?.data || [];
       const count = resp?.data?.count || items.length;
 
@@ -63,15 +71,16 @@ export default function SmmuTargetAchievement() {
     }
   }
 
-  // SURGICAL ADDITION: Re-fetch whenever currentPage changes
+  // SURGICAL FIX: Triggers fetch on page change OR when userThemes finish loading
   useEffect(() => {
+    if (roleKey === "smmu" && userThemes === null) return;
     fetchTargetsWithAchievements(currentPage);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, [currentPage, userThemes]);
 
   // Initial load
   useEffect(() => {
-    fetchTargetsWithAchievements();
+    // Note: We removed the loose fetch() here because the dependency array above handles it safely now.
 
     // Fetch Districts
     LOOKUP_API.districts
@@ -81,7 +90,7 @@ export default function SmmuTargetAchievement() {
       })
       .catch(() => setDistricts([]));
 
-    // Fetch Plans for this SMMU user (leveraging user.id)
+    // Fetch Plans for this SMMU user
     const expert = user?.id || user?.user_id || null;
     if (expert) {
       TMS_API.trainingThemes
@@ -108,7 +117,6 @@ export default function SmmuTargetAchievement() {
         })
         .catch(() => setPlans([]));
     }
-
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
@@ -116,19 +124,19 @@ export default function SmmuTargetAchievement() {
 
   const processedData = useMemo(() => {
     return targetsData.map((row) => {
-      // Safely extract nested data due to depth=1
       const partnerName = row.partner?.name || "Unknown Partner";
       const planName = row.training_plan?.training_name || "—";
       const districtName = row.district?.district_name_en || "—";
 
-      // Sum batches_completed from the nested achievements array
+      const themeName =
+        row.theme || row.training_plan?.theme?.theme_name || null;
+
       const achievedCount =
         row.achievements?.reduce(
           (sum, a) => sum + (a.batches_completed || 0),
           0,
         ) || 0;
 
-      // Calculate Percentage
       const targetCount = row.target_count || 0;
       const progressPct =
         targetCount > 0 ? Math.round((achievedCount / targetCount) * 100) : 0;
@@ -138,6 +146,7 @@ export default function SmmuTargetAchievement() {
         partnerName,
         planName,
         districtName,
+        theme: themeName,
         targetCount,
         achievedCount,
         progressPct,
@@ -145,31 +154,19 @@ export default function SmmuTargetAchievement() {
     });
   }, [targetsData]);
 
-  const filteredData = useMemo(() => {
-    const q = searchPartner.trim().toLowerCase();
-    return processedData.filter((r) => {
-      if (q && !r.partnerName.toLowerCase().includes(q)) return false;
-      // SURGICAL ADDITION: Ensure SMMU experts ONLY see their themes
-      if (roleKey === "smmu") {
-        if (userThemes === null) return false; // Prevent flickering before themes load
-        if (!userThemes.includes(r.theme)) return false;
-      }
-      return true;
-    });
-  }, [processedData, searchPartner]);
+  /* SURGICAL FIX: The backend handles filtering perfectly now! */
+  const paginatedData = processedData;
 
-  /* ---------------- Pagination Math ---------------- */
-  // SURGICAL ADDITION: Calculate total pages based on backend count, not local array length
   const totalPages = Math.max(1, Math.ceil(totalItems / rowsPerPage));
-
-  // SURGICAL ADDITION: The data is already paginated by the server!
-  const paginatedData = filteredData;
 
   /* ---------------- Export Excel (Server Side) ---------------- */
   async function exportToExcel() {
     try {
-      // Note: Adjust the endpoint below to perfectly match your Axios router path for this ViewSet
       const endpoint = "/tms/training-partner-targets/";
+      const themeString =
+        roleKey === "smmu" && userThemes?.length > 0
+          ? userThemes.join(",")
+          : undefined;
 
       const response = await api.get(endpoint, {
         params: {
@@ -177,9 +174,11 @@ export default function SmmuTargetAchievement() {
           year: financialYear,
           district: selectedDistrict || undefined,
           training_plan: selectedPlan || undefined,
-          export: "excel", // Triggers your new backend list() override
+          themes: themeString, // Fix: Ensure excel export applies user themes too!
+          partner_name: searchPartner || undefined, // Fix: Search term
+          export: "excel",
         },
-        responseType: "blob", // CRITICAL: Tells Axios to expect a binary file, not JSON
+        responseType: "blob",
       });
 
       const url = window.URL.createObjectURL(new Blob([response.data]));
@@ -211,19 +210,13 @@ export default function SmmuTargetAchievement() {
               minHeight: "100vh",
             }}
           >
-            {/* <div className="dashboard-header">
-              <h2 className="dashboard-title">{roleMessage}</h2>
-            </div> */}
-
             <div
               style={{
                 maxWidth: 1200,
                 margin: "20px auto",
               }}
             >
-              {/* ========================================== */}
-              {/* 1. FILTERS & EXPORT PLACEHOLDER COMPONENT  */}
-              {/* ========================================== */}
+              {/* FILTERS & EXPORT COMPONENT */}
               <div
                 style={{
                   marginBottom: 14,
@@ -238,7 +231,6 @@ export default function SmmuTargetAchievement() {
                   Filters & Export
                 </h4>
                 <form
-                  // SURGICAL ADDITION: Reset to page 1 on fresh filter search
                   onSubmit={(e) => {
                     e.preventDefault();
                     if (currentPage === 1) {
@@ -269,7 +261,10 @@ export default function SmmuTargetAchievement() {
                     <select
                       className="palette-input"
                       value={financialYear}
-                      onChange={(e) => setFinancialYear(e.target.value)}
+                      onChange={(e) => {
+                        setFinancialYear(e.target.value);
+                        setCurrentPage(1); // Reset page on filter change
+                      }}
                       style={{
                         width: "160px",
                         padding: "8px",
@@ -298,7 +293,10 @@ export default function SmmuTargetAchievement() {
                     <select
                       className="palette-input"
                       value={selectedDistrict}
-                      onChange={(e) => setSelectedDistrict(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedDistrict(e.target.value);
+                        setCurrentPage(1);
+                      }}
                       style={{
                         width: "180px",
                         padding: "8px",
@@ -333,7 +331,10 @@ export default function SmmuTargetAchievement() {
                     <select
                       className="palette-input"
                       value={selectedPlan}
-                      onChange={(e) => setSelectedPlan(e.target.value)}
+                      onChange={(e) => {
+                        setSelectedPlan(e.target.value);
+                        setCurrentPage(1);
+                      }}
                       style={{
                         width: "220px",
                         padding: "8px",
@@ -368,7 +369,6 @@ export default function SmmuTargetAchievement() {
                       value={searchPartner}
                       onChange={(e) => {
                         setSearchPartner(e.target.value);
-                        setCurrentPage(1);
                       }}
                       style={{
                         width: "220px",
@@ -393,7 +393,7 @@ export default function SmmuTargetAchievement() {
                       type="button"
                       className="btnView"
                       onClick={exportToExcel}
-                      style={{ background: "#10b981" }} // Green for export
+                      style={{ background: "#10b981" }}
                     >
                       Export Excel
                     </button>
@@ -416,9 +416,7 @@ export default function SmmuTargetAchievement() {
                 </h2>
               </div>
 
-              {/* ========================================== */}
-              {/* 2. DATA TABLE & MOBILE CARDS               */}
-              {/* ========================================== */}
+              {/* DATA TABLE & MOBILE CARDS */}
               <div
                 style={{
                   background: "#fff",
@@ -437,6 +435,7 @@ export default function SmmuTargetAchievement() {
                   <table className="training-table">
                     <thead>
                       <tr>
+                        <th style={{ width: "60px" }}>S.No.</th>
                         <th>Partner</th>
                         <th>Module / Plan</th>
                         <th>District</th>
@@ -450,24 +449,27 @@ export default function SmmuTargetAchievement() {
                       {loading ? (
                         <tr>
                           <td
-                            colSpan={6}
+                            colSpan={7}
                             style={{ textAlign: "center", padding: "20px" }}
                           >
                             Loading data...
                           </td>
                         </tr>
-                      ) : filteredData.length === 0 ? (
+                      ) : paginatedData.length === 0 ? (
                         <tr>
                           <td
-                            colSpan={6}
+                            colSpan={7}
                             style={{ textAlign: "center", padding: "20px" }}
                           >
                             No targets found.
                           </td>
                         </tr>
                       ) : (
-                        paginatedData.map((r) => (
+                        paginatedData.map((r, index) => (
                           <tr key={r.id}>
+                            <td style={{ color: "#64748b", fontWeight: "500" }}>
+                              {(currentPage - 1) * rowsPerPage + index + 1}
+                            </td>
                             <td style={{ fontWeight: "600", color: "#1e293b" }}>
                               {r.partnerName}
                             </td>
@@ -541,7 +543,7 @@ export default function SmmuTargetAchievement() {
                       >
                         Loading...
                       </div>
-                    ) : filteredData.length === 0 ? (
+                    ) : paginatedData.length === 0 ? (
                       <div
                         className="mobile-card"
                         style={{ textAlign: "center" }}
@@ -549,7 +551,7 @@ export default function SmmuTargetAchievement() {
                         No targets found
                       </div>
                     ) : (
-                      paginatedData.map((r) => (
+                      paginatedData.map((r, index) => (
                         <div key={r.id} className="mobile-card">
                           <div
                             style={{
@@ -559,6 +561,11 @@ export default function SmmuTargetAchievement() {
                               marginBottom: "8px",
                             }}
                           >
+                            <span
+                              style={{ color: "#64748b", marginRight: "6px" }}
+                            >
+                              #{(currentPage - 1) * rowsPerPage + index + 1}
+                            </span>
                             {r.partnerName}
                           </div>
                           <div>
@@ -592,7 +599,7 @@ export default function SmmuTargetAchievement() {
                   </div>
 
                   {/* PAGINATION CONTROLS */}
-                  {!loading && filteredData.length > 0 && (
+                  {!loading && paginatedData.length > 0 && (
                     <div
                       style={{
                         display: "flex",
@@ -614,7 +621,6 @@ export default function SmmuTargetAchievement() {
                           Prev
                         </button>
 
-                        {/* Display a simplified window of pages if there are many */}
                         {[...Array(totalPages)].map((_, i) => {
                           const pageNum = i + 1;
                           if (
