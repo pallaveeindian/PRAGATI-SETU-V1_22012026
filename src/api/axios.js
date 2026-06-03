@@ -590,6 +590,19 @@ export const TMS_API = {
   tpcpCentreDetails: makeCrud("/tms/tpcp_to_centre/details/"),
   trainingPlans: makeCrud("/tms/training-plans/"),
 
+  // ------------------------------------
+  // User Management
+  // ------------------------------------
+
+  // DMMU -> List BMMU users under district
+  bmmuUsers: (params) => api.get("/tms/bmmu-users/", { params }),
+
+  // SMMU -> List all DMMU users
+  dmmuUsers: (params) => api.get("/tms/dmmu-users/", { params }),
+
+  // SMMU -> Manage user
+  manageUser: (data) => api.post("/tms/manage-user/", data),
+
   // TMS REPORT
   trainingReports: makeCrud("/tms/cmp-training-report/"),
   // Master trainer + certificates
@@ -613,6 +626,11 @@ export const TMS_API = {
 
   // Training Request workflow
   trainingRequests: makeCrud("/tms/training-requests/"),
+  // Custom Training Request Deletion
+  deleteTrainingRequest: (requestId) =>
+    api.delete(
+      `/tms/training-request/delete/${encodeURIComponent(requestId)}/`,
+    ),
   // Training Request list with Filters
   trainingRequestsList: makeCrud("/tms/training-requests-list/"),
 

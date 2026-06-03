@@ -19,14 +19,14 @@ const PLAN_MAP_KEY = "tms_plan_map_v1";
 const TP_SELF_PARTNER_KEY = "tms_self_partner_id_v1";
 
 /* ---------------- cache helpers ---------------- */
-``
+``;
 function saveCache(payload, meta = {}) {
   try {
     localStorage.setItem(
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload, meta }),
     );
-  } catch { }
+  } catch {}
 }
 
 function loadCache() {
@@ -49,7 +49,7 @@ function loadMap(key) {
 function saveMap(key, map) {
   try {
     localStorage.setItem(key, JSON.stringify(map || {}));
-  } catch { }
+  } catch {}
 }
 
 /* ---------------- partner resolver (SAFE & CACHED) ---------------- */
@@ -60,7 +60,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch { }
+  } catch {}
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -74,7 +74,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
     if (partnerId) {
       try {
         localStorage.setItem(TP_SELF_PARTNER_KEY, String(partnerId));
-      } catch { }
+      } catch {}
     }
 
     return partnerId;
@@ -122,7 +122,7 @@ export default function TrainingRequestList() {
         localStorage.getItem("ps_user_geoscope") || "null",
       );
       if (cached) return cached;
-    } catch { }
+    } catch {}
 
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(user?.id);
@@ -130,7 +130,7 @@ export default function TrainingRequestList() {
         localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
         return resp.data;
       }
-    } catch { }
+    } catch {}
     return null;
   }
 
@@ -201,7 +201,7 @@ export default function TrainingRequestList() {
       saveMap(USER_MAP_KEY, um);
       saveMap(PARTNER_MAP_KEY, pm);
       saveMap(PLAN_MAP_KEY, plm);
-    } catch { }
+    } catch {}
   }
 
   /* ---------------- main fetch ---------------- */
@@ -335,6 +335,27 @@ export default function TrainingRequestList() {
 
   // PAGINATION CHANGE END
 
+  /* ---------------- TR Deletion Handler Actions ---------------- */
+  const handleDeleteRequest = async (requestId) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete Training Request #${requestId}?`,
+      )
+    )
+      return;
+    try {
+      await TMS_API.deleteTrainingRequest(requestId);
+      alert("Training Request deleted successfully.");
+      setRefreshToken((t) => t + 1); // Forces table data to re-fetch
+    } catch (error) {
+      console.error("Deletion failed:", error);
+      alert(
+        error?.response?.data?.detail ||
+          "Failed to delete the training request.",
+      );
+    }
+  };
+
   /* ---------------- render helpers ---------------- */
 
   const renderUsername = (id) => userMap[id] || id || "-";
@@ -392,7 +413,9 @@ export default function TrainingRequestList() {
                   paddingBottom: 8,
                 }}
               >
-                <h2 style={{ margin: 0, color: "#2b4e72" }}>Training Requests</h2>
+                <h2 style={{ margin: 0, color: "#2b4e72" }}>
+                  Training Requests
+                </h2>
 
                 <div style={{ marginLeft: "auto" }}>
                   <button
@@ -431,11 +454,12 @@ export default function TrainingRequestList() {
                         <th>Theme</th>
                         <th>Plan</th>
                         <th>Type</th>
-                        <th>Level</th>
                         <th>Status</th>
                         <th>Partner</th>
                         <th>District</th>
                         <th>Block</th>
+                        <th>Participant Count</th>
+                        <th>Actions</th>
                         <th />
                       </tr>
                     </thead>
@@ -457,18 +481,30 @@ export default function TrainingRequestList() {
                             <td>{r.theme_name}</td>
                             <td>{r.training_plan_name}</td>
                             <td>{r.training_type}</td>
-                            <td>{r.level}</td>
                             <td>{r.status}</td>
                             <td>{r.partner_name}</td>
                             <td>{r.district_name}</td>
                             <td>{r.block_name}</td>
+                            <td>{r.participant_count}</td>
                             <td>
-                              <button
-                                className="btnView"
-                                onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
-                              >
-                                View
-                              </button>
+                              <div style={{ display: "flex", gap: "6px" }}>
+                                <button
+                                  className="btnView"
+                                  onClick={() =>
+                                    navigate(`/tms/tr-detail/${r.id}`)
+                                  }
+                                >
+                                  View
+                                </button>
+                                {role === "dmmu" && r.status === "BATCHING" && (
+                                  <button
+                                    className="btnDelete"
+                                    onClick={() => handleDeleteRequest(r.id)}
+                                  >
+                                    Delete
+                                  </button>
+                                )}
+                              </div>
                             </td>
                           </tr>
                         ))
@@ -500,9 +536,6 @@ export default function TrainingRequestList() {
                             <strong>Type:</strong> {r.training_type}
                           </div>
                           <div>
-                            <strong>Level:</strong> {r.level}
-                          </div>
-                          <div>
                             <strong>Status:</strong> {r.status}
                           </div>
                           <div>
@@ -514,13 +547,34 @@ export default function TrainingRequestList() {
                           <div>
                             <strong>Block:</strong> {r.block_name}
                           </div>
+                          <div>
+                            <strong>Participant Count:</strong> {r.participant_count}
+                          </div>
 
-                          <button
-                            className="btnView"
-                            onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
+                          <div
+                            style={{
+                              display: "flex",
+                              gap: "6px",
+                              marginTop: "8px",
+                            }}
                           >
-                            View
-                          </button>
+                            <button
+                              className="btnView"
+                              onClick={() => navigate(`/tms/tr-detail/${r.id}`)}
+                              style={{ flex: 1, marginTop: 0 }}
+                            >
+                              View
+                            </button>
+                            {role === "dmmu" && r.status === "BATCHING" && (
+                              <button
+                                className="btnDelete"
+                                onClick={() => handleDeleteRequest(r.id)}
+                                style={{ flex: 1 }}
+                              >
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         </div>
                       ))
                     )}
@@ -622,12 +676,16 @@ export default function TrainingRequestList() {
   padding:10px;
   text-align:left;
   font-weight:600;
+  text-align:center;
+  justify-content:center;  
 }
 
 /* BODY */
 .training-table td{
   padding:10px;
   border-bottom:1px solid #e4ecf5;
+  text-align:center;
+  justify-content:center;  
 }
 
 /* ROW BACKGROUND */
@@ -650,6 +708,23 @@ export default function TrainingRequestList() {
 .training-table tbody td{
   color:#1f2937;
 }
+
+/* DELETE BUTTON */
+.btnDelete{
+  background:#ef4444;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:5px 12px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btnDelete:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.25);
+}
+
 /* PAGINATION BUTTON */
 .btnPage{
   background:#e4ecf5;
@@ -758,7 +833,6 @@ export default function TrainingRequestList() {
           <Footer />
         </div>
       </div>
-
     </div>
   );
 }

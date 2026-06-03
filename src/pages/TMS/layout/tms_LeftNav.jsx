@@ -61,6 +61,7 @@ const MENU = {
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
+
     {
       label: "Create Training Request",
       to: "/tms/create-training-request",
@@ -87,9 +88,15 @@ const MENU = {
       ],
     },
     { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
+    {
+      label: "User Management",
+      to: "/tms/dmmu/bmmu-users",
+      icon: FaUsers,
+    },
   ],
   smmu: [
     { label: "Dashboard", to: "/tms/smmu/dashboard", icon: FaTachometerAlt },
+
     {
       label: "Target Assignment",
       to: "/tms/smmu/partner-targets",
@@ -130,6 +137,11 @@ const MENU = {
       ],
     },
     { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
+    {
+      label: "User Management",
+      to: "/tms/smmu/dmmu-users",
+      icon: FaUsers,
+    },
   ],
   training_partner: [
     {
