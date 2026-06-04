@@ -168,15 +168,15 @@ const MOUDashboard = () => {
                 /* Member Detail & Form Component */
                 <div className="mou-form-container fade-in">
                   <div className="mou-detail-header">
-                    <button className="mou-back-btn" onClick={resetSelection}>
-                      <FaArrowLeft /> Back to SHG Search
-                    </button>
                     <h2>
                       <FaUserCheck
                         style={{ color: "#16a34a", marginRight: 8 }}
                       />{" "}
-                      Selected Beneficiary
+                      1st Party Details
                     </h2>
+                    <button className="mou-back-btn" onClick={resetSelection}>
+                      <FaArrowLeft /> Back to SHG Search
+                    </button>
                   </div>
 
                   <div className="mou-detail-grid">
@@ -219,15 +219,13 @@ const MOUDashboard = () => {
                   </div>
 
                   {/* ================= MOU FORM OPEN ================= */}
-                  <div className="mou-form-wrapper">
-                    <MOUFormCreate
-                      selectedMember={selectedMemberPayload}
-                      // Pass down an object mimicking standard SHG if form strictly expects an object with a code
-                      selectedShg={{ code: selectedMemberPayload.shg_code }}
-                      clfName={clfName}
-                      clfCode={clfCode}
-                    />
-                  </div>
+                  <MOUFormCreate
+                    selectedMember={selectedMemberPayload}
+                    // Pass down an object mimicking standard SHG if form strictly expects an object with a code
+                    selectedShg={{ code: selectedMemberPayload.shg_code }}
+                    clfName={clfName}
+                    clfCode={clfCode}
+                  />
                 </div>
               )}
             </div>

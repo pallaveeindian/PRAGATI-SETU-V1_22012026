@@ -944,8 +944,6 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
   return (
     <div className="mou-form-root">
       <div className="mou-form-wrapper">
-        <h2 className="title">MOU Survey Form</h2>
-
         {/* =======================================================
                    SECTION 1: BASIC INFO & BENEFICIARY PROFILE
             ======================================================= */}
@@ -1180,7 +1178,7 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
                    SECTION 2: ENTERPRISE OR PRODUCT
             ======================================================= */}
         <div className="form-card">
-          <h3 className="sectionTitle">Enterprise / Product Selection</h3>
+          <h3 className="sectionTitle">Enterprise / Product Details</h3>
 
           <div className="radio-group mb-24">
             <label
@@ -1307,7 +1305,18 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
                    SECTION 3: BUYER ORG OR TRADER
             ======================================================= */}
         <div className="form-card">
-          <h3 className="sectionTitle">Organisation Details</h3>
+          <h3
+            className="sectionTitle"
+            style={{
+              fontSize: "32px",
+              fontWeight: "700",
+              marginBottom: "16px",
+              justifyContent: "center",
+              textAlign: "center",
+            }}
+          >
+            2nd Party Details
+          </h3>
 
           <div className="radio-group mb-24">
             <label
@@ -1549,7 +1558,7 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
               </select>
             </div>
 
-            <h4 className="subHeading">MOU Documents</h4>
+            <h4 className="subHeading">MOU Type</h4>
             {form.mou.mou_docs.map((doc, dIndex) => (
               <div key={dIndex} className="docRow">
                 <input
