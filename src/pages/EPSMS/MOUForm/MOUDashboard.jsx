@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LOOKUP_API } from "../../../api/axios";
+import { LOOKUP_API, EPSAKHI_API } from "../../../api/axios";
 import { useAuth } from "../../../contexts/AuthContext";
 
 // ✅ IMPORT MOU FORM
@@ -27,6 +27,7 @@ const MOUDashboard = () => {
   const [selectedMemberPayload, setSelectedMemberPayload] = useState(null);
   const [clfName, setClfName] = useState("-");
   const [clfCode, setClfCode] = useState("-");
+  const [mouLevel, setMouLevel] = useState("");
 
   /* ================= INIT ================= */
 
@@ -62,29 +63,57 @@ const MOUDashboard = () => {
     }
   };
 
-  /* ================= MEMBER SELECT (From Reusable Component) ================= */
+  /* ================= MEMBER SELECT ================= */
 
   const handleSelectMemberFromList = async (payload) => {
-    setSelectedMemberPayload(payload);
-    console.log("Selected Member Payload:", payload);
+    // console.log("Initial Selected Member Payload:", payload);
     setClfName("-"); // Reset CLF name while fetching
 
     try {
-      // Fetch CLF based on the selected member's code
+      // 1. Fetch the live SHG details using the known EPSAKHI_API list endpoint
+      const shgResponse = await EPSAKHI_API.upsrlmShgList(blockId, {
+        search: payload.shg_code,
+        page_size: 1, // We only need the exact match
+      });
+
+      // Extract the first matching SHG record from the array
+      const shgData = shgResponse?.data?.data?.[0] || {};
+
+      // 2. Inject fallbacks from the SHG API response (handling both snake_case and camelCase)
+      const enrichedPayload = {
+        ...payload,
+        district_id:
+          payload.district_id || shgData.district_id || shgData.districtId,
+        block_id: payload.block_id || shgData.block_id || shgData.blockId,
+        panchayat_id:
+          payload.panchayat_id || shgData.panchayat_id || shgData.panchayatId,
+        village_id:
+          payload.village_id || shgData.village_id || shgData.villageId,
+      };
+
+      setSelectedMemberPayload(enrichedPayload);
+      // console.log(
+      //   "Enriched Payload (with SHG API fallbacks):",
+      //   enrichedPayload,
+      // );
+
+      // 3. Fetch CLF based on the selected member's code
       const clf = await LOOKUP_API.upsrlmFindClf({
         block_id: blockId,
-        member_code: payload.member_code,
+        member_code: enrichedPayload.member_code,
       });
 
       const clfData = clf?.data || {};
       setClfName(clfData?.clf_name || clfData?.name || "-");
       setClfCode(clfData?.clf_code || "-");
-    } catch {
+    } catch (error) {
+      console.error("Error fetching SHG/CLF data:", error);
+      // If the API fails, safely default back to the raw payload
+      setSelectedMemberPayload(payload);
       setClfName("-");
       setClfCode("-");
     }
   };
-
   const resetSelection = () => {
     setSelectedMemberPayload(null);
     setClfName("-");
@@ -167,12 +196,63 @@ const MOUDashboard = () => {
               ) : (
                 /* Member Detail & Form Component */
                 <div className="mou-form-container fade-in">
+                  {/* --- NEW MOU LEVEL SECTION --- */}
+                  <div
+                    style={{
+                      marginTop: "32px",
+                      marginBottom: "32px",
+                      padding: "20px",
+                      background: "#f8fafc",
+                      border: "1px solid #e5e7eb",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "25px",
+                        fontWeight: "700",
+                        color: "#ea580c",
+                        marginBottom: "12px",
+                        textTransform: "uppercase",
+                        letterSpacing: "0.75px",
+                        textAlign: "center",
+                      }}
+                    >
+                      Level of MOU
+                    </label>
+
+                    <select
+                      style={{
+                        width: "100%",
+                        height: "52px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        padding: "0 14px",
+                        fontSize: "15px",
+                        fontWeight: "600",
+                        backgroundColor: "#fff",
+                        color: "#111827",
+                      }}
+                      value={mouLevel}
+                      onChange={(e) => setMouLevel(e.target.value)}
+                    >
+                      <option value="">-- Select MOU Level --</option>
+                      <option value="STATE">STATE</option>
+                      <option value="DISTRICT">DISTRICT</option>
+                      <option value="BLOCK">BLOCK</option>
+                      <option value="CLF">CLF</option>
+                      <option value="VO">VO</option>
+                      <option value="SHG">SHG</option>
+                    </select>
+                  </div>
+
                   <div className="mou-detail-header">
                     <h2>
                       <FaUserCheck
                         style={{ color: "#16a34a", marginRight: 8 }}
                       />{" "}
-                      1st Party Details
+                      FIRST Party Details
                     </h2>
                     <button className="mou-back-btn" onClick={resetSelection}>
                       <FaArrowLeft /> Back to SHG Search
@@ -225,6 +305,7 @@ const MOUDashboard = () => {
                     selectedShg={{ code: selectedMemberPayload.shg_code }}
                     clfName={clfName}
                     clfCode={clfCode}
+                    mouLevel={mouLevel}
                   />
                 </div>
               )}

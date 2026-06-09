@@ -298,6 +298,12 @@ export default function MOUDetail({ id, onBack }) {
           {data.mous.map((mou) => (
             <div key={mou.id} className="nested-card">
               <div className="nested-grid">
+                {mou.mou_level && (
+                  <div className="info-box">
+                    <span>MOU Level</span>
+                    <strong>{mou.mou_level}</strong>
+                  </div>
+                )}
                 {mou.mou_status && (
                   <div className="info-box">
                     <span>MOU Status</span>

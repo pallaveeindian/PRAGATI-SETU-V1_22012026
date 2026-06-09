@@ -419,6 +419,7 @@ const initialState = {
     mou_docs: [
       {
         doc_name: "",
+        is_other: false,
         doc_file: null,
       },
     ],
@@ -431,7 +432,12 @@ const initialState = {
   },
 };
 
-export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
+export default function MOUFormCreate({
+  selectedMember,
+  clfName,
+  clfCode,
+  mouLevel,
+}) {
   const [form, setForm] = useState(initialState);
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
@@ -446,19 +452,42 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
   const [loadingPanchayats, setLoadingPanchayats] = useState(false);
   const [loadingVillages, setLoadingVillages] = useState(false);
 
-  // Auto-fill CLF Name and Code from props if available
+  const downloadMouTemplate = () => {
+    const link = document.createElement("a");
+    link.href = "/MOUForm/MOU_Template.docx";
+    link.download = "MOU_Template.docx";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  // Auto-fill CLF Name, Code, and Location details from props if available
   useEffect(() => {
-    if (clfName && clfName !== "-") {
-      setForm((prev) => ({
-        ...prev,
-        basic_info: {
-          ...prev.basic_info,
-          clf_name: clfName,
-          clf_code: clfCode || "",
-        },
-      }));
-    }
-  }, [clfName, clfCode]);
+    setForm((prev) => {
+      const newBasicInfo = { ...prev.basic_info };
+
+      if (clfName && clfName !== "-") {
+        newBasicInfo.clf_name = clfName;
+        newBasicInfo.clf_code = clfCode || "";
+      }
+
+      // Automatically map cascading location IDs from the selected member payload
+      if (selectedMember) {
+        newBasicInfo.district_id =
+          selectedMember.district_id || newBasicInfo.district_id;
+        newBasicInfo.block_id =
+          selectedMember.block_id || newBasicInfo.block_id;
+        newBasicInfo.panchayat_id =
+          selectedMember.panchayat_id || newBasicInfo.panchayat_id;
+
+        // Handles village_id if it eventually gets added to the payload
+        newBasicInfo.village_id =
+          selectedMember.village_id || newBasicInfo.village_id;
+      }
+
+      return { ...prev, basic_info: newBasicInfo };
+    });
+  }, [clfName, clfCode, selectedMember]);
 
   /* =======================================================
          CASCADING LOOKUPS (District -> Block -> GP -> Village)
@@ -594,7 +623,14 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
       ...prev,
       mou: {
         ...prev.mou,
-        mou_docs: [...prev.mou.mou_docs, { doc_name: "", doc_file: null }],
+        mou_docs: [
+          ...prev.mou.mou_docs,
+          {
+            doc_name: "",
+            is_other: false,
+            doc_file: null,
+          },
+        ],
       },
     }));
   };
@@ -646,12 +682,17 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
       newErrors.vo_group =
         "Both LokOS VO Code and Name must be provided together.";
 
-    // 3. Date Validation
+    // 3. MOU name and Date Validation
     if (form.mou.mou_date) {
       const today = new Date().toISOString().split("T")[0];
       if (form.mou.mou_date > today)
         newErrors.mou_date = "MOU date cannot be a future date.";
     }
+    form.mou.mou_docs.forEach((doc, index) => {
+      if (doc.is_other && !doc.doc_name.trim()) {
+        newErrors[`mou_doc_${index}`] = "Please enter a custom MOU type.";
+      }
+    });
 
     // 4. Sales Validation
     const monthly =
@@ -766,6 +807,7 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
             : null,
         mous: [
           {
+            mou_level: mouLevel || "",
             mou_status: form.mou.mou_status,
             mou_date: form.mou.mou_date,
             mou_duration: form.mou.mou_duration,
@@ -990,7 +1032,10 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
 
               <div className="detailBox">
                 <span>VO Name</span>
-                <strong>{form.basic_info.vo_name || "-"}</strong>
+                <strong>
+                  {form.basic_info.vo_name ||
+                    "Not Found, Please Enter Manually"}
+                </strong>
               </div>
 
               <div className="detailBox">
@@ -1178,7 +1223,7 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
                    SECTION 2: ENTERPRISE OR PRODUCT
             ======================================================= */}
         <div className="form-card">
-          <h3 className="sectionTitle">Enterprise / Product Details</h3>
+          {/* <h3 className="sectionTitle">Enterprise / Product Details</h3> */}
 
           <div className="radio-group mb-24">
             <label
@@ -1192,9 +1237,9 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
                   handleRadioChange("selection_ent_prod", "enterprise")
                 }
               />
-              Enterprise Details
+              <h3>Enterprise Details</h3>
             </label>
-            <label
+            {/* <label
               className={`radio-label ${form.selection_ent_prod === "product" ? "active-radio" : ""}`}
             >
               <input
@@ -1206,7 +1251,7 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
                 }
               />
               Single Product Details
-            </label>
+            </label> */}
           </div>
 
           {form.selection_ent_prod === "enterprise" && (
@@ -1315,7 +1360,7 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
               textAlign: "center",
             }}
           >
-            2nd Party Details
+            SECOND Party Details
           </h3>
 
           <div className="radio-group mb-24">
@@ -1559,36 +1604,106 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
             </div>
 
             <h4 className="subHeading">MOU Type</h4>
+
             {form.mou.mou_docs.map((doc, dIndex) => (
-              <div key={dIndex} className="docRow">
-                <input
-                  className="input"
-                  placeholder="Document Name"
-                  value={doc.doc_name}
-                  onChange={(e) =>
-                    updateDoc(dIndex, "doc_name", e.target.value)
-                  }
-                />
-
-                <input
-                  className="input file-input"
-                  type="file"
-                  onChange={(e) =>
-                    updateDoc(dIndex, "doc_file", e.target.files[0] || null)
-                  }
-                />
-
-                {form.mou.mou_docs.length > 1 && (
-                  <button
-                    type="button"
-                    className="deleteDocBtn"
-                    onClick={() => removeDoc(dIndex)}
+              <div key={dIndex} className="form-card">
+                <div className="docRow">
+                  {/* COLUMN 1: MOU Type Dropdown & Conditional 'Other' Input */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
                   >
-                    ✕
-                  </button>
-                )}
+                    <select
+                      className="selectInput"
+                      value={doc.is_other ? "Other" : doc.doc_name}
+                      onChange={(e) => {
+                        if (e.target.value === "Other") {
+                          updateDoc(dIndex, "is_other", true);
+                          updateDoc(dIndex, "doc_name", "");
+                        } else {
+                          updateDoc(dIndex, "is_other", false);
+                          updateDoc(dIndex, "doc_name", e.target.value);
+                        }
+                      }}
+                    >
+                      <option value="">-- Select MOU Type --</option>
+                      <option value="Product Purchase/Sale">
+                        Product Purchase/Sale
+                      </option>
+                      <option value="Manpower">Manpower</option>
+                      <option value="Training">Training</option>
+                      <option value="Other">Other</option>
+                    </select>
+
+                    {doc.is_other && (
+                      <input
+                        className="input otherMouInput"
+                        placeholder="Enter Custom MOU Type"
+                        value={doc.doc_name}
+                        onChange={(e) =>
+                          updateDoc(dIndex, "doc_name", e.target.value)
+                        }
+                      />
+                    )}
+                  </div>
+
+                  {/* COLUMN 2: Stacked Download Button and File Input */}
+                  <div
+                    style={{
+                      display: "flex",
+                      flexDirection: "column",
+                      gap: "12px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      className="smallBtn outlineBtn templateBtn"
+                      style={{
+                        margin: 0,
+                        width: "fit-content",
+                        padding: "8px 12px",
+                        fontSize: "12px",
+                      }}
+                      onClick={downloadMouTemplate}
+                    >
+                      📄 Download Template
+                    </button>
+                    <input
+                      className="input file-input"
+                      type="file"
+                      style={{ height: "auto", padding: "10px" }}
+                      onChange={(e) =>
+                        updateDoc(dIndex, "doc_file", e.target.files[0] || null)
+                      }
+                    />
+                  </div>
+
+                  {/* COLUMN 3: Delete Button */}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "flex-start",
+                      paddingTop: "2px",
+                    }}
+                  >
+                    {form.mou.mou_docs.length > 1 && (
+                      <button
+                        type="button"
+                        className="deleteDocBtn"
+                        onClick={() => removeDoc(dIndex)}
+                        title="Remove Document"
+                      >
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                </div>
               </div>
             ))}
+
             <button className="smallBtn outlineBtn" onClick={addDoc}>
               + Add Document
             </button>
@@ -1608,6 +1723,50 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
             <div className="grid3">
               <div>
                 <input
+                  className={`input ${errors.est_monthly_sales || errors.sales_logic ? "error-border" : ""}`}
+                  type="number"
+                  placeholder="Monthly Sales (₹)"
+                  value={form.sales.est_monthly_sales}
+                  onChange={(e) => {
+                    const monthlyVal = e.target.value;
+                    const annualVal = monthlyVal
+                      ? String(Number(monthlyVal) * 12)
+                      : "";
+
+                    // SURGICAL FIX: Update both monthly and auto-calc annual simultaneously
+                    setForm((prev) => ({
+                      ...prev,
+                      sales: {
+                        ...prev.sales,
+                        est_monthly_sales: monthlyVal,
+                        est_annual_sales: annualVal,
+                      },
+                    }));
+
+                    // Clear associated errors immediately on typing
+                    if (
+                      errors.est_monthly_sales ||
+                      errors.sales_logic ||
+                      errors.est_annual_sales
+                    ) {
+                      setErrors((prev) => ({
+                        ...prev,
+                        est_monthly_sales: null,
+                        est_annual_sales: null,
+                        sales_logic: null,
+                      }));
+                    }
+                  }}
+                />
+                {errors.est_monthly_sales && (
+                  <span className="error-text mt-1">
+                    {errors.est_monthly_sales}
+                  </span>
+                )}
+              </div>
+
+              <div>
+                <input
                   className={`input ${errors.est_annual_sales || errors.sales_logic ? "error-border" : ""}`}
                   type="number"
                   placeholder="Annual Sales (₹)"
@@ -1623,27 +1782,6 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
                 {errors.est_annual_sales && (
                   <span className="error-text mt-1">
                     {errors.est_annual_sales}
-                  </span>
-                )}
-              </div>
-
-              <div>
-                <input
-                  className={`input ${errors.est_monthly_sales || errors.sales_logic ? "error-border" : ""}`}
-                  type="number"
-                  placeholder="Monthly Sales (₹)"
-                  value={form.sales.est_monthly_sales}
-                  onChange={(e) =>
-                    handleSectionChange(
-                      "sales",
-                      "est_monthly_sales",
-                      e.target.value,
-                    )
-                  }
-                />
-                {errors.est_monthly_sales && (
-                  <span className="error-text mt-1">
-                    {errors.est_monthly_sales}
                   </span>
                 )}
               </div>
@@ -1838,10 +1976,10 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
 
         .docRow {
           display: grid;
-          grid-template-columns: 1fr 1fr auto;
+          grid-template-columns: 1.4fr 1fr auto;
           gap: 16px;
           margin-bottom: 12px;
-          align-items: center;
+          align-items: start;
         }
 
         .deleteDocBtn {
@@ -2030,6 +2168,20 @@ export default function MOUFormCreate({ selectedMember, clfName, clfCode }) {
         .detailBox strong {
           color: #0f172a;
           font-size: 15px;
+        }
+
+        .docLeft {
+          display: flex;
+          flex-direction: column;
+        }
+
+        .templateBtn {
+          margin-top: 8px;
+          width: fit-content;
+        }
+
+        .file-input {
+          align-self: start;
         }
 
         .mb-24 { margin-bottom: 24px; }
