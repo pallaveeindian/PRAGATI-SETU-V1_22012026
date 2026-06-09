@@ -454,7 +454,7 @@ export default function MOUFormCreate({
 
   const downloadMouTemplate = () => {
     const link = document.createElement("a");
-    link.href = "/MOUForm/MOU_Template.docx";
+    link.href = `${import.meta.env.VITE_ASSET_BASE_URL}MOUForm/MOU_Template.docx`;
     link.download = "MOU_Template.docx";
     document.body.appendChild(link);
     link.click();
