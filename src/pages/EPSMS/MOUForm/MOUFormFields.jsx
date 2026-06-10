@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { EPSAKHI_API, LOOKUP_API } from "../../../api/axios";
+import api, { EPSAKHI_API, LOOKUP_API } from "../../../api/axios";
 
 // =======================================================
 // CONSTANTS & LOOKUP DATA
@@ -452,13 +452,30 @@ export default function MOUFormCreate({
   const [loadingPanchayats, setLoadingPanchayats] = useState(false);
   const [loadingVillages, setLoadingVillages] = useState(false);
 
-  const downloadMouTemplate = () => {
-    const link = document.createElement("a");
-    link.href = `${import.meta.env.VITE_ASSET_BASE_URL}MOUForm/MOU_Template.docx`;
-    link.download = "MOU_Template.docx";
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+  const downloadMouTemplate = async () => {
+    try {
+      const response = await api.get("/public/mou-template-download/", {
+        responseType: "blob",
+      });
+
+      const blob = new Blob([response.data], {
+        type: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+      });
+
+      const url = window.URL.createObjectURL(blob);
+
+      const link = document.createElement("a");
+      link.href = url;
+      link.download = "MOU_Template.docx";
+
+      document.body.appendChild(link);
+      link.click();
+
+      link.remove();
+      window.URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Failed to download template:", error);
+    }
   };
 
   // Auto-fill CLF Name, Code, and Location details from props if available
