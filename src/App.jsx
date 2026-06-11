@@ -251,14 +251,14 @@ export default function App() {
               element={<TpTrainingRequestClosure />}
             />
             {/* AFTER UIDAI API */}
-            {/* <Route
-              path="/tms/tp/batches/create/:id"
-              element={<TpCreateBatch />}
-            /> */}
             <Route
               path="/tms/tp/batches/create/:id"
-              element={<SiteDevErrorPage />}
+              element={<TpCreateBatch />}
             />
+            {/* <Route
+              path="/tms/tp/batches/create/:id"
+              element={<SiteDevErrorPage />}
+            /> */}
             <Route path="/tms/tp/cp-list" element={<TpListCP />} />
             <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
             <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
