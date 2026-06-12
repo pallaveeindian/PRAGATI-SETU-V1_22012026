@@ -30,10 +30,10 @@ const MENU = {
     crp_record: [
         {
             label: "CRP-EP Form",
-            to: "/epsms/crp-form",
+            to: "/crp-ep/crp-form",
             icon: FaAddressBook,
         },
-        { label: "Recorded CRPs", to: "/epsms/recorded-crps", icon: FaDatabase },
+        { label: "Recorded CRPs", to: "/crp-ep/recorded-crps", icon: FaDatabase },
     ],
 };
 

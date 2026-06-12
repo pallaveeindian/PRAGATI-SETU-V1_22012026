@@ -1,14 +1,51 @@
-import React from "react";
+import React, { useEffect, useState } from "react";
 import GovHeader from "../../../src/pages/GovHeader";
 import TopNavigation from "./HeaderNav";
 import Footer from "./Footer";
 
 import up_logo from "../../assets/upgov_logo.jpg";
 
+/*
+|--------------------------------------------------------------------------
+| SET YOUR MAINTENANCE END TIME HERE (IST)
+|--------------------------------------------------------------------------
+|
+| Format:
+| YYYY-MM-DDTHH:mm:ss+05:30
+|
+| 12 June 2026, 12:00 PM IST
+|
+*/
+const MAINTENANCE_END_TIME = "2026-06-12T12:00:00+05:30";
+
 const ServerMaintenance = () => {
+  const [timeLeft, setTimeLeft] = useState(0);
+
+  useEffect(() => {
+    const endTime = new Date(MAINTENANCE_END_TIME).getTime();
+
+    const updateCountdown = () => {
+      const now = Date.now();
+
+      const remainingSeconds = Math.max(0, Math.floor((endTime - now) / 1000));
+
+      setTimeLeft(remainingSeconds);
+    };
+
+    updateCountdown();
+
+    const timer = setInterval(updateCountdown, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const hours = String(Math.floor(timeLeft / 3600)).padStart(2, "0");
+  const minutes = String(Math.floor((timeLeft % 3600) / 60)).padStart(2, "0");
+  const seconds = String(timeLeft % 60).padStart(2, "0");
+
   return (
     <div className="home-shell">
-      {/* HEADER (no language switch now) */}
+      {/* HEADER */}
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
@@ -26,7 +63,23 @@ const ServerMaintenance = () => {
 
           <h1 style={styles.title}>Site Under Maintenance</h1>
 
-          <p style={styles.text}>Please check back shortly.</p>
+          <p style={styles.text}>
+            Our services are temporarily unavailable while scheduled maintenance
+            is being performed.
+          </p>
+
+          {/* COUNTDOWN */}
+          <div style={styles.countdownContainer}>
+            <div style={styles.countdownLabel}>Expected Availability In</div>
+
+            <div style={styles.countdown}>
+              {hours}:{minutes}:{seconds}
+            </div>
+          </div>
+
+          <p style={styles.smallText}>
+            We apologize for the inconvenience. Please check back shortly.
+          </p>
 
           <button
             style={styles.button}
@@ -104,11 +157,11 @@ const styles = {
   card: {
     textAlign: "center",
     background: "#fd7302",
-    padding: "40px",
+    padding: "45px",
     borderRadius: "16px",
     boxShadow: "0 10px 30px rgba(0,0,0,0.2)",
     color: "#ffffff",
-    maxWidth: "420px",
+    maxWidth: "650px",
     width: "90%",
   },
 
@@ -118,28 +171,57 @@ const styles = {
   },
 
   title: {
-    fontSize: "28px",
-    marginBottom: "10px",
+    fontSize: "32px",
+    marginBottom: "12px",
     color: "#ffffff",
     fontWeight: "700",
   },
 
   text: {
-    fontSize: "15px",
+    fontSize: "16px",
     opacity: 0.95,
     lineHeight: "1.6",
     color: "#ffffff",
+    marginBottom: "25px",
+  },
+
+  countdownContainer: {
+    marginTop: "15px",
+    marginBottom: "25px",
+  },
+
+  countdownLabel: {
+    fontSize: "18px",
+    fontWeight: "600",
+    marginBottom: "12px",
+    opacity: 0.95,
+  },
+
+  countdown: {
+    fontSize: "72px",
+    fontWeight: "900",
+    lineHeight: 1,
+    letterSpacing: "4px",
+    textShadow: "0 4px 12px rgba(0,0,0,0.25)",
+    fontFamily: "'Courier New', monospace",
+  },
+
+  smallText: {
+    fontSize: "14px",
+    opacity: 0.95,
+    marginTop: "10px",
   },
 
   button: {
-    marginTop: "20px",
-    padding: "10px 20px",
+    marginTop: "28px",
+    padding: "12px 28px",
     borderRadius: "8px",
     border: "none",
     background: "#ffffff",
     color: "#fd7302",
     cursor: "pointer",
-    fontWeight: "600",
+    fontWeight: "700",
+    fontSize: "15px",
   },
 };
 
