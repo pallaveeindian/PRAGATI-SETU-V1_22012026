@@ -487,6 +487,11 @@ export const EPSAKHI_API = {
   // ✅ ADDED from source: CRP Panchayat bulk operations
   crpPanchayatBulk: (data) => api.post("/epsakhi/crp-panchayat-bulk/", data),
 
+
+  //  MOU FORM CREATE (POST API)
+  mouFormCreate: (data) =>
+    api.post("/epsakhi/mou-form/create/", data),
+
   // BeneficiaryRecorded + related enterprise forms
   beneficiaryRecorded: makeCrud("/epsakhi/beneficiary-recorded/"),
   existingEnterprise: makeCrud("/epsakhi/existing-enterprises/"),
@@ -731,12 +736,68 @@ export const TMS_API = {
   },
 };
 
+
+
+// ------------------------
+// PRERNA CANTEEN APIS
+// ------------------------
+
+export const PRERNA_API = {
+  // =========================
+  // CREATE CANTEEN
+  // =========================
+  createCanteen: (formData) =>
+    api.post("/prerna/canteen/create/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  // =========================
+  // DELETE CANTEEN
+  // =========================
+  deleteCanteen: (homeId) =>
+    api.delete(`/prerna/canteen/delete/${encodeURIComponent(homeId)}/`),
+
+  // =========================
+  // GENERIC UPDATE
+  // =========================
+  updateCanteenField: (formData) =>
+    api.patch("/prerna/canteen/update/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  // =========================
+  // LIST
+  // =========================
+  canteenList: (params = {}) =>
+    api.get("/prerna/canteen-list/", {
+      params,
+    }),
+
+  // =========================
+  // DETAIL
+  // =========================
+  canteenDetail: (homeId) =>
+    api.get(
+      `/prerna/canteen-detail/${encodeURIComponent(homeId)}/`
+    ),
+};
+
+
+
+
 // ------------------------
 // LDMS APIS (Lakhpati Didi Management System)
 // ------------------------
 //
 // These map to LDMS.api.urls router viewsets, analytics + dashboard views.
 //
+
+
+
 
 export const LDMS_API = {
   // Map Analytics via UPSRLM proxy (Total SHGs, VOs, CLFs)

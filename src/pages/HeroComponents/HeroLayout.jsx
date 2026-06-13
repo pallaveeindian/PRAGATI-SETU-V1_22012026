@@ -8,6 +8,9 @@ import faqBg from "../../assets/Hero/faq_bg.png";
 import Contact from "./HeroContactUs";
 import conBg from "../../assets/Hero/con_us_bg.png";
 import sectionPotraitMobileScreen from "../../assets/sectionPotraitMobileScreen.png";
+import LatestUpdate from "../Dashboard/LatestUpdate.jsx";
+import NewsUpdate from "../Dashboard/NewsUpdate.jsx";
+
 
 /**
  * HeroLayout
@@ -21,7 +24,15 @@ export default function HeroLayout() {
       <section className="hero-slideshow-section">
         <SlideShow />
       </section>
+      <section className="hero-updates-section">
+        <div className="news-update-wrapper">
+          <NewsUpdate />
+        </div>
 
+        <div className="latest-update-wrapper">
+          <LatestUpdate />
+        </div>
+      </section>
       {/* ================= PRAGATI SETU INFO ================= */}
       <section className="hero-section hero-info">
         <Info />
@@ -148,6 +159,59 @@ export default function HeroLayout() {
 
   .hero-mobile-img {
     display: block;
+  }
+}
+ /* ===== NEWS + LATEST UPDATE SECTION ===== */
+
+.hero-updates-section {
+  display: flex;
+  align-items: center; /* centers LatestUpdate vertically */
+  gap: 32px;
+  padding: 32px;
+  background: #f8fafc;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+/* LEFT SIDE - NEWS */
+.news-update-wrapper {
+  flex: 1;
+  min-width: 0;
+}
+
+/* RIGHT SIDE - LATEST UPDATE */
+.latest-update-wrapper {
+  flex: 0 0 420px; /* increased width */
+  display: flex;
+  align-items: center; /* vertical centering */
+  justify-content: center;
+}
+
+/* make components fill available width */
+.news-update-wrapper > *,
+.latest-update-wrapper > * {
+  width: 100%;
+}
+
+/* ===== TABLET ===== */
+@media (max-width: 1200px) {
+  .latest-update-wrapper {
+    flex: 0 0 380px;
+  }
+}
+
+/* ===== MOBILE ===== */
+@media (max-width: 768px) {
+  .hero-updates-section {
+    flex-direction: column;
+    gap: 20px;
+    padding: 16px;
+  }
+
+  .news-update-wrapper,
+  .latest-update-wrapper {
+    width: 100%;
+    flex: unset;
   }
 }
 

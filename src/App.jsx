@@ -97,9 +97,14 @@ import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
 import CRPForm from "./pages/EPSMS/RecordForm/CRPForm";
 import ViewRecCRPs from "./pages/EPSMS/ViewRecordedCRPs/ViewRecCRPs";
 
+<<<<<<< Updated upstream
 // MOU Form
 import MOULayout from "./pages/EPSMS/MOUForm/MOULayout.jsx";
 import MOUDashboard from "./pages/EPSMS/MOUForm/MOUDashboard.jsx";
+=======
+import MOULayout from "./pages/EPSMS/MOUForm/MOULayout.jsx";
+import CanteenForm from "./pages/PrernaCanteen/CanteenForm.jsx";
+>>>>>>> Stashed changes
 
 export default function App() {
   // Extract isAuthenticated and logout alongside authReady
@@ -417,6 +422,7 @@ export default function App() {
             <Route path="recorded-crps" element={<ViewRecCRPs />} />
           </Route>
         </Route>
+<<<<<<< Updated upstream
 
         {/* EPSMS MOU FORM*/}
         <Route element={<ProtectedRoute allowedRoles={["bmmu"]} />}>
@@ -425,6 +431,16 @@ export default function App() {
           </Route>
         </Route>
 
+=======
+        {/* NEW MOU PAGE */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/mou-layout" element={<MOULayout />} />
+        </Route>
+        <Route
+          path="/canteen-form"
+          element={<CanteenForm />}
+        />
+>>>>>>> Stashed changes
         {/* 404 */}
         {/* <Route path="*" element={<div>404</div>} /> */}
         <Route path="*" element={<ErrorPage />} />

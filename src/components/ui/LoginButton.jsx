@@ -33,6 +33,7 @@ export default function LoginButton({ closeMenu }) {
       color: "#b91c1c",
       delay: "0.18s",
     },
+<<<<<<< Updated upstream
     {
       path: "/login?module=crp",
       label: "CRP-EP Mapping",
@@ -45,6 +46,20 @@ export default function LoginButton({ closeMenu }) {
       color: "#9333ea",
       delay: "0.54s",
     },
+=======
+    // {
+    //   path: "/login?module=crp",
+    //   label: "CRP-EP Mapping",
+    //   color: "#f59e0b",
+    //   delay: "0.36s",
+    // },
+    // {
+    //   path: "/login?module=epsms",
+    //   label: "EPSMS Portal",
+    //   color: "#9333ea",
+    //   delay: "0.54s",
+    // },
+>>>>>>> Stashed changes
   ];
 
   return (
