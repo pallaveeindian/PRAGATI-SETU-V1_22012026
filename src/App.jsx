@@ -31,6 +31,9 @@ import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ErrorPage from "./components/ErrorPages/ErrorPage";
 import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
 
+// Server Maintainance
+import ServerMaintenance from "./components/ErrorPages/ServerMaintenance.jsx";
+
 // Modular Routes
 import TmsRoutes from "./routes/TmsRoutes";
 import LdmsRoutes from "./routes/LdmsRoutes";
@@ -91,21 +94,22 @@ export default function App() {
         />
         <Route path="/what's-new" element={<WhatsNew />} />
         <Route path="/public-reports" element={<PublicReports />} />
-        <Route path="/login" element={<Login />} />
+        <Route path="/login" element={<ServerMaintenance />} />
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
 
+        {/* RESUMES AFTER MAINTAINANCE */}
         {/* ----- Protected Application Routes ----- */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardHome />} />
+        {/* <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardHome />} /> */}
 
           {/* Sub-Software Routing (Delegated to /src/routes/*) */}
-          <Route path="/tms/*" element={<TmsRoutes />} />
+          {/* <Route path="/tms/*" element={<TmsRoutes />} />
           <Route path="/ldms/*" element={<LdmsRoutes />} />
           <Route path="/crp-ep/*" element={<CrpEpRoutes />} />
           <Route path="/mou/*" element={<MouRoutes />} />
 
           <Route path="/error" element={<ErrorPage />} />
-        </Route>
+        </Route> */}
 
         {/* Catch-all 404 */}
         <Route path="*" element={<ErrorPage />} />

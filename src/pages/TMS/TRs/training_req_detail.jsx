@@ -1022,7 +1022,9 @@ export default function TrainingRequestDetail() {
                           </div>
                         )}
 
-                      {isTP &&
+                      {/* AFTER TC MODULE IS LIVE */}
+
+                      {/* {isTP &&
                         (tr.status || "").toUpperCase() === "REJECTED" && (
                           <div className="action-box">
                             <strong>Note:</strong> Request is REJECTED.
@@ -1047,7 +1049,7 @@ export default function TrainingRequestDetail() {
                           >
                             Create Batches
                           </button>
-                        )}
+                        )} */}
 
                       {["ONGOING", "PENDING", "COMPLETED", "REJECTED"].includes(
                         (tr.status || "").toUpperCase(),
