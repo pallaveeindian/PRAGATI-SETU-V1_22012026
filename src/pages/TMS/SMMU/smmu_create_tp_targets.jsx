@@ -100,10 +100,13 @@ export default function SmmuCreatePartnerTargets() {
 
     assignedTargetsFull.forEach((t) => {
       const pid = t.training_plan || t.training_plan_id || null;
+      const fy = t.financial_year || "2026-27"; // Fallback to handle legacy targets
 
       if (!pid) return;
 
-      m[pid] = {
+      if (!m[pid]) m[pid] = {}; // Initialize nested object for the plan
+
+      m[pid][fy] = {
         partnerId: t.partner,
         partnerName: partnersById[t.partner]?.name || t.partner_name || null,
         targetId: t.id,
@@ -461,18 +464,22 @@ export default function SmmuCreatePartnerTargets() {
     }
   }
 
-  // plan click: select plan unless it's assigned to another partner
+  // plan click: select plan unless it's assigned to another partner for the same FY
   function onPlanClick(plan) {
-    const assigned = assignedPlanMap[plan.id];
-    // if assigned to other partner and not editing that target, block
+    const currentFY = form.financial_year || "2023-24";
+    const assigned = assignedPlanMap[plan.id]?.[currentFY];
+
+    // if assigned to other partner in this FY and not editing that target, block
     if (
       assigned &&
-      (!editingTarget || editingTarget.training_plan !== plan.id)
+      (!editingTarget ||
+        String(editingTarget.training_plan) !== String(plan.id) ||
+        editingTarget.financial_year !== currentFY)
     ) {
       // show a gentle message
       setMessage({
         type: "error",
-        text: `This module is already assigned to ${assigned.partnerName || "another partner"}.`,
+        text: `This module is already assigned to ${assigned.partnerName || "another partner"} for FY ${currentFY}.`,
       });
       return;
     }
@@ -807,14 +814,15 @@ export default function SmmuCreatePartnerTargets() {
 
                         <tbody>
                           {filteredPlans.map((p) => {
-                            const assigned = assignedPlanMap[p.id];
+                            const currentFY = form.financial_year || "2023-24";
+                            const assigned = assignedPlanMap[p.id]?.[currentFY];
                             const isAssigned = Boolean(assigned);
 
                             const isAssignedToThisEditingTarget =
                               editingTarget &&
-                              (editingTarget.training_plan === p.id ||
-                                String(editingTarget.training_plan) ===
-                                  String(p.id));
+                              String(editingTarget.training_plan) ===
+                                String(p.id) &&
+                              editingTarget.financial_year === currentFY;
 
                             const rowClickable =
                               !isAssigned || isAssignedToThisEditingTarget;

@@ -1,20 +1,18 @@
 // src/App.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import {
   Routes,
   Route,
-  Navigate,
   useLocation,
   useNavigationType,
 } from "react-router-dom";
+import { useAuth } from "./contexts/AuthContext";
+import { LanguageProvider } from "./pages/LanguageContext.jsx";
+import ProtectedRoute from "./routes/ProtectedRoute";
+
+// Public Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
-import DashboardHome from "./pages/Dashboard/DashboardHome";
-import ProtectedRoute from "./routes/ProtectedRoute";
-import { useAuth } from "./contexts/AuthContext";
-import { LanguageProvider } from "../src/pages/LanguageContext.jsx";
-
-// Homepage
 import AboutUs from "./pages/AboutUs";
 import BeneficiaryProfiling from "./pages/BeneficiaryProfiling";
 import UserManagement from "./pages/UserManagement";
@@ -28,81 +26,18 @@ import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
 import PublicReports from "./pages/PublicReports";
 import WhatsNew from "./pages/WhatsNew";
 
-// TMS dashboards
-import BmmuTmsDashboard from "./pages/TMS/BMMU/bmmu_tms_dashboard";
-import DmmuTmsDashboard from "./pages/TMS/DMMU/dmmu_tms_dashboard";
-import SmmuTmsDashboard from "./pages/TMS/SMMU/smmu_tms_dashboard";
-import SmmuCreateTrainingPlan from "./pages/TMS/SMMU/smmu_create_training_plan";
-import SmmuListTrainingPlan from "./pages/TMS/SMMU/smmu_list_training_plan";
-import SmmuCreatePartnerTargets from "./pages/TMS/SMMU/smmu_create_tp_targets";
-import SmmuBulkUploadTargets from "./pages/TMS/SMMU/smmu_bulk_upload_targets";
-import TpDashboard from "./pages/TMS/TP/tp_dashboard";
-import MtDashboard from "./pages/TMS/MT/mt_dashboard";
-import CpDashboard from "./pages/TMS/TP_CP/cp_dashboard";
-import CpBatchList from "./pages/TMS/TP_CP/cp_batch_list";
-import CpBatchDetail from "./pages/TMS/TP_CP/cp_batch_detail";
-import CpAdPerBatchEkyc from "./pages/TMS/TP_CP/attendance/cpad_per_batch_ekyc";
-import CpAdPerBatch from "./pages/TMS/TP_CP/attendance/cpad_per_batch";
-import CpBatchClosure from "./pages/TMS/TP_CP/cp_batch_closure";
-
-// Training Partner screens
-import TpCentreList from "./pages/TMS/TP/tp_centre_list";
-import TpCentreRegistration from "./pages/TMS/TP/tp_centre_registration";
-import TpListCP from "./pages/TMS/TP/tp_list_cp";
-import TpCreateCP from "./pages/TMS/TP/tp_create_cp";
-import TpCpAssignment from "./pages/TMS/TP/tp_cp_assignment";
-import TpTrainingRequestClosure from "./pages/TMS/TP/tp_tr_closure";
-import TpCreateBatch from "./pages/TMS/TP/tp_create_batch";
-
-// New TMS workflow screens
-import CreateTrainingRequest from "./pages/TMS/tms_create_tr";
-import TrainingRequestList from "./pages/TMS/TRs/training_req_list";
-import TrainingRequestDetail from "./pages/TMS/TRs/training_req_detail";
-import TrainingBatchList from "./pages/TMS/TRs/training_batch_list";
-import TrainingBatchDetail from "./pages/TMS/TRs/training_batch_detail";
-import BatchCertificate from "./pages/TMS/TRs/batch_certificate";
-import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
-import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
-import DmmuRequestClosure from "./pages/TMS/DMMU/dmmu_request_closure";
-// User Management
-import UserMgmnt from "./pages/TMS/UserMgmnt/UserMgmnt";
-
-// LDMS Dashboards
-import LdmsLayout from "./pages/LDMS/Layout/LdmsLayout";
-import BmmuLdmsDashboard from "./pages/LDMS/BMMU/bmmu_ldms_dashboard";
-import BlockMap from "./pages/LDMS/BMMU/bmmu_dashboard_blk_map";
-import DmmuLdmsDashboard from "./pages/LDMS/DMMU/dmmu_ldms_dashboard";
-import DmmuBlockMap from "./pages/LDMS/DMMU/dmmu_dashboard_blk_map";
-import SmmuLdmsDashboard from "./pages/LDMS/SMMU/smmu_ldms_dashboard";
-import SupportCapture from "./pages/LDMS/Support Map/ldms_support_capture";
-import DemandAnalytics from "./pages/LDMS/Demand Analytics/da_container";
-import BLCCMeetings from "./pages/LDMS/BMMU/bmmu_BLCC_meetings";
-import SchemeDictionary from "./pages/LDMS/scheme_dict";
-import SupPLDList from "./pages/LDMS/Support Map/SupPLDList";
-import SupPLDDetail from "./pages/LDMS/Support Map/SupPLDDetail";
-import SupportBucketList from "./pages/LDMS/Support Map/record_support_list";
-import RecordSupportDetail from "./pages/LDMS/Support Map/record_support_detail";
-import DmmuLdmsApprove from "./pages/LDMS/DMMU/dmmu_ldms_approve";
-import LdmsReports from "./pages/LDMS/Reports/ldms_reports";
-import TrainingReport from "./pages/TMS/TrainingReport/TrainingReport";
-import SmmuTargetAchievement from "./pages/TMS/SMMU/smmu_tp_tva";
-import BmmuTargetAchievement from "./pages/TMS/BMMU/bmmu_tp_tvs";
-import DmmuTargetAchievement from "./pages/TMS/DMMU/dmmu_tp_tvs";
-// import ServerMaintenance from "./components/ErrorPages/ServerMaintenance";
+// Dashboard / Error Pages
+import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ErrorPage from "./components/ErrorPages/ErrorPage";
 import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
 
-// EPSMS (CRP-EP Mapping Form)
-import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
-import CRPForm from "./pages/EPSMS/RecordForm/CRPForm";
-import ViewRecCRPs from "./pages/EPSMS/ViewRecordedCRPs/ViewRecCRPs";
-
-// MOU Form
-import MOULayout from "./pages/EPSMS/MOUForm/MOULayout.jsx";
-import MOUDashboard from "./pages/EPSMS/MOUForm/MOUDashboard.jsx";
+// Modular Routes
+import TmsRoutes from "./routes/TmsRoutes";
+import LdmsRoutes from "./routes/LdmsRoutes";
+import CrpEpRoutes from "./routes/CrpEpRoutes";
+import MouRoutes from "./routes/MouRoutes";
 
 export default function App() {
-  // Extract isAuthenticated and logout alongside authReady
   const { authReady, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navType = useNavigationType();
@@ -110,25 +45,19 @@ export default function App() {
   // ==========================================
   // SECURITY LOGIC: BROWSER BACK/FORWARD LOGOUT
   // ==========================================
-  React.useEffect(() => {
-    // Only run this check if the user is actively logged in
+  useEffect(() => {
     if (!authReady || !isAuthenticated) return;
 
-    // Define the base paths of your secured portal
     const isPortalRoute =
       location.pathname.startsWith("/dashboard") ||
       location.pathname.startsWith("/tms") ||
       location.pathname.startsWith("/ldms") ||
-      location.pathname.startsWith("/epsms") ||
+      location.pathname.startsWith("/crp-ep") || // Replaced EPSMS with crp-ep
       location.pathname.startsWith("/mou") ||
       location.pathname.startsWith("/error");
 
-    // If the user uses the Browser Back/Forward buttons (which registers as "POP")
-    // and lands on a public route (like / or /login), kill their session instantly.
     if (navType === "POP" && !isPortalRoute) {
-      if (logout) {
-        logout();
-      }
+      if (logout) logout();
     }
   }, [location.pathname, navType, authReady, isAuthenticated, logout]);
 
@@ -139,6 +68,7 @@ export default function App() {
   return (
     <LanguageProvider>
       <Routes>
+        {/* ----- Public Routes ----- */}
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
         <Route
@@ -162,298 +92,24 @@ export default function App() {
         <Route path="/what's-new" element={<WhatsNew />} />
         <Route path="/public-reports" element={<PublicReports />} />
         <Route path="/login" element={<Login />} />
-        {/* Protected routes */}
-        <Route element={<ProtectedRoute />}>
-          {/* Main Dashboard */}
-          <Route path="/dashboard" element={<DashboardHome />} />
-          {/* <Route path="/dashboard/*" element={<DashboardHome />} /> */}
-
-          {/* ----- TMS Routes ----- */}
-          {/* <Route path="/tms" element={<TmsLanding />} /> */}
-          <Route path="/error" element={<ErrorPage />} />
-          <Route path="/tms/training-report" element={<TrainingReport />} />
-
-          {/* SMMU Routes */}
-          <Route element={<ProtectedRoute allowedRoles="smmu" />}>
-            {/* SMMU Partner Target Creation */}
-            <Route path="/tms/smmu/dashboard" element={<SmmuTmsDashboard />} />
-            <Route
-              path="/tms/smmu/partner-targets"
-              element={<SmmuCreatePartnerTargets />}
-            />
-            <Route
-              path="/tms/smmu/bulk-assign-targets"
-              element={<SmmuBulkUploadTargets />}
-            />
-            <Route
-              path="/tms/smmu/tp-TvA"
-              element={<SmmuTargetAchievement />}
-            />
-            <Route
-              path="/tms/smmu/create-training-plan"
-              element={<SmmuCreateTrainingPlan />}
-            />
-            <Route
-              path="/tms/smmu/list-training-plans"
-              element={<SmmuListTrainingPlan />}
-            />
-            <Route
-              path="/tms/smmu/dmmu-users"
-              element={<UserMgmnt targetRole="dmmu" />}
-            />
-          </Route>
-
-          {/* DMMU Routes */}
-          <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
-            <Route path="/tms/dmmu/dashboard" element={<DmmuTmsDashboard />} />
-            <Route path="/tms/dmmu/tr-review/:id" element={<DmmuTrReview />} />
-            <Route
-              path="/tms/dmmu/tr-closure/:id"
-              element={<DmmuRequestClosure />}
-            />
-            <Route
-              path="/tms/dmmu/tp-TvA"
-              element={<DmmuTargetAchievement />}
-            />
-            <Route
-              path="/tms/dmmu/bmmu-users"
-              element={<UserMgmnt targetRole="bmmu" />}
-            />
-          </Route>
-          {/* BMMU Routes */}
-          <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
-            <Route path="/tms/bmmu/dashboard" element={<BmmuTmsDashboard />} />
-            {/* Propose training plan */}
-            <Route
-              path="/tms/bmmu/create-training-plan"
-              element={<BmmuCreateTrainingPlan />}
-            />
-            <Route
-              path="/tms/bmmu/tp-TvA"
-              element={<BmmuTargetAchievement />}
-            />
-          </Route>
-
-          {/* Training Partner Routes */}
-          <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
-            <Route path="/tms/tp/dashboard" element={<TpDashboard />}></Route>
-            <Route path="/tms/tp/centre-list" element={<TpCentreList />} />
-            <Route
-              path="/tms/tp/centre/new"
-              element={<TpCentreRegistration />}
-            />
-            <Route
-              path="/tms/tp/centre/:centreId"
-              element={<TpCentreRegistration />}
-            />
-            <Route
-              path="/tms/tp/tr-closure/:id"
-              element={<TpTrainingRequestClosure />}
-            />
-            {/* AFTER UIDAI API */}
-            <Route
-              path="/tms/tp/batches/create/:id"
-              element={<TpCreateBatch />}
-            />
-            {/* <Route
-              path="/tms/tp/batches/create/:id"
-              element={<SiteDevErrorPage />}
-            /> */}
-            <Route path="/tms/tp/cp-list" element={<TpListCP />} />
-            <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
-            <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
-            <Route path="/tms/tp/cp/assign" element={<TpCpAssignment />} />
-          </Route>
-
-          {/* TPCP Routes */}
-          <Route element={<ProtectedRoute allowedRoles="tp_contact_person" />}>
-            <Route path="/tms/cp/dashboard" element={<CpDashboard />}></Route>
-            <Route
-              path="/tms/cp/batch-detail/:id"
-              element={<CpBatchDetail />}
-            />
-            <Route
-              path="/tms/cp/batch-attendance-ekyc/:id"
-              element={<CpAdPerBatchEkyc />}
-            />
-            <Route
-              path="/tms/cp/batch-attendance/:id"
-              element={<CpAdPerBatch />}
-            />
-            <Route path="/tms/cp/batch-list" element={<CpBatchList />} />
-            <Route
-              path="/tms/cp/batch-closure/:id"
-              element={<CpBatchClosure />}
-            />
-            +
-          </Route>
-
-          {/* Master Trainer Routes */}
-          <Route element={<ProtectedRoute allowedRoles="master_trainer" />}>
-            <Route path="/tms/mt/dashboard" element={<MtDashboard />}></Route>
-          </Route>
-
-          {/* Create Training Request */}
-          <Route
-            element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
-          >
-            <Route
-              path="/tms/create-training-request"
-              element={<CreateTrainingRequest />}
-            />
-          </Route>
-
-          {/* View Training Requests List */}
-          <Route
-            element={
-              <ProtectedRoute
-                allowedRoles={["smmu", "dmmu", "bmmu", "training_partner"]}
-              />
-            }
-          >
-            <Route
-              path="/tms/training-requests"
-              element={<TrainingRequestList />}
-            />
-            <Route
-              path="/tms/tr-detail/:id"
-              element={<TrainingRequestDetail />}
-            />
-            <Route path="/tms/batches-list/" element={<TrainingBatchList />} />
-            <Route
-              path="/tms/batches-list/:id/"
-              element={<TrainingBatchList />}
-            />
-          </Route>
-
-          <Route
-            element={<ProtectedRoute allowedRoles={["smmu", "dmmu", "bmmu"]} />}
-          >
-            <Route
-              path="/tms/batch-certificate/:id"
-              element={<BatchCertificate />}
-            />
-          </Route>
-
-          {/* Batch Detail Permissions */}
-          <Route
-            element={
-              <ProtectedRoute
-                allowedRoles={[
-                  "smmu",
-                  "dmmu",
-                  "bmmu",
-                  "training_partner",
-                  "tp_contact_person",
-                ]}
-              />
-            }
-          >
-            {/* AFTER UIDAI API */}
-            <Route
-              path="/tms/batch-detail/:id"
-              element={<TrainingBatchDetail />}
-            />
-            {/* <Route
-              path="/tms/batch-detail/:id"
-              element={<SiteDevErrorPage />}
-            /> */}
-          </Route>
-
-          {/* Catch-all for unknown TMS paths */}
-          {/* <Route path="/tms/*" element={<TmsLanding />} /> */}
-          <Route path="/error" element={<ErrorPage />} />
-        </Route>
-        {/* ----- LDMS Routes (GLOBAL LAYOUT APPLIED) ----- */}
-        <Route element={<ProtectedRoute />}>
-          <Route path="/ldms" element={<LdmsLayout />}>
-            {/* BMMU Routes */}
-            <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
-            <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
-            {/* DMMU Routes */}
-            <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
-            <Route
-              path="dmmu/approve-support/:id"
-              element={<DmmuLdmsApprove />}
-            />
-            {/* SMMU Routes */}
-            <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
-            {/* Global Routes */}
-            <Route path="support-capture" element={<SupportCapture />} />
-            <Route
-              path="support-map/edit/:supportApprovalId"
-              element={<SupportCapture />}
-            />
-            <Route path="scheme-dictionary" element={<SchemeDictionary />} />
-            <Route path="demand-analytics" element={<DemandAnalytics />} />
-            <Route path="support-map-list" element={<SupportBucketList />} />
-            <Route
-              path="support-map-detail/:id"
-              element={<RecordSupportDetail />}
-            />
-            <Route path="supported-pld-list" element={<SupPLDList />} />
-            <Route
-              path="supported-pld-list/detail/:pldId"
-              element={<SupPLDDetail />}
-            />
-            <Route path="reports" element={<LdmsReports />} />
-            <Route path="dash-block/:blockId" element={<BlockMap />} />
-            <Route
-              path="dash-district/:districtId"
-              element={<DmmuBlockMap />}
-            />
-            {/* future LDMS pages */}
-            {/* <Route path="support-mapping" element={<SupportMapping />} /> */}
-            {/* <Route path="analytics" element={<LdmsAnalytics />} /> */}
-          </Route>
-        </Route>
-
-        {/* CRP-EP MAPPING FORM */}
-        <Route
-          element={<ProtectedRoute allowedRoles={["crp_record", "dmmu"]} />}
-        >
-          <Route path="/epsms" element={<EpsmsLayout />}>
-            <Route path="crp-form" element={<CRPForm />} />
-            <Route path="recorded-crps" element={<ViewRecCRPs />} />
-          </Route>
-        </Route>
-
-        {/* EPSMS MOU FORM*/}
-        <Route element={<ProtectedRoute allowedRoles={["bmmu"]} />}>
-          <Route path="/mou" element={<MOULayout />}>
-            <Route path="dashboard" element={<MOUDashboard />} />
-          </Route>
-        </Route>
-
-        {/* 404 */}
-        {/* <Route path="*" element={<div>404</div>} /> */}
-        <Route path="*" element={<ErrorPage />} />
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
+
+        {/* ----- Protected Application Routes ----- */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardHome />} />
+
+          {/* Sub-Software Routing (Delegated to /src/routes/*) */}
+          <Route path="/tms/*" element={<TmsRoutes />} />
+          <Route path="/ldms/*" element={<LdmsRoutes />} />
+          <Route path="/crp-ep/*" element={<CrpEpRoutes />} />
+          <Route path="/mou/*" element={<MouRoutes />} />
+
+          <Route path="/error" element={<ErrorPage />} />
+        </Route>
+
+        {/* Catch-all 404 */}
+        <Route path="*" element={<ErrorPage />} />
       </Routes>
     </LanguageProvider>
   );
 }
-
-// // MAINTAINANCE MODE - ONLY FUTURE UPDATES PAGE ACTIVE
-// import React from "react";
-// import { Routes, Route, Navigate } from "react-router-dom";
-// import SiteDevErrorPage from "./components/ErrorPages/ServerMaintenance";
-// import { LanguageProvider } from "./pages/LanguageContext";
-// import ServerMaintenance from "./components/ErrorPages/ServerMaintenance";
-
-// export default function App() {
-//   return (
-//     <LanguageProvider>
-//       <Routes>
-//         {/* ONLY ACTIVE PAGE */}
-//         <Route path="/server-maintainance" element={<ServerMaintenance />} />
-
-//         {/* DISABLE EVERYTHING ELSE */}
-//         <Route
-//           path="*"
-//           element={<Navigate to="/server-maintainance" replace />}
-//         />
-//       </Routes>
-//     </LanguageProvider>
-//   );
-// }

@@ -729,6 +729,12 @@ export const TMS_API = {
     changePassword: (data) =>
       api.post("/tms/first-login/change-password/", data),
   },
+
+  // TMS V2 APIs
+
+  // Find Training Partner acc to latest target for TR creation
+  trainingPartnerByTarget: (params) =>
+    api.get("/tms/tp/by-target/", { params }),
 };
 
 // ------------------------

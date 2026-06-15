@@ -74,6 +74,19 @@ export default function AnalyticsFilters({
   // ==========================================
   return (
     <div className="analytics-module filters-module">
+      {/* --- NEW FINANCIAL YEAR FILTER --- */}
+      <div className="filter-group">
+        <label>Financial Year</label>
+        <select
+          value={filters.financial_year || ""}
+          onChange={(e) => onFilterChange("financial_year", e.target.value)}
+        >
+          <option value="">-- All Years --</option>
+          <option value="2025-26">2025-26</option>
+          <option value="2026-27">2026-27</option>
+        </select>
+      </div>
+
       {/* --- STANDARD GEOGRAPHY FILTERS --- */}
       <div className="filter-group">
         <label>District</label>

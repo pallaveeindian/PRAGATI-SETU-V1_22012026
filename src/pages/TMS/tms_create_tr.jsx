@@ -1,23 +1,29 @@
 // src/pages/TMS/tms_create_tr.jsx
-import React, {
-  useEffect,
-  useMemo,
-  useState,
-  useContext,
-  useRef,
-  useCallback,
-} from "react";
-// import TopNav from "./layout/tms_TopNav";
+import React, { useEffect, useMemo, useState, useContext } from "react";
 import LeftNav from "./layout/tms_LeftNav";
 import Header from "../../pages/TMS/layout/header";
 import Footer from "../../pages/TMS/layout/footer";
 import { AuthContext } from "../../contexts/AuthContext";
-import api, { TMS_API, LOOKUP_API, EPSAKHI_API } from "../../api/axios";
-import ShgListTable from "../Dashboard/ShgListTable";
-import ShgMemberListTable from "../Dashboard/ShgMemberListTable";
+import api, { TMS_API, LOOKUP_API } from "../../api/axios";
 
-import { getCanonicalRole } from "../../utils/roleUtils";
-import { ROLE_WELCOME_MESSAGES } from "../../utils/roleUtils"; // or same file
+import { getCanonicalRole, ROLE_WELCOME_MESSAGES } from "../../utils/roleUtils";
+import { useTRState } from "./CreateTR/hooks/useTRState";
+import {
+  loadJson,
+  saveJson,
+  getRoleKeyFromUser,
+  resolveFinalDistrict,
+} from "./CreateTR/utils/beneficiaryMappers";
+
+import Step1PlanSelection from "./CreateTR/Step1PlanSelection";
+import Step2Participants from "./CreateTR/Step2Participants";
+import Step3Review from "./CreateTR/Step3Review";
+import {
+  PreviewConfirmModal,
+  SubmissionSummaryModal,
+  PreloadModal,
+  PreloadErrorToast,
+} from "./CreateTR/TRModals";
 
 const TRP_SCOPE_CACHE = "tms_trp_user_scope_v1";
 const TRAIN_PLAN_CACHE = "tms_training_plans_cache_v1";
@@ -26,327 +32,14 @@ const MASTER_TRAINERS_CACHE = "tms_master_trainers_cache_v1";
 const TRAINING_THEMES_CACHE = "tms_training_themes_cache_v1";
 const BLOCK_TO_DISTRICT_CACHE = "tms_block_to_district_v1";
 
-/* ---------- small helpers ---------- */
-function loadJson(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch (e) {
-    localStorage.removeItem(key);
-    return null;
-  }
-}
-function saveJson(key, val) {
-  try {
-    localStorage.setItem(key, JSON.stringify(val));
-  } catch (e) {
-    // ignore
-  }
-}
-function getRoleKeyFromUser(user) {
-  if (!user) return "";
-  const id = Number(user.role_id ?? user.role);
-  if (!Number.isNaN(id)) {
-    if (id === 1) return "bmmu";
-    if (id === 2) return "dmmu";
-    if (id === 3) return "smmu";
-    if (id === 4) return "training_partner";
-  }
-  const rn = (user.role_name || "").toLowerCase();
-  if (rn.includes("bmmu")) return "bmmu";
-  if (rn.includes("dmmu")) return "dmmu";
-  if (rn.includes("smmu") || rn.includes("state_mission")) return "smmu";
-  return "";
-}
-
-function resolveFinalDistrict({
-  districtId,
-  geoscopeCached,
-  user,
-  userBlock,
-  fetchDistrictFromBlock,
-  setDistrictId,
-}) {
-  let district =
-    districtId ??
-    geoscopeCached?.districts?.[0] ??
-    geoscopeCached?.district_id ??
-    user?.district_id ??
-    null;
-
-  return (async () => {
-    if (!district && userBlock) {
-      try {
-        const d = await fetchDistrictFromBlock(userBlock);
-        if (d) {
-          district = isNaN(Number(d)) ? d : Number(d);
-          setDistrictId?.(district);
-        }
-      } catch {}
-    }
-    return district;
-  })();
-}
-
-/* ---------- TrainerRow: memoized single row to avoid mass re-renders ---------- */
-const TrainerRow = React.memo(function TrainerRow({
-  row,
-  isSelected,
-  onToggle,
-}) {
-  // stable checkbox handler per row
-  const handleChange = useCallback(
-    (e) => {
-      if (typeof onToggle === "function") onToggle(row, e.target.checked);
-    },
-    [onToggle, row],
-  );
-
-  return (
-    <tr key={row.id} className={isSelected ? "row-selected" : ""}>
-      <td>
-        <input type="checkbox" checked={!!isSelected} onChange={handleChange} />
-      </td>
-      <td>{row.full_name || row.name || "-"}</td>
-      <td>{row.designation || "-"}</td>
-      <td>{row.block_name_en || "-"}</td>
-      <td>{row.district_name_en || "-"}</td>
-      <td>{row.mobile_no || "-"}</td>
-    </tr>
-  );
-});
-
-/* ---------- MasterTrainerList: lightweight trainer listing with checkbox selection
-   Parent must pass preloadedTrainers (array). This component is memoized to reduce re-renders. */
-const MasterTrainerList = React.memo(function MasterTrainerList({
-  filters = {},
-  onToggleTrainer,
-  selectedIds = new Set(),
-  preloadedTrainers = null, // plain array
-  preloadReloadToken = 0,
-  onRequestReload = null,
-}) {
-  // trainersCache is array of items
-  const [trainersCache, setTrainersCache] = useState(
-    Array.isArray(preloadedTrainers) ? preloadedTrainers : [],
-  );
-
-  // local filters & UI state
-  const [loading, setLoading] = useState(false);
-  const [designation, setDesignation] = useState(filters.designation || "");
-  const [search, setSearch] = useState("");
-  const [localReloadToken, setLocalReloadToken] = useState(0);
-
-  // sync when parent changes preloadedTrainers or token
-  useEffect(() => {
-    if (Array.isArray(preloadedTrainers)) {
-      setTrainersCache(preloadedTrainers);
-    } else {
-      setTrainersCache([]);
-    }
-    setLocalReloadToken((t) => t + 1);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [preloadedTrainers, preloadReloadToken]);
-
-  const filteredRows = useMemo(() => {
-    if (!Array.isArray(trainersCache)) return [];
-    const s = String(search || "")
-      .trim()
-      .toLowerCase();
-    const dLower = String(designation || "").toLowerCase();
-    return trainersCache.filter((t) => {
-      if (designation && String(t.designation || "").toLowerCase() !== dLower)
-        return false;
-      if (
-        filters.district &&
-        String(t.empanel_district) !== String(filters.district)
-      )
-        return false;
-      if (filters.block && String(t.empanel_block) !== String(filters.block))
-        return false;
-      if (s.length > 0) {
-        const hay = `${t.full_name || t.name || ""} 
-          ${t.mobile_no || ""} 
-          ${t.TH_urid || ""} 
-          ${t.block_name_en || ""} 
-          ${t.district_name_en || ""}`.toLowerCase();
-        if (!hay.includes(s)) return false;
-      }
-      return true;
-    });
-  }, [trainersCache, designation, filters.district, filters.block, search]);
-
-  // simple client pagination for display
-  const PAGE_SIZE = 10;
-  const total = filteredRows.length;
-  const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const [page, setPage] = useState(1);
-  useEffect(() => setPage(1), [trainersCache, designation, search]);
-
-  const pageSafe = Math.min(Math.max(1, page), totalPages);
-  const rows = filteredRows.slice(
-    (pageSafe - 1) * PAGE_SIZE,
-    pageSafe * PAGE_SIZE,
-  );
-
-  // stable wrapper for reload button to show spinner in this component only
-  const handleReload = useCallback(() => {
-    if (typeof onRequestReload === "function") {
-      setLoading(true);
-      Promise.resolve(onRequestReload()).finally(() => setLoading(false));
-    }
-  }, [onRequestReload]);
-
-  return (
-    <div className="card" style={{ marginTop: 12 }}>
-      <div className="header-row space-between">
-        <div>
-          <h3>Master Trainers</h3>
-          <p className="muted" style={{ marginTop: 4 }}>
-            Select trainers for this request.
-          </p>
-        </div>
-        <div>
-          <button
-            className="btn-sm btn-flat"
-            onClick={handleReload}
-            disabled={loading}
-          >
-            Refresh
-          </button>
-        </div>
-      </div>
-
-      <div className="filters-row" style={{ gap: 8 }}>
-        <input
-          className="input"
-          placeholder="Search"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value || "");
-            setPage(1);
-          }}
-          style={{
-            width: 180,
-            border: "2px solid #3d6ba6",
-            borderRadius: 6,
-            outline: "none",
-            padding: 6,
-          }}
-        />
-        <p style={{ marginLeft: 10, fontSize: 12, color: "#6c757d" }}>
-          You can search for trainers by name, mobile, empanelled block or
-          district.
-        </p>
-        <select
-          className="input"
-          value={designation}
-          onChange={(e) => {
-            setDesignation(e.target.value);
-            setPage(1);
-          }}
-          style={{ outline: "2px solid #3d6ba6" }}
-        >
-          <option value="">All designations</option>
-          <option value="BRP">BRP</option>
-          <option value="DRP">DRP</option>
-          <option value="SRP">SRP</option>
-        </select>
-      </div>
-
-      {loading ? (
-        <div className="table-spinner">Loading trainers…</div>
-      ) : rows.length === 0 ? (
-        <p className="muted">No trainers found.</p>
-      ) : (
-        <>
-          <div className="table-wrapper">
-            <table className="table table-compact">
-              <thead>
-                <tr>
-                  <th></th>
-                  <th>Name</th>
-                  <th>Designation</th>
-                  <th>Block</th>
-                  <th>District</th>
-                  <th>Mobile</th>
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => {
-                  const id = r.id;
-                  const isSel = selectedIds && selectedIds.has(id);
-                  return (
-                    <TrainerRow
-                      key={id}
-                      row={r}
-                      isSelected={!!isSel}
-                      onToggle={onToggleTrainer}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-
-          {/* client-side pagination controls */}
-          {total > PAGE_SIZE && (
-            <div className="pagination" style={{ marginTop: 8 }}>
-              <button
-                className="btn-sm btn-flat"
-                disabled={pageSafe <= 1}
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-              >
-                Prev
-              </button>
-              <span>
-                Page {pageSafe} of {totalPages}
-              </span>
-              <button
-                className="btn-sm btn-flat"
-                disabled={pageSafe >= totalPages}
-                onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-              >
-                Next
-              </button>
-            </div>
-          )}
-
-          <div
-            style={{
-              marginTop: 10,
-              display: "flex",
-              gap: 8,
-              alignItems: "center",
-            }}
-          >
-            <div style={{ fontSize: 13, color: "#6c757d" }}>
-              Showing {filteredRows.length} trainers
-            </div>
-            <div
-              style={{ marginLeft: "auto", fontSize: 12, color: "#6c757d" }}
-            />
-          </div>
-        </>
-      )}
-    </div>
-  );
-});
-
-/* ---------- main component ---------- */
-
 export default function CreateTrainingRequest() {
   const { user } = useContext(AuthContext) || {};
   const roleKeyNew = getCanonicalRole(user);
   const roleMessage = ROLE_WELCOME_MESSAGES[roleKeyNew] || "Dashboard";
   const roleKey = getRoleKeyFromUser(user);
   const [navCollapsed, setNavCollapsed] = useState(false);
-  const [selectedBlockForShg, setSelectedBlockForShg] = useState(null);
-  const [blockList, setBlockList] = useState([]);
-  const [blockLoading, setBlockLoading] = useState(false);
-
   const [hover, setHover] = useState(null);
+
   const geoscopeCached = useMemo(() => {
     try {
       return JSON.parse(localStorage.getItem(GEOSCOPE_KEY) || "null");
@@ -355,49 +48,12 @@ export default function CreateTrainingRequest() {
     }
   }, []);
 
-  // NOTE: we expect user's geoscope to contain districts/blocks arrays or single ids
-  const [blockId, setBlockId] = useState(
-    geoscopeCached?.blocks?.[0] ?? geoscopeCached?.block_id ?? null,
-  );
-  const [districtId, setDistrictId] = useState(
-    geoscopeCached?.districts?.[0] ?? geoscopeCached?.district_id ?? null,
-  );
+  // Initialize State Machine Hook
+  const trState = useTRState(geoscopeCached);
 
-  // 2. Fallback to API if cache missed
-  useEffect(() => {
-    // Check if either ID is missing AND we have a valid user ID to query
-    if ((!blockId || !districtId) && user?.id) {
-      const fetchGeoscope = async () => {
-        try {
-          const response = await LOOKUP_API.userGeoscopeByUserId(user.id);
-          const data = response.data; // Adjust if your axios response structure differs
-
-          // Extract the IDs from the API response using the same logic
-          const fetchedBlockId = data?.blocks?.[0] ?? data?.block_id ?? null;
-          const fetchedDistrictId =
-            data?.districts?.[0] ?? data?.district_id ?? null;
-
-          // Set the state with the newly fetched IDs
-          if (fetchedBlockId) setBlockId(fetchedBlockId);
-          if (fetchedDistrictId) setDistrictId(fetchedDistrictId);
-
-          console.log("Fetched geoscope from API:", {
-            fetchedBlockId,
-            fetchedDistrictId,
-          });
-
-          // OPTIONAL: If you have a function to update your local cache, call it here
-          // updateGeoscopeCache(data);
-        } catch (error) {
-          console.error("Failed to fetch fallback user geoscope:", error);
-        }
-      };
-
-      fetchGeoscope();
-    }
-  }, [blockId, districtId, user?.id]);
-
-  // cached lists & allowed IDs
+  // Local Controller State
+  const [blockList, setBlockList] = useState([]);
+  const [blockLoading, setBlockLoading] = useState(false);
   const [allowedTrainingIds, setAllowedTrainingIds] = useState([]);
   const [plans, setPlans] = useState([]);
   const [partners, setPartners] = useState([]);
@@ -407,8 +63,6 @@ export default function CreateTrainingRequest() {
     partners: false,
   });
 
-  // preloaded trainers + themes
-  // MASTER_TRAINERS_CACHE shape: { items: [...], page: 1, hasNext: true, district_id: <id|null> }
   const initialMasterCache = loadJson(MASTER_TRAINERS_CACHE) || {
     items: [],
     page: 1,
@@ -418,7 +72,6 @@ export default function CreateTrainingRequest() {
   const [preloadedTrainers, setPreloadedTrainers] = useState(
     initialMasterCache.items || [],
   );
-  // meta kept for backward compatibility, but we don't paginate server-side anymore
   const [preloadedTrainersMeta, setPreloadedTrainersMeta] = useState({
     page: initialMasterCache.page || 1,
     hasNext: Boolean(initialMasterCache.hasNext),
@@ -432,67 +85,30 @@ export default function CreateTrainingRequest() {
     loadJson(TRAINING_THEMES_CACHE) || [],
   );
   const [preloadReloadToken, setPreloadReloadToken] = useState(0);
-
-  // selection & form state
-  const [selectedPlan, setSelectedPlan] = useState(null);
-  const [selectedTheme, setSelectedTheme] = useState(null);
-  const [form, setForm] = useState({
-    training_type: "BENEFICIARY",
-    level: "BLOCK",
-    partner: "",
-    notes: "",
-  });
-
-  // participants selection
-  const [selectedBeneficiaries, setSelectedBeneficiaries] = useState([]); // normalized rows
-  const savedMemberResponses = useRef(new Map()); // key => full saved member response
-  const [selectedTrainersMap, setSelectedTrainersMap] = useState(new Map()); // id -> detail
-  const savedTrainerResponses = useRef(new Map());
-
-  // participant sub-stepper
-  const [step, setStep] = useState(1); // 1 plan,2 participants,3 review
-  const steps = [
-    { id: 1, title: "Choose Plan" },
-    { id: 2, title: "Select Participants" },
-    { id: 3, title: "Review & Submit" },
-  ];
-
-  // For beneficiary flow: inner participant steps (SHG -> Members)
-  const [participantSubStep, setParticipantSubStep] = useState(0); // 0 = Block (DMMU only), 1 = SHG list, 2 = Members
-
-  // For forcing member-table reload when same SHG selected repeatedly
-  const [memberListReloadToken, setMemberListReloadToken] = useState(0);
-
-  // NEW: selected SHG for members area (direct prop, no CustomEvent)
-  const [selectedShgForMembers, setSelectedShgForMembers] = useState(null);
-  const [selectedShgLoading, setSelectedShgLoading] = useState(false); // loader when clicking SHG
-
-  // Partner auto-assignment flag (true if auto-assigned from partner-targets)
-  const [autoPartnerAssigned, setAutoPartnerAssigned] = useState(false);
-
-  // Preview modal + submission progress/results
-  const [previewOpen, setPreviewOpen] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitSummary, setSubmitSummary] = useState(null); // { trId, successes, failures: [{row, error}], rawResponse }
-
-  // NEW: Engagement Check States
-  const [engagementStatus, setEngagementStatus] = useState("idle"); // 'idle', 'checking', 'all_clear', 'has_engaged'
-  const [engagedParticipants, setEngagedParticipants] = useState([]);
-
-  // Preload modal state
   const [preloading, setPreloading] = useState(false);
   const [preloadErrors, setPreloadErrors] = useState([]);
 
-  /* ---------- selectedMemberCodes (controlled selection set for member table) ---------- */
-  const selectedMemberCodesSet = useMemo(() => {
-    return new Set(
-      selectedBeneficiaries.map((b) => String(b.lokos_member_code)),
-    );
-  }, [selectedBeneficiaries]);
+  // Fallback to API if cache missed for Geoscope
+  useEffect(() => {
+    if ((!trState.blockId || !trState.districtId) && user?.id) {
+      const fetchGeoscope = async () => {
+        try {
+          const response = await LOOKUP_API.userGeoscopeByUserId(user.id);
+          const data = response.data;
+          const fetchedBlockId = data?.blocks?.[0] ?? data?.block_id ?? null;
+          const fetchedDistrictId =
+            data?.districts?.[0] ?? data?.district_id ?? null;
+          if (fetchedBlockId) trState.setBlockId(fetchedBlockId);
+          if (fetchedDistrictId) trState.setDistrictId(fetchedDistrictId);
+        } catch (error) {
+          console.error("Failed to fetch fallback user geoscope:", error);
+        }
+      };
+      fetchGeoscope();
+    }
+  }, [trState.blockId, trState.districtId, user?.id]);
 
-  /* ---------- FAST single-list fetch helper (used instead of slow multi-page fetchAllPages) ---------- */
   async function fetchListOnce(listFn, params = {}) {
-    // calls listFn(params) once and returns array of items (payload.results or payload.data or array)
     try {
       const resp = await listFn(params);
       const payload = resp?.data ?? resp ?? {};
@@ -506,11 +122,8 @@ export default function CreateTrainingRequest() {
     }
   }
 
-  // Fetch Blocks for DMMU
   async function fetchBlocksForDistrict(rawDistrictId) {
     if (!rawDistrictId) return;
-
-    // Extract primitive ID if rawDistrictId is nested in an array or object payload
     let targetId = rawDistrictId;
     if (Array.isArray(rawDistrictId)) targetId = rawDistrictId[0];
     if (rawDistrictId && typeof rawDistrictId === "object") {
@@ -519,19 +132,11 @@ export default function CreateTrainingRequest() {
         rawDistrictId.district_id ??
         rawDistrictId.districtId;
     }
-
     const parsedId = Number(targetId);
-    if (!targetId || isNaN(parsedId) || parsedId === 0) {
-      console.warn(
-        "fetchBlocksForDistrict aborted: Invalid or unparseable district ID:",
-        rawDistrictId,
-      );
-      return;
-    }
+    if (!targetId || isNaN(parsedId) || parsedId === 0) return;
 
     setBlockLoading(true);
     try {
-      // Pass both 'district' and 'district_id' to guarantee coverage for whichever key the backend rules enforce
       const resp = await LOOKUP_API.blocks.list({
         district: parsedId,
         district_id: parsedId,
@@ -547,22 +152,16 @@ export default function CreateTrainingRequest() {
     }
   }
 
-  /* ---------- helper: resolve district from block (if districtId missing) ---------- */
   async function fetchDistrictFromBlock(block) {
     if (!block) return null;
     try {
-      // check cache first
       const mapping = loadJson(BLOCK_TO_DISTRICT_CACHE) || {};
-      if (mapping && mapping[String(block)]) {
-        return mapping[String(block)];
-      }
+      if (mapping && mapping[String(block)]) return mapping[String(block)];
 
-      // Try direct GET endpoint (common path in your system)
       let resp = null;
       try {
         resp = await LOOKUP_API.get(`/blocks/detail/${block}/`);
       } catch (err) {
-        // fallback to namespaced client method if available
         try {
           if (
             LOOKUP_API.blocks &&
@@ -570,7 +169,6 @@ export default function CreateTrainingRequest() {
           ) {
             resp = await LOOKUP_API.blocks.retrieve(block);
           } else if (LOOKUP_API.get) {
-            // last-resort: try /lookups/blocks/${block}/
             resp = await LOOKUP_API.get(`/lookups/blocks/${block}/`);
           }
         } catch (err2) {
@@ -579,7 +177,6 @@ export default function CreateTrainingRequest() {
       }
 
       const payload = resp?.data ?? resp ?? null;
-      // payload may have .district or .data.district
       let districtIdFound = null;
       if (payload) {
         if (
@@ -604,7 +201,6 @@ export default function CreateTrainingRequest() {
       }
 
       if (districtIdFound) {
-        // cache mapping and return
         const mapping2 = loadJson(BLOCK_TO_DISTRICT_CACHE) || {};
         mapping2[String(block)] = districtIdFound;
         saveJson(BLOCK_TO_DISTRICT_CACHE, mapping2);
@@ -616,7 +212,6 @@ export default function CreateTrainingRequest() {
     return null;
   }
 
-  /* ---------- preloadAll: minimal initial load on page open (fast) ---------- */
   async function preloadAll() {
     setPreloading(true);
     setPreloadErrors([]);
@@ -624,15 +219,11 @@ export default function CreateTrainingRequest() {
     const errors = [];
 
     try {
-      // 1) TRP user scopes (single list)
       let scopes = [];
       try {
         scopes = await fetchListOnce(
           (p) => TMS_API.trpUserScopes.list({ ...p }),
-          {
-            user_role_id: user?.role_id ?? user?.role,
-            limit: 500,
-          },
+          { user_role_id: user?.role_id ?? user?.role, limit: 500 },
         );
         saveJson(TRP_SCOPE_CACHE, {
           ts: Date.now(),
@@ -643,11 +234,9 @@ export default function CreateTrainingRequest() {
           Array.from(new Set(scopes.map((r) => r.training_id).filter(Boolean))),
         );
       } catch (e) {
-        console.error("preload trpUserScopes failed", e);
         errors.push("trp-user-scopes failed");
       }
 
-      // 2) Fetch training plans (single list call) and filter locally
       try {
         const allPlans = await fetchListOnce(
           (p) => TMS_API.trainingPlans.list(p),
@@ -656,7 +245,6 @@ export default function CreateTrainingRequest() {
         const allowedSet = new Set(
           (scopes || []).map((r) => r.training_id).filter(Boolean),
         );
-        // if allowedSet empty, show zero; else filter
         const plansCollected =
           allowedSet.size > 0
             ? allPlans.filter((p) => allowedSet.has(p.id))
@@ -675,12 +263,10 @@ export default function CreateTrainingRequest() {
           plans: plansCollected,
         });
       } catch (e) {
-        console.error("preload training plans failed", e);
         errors.push("training-plans fetch failed");
         setPlans([]);
       }
 
-      // 3) Fetch training themes (cache)
       try {
         const list = await fetchListOnce(
           (p) => TMS_API.trainingThemes.list(p),
@@ -689,13 +275,9 @@ export default function CreateTrainingRequest() {
         setPreloadThemes(list || []);
         saveJson(TRAINING_THEMES_CACHE, list || []);
       } catch (e) {
-        console.error("preload training themes failed", e);
         setPreloadThemes([]);
       }
-
-      // Note: do NOT fetch master-trainers or partners here to keep initial load fast.
     } catch (e) {
-      console.error("preloadAll top-level error", e);
       errors.push("unexpected preload error");
     } finally {
       setPreloadErrors(errors);
@@ -704,17 +286,7 @@ export default function CreateTrainingRequest() {
     }
   }
 
-  /**
-   * fetchMasterTrainersByDistrict
-   *
-   * Behaviour per user's request:
-   * - Make JUST ONE call to /tms/master-trainers/ with empanel_district=<district_id> when district_id is available.
-   * - If district_id isn't known but blockId exists, resolve district via block detail API (fetchDistrictFromBlock) and then call the master-trainers endpoint once with that district.
-   * - If a district cannot be resolved (or if no district/block is present), call master-trainers once WITHOUT empanel_district to fetch the first page (unfiltered) and display those trainers.
-   * - Cache the single-call result in localStorage under MASTER_TRAINERS_CACHE so subsequent opens can use cache unless force=true.
-   */
   async function fetchMasterTrainersByDistrict(force = false) {
-    // Load cache
     const cached = loadJson(MASTER_TRAINERS_CACHE);
     const cachedItems =
       cached && Array.isArray(cached.items) ? cached.items : null;
@@ -722,11 +294,9 @@ export default function CreateTrainingRequest() {
       cached && typeof cached.district_id !== "undefined"
         ? cached.district_id
         : null;
+    const desiredDistrict = trState.districtId ?? null;
 
-    // If we have a cache that matches our desired district situation and not forcing, reuse it
-    const desiredDistrict = districtId ?? null; // null means unfiltered
     if (!force && cachedItems) {
-      // cache matches desired district (both null OR equal)
       if (
         (desiredDistrict === null && cachedDistrictId === null) ||
         (desiredDistrict !== null &&
@@ -742,44 +312,31 @@ export default function CreateTrainingRequest() {
       }
     }
 
-    // If districtId missing but we have blockId, try to resolve
-    let effectiveDistrict = districtId ?? null;
-    if (!effectiveDistrict && blockId) {
+    let effectiveDistrict = trState.districtId ?? null;
+    if (!effectiveDistrict && trState.blockId) {
       try {
-        const resolved = await fetchDistrictFromBlock(blockId);
+        const resolved = await fetchDistrictFromBlock(trState.blockId);
         if (resolved) {
           effectiveDistrict = resolved;
-          // Update local state so subsequent actions know the district
-          setDistrictId(resolved);
+          trState.setDistrictId(resolved);
         } else {
-          // could not resolve — we'll fallback to unfiltered call below
           effectiveDistrict = null;
         }
       } catch (e) {
-        console.warn("unable to resolve district from block", e);
         effectiveDistrict = null;
       }
     }
 
     setPreloading(true);
     try {
-      // Build single call params
       const baseParams = { page_size: 5000 };
-      const params = { ...baseParams };
-      // if (effectiveDistrict) {
-      //   params.empanel_district = effectiveDistrict;
-      // }
-
-      // Single API call (filtered if district available; unfiltered otherwise)
       let resp;
       try {
-        resp = await TMS_API.masterTrainers.list(params);
+        resp = await TMS_API.masterTrainers.list({ ...baseParams });
       } catch (err) {
-        // If we attempted a district-filtered call and it failed, attempt an unfiltered call just once as fallback
         if (effectiveDistrict) {
           try {
             resp = await TMS_API.masterTrainers.list(baseParams);
-            // mark that this response is unfiltered by setting effectiveDistrict = null
             effectiveDistrict = null;
           } catch (err2) {
             resp = null;
@@ -797,8 +354,6 @@ export default function CreateTrainingRequest() {
           : Array.isArray(payload)
             ? payload
             : [];
-
-      // Save to state and cache (cache district_id: effectiveDistrict or null)
       setPreloadedTrainers(items || []);
       setPreloadedTrainersMeta({
         page: 1,
@@ -813,8 +368,6 @@ export default function CreateTrainingRequest() {
         district_id: effectiveDistrict ?? null,
       });
     } catch (e) {
-      console.error("fetchMasterTrainersByDistrict failed", e);
-      // On error, try to fall back to any cache if present, else set empty
       const cachedItems2 = loadJson(MASTER_TRAINERS_CACHE)?.items || null;
       if (cachedItems2) {
         setPreloadedTrainers(cachedItems2 || []);
@@ -837,7 +390,6 @@ export default function CreateTrainingRequest() {
     }
   }
 
-  // fetch partners only when required (review step)
   async function fetchPartnersIfNeeded() {
     if (Array.isArray(partners) && partners.length > 0) return;
     try {
@@ -847,78 +399,37 @@ export default function CreateTrainingRequest() {
       const list = payload.results || payload.data || [];
       setPartners(list);
     } catch (e) {
-      console.error("fetchPartnersIfNeeded failed", e);
       setPartners([]);
     } finally {
       setLoading((s) => ({ ...s, partners: false }));
     }
   }
 
-  // run minimal preload on mount: training plans, TRP scopes, themes (fast)
   useEffect(() => {
     preloadAll();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  // memoized selected trainer ids set to avoid recreating on every render
-  const selectedTrainerIds = useMemo(
-    () => new Set(Array.from(selectedTrainersMap.keys())),
-    [selectedTrainersMap],
-  );
-
-  // trainer selection: stable useCallback to avoid re-creating handler on each render
-  const onToggleTrainer = useCallback(
-    async (trainerObj, add) => {
-      const id = trainerObj.id;
-      if (add) {
-        if (!savedTrainerResponses.current.has(id)) {
-          try {
-            const resp = await TMS_API.masterTrainers.retrieve(id);
-            const payload = resp?.data ?? resp ?? trainerObj;
-            savedTrainerResponses.current.set(id, payload);
-          } catch (e) {
-            // fallback to shallow object
-            savedTrainerResponses.current.set(id, trainerObj);
-          }
-        }
-        setSelectedTrainersMap((m) => {
-          const copy = new Map(m);
-          copy.set(id, savedTrainerResponses.current.get(id));
-          return copy;
-        });
-      } else {
-        setSelectedTrainersMap((m) => {
-          const copy = new Map(m);
-          copy.delete(id);
-          return copy;
-        });
-      }
-    },
-    [], // uses refs and setState (stable)
-  );
-
-  // when user navigates to participants step (2), load only the APIs needed for the chosen 'Applicable For'
   useEffect(() => {
-    if (step === 2) {
-      if (form.training_type === "TRAINER") {
-        // fetch trainers filtered by user's district (single call, cached)
+    if (trState.step === 2) {
+      if (trState.form.training_type === "TRAINER") {
         fetchMasterTrainersByDistrict(false);
-      } else {
-        // Beneficiary flow: ShgListTable / ShgMemberListTable fetch on demand
       }
     }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step, form.training_type, districtId, blockId]);
+  }, [
+    trState.step,
+    trState.form.training_type,
+    trState.districtId,
+    trState.blockId,
+  ]);
 
-  // when DMMU + Beneficiary + step 2, fetch blocks for district
   useEffect(() => {
     if (
-      step === 2 &&
-      form.training_type === "BENEFICIARY" &&
+      trState.step === 2 &&
+      trState.form.training_type === "BENEFICIARY" &&
       roleKey === "dmmu"
     ) {
       const canonicalDistrictId =
-        districtId ??
+        trState.districtId ??
         geoscopeCached?.districts?.[0] ??
         geoscopeCached?.district_id ??
         user?.district_id ??
@@ -927,656 +438,182 @@ export default function CreateTrainingRequest() {
           ? (user.district.id ?? user.district.district_id)
           : user?.district) ??
         null;
-
       if (canonicalDistrictId) {
         fetchBlocksForDistrict(canonicalDistrictId);
-
-        // Safely normalize and sync primitive numeric ID back to local state if empty
         let targetStateId = canonicalDistrictId;
         if (Array.isArray(targetStateId)) targetStateId = targetStateId[0];
-        if (targetStateId && typeof targetStateId === "object") {
+        if (targetStateId && typeof targetStateId === "object")
           targetStateId =
             targetStateId.id ??
             targetStateId.district_id ??
             targetStateId.districtId;
-        }
-        if (targetStateId && !isNaN(Number(targetStateId)) && !districtId) {
-          setDistrictId(Number(targetStateId));
-        }
+        if (
+          targetStateId &&
+          !isNaN(Number(targetStateId)) &&
+          !trState.districtId
+        )
+          trState.setDistrictId(Number(targetStateId));
       }
-      setParticipantSubStep(0); // start at Block
+      trState.setParticipantSubStep(0);
     }
-  }, [step, form.training_type, roleKey, districtId, geoscopeCached, user]);
+  }, [
+    trState.step,
+    trState.form.training_type,
+    roleKey,
+    trState.districtId,
+    geoscopeCached,
+    user,
+  ]);
 
-  // when user goes to Review & Submit (step 3), fetch partners if not loaded
   useEffect(() => {
-    if (step === 3) {
-      fetchPartnersIfNeeded();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [step]);
+    if (trState.step === 3) fetchPartnersIfNeeded();
+  }, [trState.step]);
 
-  /* ---------- handlers ---------- */
-  async function handlePlanSelect(plan) {
-    setSelectedPlan(plan);
-    setSelectedTheme(null);
-    setAutoPartnerAssigned(false);
-
-    // 1. We must resolve the actual Theme NAME to query Priority 2, since plan.theme is just an ID.
-    let resolvedThemeName = plan?.theme_name || null;
-
-    // fetch theme detail (if present) from preloaded themes first
-    if (plan?.theme) {
-      try {
-        const cachedTheme = (preloadThemes || []).find(
-          (t) => String(t.id) === String(plan.theme),
-        );
-        if (cachedTheme) {
-          setSelectedTheme(cachedTheme);
-          resolvedThemeName =
-            resolvedThemeName || cachedTheme.theme_name || cachedTheme.name;
-        } else {
-          const resp = await TMS_API.trainingThemes.retrieve(plan.theme);
-          const t = resp?.data ?? resp ?? null;
-          setSelectedTheme(t);
-          resolvedThemeName = resolvedThemeName || t?.theme_name || t?.name;
-        }
-      } catch (e) {
-        setSelectedTheme(null);
-      }
-    }
-
-    // Attempt to find partner via partner targets based on Priority
-    if (plan?.id) {
-      try {
-        let foundPartner = null;
-
-        // Extract the current user's district
-        const currentDistrict =
-          districtId ??
-          geoscopeCached?.districts?.[0] ??
-          geoscopeCached?.district_id ??
-          user?.district_id ??
-          null;
-
-        // Priority 1: DISTRICT
-        if (currentDistrict) {
-          const respD = await TMS_API.trainingPartnerTargets.list({
-            district: currentDistrict,
-            target_type: "DISTRICT",
-            limit: 1,
-          });
-          const payloadD = respD?.data ?? respD ?? {};
-          const resD = payloadD.results || payloadD.data || [];
-          if (Array.isArray(resD) && resD.length > 0 && resD[0].partner) {
-            foundPartner = resD[0].partner;
-          }
-        }
-
-        // Priority 2: THEME (Using the resolvedThemeName, e.g., "Farm LH")
-        if (!foundPartner && resolvedThemeName) {
-          const respT = await TMS_API.trainingPartnerTargets.list({
-            theme: resolvedThemeName,
-            target_type: "THEME",
-            limit: 1,
-          });
-          const payloadT = respT?.data ?? respT ?? {};
-          const resT = payloadT.results || payloadT.data || [];
-          if (Array.isArray(resT) && resT.length > 0 && resT[0].partner) {
-            foundPartner = resT[0].partner;
-          }
-        }
-
-        // Priority 3: MODULE (Training Plan)
-        if (!foundPartner) {
-          const respM = await TMS_API.trainingPartnerTargets.list({
-            training_plan: plan.id,
-            target_type: "MODULE",
-            limit: 1,
-          });
-          const payloadM = respM?.data ?? respM ?? {};
-          const resM = payloadM.results || payloadM.data || [];
-          if (Array.isArray(resM) && resM.length > 0 && resM[0].partner) {
-            foundPartner = resM[0].partner;
-          }
-        }
-
-        // Apply whichever partner was found via priority
-        if (foundPartner) {
-          setForm((f) => ({ ...f, partner: String(foundPartner) }));
-          setAutoPartnerAssigned(true);
-        } else {
-          setAutoPartnerAssigned(false);
-        }
-      } catch (e) {
-        console.warn("failed to fetch training-partner-targets", e);
-        setAutoPartnerAssigned(false);
-      }
-    } else {
-      setAutoPartnerAssigned(false);
-    }
-
-    // DMMU must start at Block selection
-    setParticipantSubStep(roleKey === "dmmu" ? 0 : 1);
-  }
-
-  function handleFormChange(e) {
-    const { name, value } = e.target;
-    setForm((f) => ({ ...f, [name]: value }));
-  }
-
-  /* ---------- helpers: age + map upsrlm payload to TR beneficiary ---------- */
-  function calculateAgeFromDob(dob) {
-    if (!dob) return null;
-    try {
-      const d = new Date(dob);
-      if (Number.isNaN(d.getTime())) return null;
-      const today = new Date();
-      let age = today.getFullYear() - d.getFullYear();
-      const m = today.getMonth() - d.getMonth();
-      if (m < 0 || (m === 0 && today.getDate() < d.getDate())) {
-        age--;
-      }
-      return age >= 0 ? age : null;
-    } catch (e) {
-      return null;
-    }
-  }
-
-  function mapUpsrlmMemberToTrBeneficiary(m, shgCode) {
-    if (!m) return {};
-    const member = Array.isArray(m?.data) ? m.data[0] || {} : m;
-
-    const member_name =
-      member.member_name || member.memberName || member.name || "";
-    const member_code =
-      member.member_code ||
-      member.memberCode ||
-      member.lokos_member_code ||
-      (member.member_id ? String(member.member_id) : "") ||
-      member.nic_member_code ||
-      member.member_id ||
-      "";
-
-    let pld_status_value = "";
-    if (
-      member.pld_status === true ||
-      String(member.pld_status).toLowerCase() === "true"
-    ) {
-      pld_status_value = "YES";
-    } else if (
-      member.pld_status === false ||
-      String(member.pld_status).toLowerCase() === "false"
-    ) {
-      pld_status_value = "NO";
-    } else {
-      pld_status_value =
-        typeof member.pld_status === "string" ? member.pld_status : "";
-    }
-
-    let designation = "";
-    if (
-      Array.isArray(member.member_designations) &&
-      member.member_designations.length > 0
-    ) {
-      designation = Array.from(
-        new Set(
-          member.member_designations.map((d) => d.designation).filter(Boolean),
-        ),
-      ).join(", ");
-      if (!designation && member.member_designations[0]?.designation) {
-        designation = member.member_designations[0].designation;
-      }
-    } else if (member.member_designation) {
-      designation = member.member_designation;
-    }
-
-    let mobile = "";
-    if (
-      Array.isArray(member.member_phones) &&
-      member.member_phones.length > 0
-    ) {
-      mobile =
-        member.member_phones[0]?.phone_no ||
-        member.member_phones[0]?.phone ||
-        "";
-    } else if (member.phone_no) {
-      mobile = member.phone_no;
-    } else if (member.mobile) {
-      mobile = member.mobile;
-    }
-
-    const education = member.education || "";
-    const religion = member.religion || "";
-    const social_category =
-      member.social_category || member.socialCategory || "";
-
-    let address = "";
-    let district_id = null;
-    let block_id = null;
-    let panchayat_id = null;
-    let village_id = null;
-    if (
-      Array.isArray(member.member_addresses) &&
-      member.member_addresses.length > 0
-    ) {
-      const a = member.member_addresses[0];
-      const parts = [];
-      if (a.address_line1) parts.push(String(a.address_line1).trim());
-      if (a.address_line2) parts.push(String(a.address_line2).trim());
-      if (a.village_name) parts.push(String(a.village_name).trim());
-      if (a.panchayat_name) parts.push(String(a.panchayat_name).trim());
-      if (a.block_name) parts.push(String(a.block_name).trim());
-      if (a.district_name) parts.push(String(a.district_name).trim());
-      address = parts.join(", ");
-
-      district_id = a.district_id
-        ? isNaN(Number(a.district_id))
-          ? a.district_id
-          : Number(a.district_id)
-        : null;
-      block_id = a.block_id
-        ? isNaN(Number(a.block_id))
-          ? a.block_id
-          : Number(a.block_id)
-        : null;
-      panchayat_id = a.panchayat_id
-        ? isNaN(Number(a.panchayat_id))
-          ? a.panchayat_id
-          : Number(a.panchayat_id)
-        : null;
-      village_id = a.village_id
-        ? isNaN(Number(a.village_id))
-          ? a.village_id
-          : Number(a.village_id)
-        : null;
-    }
-
-    const email = member.email || member.member_email || "";
-
-    const dob = member.dob || member.date_of_birth || member.dob_date || null;
-    const age = calculateAgeFromDob(dob) ?? member.age ?? null;
-
-    const gender = member.gender || "";
-
-    return {
-      lokos_shg_code:
-        shgCode || member.shg_code || (member.shg && member.shg.shg_code) || "",
-      shg_code:
-        shgCode || member.shg_code || (member.shg && member.shg.shg_code) || "",
-      lokos_member_code: member_code,
-      member_code: member_code,
-      member_name,
-      age,
-      gender,
-      pld_status: pld_status_value,
-      designation,
-      social_category,
-      religion,
-      mobile,
-      email,
-      education,
-      address,
-      district_id,
-      block_id,
-      panchayat_id,
-      village_id,
-      __raw_upsrlm: member,
-    };
-  }
-
-  /* --- MEMBER DETAIL FETCH (best-effort) --- */
-  async function fetchMemberDetailBestEffort(member) {
-    const memberCode =
-      member.member_code ||
-      member.lokos_member_code ||
-      member.memberCode ||
-      member.id ||
-      member.member_id ||
-      member.nic_member_code ||
-      "";
-
-    const shgCode =
-      member.shg_code ||
-      member.lokos_shg_code ||
-      member.shgCode ||
-      (member.shg && (member.shg.shg_code || member.shg.code)) ||
-      "";
-
-    const looksDetailed =
-      member &&
-      (member.age ||
-        member.pld_status ||
-        member.member_phones ||
-        member.member_addresses ||
-        member.dob);
-    if (looksDetailed) {
-      return mapUpsrlmMemberToTrBeneficiary(member, shgCode);
-    }
-
-    const attempts = [];
-
-    if (typeof EPSAKHI_API?.upsrlmMemberDetail === "function") {
-      attempts.push(() => EPSAKHI_API.upsrlmMemberDetail(shgCode, memberCode));
-    }
-    if (typeof EPSAKHI_API?.memberDetail === "function") {
-      attempts.push(() => EPSAKHI_API.memberDetail(memberCode));
-    }
-    attempts.push(() =>
-      EPSAKHI_API.get(`/upsrlm/shg-members/?search=${memberCode}`),
-    );
-    attempts.push(() => EPSAKHI_API.get(`/upsrlm/members/${memberCode}/`));
-    attempts.push(() =>
-      EPSAKHI_API.get(`/upsrlm/members/detail/${memberCode}/`),
-    );
-    attempts.push(() => EPSAKHI_API.get(`/shg-members/${memberCode}/`));
-    attempts.push(() => EPSAKHI_API.get(`/members/${memberCode}/`));
-
-    for (const fn of attempts) {
-      try {
-        const res = await fn();
-        const payload = res?.data ?? res ?? null;
-        if (!payload) continue;
-
-        let candidate = null;
-        if (Array.isArray(payload.data) && payload.data.length > 0) {
-          candidate = payload.data[0];
-        } else if (
-          Array.isArray(payload.results) &&
-          payload.results.length > 0
-        ) {
-          candidate = payload.results[0];
-        } else if (
-          payload.member_name ||
-          payload.member_code ||
-          payload.dob ||
-          payload.member_addresses
-        ) {
-          candidate = payload;
-        } else {
-          candidate = payload;
-        }
-
-        if (candidate) {
-          return mapUpsrlmMemberToTrBeneficiary(candidate, shgCode);
-        }
-      } catch (e) {
-        // ignore and continue
-      }
-    }
-
-    return mapUpsrlmMemberToTrBeneficiary(member, shgCode);
-  }
-
-  // SHG member selection: add member object (full response saved in savedMemberResponses)
-  function addSelectedMember(memberObj) {
-    const lokos_shg_code =
-      memberObj.shg_code ||
-      memberObj.lokos_shg_code ||
-      memberObj.shgCode ||
-      (memberObj.shg && (memberObj.shg.shg_code || memberObj.shg.code));
-    const lokos_member_code =
-      memberObj.member_code ||
-      memberObj.lokos_member_code ||
-      memberObj.memberCode ||
-      memberObj.id;
-    const key = `${lokos_shg_code}|${lokos_member_code}`;
-    // save full (mapped) response
-    savedMemberResponses.current.set(key, memberObj);
-
-    setSelectedBeneficiaries((prev) => {
-      const exists = prev.some(
-        (p) =>
-          String(p.lokos_member_code) === String(lokos_member_code) &&
-          String(p.lokos_shg_code) === String(lokos_shg_code),
-      );
-      if (exists) return prev;
-      const normalized = {
-        lokos_shg_code,
-        lokos_member_code,
-        member_name: memberObj.member_name || memberObj.name || "",
-        age: memberObj.age ?? memberObj.dob_age ?? null,
-        gender: memberObj.gender || "",
-        pld_status: memberObj.pld_status || memberObj.pldStatus || "",
-        mobile:
-          (memberObj.member_phones && memberObj.member_phones[0]?.phone_no) ||
-          memberObj.mobile ||
-          memberObj.phone_no ||
-          memberObj.mobile ||
-          "",
-        address: memberObj.address || "",
-        social_category:
-          memberObj.social_category ||
-          memberObj.socialCategory ||
-          memberObj.social_category ||
-          "",
-        religion: memberObj.religion || "",
-        district_id: memberObj.district_id ?? memberObj.districtId ?? null,
-        block_id: memberObj.block_id ?? memberObj.blockId ?? null,
-        panchayat_id: memberObj.panchayat_id ?? memberObj.panchayatId ?? null,
-        village_id: memberObj.village_id ?? memberObj.villageId ?? null,
-        designation: memberObj.designation || "",
-        education: memberObj.education || "",
-        email: memberObj.email || "",
-      };
-      return [...prev, normalized];
-    });
-  }
-
-  function removeSelectedBeneficiary(lokos_member_code, lokos_shg_code) {
-    const mcode = lokos_member_code ?? "";
-    const scode = lokos_shg_code ?? "";
-    setSelectedBeneficiaries((prev) =>
-      prev.filter(
-        (b) =>
-          !(
-            String(b.lokos_member_code) === String(mcode) &&
-            String(b.lokos_shg_code) === String(scode)
-          ),
-      ),
-    );
-    try {
-      const key = `${scode}|${mcode}`;
-      savedMemberResponses.current.delete(key);
-    } catch (e) {
-      // ignore
-    }
-  }
-
-  function removeSelectedTrainer(id) {
-    setSelectedTrainersMap((m) => {
-      const copy = new Map(m);
-      copy.delete(id);
-      return copy;
-    });
-  }
-
-  /* ---------- stepper helpers ---------- */
-  function goToNext() {
-    setStep((s) => Math.min(3, s + 1));
-  }
-  function goToPrev() {
-    setStep((s) => Math.max(1, s - 1));
-  }
-  function jumpToStep(n) {
-    setStep(n);
-  }
-
-  /* ---------- preview and submit ---------- */
-
-  // build final payload to show in preview
   function buildPreviewPayload() {
-    // include best-effort block/district (may be null)
     const userBlock =
       user?.block_id ??
       user?.blockId ??
       geoscopeCached?.blocks?.[0] ??
       geoscopeCached?.block_id ??
-      blockId ??
+      trState.blockId ??
       null;
-
-    // Use current districtId state if available (this is best-effort for preview)
     const previewDistrict =
-      districtId ??
+      trState.districtId ??
       geoscopeCached?.districts?.[0] ??
       geoscopeCached?.district_id ??
       user?.district_id ??
       null;
-
-    const payload = {
-      training_plan: selectedPlan?.training_name ?? null,
-      partner: form.partner ? Number(form.partner) : null,
-      training_type: form.training_type,
-      level: form.level,
-      notes: form.notes || null,
+    return {
+      financial_year: trState.form.financial_year,
+      training_plan: trState.selectedPlan?.training_name ?? null,
+      partner: trState.form.partner ? Number(trState.form.partner) : null,
+      training_type: trState.form.training_type,
+      level: trState.form.level,
+      notes: trState.form.notes || null,
       created_by: user?.id ?? user?.user_id ?? null,
       beneficiaries_count:
-        form.training_type === "BENEFICIARY" ? selectedBeneficiaries.length : 0,
+        trState.form.training_type === "BENEFICIARY"
+          ? trState.selectedBeneficiaries.length
+          : 0,
       trainers_count:
-        form.training_type === "TRAINER" ? selectedTrainersMap.size : 0,
+        trState.form.training_type === "TRAINER"
+          ? trState.selectedTrainersMap.size
+          : 0,
       block: userBlock ?? null,
       district: previewDistrict ?? null,
     };
-    return payload;
   }
 
-  // open preview modal
   function openPreview() {
-    if (!selectedPlan) return alert("Select a training plan first.");
-
-    if (!form.partner && !(roleKey === "bmmu" && autoPartnerAssigned))
-      return alert("Select partner.");
-
+    if (!trState.form.financial_year)
+      return alert("Select a financial year first.");
+    if (!trState.selectedPlan) return alert("Select a training plan first.");
     if (
-      form.training_type === "BENEFICIARY" &&
-      selectedBeneficiaries.length === 0
+      !trState.form.partner &&
+      !(roleKey === "bmmu" && trState.autoPartnerAssigned)
+    )
+      return alert("Select partner.");
+    if (
+      trState.form.training_type === "BENEFICIARY" &&
+      trState.selectedBeneficiaries.length === 0
     )
       return alert("Select beneficiaries.");
-    if (form.training_type === "TRAINER" && selectedTrainersMap.size === 0)
+    if (
+      trState.form.training_type === "TRAINER" &&
+      trState.selectedTrainersMap.size === 0
+    )
       return alert("Select trainers.");
 
-    // Reset engagement state when modal opens
-    setEngagementStatus("idle");
-    setEngagedParticipants([]);
-    setPreviewOpen(true);
+    trState.setEngagementStatus("idle");
+    trState.setEngagedParticipants([]);
+    trState.setPreviewOpen(true);
   }
 
-  // NEW: Check engagement before final submit
   async function checkEngagementBeforeSubmit() {
-    setEngagementStatus("checking");
+    trState.setEngagementStatus("checking");
     try {
       let ids = [];
-      if (form.training_type === "BENEFICIARY") {
-        ids = selectedBeneficiaries
+      if (trState.form.training_type === "BENEFICIARY") {
+        ids = trState.selectedBeneficiaries
           .map((b) => b.lokos_member_code)
           .filter(Boolean);
       } else {
-        ids = Array.from(selectedTrainersMap.keys()).map(String);
+        ids = Array.from(trState.selectedTrainersMap.keys()).map(String);
       }
-
       if (ids.length === 0) {
-        setEngagementStatus("all_clear");
+        trState.setEngagementStatus("all_clear");
         return;
       }
 
       const resp = await api.post("/tms/check-training-engagement/", {
-        participant_type: form.training_type,
+        participant_type: trState.form.training_type,
+        financial_year: trState.form.financial_year,
         ids: ids,
       });
-
       const engagedIds = resp?.data?.engaged_ids || [];
 
       if (engagedIds.length === 0) {
-        setEngagementStatus("all_clear");
+        trState.setEngagementStatus("all_clear");
       } else {
         let engagedList = [];
-        if (form.training_type === "BENEFICIARY") {
-          engagedList = selectedBeneficiaries.filter((b) =>
+        if (trState.form.training_type === "BENEFICIARY") {
+          engagedList = trState.selectedBeneficiaries.filter((b) =>
             engagedIds.includes(b.lokos_member_code),
           );
         } else {
-          engagedList = Array.from(selectedTrainersMap.values()).filter((t) =>
-            engagedIds.includes(String(t.id)),
+          engagedList = Array.from(trState.selectedTrainersMap.values()).filter(
+            (t) => engagedIds.includes(String(t.id)),
           );
         }
-        setEngagedParticipants(engagedList);
-        setEngagementStatus("has_engaged");
+        trState.setEngagedParticipants(engagedList);
+        trState.setEngagementStatus("has_engaged");
       }
     } catch (e) {
       console.error("Engagement check failed", e);
       alert("Failed to verify participant eligibility. Please try again.");
-      setEngagementStatus("idle");
+      trState.setEngagementStatus("idle");
     }
   }
 
-  // NEW: Remove ineligible participants surgically
-  function removeIneligibleParticipants() {
-    if (form.training_type === "BENEFICIARY") {
-      const engagedSet = new Set(
-        engagedParticipants.map((b) => b.lokos_member_code),
-      );
-      setSelectedBeneficiaries((prev) =>
-        prev.filter((b) => !engagedSet.has(b.lokos_member_code)),
-      );
-    } else {
-      const engagedSet = new Set(engagedParticipants.map((t) => String(t.id)));
-      setSelectedTrainersMap((prev) => {
-        const copy = new Map(prev);
-        for (const key of copy.keys()) {
-          if (engagedSet.has(String(key))) copy.delete(key);
-        }
-        return copy;
-      });
-    }
-    setEngagementStatus("idle");
-    setEngagedParticipants([]);
-  }
-
-  // final submit: create training request, then create child rows with per-row error handling
   async function confirmAndSubmit() {
-    setSubmitting(true);
-    setSubmitSummary(null);
+    trState.setSubmitting(true);
+    trState.setSubmitSummary(null);
 
     try {
-      // Determine user's block id (prefer explicit user.block, fallbacks)
       const userBlockRaw =
         user?.block_id ??
         user?.blockId ??
         geoscopeCached?.blocks?.[0] ??
         geoscopeCached?.block_id ??
-        blockId ??
+        trState.blockId ??
         null;
       const userBlock =
         typeof userBlockRaw === "string" && userBlockRaw.trim() === ""
           ? null
           : userBlockRaw;
 
-      // ✅ SINGLE SOURCE OF TRUTH
       const resolvedDistrict = await resolveFinalDistrict({
-        districtId,
+        districtId: trState.districtId,
         geoscopeCached,
         user,
         userBlock,
         fetchDistrictFromBlock,
-        setDistrictId,
+        setDistrictId: trState.setDistrictId,
       });
-
-      // DEBUG (remove after verification)
-      console.log("FINAL SUBMIT district:", resolvedDistrict);
 
       if (resolvedDistrict == null) {
         alert("District could not be resolved.");
-        setSubmitting(false);
+        trState.setSubmitting(false);
         return;
       }
 
-      // create training request (include block & district)
       const trPayload = {
-        training_plan: selectedPlan.id,
-        partner: form.partner ? Number(form.partner) : null,
-        training_type: form.training_type,
-        level: form.level,
-        notes: form.notes || null,
+        financial_year: trState.form.financial_year,
+        training_plan: trState.selectedPlan.id,
+        partner: trState.form.partner ? Number(trState.form.partner) : null,
+        training_type: trState.form.training_type,
+        level: trState.form.level,
+        notes: trState.form.notes || null,
         created_by: user?.id ?? user?.user_id ?? null,
         block: userBlock
           ? isNaN(Number(userBlock))
@@ -1594,15 +631,40 @@ export default function CreateTrainingRequest() {
       const trId = trObj?.id;
       if (!trId) throw new Error("Training request created but id missing");
 
-      // child rows creation with per-row error collection
       const successes = [];
       const failures = [];
 
-      if (form.training_type === "BENEFICIARY") {
-        // iterate beneficiaries
-        for (const b of selectedBeneficiaries) {
+      if (trState.form.training_type === "BENEFICIARY") {
+        for (const b of trState.selectedBeneficiaries) {
           const key = `${b.lokos_shg_code}|${b.lokos_member_code}`;
-          const raw = savedMemberResponses.current.get(key) || {};
+          const raw = trState.savedMemberResponses.current.get(key) || {};
+
+          // Absolute fallback extraction
+          const actualRaw = Array.isArray(raw.__raw_upsrlm?.data)
+            ? raw.__raw_upsrlm.data[0]
+            : raw.__raw_upsrlm || raw;
+          const rawAddr =
+            Array.isArray(actualRaw?.member_addresses) &&
+            actualRaw.member_addresses.length > 0
+              ? actualRaw.member_addresses[0]
+              : {};
+
+          // Extract and ensure they are numbers
+          const extDist =
+            b.district_id ||
+            actualRaw.district_id ||
+            rawAddr.district_id ||
+            null;
+          const extBlock =
+            b.block_id || actualRaw.block_id || rawAddr.block_id || null;
+          const extPanchayat =
+            b.panchayat_id ||
+            actualRaw.panchayat_id ||
+            rawAddr.panchayat_id ||
+            null;
+          const extVillage =
+            b.village_id || actualRaw.village_id || rawAddr.village_id || null;
+
           const bPayload = {
             training: trId,
             lokos_shg_code: b.lokos_shg_code,
@@ -1611,22 +673,20 @@ export default function CreateTrainingRequest() {
             age: raw.age ?? b.age,
             gender: raw.gender || b.gender,
             designation: raw.designation || b.designation || "",
-            pld_status: raw.pld_status || b.pld_status || "",
+            pld_status: b.pld_status ? String(b.pld_status) : "NO",
             social_category: raw.social_category || b.social_category || "",
             religion: raw.religion || b.religion || "",
             mobile: raw.mobile || b.mobile || "",
             email: raw.email || "",
             education: raw.education || "",
             address: raw.address || b.address || "",
-            district: raw.district_id || raw.district || b.district_id || null,
-            block: raw.block_id || raw.block || b.block_id || null,
-            panchayat:
-              raw.panchayat_id || raw.panchayat || b.panchayat_id || null,
-            village: raw.village_id || raw.village || b.village_id || null,
+            district: extDist ? Number(extDist) : null,
+            block: extBlock ? Number(extBlock) : null,
+            panchayat: extPanchayat ? Number(extPanchayat) : null,
+            village: extVillage ? Number(extVillage) : null,
             remarks: raw.remarks || "",
             created_by: user?.id ?? user?.user_id ?? null,
           };
-
           try {
             const resp =
               await TMS_API.trainingRequestBeneficiaries.create(bPayload);
@@ -1641,12 +701,10 @@ export default function CreateTrainingRequest() {
               e?.message ||
               String(e);
             failures.push({ type: "beneficiary", row: b, error: msg });
-            console.error("beneficiary create failed", bPayload, e);
           }
         }
       } else {
-        // trainers
-        for (const [tid, detail] of selectedTrainersMap.entries()) {
+        for (const [tid, detail] of trState.selectedTrainersMap.entries()) {
           const tPayload = {
             training: trId,
             trainer: tid,
@@ -1671,15 +729,12 @@ export default function CreateTrainingRequest() {
               e?.message ||
               String(e);
             failures.push({ type: "trainer", row: detail, error: msg });
-            console.error("trainer create failed", tPayload, e);
           }
         }
       }
-
-      setSubmitSummary({ trId, successes, failures });
+      trState.setSubmitSummary({ trId, successes, failures });
     } catch (e) {
-      console.error("create training request failed", e);
-      setSubmitSummary({
+      trState.setSubmitSummary({
         trId: null,
         successes: [],
         failures: [
@@ -1693,24 +748,22 @@ export default function CreateTrainingRequest() {
         ],
       });
     } finally {
-      setSubmitting(false);
+      trState.setSubmitting(false);
     }
   }
 
-  /* ---------- small UI helpers ---------- */
-  const selectedTrainerList = useMemo(
-    () => Array.from(selectedTrainersMap.values()),
-    [selectedTrainersMap],
-  );
   const selectedPlanTitle =
-    selectedPlan &&
-    (selectedPlan.training_name ||
-      selectedPlan.training_plan_name ||
-      selectedPlan.trainingTitle ||
-      selectedPlan.name ||
-      `Plan ${selectedPlan.id}`);
+    trState.selectedPlan &&
+    (trState.selectedPlan.training_name ||
+      trState.selectedPlan.training_plan_name ||
+      trState.selectedPlan.trainingTitle ||
+      trState.selectedPlan.name ||
+      `Plan ${trState.selectedPlan.id}`);
+  const hasParticipants =
+    trState.form.training_type === "BENEFICIARY"
+      ? trState.selectedBeneficiaries.length > 0
+      : trState.selectedTrainersMap.size > 0;
 
-  /* ---------- render ---------- */
   const cardStyle = {
     background: "#fff",
     padding: 18,
@@ -1718,7 +771,6 @@ export default function CreateTrainingRequest() {
     border: "2px solid #3d6ba6",
     boxShadow: "0 4px 10px #a7c6ed",
   };
-
   const btnPrimary = {
     background: "linear-gradient(20deg, #e4ecf5, #5a8cc2)",
     border: "2px solid #3d6ba6",
@@ -1729,17 +781,6 @@ export default function CreateTrainingRequest() {
     cursor: "pointer",
     transition: "transform 0.25s ease, box-shadow 0.25s ease",
   };
-
-  const btnOutline = {
-    background: "#fff",
-    border: "2px solid #3d6ba6",
-    color: "#111827",
-    fontWeight: 600,
-    padding: "8px 14px",
-    borderRadius: 6,
-    cursor: "pointer",
-  };
-
   const headerGradient = {
     background: "linear-gradient(90deg, #e4ecf5, #a7c6ed)",
     padding: "10px 14px",
@@ -1749,7 +790,6 @@ export default function CreateTrainingRequest() {
     marginBottom: 12,
     border: "2px solid #3d6ba6",
   };
-
   const stepActive = {
     background: "linear-gradient(90deg, #e4ecf5, #a7c6ed)",
     color: "#111827",
@@ -1759,7 +799,6 @@ export default function CreateTrainingRequest() {
     cursor: "pointer",
     transition: "transform 0.25s ease, box-shadow 0.25s ease",
   };
-
   const stepInactive = {
     background: "#f5f7fa",
     color: "#111827",
@@ -1770,11 +809,11 @@ export default function CreateTrainingRequest() {
     border: "2px solid #3d6ba6",
     transition: "transform 0.25s ease, box-shadow 0.25s ease",
   };
-
-  const hasParticipants =
-    form.training_type === "BENEFICIARY"
-      ? selectedBeneficiaries.length > 0
-      : selectedTrainersMap.size > 0;
+  const steps = [
+    { id: 1, title: "Choose Plan" },
+    { id: 2, title: "Select Participants" },
+    { id: 3, title: "Review & Submit" },
+  ];
 
   return (
     <div
@@ -1792,22 +831,8 @@ export default function CreateTrainingRequest() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav
-          left={
-            <div className="app-title">
-              Pragati Setu — Create Training Request
-            </div>
-          }
-        /> */}
-
           <main style={{ padding: 18, flex: 1 }}>
-            <div
-              style={{
-                width: "100%",
-                margin: "20px 0",
-                padding: "0 12px",
-              }}
-            >
+            <div style={{ width: "100%", margin: "20px 0", padding: "0 12px" }}>
               <div
                 style={{
                   display: "flex",
@@ -1833,12 +858,10 @@ export default function CreateTrainingRequest() {
                     className="btnPrimaryHover"
                     style={{ ...btnPrimary, color: "#111827" }}
                     onClick={() => {
-                      // Clear caches and re-run preload (no page reload)
                       localStorage.removeItem(TRP_SCOPE_CACHE);
                       localStorage.removeItem(TRAIN_PLAN_CACHE);
                       localStorage.removeItem(MASTER_TRAINERS_CACHE);
                       localStorage.removeItem(TRAINING_THEMES_CACHE);
-                      // re-run minimal preload
                       preloadAll();
                     }}
                   >
@@ -1847,7 +870,6 @@ export default function CreateTrainingRequest() {
                 </div>
               </div>
 
-              {/* Stepper */}
               <div
                 style={{
                   display: "flex",
@@ -1859,8 +881,8 @@ export default function CreateTrainingRequest() {
                 {steps.map((s) => (
                   <div
                     key={s.id}
-                    onClick={() => jumpToStep(s.id)}
-                    style={s.id === step ? stepActive : stepInactive}
+                    onClick={() => trState.jumpToStep(s.id)}
+                    style={s.id === trState.step ? stepActive : stepInactive}
                     className="btnPrimaryHover"
                   >
                     {s.title}
@@ -1870,794 +892,85 @@ export default function CreateTrainingRequest() {
 
               <div
                 className="training-content"
-                style={{
-                  display: "grid",
-                  gap: 20,
-                  width: "100%",
-                }}
+                style={{ display: "grid", gap: 20, width: "100%" }}
               >
-                {/* LEFT column */}
                 <div style={cardStyle}>
-                  {/* Step content */}
-                  {step === 1 && (
-                    <>
-                      <h3 style={headerGradient}>1 — Choose Training Plan</h3>
-                      <div style={{ marginBottom: 12 }}>
-                        <label
-                          style={{
-                            display: "block",
-                            fontWeight: 700,
-                            marginBottom: 6,
-                          }}
-                        >
-                          Training Plan (allowed for your role)
-                        </label>
-
-                        <select
-                          value={selectedPlan?.id || ""}
-                          onChange={(e) => {
-                            const id = e.target.value;
-                            const pl = plans.find(
-                              (p) => String(p.id) === String(id),
-                            );
-                            handlePlanSelect(pl || null);
-                          }}
-                          style={{
-                            width: "100%",
-                            maxWidth: "100%",
-                            padding: "10px",
-                            borderRadius: "6px",
-                            border: "2px solid #3d6ba6",
-                            outline: "none",
-                            fontSize: "14px",
-                            boxSizing: "border-box",
-                            background: "#fff",
-                          }}
-                        >
-                          <option value="">-- select training plan --</option>
-
-                          {plans.map((p) => {
-                            const title =
-                              p.training_name ||
-                              p.training_plan_name ||
-                              p.trainingTitle ||
-                              p.name ||
-                              `Plan ${p.id}`;
-
-                            return (
-                              <option key={p.id} value={p.id}>
-                                {title}{" "}
-                                {p.level_of_training
-                                  ? `(${p.level_of_training})`
-                                  : ""}
-                              </option>
-                            );
-                          })}
-                        </select>
-                      </div>
-
-                      {selectedPlan ? (
-                        <div
-                          style={{
-                            marginTop: 12,
-                            padding: 12,
-                            border: "1px solid #eef2f6",
-                            borderRadius: 6,
-                          }}
-                        >
-                          <h3 style={{ margin: "6px 0" }}>
-                            {selectedPlanTitle}
-                          </h3>
-                          <div style={{ color: "#6c757d", marginBottom: 8 }}>
-                            {selectedPlan.training_objective ||
-                              selectedPlan.description ||
-                              ""}
-                          </div>
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 12,
-                              flexWrap: "wrap",
-                            }}
-                          >
-                            <div>
-                              <strong>Duration:</strong>{" "}
-                              {selectedPlan.no_of_days ?? "—"} days
-                            </div>
-                            <div>
-                              <strong>Type:</strong>{" "}
-                              {selectedPlan.type_of_training || "—"}
-                            </div>
-                            <div>
-                              <strong>Level:</strong>{" "}
-                              {selectedPlan.level_of_training || "—"}
-                            </div>
-                            <div>
-                              <strong>Theme:</strong>{" "}
-                              {selectedPlan.theme_name ||
-                                selectedTheme?.theme_name ||
-                                "—"}
-                            </div>
-                          </div>
-                        </div>
-                      ) : (
-                        <div className="muted">
-                          Select a training plan to preview details and choose
-                          participants.
-                        </div>
-                      )}
-
-                      <div style={{ display: "flex", gap: 8, marginTop: 12 }}>
-                        <button
-                          className="btnPrimaryHover"
-                          style={btnPrimary}
-                          onClick={() => goToNext()}
-                          disabled={!selectedPlan}
-                        >
-                          Next
-                        </button>
-                      </div>
-                    </>
+                  {trState.step === 1 && (
+                    <Step1PlanSelection
+                      plans={plans}
+                      selectedPlan={trState.selectedPlan}
+                      setSelectedPlan={trState.setSelectedPlan}
+                      setSelectedTheme={trState.setSelectedTheme}
+                      setAutoPartnerAssigned={trState.setAutoPartnerAssigned}
+                      setForm={trState.setForm}
+                      form={trState.form}
+                      districtId={trState.districtId}
+                      user={user}
+                      geoscopeCached={geoscopeCached}
+                      preloadThemes={preloadThemes}
+                      partners={partners}
+                      goToNext={trState.goToNext}
+                    />
                   )}
-
-                  {step === 2 && (
-                    <>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 12,
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <div>
-                          <h3 style={headerGradient}>
-                            2 — Select Participants
-                          </h3>
-                          <div className="muted">
-                            Choose beneficiaries (SHGs) or trainers depending on
-                            selection.
-                          </div>
-                        </div>
-                        <div>
-                          <button
-                            className="btnPrimaryHover"
-                            style={btnOutline}
-                            onClick={goToPrev}
-                          >
-                            Back
-                          </button>
-                          <button
-                            style={{ ...btnPrimary, marginLeft: 8 }}
-                            onClick={() => goToNext()}
-                            className="btnPrimaryHover"
-                          >
-                            Next
-                          </button>
-                        </div>
-                      </div>
-
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 8,
-                          margin: "12px 0",
-                          alignItems: "center",
-                        }}
-                      >
-                        <label style={{ fontWeight: 700 }}>
-                          Applicable For
-                        </label>
-                        <select
-                          value={form.training_type}
-                          onChange={(e) => {
-                            const val = e.target.value;
-                            setForm((f) => ({ ...f, training_type: val }));
-                            // If switching to TRAINER while on participants step, fetch trainers for user's district
-                            if (val === "TRAINER" && step === 2) {
-                              fetchMasterTrainersByDistrict(true);
-                            }
-                          }}
-                          style={{ outline: "2px solid #3d6ba6" }}
-                        >
-                          <option value="BENEFICIARY">Beneficiary</option>
-                          <option value="TRAINER">Master Trainer</option>
-                        </select>
-
-                        <label style={{ fontWeight: 700, marginLeft: 12 }}>
-                          Level
-                        </label>
-                        <select
-                          value={form.level}
-                          onChange={(e) =>
-                            setForm({ ...form, level: e.target.value })
-                          }
-                          style={{ outline: "2px solid #3d6ba6" }}
-                        >
-                          <option value="BLOCK">Block</option>
-                          <option value="DISTRICT">District</option>
-                          <option value="STATE">State</option>
-                        </select>
-                      </div>
-
-                      {/* Render beneficiary vs trainer flows */}
-                      {form.training_type === "BENEFICIARY" ? (
-                        <>
-                          {/* sub-stepper for beneficiary flow */}
-                          <div
-                            style={{
-                              display: "flex",
-                              gap: 8,
-                              marginBottom: 12,
-                            }}
-                          >
-                            {roleKey === "dmmu" && (
-                              <div
-                                onClick={() => setParticipantSubStep(0)}
-                                style={{
-                                  padding: "6px 10px",
-                                  borderRadius: 8,
-                                  background:
-                                    participantSubStep === 0
-                                      ? "#0b2540"
-                                      : "#f5f7fa",
-                                  color:
-                                    participantSubStep === 0
-                                      ? "#fff"
-                                      : "#0b2540",
-                                  cursor: "pointer",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                1 — Block
-                              </div>
-                            )}
-
-                            <div
-                              onClick={() => {
-                                if (roleKey === "dmmu" && !blockId) return;
-                                setParticipantSubStep(1);
-                              }}
-                              style={{
-                                padding: "6px 10px",
-                                borderRadius: 8,
-                                background:
-                                  participantSubStep === 1
-                                    ? "#0b2540"
-                                    : "#f5f7fa",
-                                color:
-                                  participantSubStep === 1 ? "#fff" : "#0b2540",
-                                cursor:
-                                  roleKey === "dmmu" && !blockId
-                                    ? "not-allowed"
-                                    : "pointer",
-                                opacity:
-                                  roleKey === "dmmu" && !blockId ? 0.5 : 1,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {roleKey === "dmmu"
-                                ? "2 — SHG list"
-                                : "1 — SHG list"}
-                            </div>
-
-                            <div
-                              onClick={() => {
-                                if (
-                                  roleKey === "dmmu" &&
-                                  !selectedShgForMembers
-                                )
-                                  return;
-                                setParticipantSubStep(2);
-                              }}
-                              style={{
-                                padding: "6px 10px",
-                                borderRadius: 8,
-                                background:
-                                  participantSubStep === 2
-                                    ? "#0b2540"
-                                    : "#f5f7fa",
-                                color:
-                                  participantSubStep === 2 ? "#fff" : "#0b2540",
-                                cursor:
-                                  roleKey === "dmmu" && !selectedShgForMembers
-                                    ? "not-allowed"
-                                    : "pointer",
-                                opacity:
-                                  roleKey === "dmmu" && !selectedShgForMembers
-                                    ? 0.5
-                                    : 1,
-                                fontWeight: 600,
-                              }}
-                            >
-                              {roleKey === "dmmu"
-                                ? "3 — Members"
-                                : "2 — Members"}
-                            </div>
-                          </div>
-
-                          {/* DMMU BLOCK SELECTION */}
-                          {roleKey === "dmmu" && participantSubStep === 0 && (
-                            <div>
-                              <h4>Select Block</h4>
-
-                              <div
-                                style={{
-                                  fontSize: 13,
-                                  color: "#6c757d",
-                                  marginBottom: 8,
-                                }}
-                              >
-                                Select a block to view SHGs under it.
-                              </div>
-
-                              {blockLoading ? (
-                                <div className="table-spinner">
-                                  Loading blocks…
-                                </div>
-                              ) : !blockList || blockList.length === 0 ? (
-                                <p className="muted">
-                                  No blocks found for this district.
-                                </p>
-                              ) : (
-                                <div style={{ display: "grid", gap: 10 }}>
-                                  {blockList.map((b) => (
-                                    <div
-                                      key={
-                                        b.id ??
-                                        b.block_id ??
-                                        `${b.block_name_en}-${b.district_id}`
-                                      }
-                                      onClick={() => {
-                                        setSelectedBlockForShg(b);
-                                        setBlockId(b.block_id);
-
-                                        // RESET downstream selections
-                                        setSelectedShgForMembers(null);
-                                        setMemberListReloadToken((t) => t + 1);
-
-                                        setParticipantSubStep(1); // go to SHG step
-                                      }}
-                                      style={{
-                                        padding: "14px 16px",
-                                        borderRadius: 12,
-                                        border:
-                                          selectedBlockForShg?.block_id ===
-                                          b.block_id
-                                            ? "2px solid #2563eb"
-                                            : "1px solid #e5e7eb",
-                                        cursor: "pointer",
-                                        background:
-                                          selectedBlockForShg?.block_id ===
-                                          b.block_id
-                                            ? "linear-gradient(135deg, #dbeafe, #eff6ff)"
-                                            : "#ffffff",
-                                        boxShadow:
-                                          selectedBlockForShg?.block_id ===
-                                          b.block_id
-                                            ? "0 6px 18px rgba(37, 99, 235, 0.25)"
-                                            : "0 2px 6px rgba(0,0,0,0.06)",
-                                        transition: "all 0.25s ease",
-                                        transform:
-                                          hover === b.block_id
-                                            ? "translateY(-4px) scale(1.02)"
-                                            : "none",
-                                      }}
-                                      onMouseEnter={() => setHover(b.block_id)}
-                                      onMouseLeave={() => setHover(null)}
-                                    >
-                                      <div
-                                        style={{
-                                          display: "flex",
-                                          justifyContent: "space-between",
-                                          alignItems: "center",
-                                        }}
-                                      >
-                                        <div>
-                                          <div
-                                            style={{
-                                              fontWeight: 700,
-                                              fontSize: 15,
-                                              color: "#1e293b",
-                                            }}
-                                          >
-                                            {b.block_name_en || b.name}
-                                          </div>
-                                          <div
-                                            style={{
-                                              fontSize: 12,
-                                              color: "#64748b",
-                                              marginTop: 2,
-                                            }}
-                                          >
-                                            Block ID: {b.block_id}
-                                          </div>
-                                        </div>
-
-                                        <div
-                                          style={{
-                                            fontSize: 11,
-                                            padding: "4px 8px",
-                                            borderRadius: 999,
-                                            background: "#e0f2fe",
-                                            color: "#0369a1",
-                                            fontWeight: 600,
-                                          }}
-                                        >
-                                          SELECT
-                                        </div>
-                                      </div>
-                                    </div>
-                                  ))}
-                                </div>
-                              )}
-                            </div>
-                          )}
-
-                          {participantSubStep === 1 &&
-                            (roleKey !== "dmmu" || selectedBlockForShg) && (
-                              <div>
-                                <h4>SHG list</h4>
-                                <div
-                                  style={{
-                                    fontSize: 13,
-                                    color: "#6c757d",
-                                    marginBottom: 8,
-                                  }}
-                                >
-                                  Select an SHG to view members. After selecting
-                                  an SHG, go to member sub-step to pick members
-                                  (or click a SHG member directly to jump).
-                                </div>
-
-                                {roleKey === "dmmu" && !blockId ? (
-                                  <div className="muted">
-                                    Please select a block first.
-                                  </div>
-                                ) : (
-                                  <ShgListTable
-                                    blockId={blockId}
-                                    onSelectShg={(shg) => {
-                                      setSelectedShgLoading(true);
-                                      setSelectedShgForMembers(shg);
-                                      setParticipantSubStep(2);
-                                      setMemberListReloadToken((t) => t + 1);
-                                      setTimeout(
-                                        () => setSelectedShgLoading(false),
-                                        700,
-                                      );
-                                    }}
-                                  />
-                                )}
-                              </div>
-                            )}
-
-                          {participantSubStep === 2 &&
-                            selectedShgForMembers && (
-                              <div>
-                                <h4>Members (selected SHG)</h4>
-                                <div
-                                  style={{
-                                    fontSize: 13,
-                                    color: "#6c757d",
-                                    marginBottom: 8,
-                                  }}
-                                >
-                                  Use PLD filter, search and pagination inside
-                                  the member list. Check members to add them to
-                                  selection. Once checked, items cannot be
-                                  unchecked (use Remove in Review step).
-                                </div>
-
-                                {selectedShgLoading ? (
-                                  <div
-                                    className="table-spinner"
-                                    style={{ padding: 12 }}
-                                  >
-                                    Loading members…
-                                  </div>
-                                ) : (
-                                  <div className="no-action">
-                                    <MemberListArea
-                                      selectedShg={selectedShgForMembers}
-                                      onToggleMember={async (
-                                        member,
-                                        checked,
-                                      ) => {
-                                        const lokos_shg_code =
-                                          member.shg_code ||
-                                          member.lokos_shg_code ||
-                                          member.shg?.shg_code ||
-                                          (selectedShgForMembers &&
-                                            (selectedShgForMembers.shg_code ||
-                                              selectedShgForMembers.code));
-                                        const lokos_member_code =
-                                          member.member_code ||
-                                          member.lokos_member_code ||
-                                          member.memberCode ||
-                                          member.id;
-
-                                        if (!checked) {
-                                          // ignore uncheck attempts
-                                          return;
-                                        }
-
-                                        const already =
-                                          selectedBeneficiaries.some(
-                                            (p) =>
-                                              String(p.lokos_member_code) ===
-                                                String(lokos_member_code) &&
-                                              String(p.lokos_shg_code) ===
-                                                String(lokos_shg_code),
-                                          );
-                                        if (already) return;
-
-                                        try {
-                                          const detail =
-                                            await fetchMemberDetailBestEffort(
-                                              member,
-                                            );
-                                          const merged = {
-                                            ...(detail || {}),
-                                            shg_code: lokos_shg_code,
-                                            member_code: lokos_member_code,
-                                          };
-                                          addSelectedMember(merged);
-                                        } catch (e) {
-                                          addSelectedMember({
-                                            ...member,
-                                            shg_code: lokos_shg_code,
-                                            member_code: lokos_member_code,
-                                          });
-                                        }
-                                      }}
-                                      reloadToken={memberListReloadToken}
-                                      selectedMemberCodes={
-                                        selectedMemberCodesSet
-                                      }
-                                    />
-                                  </div>
-                                )}
-                              </div>
-                            )}
-                        </>
-                      ) : (
-                        <div>
-                          {/* MasterTrainerList expects parent to have fetched trainers by district */}
-                          <MasterTrainerList
-                            // filters={{ district: districtId }}
-                            onToggleTrainer={onToggleTrainer}
-                            selectedIds={selectedTrainerIds}
-                            preloadedTrainers={preloadedTrainers}
-                            preloadReloadToken={preloadReloadToken}
-                            onRequestReload={() =>
-                              fetchMasterTrainersByDistrict(true)
-                            }
-                          />
-                        </div>
-                      )}
-                    </>
+                  {trState.step === 2 && (
+                    <Step2Participants
+                      form={trState.form}
+                      setForm={trState.setForm}
+                      roleKey={roleKey}
+                      blockId={trState.blockId}
+                      setBlockId={trState.setBlockId}
+                      blockList={blockList}
+                      blockLoading={blockLoading}
+                      participantSubStep={trState.participantSubStep}
+                      setParticipantSubStep={trState.setParticipantSubStep}
+                      selectedBlockForShg={trState.selectedBlockForShg}
+                      setSelectedBlockForShg={trState.setSelectedBlockForShg}
+                      selectedShgForMembers={trState.selectedShgForMembers}
+                      setSelectedShgForMembers={
+                        trState.setSelectedShgForMembers
+                      }
+                      selectedShgLoading={trState.selectedShgLoading}
+                      setSelectedShgLoading={trState.setSelectedShgLoading}
+                      memberListReloadToken={trState.memberListReloadToken}
+                      setMemberListReloadToken={
+                        trState.setMemberListReloadToken
+                      }
+                      selectedMemberCodesSet={trState.selectedMemberCodesSet}
+                      selectedBeneficiaries={trState.selectedBeneficiaries}
+                      addSelectedMember={trState.addSelectedMember}
+                      hover={hover}
+                      setHover={setHover}
+                      goToPrev={trState.goToPrev}
+                      goToNext={trState.goToNext}
+                      fetchMasterTrainersByDistrict={
+                        fetchMasterTrainersByDistrict
+                      }
+                      preloadedTrainers={preloadedTrainers}
+                      preloadReloadToken={preloadReloadToken}
+                      selectedTrainerIds={trState.selectedTrainerIds}
+                      onToggleTrainer={trState.onToggleTrainer}
+                    />
                   )}
-
-                  {step === 3 && (
-                    <>
-                      <div
-                        style={{
-                          display: "flex",
-                          gap: 12,
-                          alignItems: "center",
-                          justifyContent: "space-between",
-                        }}
-                      >
-                        <div>
-                          <h3 style={{ marginTop: 0 }}>3 — Review & Submit</h3>
-                          <div className="muted">
-                            Preview payload and confirm submission.
-                          </div>
-                        </div>
-                        <div>
-                          <button
-                            className="btnPrimaryHover"
-                            style={btnPrimary}
-                            onClick={goToPrev}
-                          >
-                            Back
-                          </button>
-                          <button
-                            // style={btnPrimary}
-                            style={{ ...btnPrimary, marginLeft: 8 }}
-                            onClick={openPreview}
-                            className="btnPrimaryHover"
-                          >
-                            Preview & Confirm
-                          </button>
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: 12 }}>
-                        <label style={{ display: "block", fontWeight: 700 }}>
-                          Training Plan
-                        </label>
-                        <div
-                          style={{
-                            padding: 8,
-                            background: "#f8fafc",
-                            borderRadius: 6,
-                          }}
-                        >
-                          {selectedPlan ? selectedPlanTitle : "(none selected)"}
-                        </div>
-                      </div>
-
-                      <div style={{ marginTop: 12 }}>
-                        <label style={{ display: "block", fontWeight: 700 }}>
-                          Partner
-                        </label>
-
-                        {roleKey === "bmmu" && autoPartnerAssigned ? (
-                          <div
-                            style={{
-                              padding: 8,
-                              background: "#fbfdff",
-                              borderRadius: 6,
-                            }}
-                          >
-                            {partners.find(
-                              (p) => String(p.id) === String(form.partner),
-                            )?.name || `Partner ID ${form.partner}`}
-                          </div>
-                        ) : (
-                          <div style={{ marginTop: 10 }}>
-                            <label style={{ fontWeight: 700 }}>
-                              Training Partner
-                            </label>
-
-                            {form.partner ? (
-                              <div
-                                style={{
-                                  marginTop: 6,
-                                  padding: "10px 12px",
-                                  borderRadius: 8,
-                                  background:
-                                    "linear-gradient(135deg, #ecfeff, #cffafe)",
-                                  border: "1px solid #06b6d4",
-                                  fontWeight: 600,
-                                  color: "#0c4a6e",
-                                }}
-                              >
-                                {partners.find(
-                                  (p) => String(p.id) === String(form.partner),
-                                )?.name || `Partner ID: ${form.partner}`}
-                              </div>
-                            ) : (
-                              <div
-                                style={{
-                                  marginTop: 6,
-                                  padding: "10px 12px",
-                                  borderRadius: 8,
-                                  background: "#fef2f2",
-                                  border: "1px solid #dc2626",
-                                  color: "#dc2626",
-                                  fontWeight: 600,
-                                }}
-                              >
-                                No Training Partner has been assigned a target
-                                for this training plan.
-                              </div>
-                            )}
-                          </div>
-                        )}
-                        {!autoPartnerAssigned && (
-                          <div
-                            style={{
-                              marginTop: 6,
-                              fontSize: 13,
-                              color: "#dc2626",
-                              fontWeight: 600,
-                            }}
-                          >
-                            Please wait till all training partners are assigned
-                            their targets by State.
-                          </div>
-                        )}
-                      </div>
-
-                      <div style={{ marginTop: 12 }}>
-                        <h4>Selected Participants</h4>
-                        {form.training_type === "BENEFICIARY" ? (
-                          selectedBeneficiaries.length === 0 ? (
-                            <p className="muted">No beneficiaries selected.</p>
-                          ) : (
-                            <div
-                              className="table-wrapper"
-                              style={{ maxHeight: 220, overflow: "auto" }}
-                            >
-                              <table className="table table-compact">
-                                <thead>
-                                  <tr>
-                                    <th>SHG</th>
-                                    <th>Member</th>
-                                    <th>Member Code</th>
-                                    <th>Age</th>
-                                    <th>PLD</th>
-                                    <th></th>
-                                  </tr>
-                                </thead>
-                                <tbody>
-                                  {selectedBeneficiaries.map((b, idx) => (
-                                    <tr
-                                      key={`${b.lokos_shg_code}|${b.lokos_member_code}|${idx}`}
-                                    >
-                                      <td>{b.lokos_shg_code || "—"}</td>
-                                      <td>{b.member_name || "—"}</td>
-                                      <td>{b.lokos_member_code || "—"}</td>
-                                      <td>{b.age ?? "—"}</td>
-                                      <td>{b.pld_status || "—"}</td>
-                                      <td>
-                                        <button
-                                          className="btn-sm btn-flat"
-                                          onClick={() =>
-                                            removeSelectedBeneficiary(
-                                              b.lokos_member_code,
-                                              b.lokos_shg_code,
-                                            )
-                                          }
-                                        >
-                                          Remove
-                                        </button>
-                                      </td>
-                                    </tr>
-                                  ))}
-                                </tbody>
-                              </table>
-                            </div>
-                          )
-                        ) : selectedTrainerList.length === 0 ? (
-                          <p className="muted">No trainers selected.</p>
-                        ) : (
-                          <div
-                            className="table-wrapper"
-                            style={{ maxHeight: 220, overflow: "auto" }}
-                          >
-                            <table className="table table-compact">
-                              <thead>
-                                <tr>
-                                  <th>Name</th>
-                                  <th>Designation</th>
-                                  <th>District</th>
-                                  <th>Block</th>
-                                  <th></th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                {selectedTrainerList.map((t) => (
-                                  <tr key={t.id}>
-                                    <td>{t.full_name || t.name}</td>
-                                    <td>{t.designation || "-"}</td>
-                                    <td>{t.empanel_district || "-"}</td>
-                                    <td>{t.empanel_block || "-"}</td>
-                                    <td>
-                                      <button
-                                        className="btn-sm btn-flat"
-                                        onClick={() =>
-                                          removeSelectedTrainer(t.id)
-                                        }
-                                      >
-                                        Remove
-                                      </button>
-                                    </td>
-                                  </tr>
-                                ))}
-                              </tbody>
-                            </table>
-                          </div>
-                        )}
-                      </div>
-                    </>
+                  {trState.step === 3 && (
+                    <Step3Review
+                      selectedPlan={trState.selectedPlan}
+                      selectedPlanTitle={selectedPlanTitle}
+                      form={trState.form}
+                      roleKey={roleKey}
+                      autoPartnerAssigned={trState.autoPartnerAssigned}
+                      partners={partners}
+                      selectedBeneficiaries={trState.selectedBeneficiaries}
+                      selectedTrainerList={trState.selectedTrainerList}
+                      goToPrev={trState.goToPrev}
+                      openPreview={openPreview}
+                      removeSelectedBeneficiary={
+                        trState.removeSelectedBeneficiary
+                      }
+                      removeSelectedTrainer={trState.removeSelectedTrainer}
+                    />
                   )}
                 </div>
 
-                {/* RIGHT column */}
                 <aside
                   style={{ ...cardStyle, width: "100%", maxHeight: "350px" }}
                 >
@@ -2667,7 +980,18 @@ export default function CreateTrainingRequest() {
                   >
                     Quick summary and actions.
                   </div>
-
+                  <div style={{ marginBottom: 12 }}>
+                    <strong>Financial Year:</strong>
+                    <div
+                      style={{
+                        padding: 8,
+                        background: "#fbfdff",
+                        borderRadius: 6,
+                      }}
+                    >
+                      {trState.form.financial_year || "—"}
+                    </div>
+                  </div>
                   <div style={{ marginBottom: 12 }}>
                     <strong>Plan:</strong>
                     <div
@@ -2677,21 +1001,18 @@ export default function CreateTrainingRequest() {
                         borderRadius: 6,
                       }}
                     >
-                      {selectedPlan ? selectedPlanTitle : "—"}
+                      {trState.selectedPlan ? selectedPlanTitle : "—"}
                     </div>
                   </div>
-
                   <div style={{ marginBottom: 12 }}>
-                    <strong>Type:</strong> {form.training_type}
+                    <strong>Type:</strong> {trState.form.training_type}
                   </div>
-
                   <div style={{ marginBottom: 12 }}>
                     <strong>Participants:</strong>{" "}
-                    {form.training_type === "BENEFICIARY"
-                      ? `${selectedBeneficiaries.length} beneficiaries`
-                      : `${selectedTrainersMap.size} trainers`}
+                    {trState.form.training_type === "BENEFICIARY"
+                      ? `${trState.selectedBeneficiaries.length} beneficiaries`
+                      : `${trState.selectedTrainersMap.size} trainers`}
                   </div>
-
                   <div style={{ display: "flex", gap: 8 }}>
                     <button
                       className="btnPrimaryHover"
@@ -2704,15 +1025,14 @@ export default function CreateTrainingRequest() {
                       className="btnPrimaryHover"
                       style={btnPrimary}
                       onClick={() => {
-                        setSelectedBeneficiaries([]);
-                        setSelectedTrainersMap(new Map());
+                        trState.setSelectedBeneficiaries([]);
+                        trState.setSelectedTrainersMap(new Map());
                       }}
                     >
                       Clear Selections
                     </button>
                   </div>
-
-                  {submitSummary && (
+                  {trState.submitSummary && (
                     <div
                       style={{
                         marginTop: 16,
@@ -2723,27 +1043,30 @@ export default function CreateTrainingRequest() {
                       }}
                     >
                       <h4 style={{ margin: "6px 0" }}>Last submission</h4>
-                      {submitSummary.trId ? (
+                      {trState.submitSummary.trId ? (
                         <div>
                           Training Request ID:{" "}
-                          <strong>{submitSummary.trId}</strong>
+                          <strong>{trState.submitSummary.trId}</strong>
                         </div>
                       ) : (
                         <div style={{ color: "#b03a2e" }}>
-                          Training request failed to create.
+                          Failed to create training request.
                         </div>
                       )}
                       <div>
-                        Successes: {submitSummary.successes?.length ?? 0}
+                        Successes:{" "}
+                        {trState.submitSummary.successes?.length ?? 0}
                       </div>
-                      <div>Failures: {submitSummary.failures?.length ?? 0}</div>
-                      {submitSummary.failures?.length > 0 && (
+                      <div>
+                        Failures: {trState.submitSummary.failures?.length ?? 0}
+                      </div>
+                      {trState.submitSummary.failures?.length > 0 && (
                         <details style={{ marginTop: 6 }}>
                           <summary style={{ cursor: "pointer" }}>
                             Show errors
                           </summary>
                           <ul>
-                            {submitSummary.failures.map((f, i) => (
+                            {trState.submitSummary.failures.map((f, i) => (
                               <li key={i}>
                                 <strong>{f.type}</strong>:{" "}
                                 {f.error || JSON.stringify(f.row)}
@@ -2761,589 +1084,49 @@ export default function CreateTrainingRequest() {
           <Footer />
         </div>
 
-        {/* Preview / Confirm modal */}
-        {previewOpen && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.4)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 9999,
-            }}
-          >
-            <div
-              style={{
-                width: 920,
-                maxHeight: "88vh",
-                overflow: "auto",
-                background: "#fff",
-                borderRadius: 8,
-                padding: 18,
-              }}
-            >
-              <h3>Preview Training Request</h3>
-              <div style={{ color: "#6c757d", marginBottom: 12 }}>
-                Review payload below. Confirm to submit.
-              </div>
-
-              {/* <div style={{ display: "flex", gap: 12 }}>
-              <div style={{ flex: 1 }}>
-                <h4>Request payload</h4>
-                <pre
-                  style={{
-                    background: "#f7fafc",
-                    padding: 12,
-                    borderRadius: 6,
-                    fontSize: 13,
-                  }}
-                >
-                  {JSON.stringify(buildPreviewPayload(), null, 2)}
-                </pre>
-              </div> */}
-
-              <div style={{ gap: 12 }}>
-                <div style={{ flex: 1 }}>
-                  <h4>Details</h4>
-
-                  <div
-                    style={{
-                      background: "#f7fafc",
-                      padding: 14,
-                      borderRadius: 6,
-                      fontSize: 14,
-                    }}
-                  >
-                    {Object.entries(buildPreviewPayload() || {})
-                      .filter(
-                        ([key]) =>
-                          key !== "block" &&
-                          key !== "created_by" &&
-                          key !== "district",
-                      )
-                      .map(([key, value]) => {
-                        // Training Plan Name
-                        if (key === "training_plan") {
-                          value =
-                            selectedPlan?.training_name ||
-                            selectedPlan?.name ||
-                            selectedPlan?.title ||
-                            "-";
-                        }
-
-                        // Partner Name
-                        if (key === "partner") {
-                          const partnerObj = Array.isArray(partners)
-                            ? partners.find(
-                                (p) => p.id === Number(form.partner),
-                              )
-                            : null;
-
-                          value = partnerObj?.name || value || "-";
-                        }
-
-                        return (
-                          <div
-                            key={key}
-                            style={{
-                              display: "grid",
-                              gridTemplateColumns: "200px 1fr",
-                              padding: "6px 0",
-                              borderBottom: "1px solid #e5e7eb",
-                            }}
-                          >
-                            <div style={{ fontWeight: 600 }}>
-                              {key
-                                .replaceAll("_", " ")
-                                .replace(/\b\w/g, (l) => l.toUpperCase())}
-                            </div>
-
-                            <div>{value ?? "-"}</div>
-                          </div>
-                        );
-                      })}
-                  </div>
-                </div>
-
-                <div>
-                  <h4>Participants</h4>
-                  {form.training_type === "BENEFICIARY" ? (
-                    selectedBeneficiaries.length === 0 ? (
-                      <p className="muted">No beneficiaries</p>
-                    ) : (
-                      <div style={{ maxHeight: 420, overflow: "auto" }}>
-                        <table className="table table-compact">
-                          <thead>
-                            <tr>
-                              <th>SHG</th>
-                              <th>Member</th>
-                              <th>Code</th>
-                            </tr>
-                          </thead>
-                          <tbody>
-                            {selectedBeneficiaries.map((b, i) => (
-                              <tr
-                                key={`${b.lokos_shg_code}|${b.lokos_member_code}|${i}`}
-                              >
-                                <td>{b.lokos_shg_code}</td>
-                                <td>{b.member_name}</td>
-                                <td>{b.lokos_member_code}</td>
-                              </tr>
-                            ))}
-                          </tbody>
-                        </table>
-                      </div>
-                    )
-                  ) : selectedTrainerList.length === 0 ? (
-                    <p className="muted">No trainers</p>
-                  ) : (
-                    <div style={{ maxHeight: 420, overflow: "auto" }}>
-                      <table className="table table-compact">
-                        <thead>
-                          <tr>
-                            <th>Name</th>
-                            <th>Designation</th>
-                          </tr>
-                        </thead>
-                        <tbody>
-                          {selectedTrainerList.map((t) => (
-                            <tr key={t.id}>
-                              <td>{t.full_name || t.name}</td>
-                              <td>{t.designation || "-"}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    </div>
-                  )}
-                </div>
-              </div>
-
-              {/* --- NEW: Engagement Check UI --- */}
-              {engagementStatus === "has_engaged" && (
-                <div
-                  style={{
-                    marginTop: 16,
-                    padding: 12,
-                    background: "#fef2f2",
-                    border: "1px solid #f87171",
-                    borderRadius: 8,
-                  }}
-                >
-                  <h4 style={{ margin: "0 0 8px 0", color: "#b91c1c" }}>
-                    ⚠️ Ineligible Participants Found
-                  </h4>
-                  <div
-                    style={{ fontSize: 13, color: "#991b1b", marginBottom: 12 }}
-                  >
-                    The following participants are currently engaged in another
-                    ongoing/scheduled training and cannot be added.
-                  </div>
-                  <div
-                    style={{
-                      maxHeight: 150,
-                      overflow: "auto",
-                      background: "#fff",
-                      border: "1px solid #fca5a5",
-                      borderRadius: 6,
-                    }}
-                  >
-                    <table
-                      className="table table-compact"
-                      style={{ margin: 0 }}
-                    >
-                      <thead>
-                        <tr>
-                          <th>Name</th>
-                          <th>
-                            {form.training_type === "BENEFICIARY"
-                              ? "Member Code"
-                              : "Designation"}
-                          </th>
-                        </tr>
-                      </thead>
-                      <tbody>
-                        {engagedParticipants.map((p, i) => (
-                          <tr key={i}>
-                            <td>
-                              {p.member_name || p.full_name || p.name || "—"}
-                            </td>
-                            <td>
-                              {form.training_type === "BENEFICIARY"
-                                ? p.lokos_member_code
-                                : p.designation || "—"}
-                            </td>
-                          </tr>
-                        ))}
-                      </tbody>
-                    </table>
-                  </div>
-                  <div style={{ marginTop: 12, textAlign: "right" }}>
-                    <button
-                      className="btn-sm btn-flat"
-                      style={{
-                        background: "#ef4444",
-                        color: "#fff",
-                        border: "none",
-                      }}
-                      onClick={removeIneligibleParticipants}
-                    >
-                      Remove Ineligible Participants
-                    </button>
-                  </div>
-                </div>
-              )}
-
-              {engagementStatus === "all_clear" && (
-                <div
-                  style={{
-                    marginTop: 16,
-                    padding: 10,
-                    background: "#f0fdf4",
-                    border: "1px solid #4ade80",
-                    borderRadius: 8,
-                    color: "#166534",
-                    fontWeight: 600,
-                  }}
-                >
-                  ✅ All selected participants are eligible and available! You
-                  can now submit.
-                </div>
-              )}
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  justifyContent: "flex-end",
-                  marginTop: 16,
-                }}
-              >
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setPreviewOpen(false)}
-                  disabled={submitting || engagementStatus === "checking"}
-                >
-                  Cancel
-                </button>
-
-                {/* Inline warning */}
-                {!hasParticipants && (
-                  <div
-                    style={{ color: "#dc3545", marginBottom: 8, fontSize: 13 }}
-                  >
-                    ⚠ Please add at least one participant to continue.
-                  </div>
-                )}
-
-                {engagementStatus === "idle" ||
-                engagementStatus === "has_engaged" ? (
-                  <button
-                    className="btn"
-                    onClick={checkEngagementBeforeSubmit}
-                    disabled={
-                      engagementStatus === "checking" ||
-                      engagementStatus === "has_engaged" ||
-                      !hasParticipants
-                    }
-                    style={{
-                      opacity:
-                        engagementStatus === "checking" || !hasParticipants
-                          ? 0.6
-                          : 1,
-                      cursor:
-                        engagementStatus === "checking" || !hasParticipants
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
-                    title={
-                      !hasParticipants
-                        ? "Add participants first"
-                        : "Check if participants are available"
-                    }
-                  >
-                    {engagementStatus === "checking"
-                      ? "Checking Availability..."
-                      : "Check Availability & Confirm"}
-                  </button>
-                ) : (
-                  <button
-                    className="btn"
-                    onClick={async () => {
-                      await confirmAndSubmit();
-                      setPreviewOpen(false);
-                    }}
-                    disabled={submitting || !hasParticipants}
-                    style={{
-                      opacity: submitting || !hasParticipants ? 0.6 : 1,
-                      cursor:
-                        submitting || !hasParticipants
-                          ? "not-allowed"
-                          : "pointer",
-                    }}
-                    title={
-                      !hasParticipants
-                        ? "Add participants first"
-                        : "Submit training request"
-                    }
-                  >
-                    {submitting ? "Submitting…" : "Final Submit"}
-                  </button>
-                )}
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* After submission summary modal (if needed) */}
-        {submitSummary && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.35)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 9998,
-            }}
-          >
-            <div
-              style={{
-                width: 760,
-                background: "#fff",
-                borderRadius: 8,
-                padding: 18,
-              }}
-            >
-              <h3>Submission Result</h3>
-              <div style={{ marginBottom: 8 }}>
-                {submitSummary.trId ? (
-                  <div>
-                    Training Request created!
-                    {/* <strong>{submitSummary.trId}</strong> */}
-                  </div>
-                ) : (
-                  <div style={{ color: "#b03a2e" }}>
-                    Failed to create training request
-                  </div>
-                )}
-              </div>
-
-              {/* <div>
-              Child rows succeeded: {submitSummary.successes?.length ?? 0}
-            </div>
-            <div>Child rows failed: {submitSummary.failures?.length ?? 0}</div> */}
-
-              {submitSummary.failures?.length > 0 && (
-                <div style={{ marginTop: 12 }}>
-                  <h4>Errors</h4>
-                  <div
-                    style={{
-                      maxHeight: 260,
-                      overflow: "auto",
-                      border: "1px solid #f1f3f5",
-                      padding: 8,
-                      borderRadius: 6,
-                    }}
-                  >
-                    <ul>
-                      {submitSummary.failures.map((f, i) => (
-                        <li key={i}>
-                          <strong>{f.type}</strong>:{" "}
-                          {f.error || JSON.stringify(f.row)}
-                        </li>
-                      ))}
-                    </ul>
-                  </div>
-                </div>
-              )}
-
-              <div
-                style={{
-                  display: "flex",
-                  gap: 8,
-                  justifyContent: "flex-end",
-                  marginTop: 12,
-                }}
-              >
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setSubmitSummary(null)}
-                >
-                  Close
-                </button>
-                <button className="btn" onClick={() => setSubmitSummary(null)}>
-                  OK
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* ---------- Preload modal ---------- */}
-        {preloading && (
-          <div
-            style={{
-              position: "fixed",
-              inset: 0,
-              background: "rgba(0,0,0,0.45)",
-              display: "flex",
-              alignItems: "center",
-              justifyContent: "center",
-              zIndex: 99999,
-            }}
-          >
-            <div
-              style={{
-                width: 520,
-                background: "#fff",
-                borderRadius: 8,
-                padding: 18,
-                textAlign: "center",
-              }}
-            >
-              <h3 style={{ marginTop: 0 }}>Loading data…</h3>
-              <p style={{ color: "#6c757d" }}>
-                Preparing training plans and themes. Master trainers and
-                partners are loaded only when needed.
-              </p>
-              <div style={{ marginTop: 12 }}>
-                <div className="table-spinner" style={{ padding: 12 }}>
-                  Loading…
-                </div>
-              </div>
-              <div
-                style={{
-                  marginTop: 12,
-                  display: "flex",
-                  justifyContent: "center",
-                  gap: 8,
-                }}
-              >
-                <button
-                  className="btn btn-outline"
-                  onClick={() => setPreloading(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          </div>
-        )}
-
-        {/* If there were non-fatal preload errors, show a dismissible notice */}
-        {!preloading && preloadErrors?.length > 0 && (
-          <div
-            style={{
-              position: "fixed",
-              right: 12,
-              bottom: 12,
-              zIndex: 99999,
-              background: "#fff4e5",
-              border: "1px solid #ffd8a8",
-              padding: 12,
-              borderRadius: 8,
-              maxWidth: 420,
-            }}
-          >
-            <strong>Some data failed to load</strong>
-            <div style={{ fontSize: 13, color: "#6c757d", marginTop: 6 }}>
-              {preloadErrors.join(", ")}
-            </div>
-            <div style={{ marginTop: 8, textAlign: "right" }}>
-              <button
-                className="btn-sm btn-flat"
-                onClick={() => setPreloadErrors([])}
-              >
-                Dismiss
-              </button>
-            </div>
-          </div>
-        )}
-
-        {/* Small style to hide the last column (View Detail / Action) only inside MemberListArea wrapper */}
-        <style>{`
-        /* .no-action wrapper hides the last column (header + cells) of tables within it.
-           This keeps other tables intact while removing the "View Detail" action in member list. */
-        .no-action .table thead th:last-child,
-        .no-action .table tbody td:last-child {
-          display: none;
-        }
-          .btnPrimaryHover:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
-}
-.training-content{
-  grid-template-columns: minmax(0,1fr) 360px;
-}
-
-.content-area {
-  display: flex;
-  flex: 1;             
-  min-width: 0;
-}
-
-@media (max-width: 900px){
-  .training-content{
-    grid-template-columns: 1fr;
-  }
-}
- /* HEADER */
-.dashboard-header {
-  display: flex;
-  align-items: center;
-}
-
-.dashboard-title {
-  color: #2b4e72;
-}
-      `}</style>
-      </div>
-    </div>
-  );
-}
-
-/* ---------- MemberListArea: now driven by selectedShg prop (no CustomEvent) ---------- */
-function MemberListArea({
-  selectedShg,
-  onSelectMember,
-  onToggleMember,
-  reloadToken = 0,
-  selectedMemberCodes = null,
-}) {
-  if (!selectedShg) {
-    return (
-      <div className="muted">Select an SHG from the left to view members.</div>
-    );
-  }
-
-  const stableKey =
-    selectedShg.id ??
-    selectedShg.shg_code ??
-    selectedShg.shgCode ??
-    JSON.stringify(selectedShg);
-
-  return (
-    <div>
-      <div style={{ marginBottom: 8 }}>
-        <strong>SHG:</strong>{" "}
-        {selectedShg.shg_name || selectedShg.name || selectedShg.shg_code}
-      </div>
-
-      <div key={`${stableKey}::${reloadToken}`}>
-        <ShgMemberListTable
-          shg={selectedShg}
-          shgId={selectedShg.id ?? selectedShg.shg_code}
-          onSelectMember={(m) => onSelectMember && onSelectMember(m)}
-          onToggleMember={(m, checked) => {
-            if (onToggleMember) return onToggleMember(m, checked);
-            if (checked && onSelectMember) onSelectMember(m);
+        <PreviewConfirmModal
+          isOpen={trState.previewOpen}
+          onClose={() => trState.setPreviewOpen(false)}
+          onConfirm={async () => {
+            await confirmAndSubmit();
+            trState.setPreviewOpen(false);
           }}
-          selectedMemberCodes={selectedMemberCodes}
+          onCheckEngagement={checkEngagementBeforeSubmit}
+          engagementStatus={trState.engagementStatus}
+          hasParticipants={hasParticipants}
+          submitting={trState.submitting}
+          previewPayload={buildPreviewPayload()}
+          selectedPlanTitle={selectedPlanTitle}
+          partnerName={
+            partners.find((p) => String(p.id) === String(trState.form.partner))
+              ?.name
+          }
+          engagedParticipants={trState.engagedParticipants}
+          trainingType={trState.form.training_type}
+          removeIneligibleParticipants={trState.removeIneligibleParticipants}
         />
+        <SubmissionSummaryModal
+          summary={trState.submitSummary}
+          onClose={() => trState.setSubmitSummary(null)}
+        />
+        <PreloadModal
+          isOpen={preloading}
+          onCancel={() => setPreloading(false)}
+        />
+        <PreloadErrorToast
+          errors={preloadErrors}
+          onDismiss={() => setPreloadErrors([])}
+        />
+
+        <style>{`
+        .no-action .table thead th:last-child, .no-action .table tbody td:last-child { display: none; }
+        .btnPrimaryHover:hover { transform: translateY(-6px); box-shadow: 0 10px 18px rgba(0,0,0,0.15); }
+        .training-content{ grid-template-columns: minmax(0,1fr) 360px; }
+        .content-area { display: flex; flex: 1; min-width: 0; }
+        @media (max-width: 900px){ .training-content{ grid-template-columns: 1fr; } }
+        .dashboard-header { display: flex; align-items: center; }
+        .dashboard-title { color: #2b4e72; }
+        `}</style>
       </div>
     </div>
   );

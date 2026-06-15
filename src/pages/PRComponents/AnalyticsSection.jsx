@@ -28,6 +28,7 @@ export default function AnalyticsSection({ currentReport }) {
     district_wise_summary: "0",
     district_wise_cadre_summary: "0",
     passwd_status: "",
+    financial_year: "2026-27",
   });
 
   const activeTab = currentReport?.tab || "overview";
@@ -107,12 +108,12 @@ export default function AnalyticsSection({ currentReport }) {
       queryParams.append("start_date", filters.start_date);
     if (filters.end_date) queryParams.append("end_date", filters.end_date);
     if (filters.not_logged_in === "1") queryParams.append("not_logged_in", "1");
-    if (filters.district_wise_summary === "1")
-      queryParams.append("district_wise_summary", "1");
     if (filters.district_wise_cadre_summary === "1")
       queryParams.append("district_wise_cadre_summary", "1");
     if (filters.passwd_status)
       queryParams.append("passwd_status", filters.passwd_status);
+    if (filters.financial_year)
+      queryParams.append("financial_year", filters.financial_year);
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
@@ -159,6 +160,7 @@ export default function AnalyticsSection({ currentReport }) {
     filters.district_wise_summary,
     filters.district_wise_cadre_summary,
     filters.passwd_status,
+    filters.financial_year,
   ]);
 
   // Fetch data whenever the tab changes
