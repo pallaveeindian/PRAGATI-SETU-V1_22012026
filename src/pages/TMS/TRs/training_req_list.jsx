@@ -453,12 +453,12 @@ export default function TrainingRequestList() {
                         <th>ID</th>
                         <th>Theme</th>
                         <th>Plan</th>
-                        <th>Type</th>
                         <th>Status</th>
                         <th>Partner</th>
                         <th>District</th>
                         <th>Block</th>
                         <th>Participant Count</th>
+                        <th>Financial Year</th>
                         <th>Actions</th>
                         <th />
                       </tr>
@@ -480,12 +480,12 @@ export default function TrainingRequestList() {
                             <td>{r.id}</td>
                             <td>{r.theme_name}</td>
                             <td>{r.training_plan_name}</td>
-                            <td>{r.training_type}</td>
                             <td>{r.status}</td>
                             <td>{r.partner_name}</td>
                             <td>{r.district_name}</td>
                             <td>{r.block_name}</td>
                             <td>{r.participant_count}</td>
+                            <td>{r.financial_year}</td>
                             <td>
                               <div style={{ display: "flex", gap: "6px" }}>
                                 <button
@@ -533,9 +533,6 @@ export default function TrainingRequestList() {
                             <strong>Plan:</strong> {r.training_plan_name}
                           </div>
                           <div>
-                            <strong>Type:</strong> {r.training_type}
-                          </div>
-                          <div>
                             <strong>Status:</strong> {r.status}
                           </div>
                           <div>
@@ -548,9 +545,12 @@ export default function TrainingRequestList() {
                             <strong>Block:</strong> {r.block_name}
                           </div>
                           <div>
-                            <strong>Participant Count:</strong> {r.participant_count}
+                            <strong>Participant Count:</strong>{" "}
+                            {r.participant_count}
                           </div>
-
+                          <div>
+                            <strong>Financial Year:</strong> {r.financial_year}
+                          </div>
                           <div
                             style={{
                               display: "flex",

@@ -547,6 +547,7 @@ export default function CreateTrainingRequest() {
 
       const resp = await api.post("/tms/check-training-engagement/", {
         participant_type: trState.form.training_type,
+        financial_year: trState.form.financial_year,
         ids: ids,
       });
       const engagedIds = resp?.data?.engaged_ids || [];
@@ -637,11 +638,32 @@ export default function CreateTrainingRequest() {
         for (const b of trState.selectedBeneficiaries) {
           const key = `${b.lokos_shg_code}|${b.lokos_member_code}`;
           const raw = trState.savedMemberResponses.current.get(key) || {};
-          const rawAddr = Array.isArray(raw.__raw_upsrlm?.member_addresses)
-            ? raw.__raw_upsrlm.member_addresses[0]
-            : Array.isArray(raw.member_addresses)
-              ? raw.member_addresses[0]
+
+          // Absolute fallback extraction
+          const actualRaw = Array.isArray(raw.__raw_upsrlm?.data)
+            ? raw.__raw_upsrlm.data[0]
+            : raw.__raw_upsrlm || raw;
+          const rawAddr =
+            Array.isArray(actualRaw?.member_addresses) &&
+            actualRaw.member_addresses.length > 0
+              ? actualRaw.member_addresses[0]
               : {};
+
+          // Extract and ensure they are numbers
+          const extDist =
+            b.district_id ||
+            actualRaw.district_id ||
+            rawAddr.district_id ||
+            null;
+          const extBlock =
+            b.block_id || actualRaw.block_id || rawAddr.block_id || null;
+          const extPanchayat =
+            b.panchayat_id ||
+            actualRaw.panchayat_id ||
+            rawAddr.panchayat_id ||
+            null;
+          const extVillage =
+            b.village_id || actualRaw.village_id || rawAddr.village_id || null;
 
           const bPayload = {
             training: trId,
@@ -658,30 +680,10 @@ export default function CreateTrainingRequest() {
             email: raw.email || "",
             education: raw.education || "",
             address: raw.address || b.address || "",
-            district:
-              raw.district_id ||
-              raw.district ||
-              b.district_id ||
-              rawAddr.district_id ||
-              null,
-            block:
-              raw.block_id ||
-              raw.block ||
-              b.block_id ||
-              rawAddr.block_id ||
-              null,
-            panchayat:
-              raw.panchayat_id ||
-              raw.panchayat ||
-              b.panchayat_id ||
-              rawAddr.panchayat_id ||
-              null,
-            village:
-              raw.village_id ||
-              raw.village ||
-              b.village_id ||
-              rawAddr.village_id ||
-              null,
+            district: extDist ? Number(extDist) : null,
+            block: extBlock ? Number(extBlock) : null,
+            panchayat: extPanchayat ? Number(extPanchayat) : null,
+            village: extVillage ? Number(extVillage) : null,
             remarks: raw.remarks || "",
             created_by: user?.id ?? user?.user_id ?? null,
           };

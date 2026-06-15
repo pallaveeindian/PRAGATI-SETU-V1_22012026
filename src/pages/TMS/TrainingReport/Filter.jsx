@@ -409,7 +409,7 @@ export default function TrainingReportManager({ user }) {
   return (
     <div style={{ padding: "20px" }}>
       <h3 style={{ color: "#3d6ba6", marginBottom: "20px" }}>
-        Training Report
+        TMS Reporting Section
       </h3>
 
       <div className="filter-container-custom">

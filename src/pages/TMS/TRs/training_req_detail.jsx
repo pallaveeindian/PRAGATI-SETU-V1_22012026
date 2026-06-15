@@ -283,8 +283,7 @@ export default function TrainingRequestDetail() {
       setTr(trObj);
 
       // 1.a) fetch TR location names
-      let dName =
-        trObj?.district_name_en || trObj?.district_name || "";
+      let dName = trObj?.district_name_en || trObj?.district_name || "";
       let bName = trObj?.block_name_en || trObj?.block_name || "";
 
       if (!dName && trObj?.district && typeof trObj.district !== "object") {
@@ -672,12 +671,39 @@ export default function TrainingRequestDetail() {
                           marginBottom: 4,
                         }}
                       >
-                        <strong style={{ color: "#3d6ba6" }}>Location:</strong>{" "}
-                        <span style={{ fontWeight: 600 }}>
-                          {trLocNames.district
-                            ? `${trLocNames.district} / ${trLocNames.block}`
-                            : "Not Assigned"}
-                        </span>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            width: "100%",
+                            gap: 12,
+                          }}
+                        >
+                          <div>
+                            <strong style={{ color: "#3d6ba6" }}>
+                              Location:
+                            </strong>{" "}
+                            <span style={{ fontWeight: 600 }}>
+                              {trLocNames.district
+                                ? `${trLocNames.district} / ${trLocNames.block}`
+                                : "Not Assigned"}
+                            </span>
+                          </div>
+
+                          <div
+                            style={{
+                              marginLeft: "auto",
+                              textAlign: "right",
+                            }}
+                          >
+                            <strong style={{ color: "#3d6ba6" }}>
+                              Financial Year:
+                            </strong>{" "}
+                            <span style={{ fontWeight: 600 }}>
+                              {tr.financial_year || "-"}
+                            </span>
+                          </div>
+                        </div>
                       </div>
 
                       <div>

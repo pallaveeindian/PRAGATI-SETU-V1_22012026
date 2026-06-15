@@ -587,12 +587,14 @@ export default function AnalyticsTable({
         sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
         district: row.district_name_en || "-",
         total_beneficiaries: row.total_beneficiaries,
+        financial_year: row.financial_year,
         total_trainers: row.total_trainers,
       }));
 
       const exportHeaders = [
         { label: "S.No.", key: "sno" },
         { label: "District", key: "district" },
+        { label: "Financial Year", key: "financial_year" },
         { label: "Total Beneficiaries", key: "total_beneficiaries" },
         { label: "Total Trainers", key: "total_trainers" },
       ];
@@ -601,6 +603,7 @@ export default function AnalyticsTable({
         <div className="analytics-module table-module">
           <div className="table-header">
             <h3>District Wise Cadre Summary</h3>
+            {/* Financial Year here */}
             <ExportButton
               data={exportData}
               headers={exportHeaders}
@@ -613,6 +616,7 @@ export default function AnalyticsTable({
                 <tr>
                   <th>S.No.</th>
                   <th>District</th>
+                  <th>Financial Year</th>
                   <th>Total Beneficiaries</th>
                   <th>Total Trainers</th>
                 </tr>
@@ -624,6 +628,7 @@ export default function AnalyticsTable({
                       {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
                     </td>
                     <td>{row.district_name_en || "-"}</td>
+                    <td>{row.financial_year || "-"}</td>
                     <td>
                       <span
                         className="status-badge"
@@ -690,6 +695,7 @@ export default function AnalyticsTable({
         district: row.district_name_en || "-",
         block: row.block_name_en || "-",
         program: row.training_name,
+        financial_year: row.financial_year || "-",
         beneficiaries: row.beneficiary_count,
         trainers: row.trainer_count,
       }));
@@ -700,6 +706,7 @@ export default function AnalyticsTable({
         { label: "District", key: "district" },
         { label: "Block", key: "block" },
         { label: "Training Program", key: "program" },
+        { label: "Financial Year", key: "financial_year" },
         { label: "Beneficiaries Selected", key: "beneficiaries" },
         { label: "Trainers Selected", key: "trainers" },
       ];
@@ -722,6 +729,7 @@ export default function AnalyticsTable({
                   <th>Created By</th>
                   <th>District</th>
                   <th>Block</th>
+                  <th>Financial Year</th>
                   <th>Training Program</th>
                   <th>Beneficiaries Selected</th>
                   <th>Trainers Selected</th>
@@ -736,6 +744,7 @@ export default function AnalyticsTable({
                     <td className="fw-bold">{row.username}</td>
                     <td>{row.district_name_en || "-"}</td>
                     <td>{row.block_name_en || "-"}</td>
+                    <td>{row.financial_year || "-"}</td>
                     <td>{row.training_name}</td>
                     <td>
                       <span
@@ -788,7 +797,7 @@ export default function AnalyticsTable({
       );
     }
   }
-  
+
   // ==========================================
   // VIEW: TMS -> OVERALL DEMOGRAPHICS
   // ==========================================

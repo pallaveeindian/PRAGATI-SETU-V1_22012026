@@ -108,7 +108,8 @@ export default function TmsRoutes() {
           path="tp/tr-closure/:id"
           element={<TpTrainingRequestClosure />}
         />
-        <Route path="tp/batches/create/:id" element={<TpCreateBatch />} />
+        {/* UNLOCK AFTER TC MODULE */}
+        {/* <Route path="tp/batches/create/:id" element={<TpCreateBatch />} /> */}
         <Route path="tp/cp-list" element={<TpListCP />} />
         <Route path="tp/cp/create" element={<TpCreateCP />} />
         <Route path="tp/cp/edit/:cpId" element={<TpCreateCP />} />

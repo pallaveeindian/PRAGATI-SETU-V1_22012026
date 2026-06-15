@@ -99,11 +99,13 @@ export function useTRState(initialGeoscope = null) {
       );
       if (exists) return prev;
 
-      // 1. Safe fallback to raw API data if mapper missed it
+      // 1. Absolute safe extraction of raw data and addresses
       const raw = memberObj.__raw_upsrlm || memberObj;
+      const actualRaw = Array.isArray(raw.data) ? raw.data[0] || {} : raw;
       const rawAddr =
-        Array.isArray(raw.member_addresses) && raw.member_addresses.length > 0
-          ? raw.member_addresses[0]
+        Array.isArray(actualRaw.member_addresses) &&
+        actualRaw.member_addresses.length > 0
+          ? actualRaw.member_addresses[0]
           : {};
 
       // 2. Robust Age Calculation
@@ -163,28 +165,28 @@ export function useTRState(initialGeoscope = null) {
           "",
         religion: memberObj.religion || raw.religion || "",
         district_id:
-          memberObj.district_id ??
-          memberObj.districtId ??
-          raw.district_id ??
-          rawAddr.district_id ??
+          memberObj.district_id ||
+          memberObj.districtId ||
+          actualRaw.district_id ||
+          rawAddr.district_id ||
           null,
         block_id:
-          memberObj.block_id ??
-          memberObj.blockId ??
-          raw.block_id ??
-          rawAddr.block_id ??
+          memberObj.block_id ||
+          memberObj.blockId ||
+          actualRaw.block_id ||
+          rawAddr.block_id ||
           null,
         panchayat_id:
-          memberObj.panchayat_id ??
-          memberObj.panchayatId ??
-          raw.panchayat_id ??
-          rawAddr.panchayat_id ??
+          memberObj.panchayat_id ||
+          memberObj.panchayatId ||
+          actualRaw.panchayat_id ||
+          rawAddr.panchayat_id ||
           null,
         village_id:
-          memberObj.village_id ??
-          memberObj.villageId ??
-          raw.village_id ??
-          rawAddr.village_id ??
+          memberObj.village_id ||
+          memberObj.villageId ||
+          actualRaw.village_id ||
+          rawAddr.village_id ||
           null,
         designation: memberObj.designation || raw.designation || "",
         education: memberObj.education || raw.education || "",
