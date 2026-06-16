@@ -4,6 +4,7 @@ import TopNavigation from "./HeaderNav";
 import Footer from "./Footer";
 
 import up_logo from "../../assets/upgov_logo.jpg";
+import dhanyawaad from "../../assets/namaste.png";
 
 /*
 |--------------------------------------------------------------------------
@@ -16,7 +17,7 @@ import up_logo from "../../assets/upgov_logo.jpg";
 | 15 June 2026, 8:00 PM IST
 |
 */
-const MAINTENANCE_END_TIME = "2026-06-15T23:00:00+05:30";
+const MAINTENANCE_END_TIME = "2026-06-16T12:00:00+05:30";
 
 const ServerMaintenance = () => {
   const [timeLeft, setTimeLeft] = useState(0);
@@ -271,7 +272,7 @@ const ServerMaintenance = () => {
             complete.
           </p>
           <div style={styles.icon}>
-            <img src="./namaste.png" />
+            <img src={dhanyawaad} />
           </div>
           <button
             style={styles.button}
