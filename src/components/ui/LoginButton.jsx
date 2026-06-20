@@ -27,12 +27,12 @@ export default function LoginButton({ closeMenu }) {
       color: "#2a56cf",
       delay: "0s",
     },
-    {
-      path: "/login?module=ldms",
-      label: "LDMS Portal",
-      color: "#b91c1c",
-      delay: "0.18s",
-    },
+    // {
+    //   path: "/login?module=ldms",
+    //   label: "LDMS Portal",
+    //   color: "#b91c1c",
+    //   delay: "0.18s",
+    // },
     {
       path: "/login?module=crp",
       label: "CRP-EP Mapping",
@@ -40,8 +40,8 @@ export default function LoginButton({ closeMenu }) {
       delay: "0.36s",
     },
     {
-      path: "/login?module=epsms",
-      label: "EPSMS Portal",
+      path: "/login?module=mou",
+      label: "Enterprise MOU Portal",
       color: "#9333ea",
       delay: "0.54s",
     },

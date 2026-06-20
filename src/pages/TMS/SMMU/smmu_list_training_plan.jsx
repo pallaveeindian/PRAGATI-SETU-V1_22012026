@@ -1,5 +1,4 @@
 // src/pages/TMS/SMMU/smmu_list_training_plan.jsx
-
 import React, { useEffect, useMemo, useState, useContext } from "react";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
@@ -136,10 +135,6 @@ export default function SmmuListTrainingPlan() {
             page_size: pageSize,
           };
 
-          // --------------------------------
-          // API SEARCH
-          // --------------------------------
-
           if (search && search.trim()) {
             params.search = search.trim();
           }
@@ -173,6 +168,38 @@ export default function SmmuListTrainingPlan() {
         ...s,
         plans: false,
       }));
+    }
+  }
+
+  // ----------------------------------------
+  // DELETE HANDLER (Cascades Scopes then Plan)
+  // ----------------------------------------
+
+  async function handleDeletePlan(planId) {
+    if (!window.confirm("Are you sure you want to delete this training plan?"))
+      return;
+
+    setLoading((s) => ({ ...s, plans: true }));
+    try {
+      // 1. Delete associated TRPUserScope rows to clean up
+      const scopeResp = await TMS_API.trpUserScopes.list({
+        training_id: planId,
+        limit: 100,
+      });
+      const scopes = scopeResp?.data?.results || scopeResp?.data || [];
+      for (const sc of scopes) {
+        await TMS_API.trpUserScopes.destroy(sc.id);
+      }
+
+      // 2. Delete the Training Plan
+      await TMS_API.trainingPlans.destroy(planId);
+
+      // 3. Refresh list
+      fetchTrainingPlans();
+    } catch (error) {
+      console.error("Failed to delete training plan", error);
+      alert("Failed to delete training plan.");
+      setLoading((s) => ({ ...s, plans: false }));
     }
   }
 
@@ -414,14 +441,37 @@ export default function SmmuListTrainingPlan() {
           cursor: not-allowed;
           opacity: 0.5;
         }
+        
+        .action-btn {
+          padding: 6px 12px;
+          border-radius: 6px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          border: 1px solid transparent;
+        }
+        .edit-btn {
+          background: #eef2ff;
+          color: #1d4ed8;
+          border-color: #bfdbfe;
+        }
+        .edit-btn:hover { background: #dbeafe; }
+        .del-btn {
+          background: #fef2f2;
+          color: #b91c1c;
+          border-color: #fecaca;
+        }
+        .del-btn:hover { background: #fee2e2; }
+        .action-flex {
+          display: flex;
+          gap: 8px;
+        }
       `}</style>
 
-      {/* Changed class to app-shell to match the working styling just in case */}
       <div className="app-shell smmu-page-wrapper">
         <Header />
 
         <div className="content-area">
-          {/* FIX: Changed navCollapsed={navCollapsed} to collapsed={navCollapsed} */}
           <TmsLeftNav
             collapsed={navCollapsed}
             onToggle={() => setNavCollapsed((v) => !v)}
@@ -482,19 +532,20 @@ export default function SmmuListTrainingPlan() {
                         <th>Type</th>
                         <th>Level</th>
                         <th>No. of Days</th>
+                        <th>Action</th>
                       </tr>
                     </thead>
 
                     <tbody>
                       {loading.plans ? (
                         <tr>
-                          <td colSpan="6" className="loading-row">
+                          <td colSpan="7" className="loading-row">
                             Loading training plans...
                           </td>
                         </tr>
                       ) : trainingPlans.length === 0 ? (
                         <tr>
-                          <td colSpan="6" className="empty-row">
+                          <td colSpan="7" className="empty-row">
                             No training plans found.
                           </td>
                         </tr>
@@ -507,6 +558,26 @@ export default function SmmuListTrainingPlan() {
                             <td>{plan.type_of_training || "-"}</td>
                             <td>{plan.level_of_training || "-"}</td>
                             <td>{plan.no_of_days || "-"}</td>
+                            <td>
+                              <div className="action-flex">
+                                <button
+                                  className="action-btn edit-btn"
+                                  onClick={() =>
+                                    navigate("/tms/smmu/create-training-plan", {
+                                      state: { editPlan: plan.raw },
+                                    })
+                                  }
+                                >
+                                  Edit
+                                </button>
+                                <button
+                                  className="action-btn del-btn"
+                                  onClick={() => handleDeletePlan(plan.id)}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
                           </tr>
                         ))
                       )}
