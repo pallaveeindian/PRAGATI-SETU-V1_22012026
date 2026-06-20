@@ -31,6 +31,7 @@ export default function SmmuListTrainingPlan() {
   const [filteredPlans, setFilteredPlans] = useState([]);
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
+  const [totalCount, setTotalCount] = useState(0);
 
   const pageSize = 10;
 
@@ -131,13 +132,8 @@ export default function SmmuListTrainingPlan() {
         try {
           const params = {
             theme: th.id,
-            page,
-            page_size: pageSize,
+            limit: 1000, // Fetch all records for frontend pagination
           };
-
-          if (search && search.trim()) {
-            params.search = search.trim();
-          }
 
           const plansResp = await TMS_API.trainingPlans.list(params);
           const plansData = plansResp?.data ?? plansResp;
@@ -221,21 +217,38 @@ export default function SmmuListTrainingPlan() {
   }, [effectiveUserId]);
 
   // ----------------------------------------
-  // API BASED SEARCH + PAGINATION
+  // FRONTEND SEARCH + PAGINATION
   // ----------------------------------------
 
+  // 1. Local Search Filter
+  const localFilteredPlans = useMemo(() => {
+    if (!search || !search.trim()) return trainingPlans;
+    const q = search.toLowerCase().trim();
+    return trainingPlans.filter(
+      (p) =>
+        (p.training_name && p.training_name.toLowerCase().includes(q)) ||
+        (p.theme_name && p.theme_name.toLowerCase().includes(q)) ||
+        (p.level_of_training &&
+          p.level_of_training.toLowerCase().includes(q)) ||
+        (p.type_of_training && p.type_of_training.toLowerCase().includes(q)),
+    );
+  }, [trainingPlans, search]);
+
+  // Reset page to 1 when search changes
   useEffect(() => {
-    if (effectiveUserId) {
-      fetchTrainingPlans();
-    }
-    // eslint-disable-next-line
-  }, [search, page]);
+    setPage(1);
+  }, [search]);
 
+  // 2. Pagination Math based on filtered results
   const totalPages = useMemo(() => {
-    return Math.ceil(trainingPlans.length / pageSize) || 1;
-  }, [trainingPlans]);
+    return Math.ceil(localFilteredPlans.length / pageSize) || 1;
+  }, [localFilteredPlans, pageSize]);
 
-  const paginatedPlans = trainingPlans;
+  // 3. Final Array to Render
+  const paginatedPlans = useMemo(() => {
+    const startIndex = (page - 1) * pageSize;
+    return localFilteredPlans.slice(startIndex, startIndex + pageSize);
+  }, [localFilteredPlans, page, pageSize]);
 
   // ----------------------------------------
   // UI
@@ -501,8 +514,7 @@ export default function SmmuListTrainingPlan() {
                   className="search-form"
                   onSubmit={(e) => {
                     e.preventDefault();
-                    setPage(1);
-                    fetchTrainingPlans();
+                    setPage(1); // Frontend filter updates automatically via useMemo
                   }}
                 >
                   <input
@@ -550,7 +562,7 @@ export default function SmmuListTrainingPlan() {
                           </td>
                         </tr>
                       ) : (
-                        trainingPlans.map((plan, index) => (
+                        paginatedPlans.map((plan, index) => (
                           <tr key={plan.id}>
                             <td>{(page - 1) * pageSize + index + 1}</td>
                             <td>{plan.training_name || "-"}</td>
