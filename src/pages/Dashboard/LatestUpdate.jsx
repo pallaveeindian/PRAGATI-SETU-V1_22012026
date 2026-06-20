@@ -13,10 +13,10 @@ export default function LatestUpdate() {
       color: "#f59e0b",
     },
     {
-      title: "EPSMS Portal",
-      module: "epsms",
+      title: "MOU Portal",
+      module: "mou",
       description:
-        "Enterprise Promotion System Management Services Portal.",
+        "Memorandum of Understanding Management Portal.",
       color: "#9333ea",
     },
     {

@@ -52,17 +52,11 @@ const ROLE_LDMS_ROUTE = {
 // };
 
 const ROLE_EPSMS_ROUTE = {
-<<<<<<< Updated upstream
-  default: "/mou/dashboard",
-=======
   default: "/mou-layout",
->>>>>>> Stashed changes
 };
 
 const ROLE_CRP_ROUTE = {
   crp_record: "/epsms/crp-form/",
-<<<<<<< Updated upstream
-=======
 };
 
 const ROLE_CANTEEN_ROUTE = {
@@ -70,7 +64,6 @@ const ROLE_CANTEEN_ROUTE = {
   dmmu: "/canteen-form",
   smmu: "/canteen-form",
   default: "/canteen-form",
->>>>>>> Stashed changes
 };
 
 /* -------------------------------------------------
@@ -140,11 +133,8 @@ export default function Login() {
   const [captchaError, setCaptchaError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const isEPSMS = module === "epsms";
-<<<<<<< Updated upstream
-=======
   const isCanteen = module === "canteen";
   const adminOnlyModule = isEPSMS || isCanteen;
->>>>>>> Stashed changes
 
   const {
     register,
@@ -206,15 +196,11 @@ export default function Login() {
         setUserType("Admin");
         setRole("");
         break;
-<<<<<<< Updated upstream
-
-=======
       case "canteen":
         setTheme("green");
         setUserType("Admin");
         setRole("");
         break;
->>>>>>> Stashed changes
       default:
         setTheme("yellow");
         setUserType("Admin");
@@ -264,16 +250,6 @@ export default function Login() {
       navigate(ROLE_CRP_ROUTE.crp_record, {
         replace: true,
       });
-<<<<<<< Updated upstream
-      return;
-    }
-
-    if (module === "epsms") {
-      navigate(ROLE_EPSMS_ROUTE.default, {
-        replace: true,
-      });
-=======
->>>>>>> Stashed changes
       return;
     }
 
@@ -386,12 +362,9 @@ export default function Login() {
 
             {module === "epsms" && (
               <img src={esmLogo} alt="EPSMS" className="app-logo" />
-<<<<<<< Updated upstream
-=======
             )}
             {module === "canteen" && (
               <img src={esmLogo} alt="Prerna Canteen" className="app-logo" />
->>>>>>> Stashed changes
             )}
           </div>
 
@@ -402,18 +375,12 @@ export default function Login() {
                 : `${module.toUpperCase()} Portal`}
             </h2> */}
 
-<<<<<<< Updated upstream
-            <h2>
-=======
             {/* <h2>
->>>>>>> Stashed changes
               {module === "crp"
                 ? "CRP-EP Mapping Login"
                 : module === "epsms"
                   ? "EPSMS Portal"
                   : `${module.toUpperCase()} Portal`}
-<<<<<<< Updated upstream
-=======
             </h2> */}
 
             <h2>
@@ -424,7 +391,6 @@ export default function Login() {
                   : module === "canteen"
                     ? "Prerna Canteen Login"
                     : `${module.toUpperCase()} Portal`}
->>>>>>> Stashed changes
             </h2>
 
             <p>Enter your credentials to continue</p>
@@ -482,10 +448,7 @@ export default function Login() {
               <label className="block-label">User Type</label>
 
               <div className="radio-row">
-<<<<<<< Updated upstream
-=======
 
->>>>>>> Stashed changes
                 {/* EPSMS → ONLY ADMIN */}
                 <label>
                   <input
@@ -497,17 +460,10 @@ export default function Login() {
                       setUserType("Admin");
                       setRole("");
                     }}
-<<<<<<< Updated upstream
-                  />{" "}
-                  Admin
-                </label>
-
-=======
                   />
                   {" "}Admin
                 </label>
                 {/* 
->>>>>>> Stashed changes
                 {!isEPSMS && (
                   <label>
                     <input
@@ -519,10 +475,6 @@ export default function Login() {
                         setUserType("General");
                         setRole("");
                       }}
-<<<<<<< Updated upstream
-                    />{" "}
-                    General
-=======
                     />
                     {" "}General
                   </label>
@@ -540,7 +492,6 @@ export default function Login() {
                       }}
                     />
                     {" "}General
->>>>>>> Stashed changes
                   </label>
                 )}
               </div>
@@ -548,15 +499,6 @@ export default function Login() {
               <label className="block-label">Role</label>
 
               <RoleSelector
-<<<<<<< Updated upstream
-                userType={isEPSMS ? "Admin" : userType}
-                value={role}
-                onChange={setRole}
-                disabled={false}
-              />
-
-              {errors.role && <p className="error">{errors.role.message}</p>}
-=======
                 userType={adminOnlyModule ? "Admin" : userType}
                 value={role}
                 onChange={setRole}
@@ -567,7 +509,6 @@ export default function Login() {
               {errors.role && (
                 <p className="error">{errors.role.message}</p>
               )}
->>>>>>> Stashed changes
             </>
           )}
 

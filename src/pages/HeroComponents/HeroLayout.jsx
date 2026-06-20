@@ -168,7 +168,6 @@ export default function HeroLayout() {
   align-items: center; /* centers LatestUpdate vertically */
   gap: 32px;
   padding: 32px;
-  background: #f8fafc;
   width: 100%;
   box-sizing: border-box;
 }

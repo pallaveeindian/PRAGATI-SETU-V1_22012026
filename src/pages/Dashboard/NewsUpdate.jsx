@@ -1,127 +1,157 @@
 import React, { useState } from "react";
 
 const NewsUpdate = () => {
-    const [activeTab, setActiveTab] = useState("latest");
+  const [activeTab, setActiveTab] = useState("latest");
 
-    const newsData = {
-        latest: [
-            {
-                id: 1,
-                title: "New Government Scheme Launched",
-                description:
-                    "A new scheme has been launched to support women entrepreneurs across rural areas.",
-                date: "10 Jun 2026",
-            },
-            {
-                id: 2,
-                title: "Digital Training Program Started",
-                description:
-                    "Training sessions for digital literacy have started in multiple districts.",
-                date: "09 Jun 2026",
-            },
-        ],
-        announcements: [
-            {
-                id: 1,
-                title: "Application Portal Open",
-                description:
-                    "Applications for the upcoming program are now open for registration.",
-                date: "08 Jun 2026",
-            },
-            {
-                id: 2,
-                title: "Last Date Extended",
-                description:
-                    "Registration deadline has been extended till 30 June 2026.",
-                date: "07 Jun 2026",
-            },
-        ],
-        events: [
-            {
-                id: 1,
-                title: "District Workshop Scheduled",
-                description:
-                    "A district-level workshop will be conducted next week.",
-                date: "07 Jun 2026",
-            },
-            {
-                id: 2,
-                title: "Entrepreneurship Summit",
-                description:
-                    "State-level entrepreneurship summit will be organized this month.",
-                date: "05 Jun 2026",
-            },
-        ],
-    };
+  const newsData = {
+    latest: [
+      {
+        id: 1,
+        title: "New Government Scheme Launched",
+        description:
+          "A new scheme has been launched to support women entrepreneurs across rural areas.",
+        date: "10 Jun 2026",
+      },
+      {
+        id: 2,
+        title: "Digital Training Program Started",
+        description:
+          "Training sessions for digital literacy have started in multiple districts.",
+        date: "09 Jun 2026",
+      },
+    ],
+    announcements: [
+      {
+        id: 1,
+        title: "Application Portal Open",
+        description:
+          "Applications for the upcoming program are now open for registration.",
+        date: "08 Jun 2026",
+      },
+      {
+        id: 2,
+        title: "Last Date Extended",
+        description:
+          "Registration deadline has been extended till 30 June 2026.",
+        date: "07 Jun 2026",
+      },
+    ],
+    events: [
+      {
+        id: 1,
+        title: "District Workshop Scheduled",
+        description:
+          "A district-level workshop will be conducted next week.",
+        date: "07 Jun 2026",
+      },
+      {
+        id: 2,
+        title: "Entrepreneurship Summit",
+        description:
+          "State-level entrepreneurship summit will be organized this month.",
+        date: "05 Jun 2026",
+      },
 
-    const tabs = [
-        {
-            key: "latest",
-            label: "Latest News",
-        },
-        {
-            key: "announcements",
-            label: "Announcements",
-        },
-        {
-            key: "events",
-            label: "Events",
-        },
-    ];
 
-    return (
-        <div className="news-update-container">
-            {/* Header */}
-            <div className="header-section">
-                <div>
-                    <h2 className="news-heading">News Updates</h2>
-                    <p className="news-subtitle">
-                        Stay informed with the latest announcements and events.
-                    </p>
-                </div>
+    ],
+    helpLine: [
+      {
+        id: 1,
+        title: "Help Line Numbers",
+        description: (
+          <strong>
+            Monday through Friday, 10:30 AM to 6:30 PM. Contact us at
+            +91-9236434631 or +91-8840961627.
+          </strong>
+        ),
+        date: "Available",
+      },
+      {
+        id: 2,
+        title: "Email Support",
+        description: (
+          <>
+            Mail us your queries at <strong>bdopmuit@gmail.com</strong> and our
+            support team will get back to you <strong>within 24 hours.</strong>
+          </>
+        ),
+        date: "Available",
+      },
+    ]
+  };
+
+  const tabs = [
+    {
+      key: "latest",
+      label: "Latest News",
+    },
+    {
+      key: "announcements",
+      label: "Announcements",
+    },
+    {
+      key: "events",
+      label: "Events",
+    },
+    {
+      key: "helpLine",
+      label: "Help Line Numbers",
+    },
+  ];
+
+  return (
+    <div className="news-update-container">
+      {/* Header */}
+      <div className="header-section">
+        <div>
+          <h2 className="news-heading">News Updates</h2>
+          <p className="news-subtitle">
+            Stay informed with the latest announcements and events.
+          </p>
+        </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="news-tabs">
+        {tabs.map((tab) => (
+          <button
+            key={tab.key}
+            className={`tab-btn ${activeTab === tab.key ? "active-tab" : ""
+              }`}
+            onClick={() => setActiveTab(tab.key)}
+          >
+            <span>{tab.icon}</span>
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
+      {/* News Content */}
+      <div className="news-content">
+        {newsData[activeTab]?.length > 0 ? (
+          newsData[activeTab].map((item) => (
+            <div className="news-card" key={item.id}>
+              <div className="card-top">
+                <span className="date-badge">{item.date}</span>
+              </div>
+
+              <h4>{item.title}</h4>
+
+              <p>{item.description}</p>
+
+              <button className="read-more-btn">
+                Read More →
+              </button>
             </div>
+          ))
+        ) : (
+          <div className="no-news">
+            No news available at the moment.
+          </div>
+        )}
+      </div>
 
-            {/* Tabs */}
-            <div className="news-tabs">
-                {tabs.map((tab) => (
-                    <button
-                        key={tab.key}
-                        className={`tab-btn ${activeTab === tab.key ? "active-tab" : ""
-                            }`}
-                        onClick={() => setActiveTab(tab.key)}
-                    >
-                        <span>{tab.icon}</span>
-                        {tab.label}
-                    </button>
-                ))}
-            </div>
-
-            {/* News Content */}
-            <div className="news-content">
-                {newsData[activeTab]?.length > 0 ? (
-                    newsData[activeTab].map((item) => (
-                        <div className="news-card" key={item.id}>
-                            <div className="card-top">
-                                <span className="date-badge">{item.date}</span>
-                            </div>
-
-                            <h4>{item.title}</h4>
-
-                            <p>{item.description}</p>
-
-                            <button className="read-more-btn">
-                                Read More →
-                            </button>
-                        </div>
-                    ))
-                ) : (
-                    <div className="no-news">
-                        No news available at the moment.
-                    </div>
-                )}
-            </div>
-
-            <style jsx>{`
+      <style jsx>{`
      .news-update-container {
     background: #ffffff;
     border-radius: 24px;
@@ -317,8 +347,8 @@ const NewsUpdate = () => {
     }
   }
       `}</style>
-        </div>
-    );
+    </div>
+  );
 };
 
 export default NewsUpdate;

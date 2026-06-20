@@ -1,12 +1,6 @@
 // src/App.jsx
 import React from "react";
-import {
-  Routes,
-  Route,
-  Navigate,
-  useLocation,
-  useNavigationType,
-} from "react-router-dom";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Home from "./pages/Home";
 import Login from "./pages/Login";
 import DashboardHome from "./pages/Dashboard/DashboardHome";
@@ -32,8 +26,6 @@ import WhatsNew from "./pages/WhatsNew";
 import BmmuTmsDashboard from "./pages/TMS/BMMU/bmmu_tms_dashboard";
 import DmmuTmsDashboard from "./pages/TMS/DMMU/dmmu_tms_dashboard";
 import SmmuTmsDashboard from "./pages/TMS/SMMU/smmu_tms_dashboard";
-import SmmuCreateTrainingPlan from "./pages/TMS/SMMU/smmu_create_training_plan";
-import SmmuListTrainingPlan from "./pages/TMS/SMMU/smmu_list_training_plan";
 import SmmuCreatePartnerTargets from "./pages/TMS/SMMU/smmu_create_tp_targets";
 import SmmuBulkUploadTargets from "./pages/TMS/SMMU/smmu_bulk_upload_targets";
 import TpDashboard from "./pages/TMS/TP/tp_dashboard";
@@ -64,8 +56,6 @@ import BatchCertificate from "./pages/TMS/TRs/batch_certificate";
 import BmmuCreateTrainingPlan from "./pages/TMS/BMMU/bmmu_create_training_plan";
 import DmmuTrReview from "./pages/TMS/DMMU/dmmu_tr_review";
 import DmmuRequestClosure from "./pages/TMS/DMMU/dmmu_request_closure";
-// User Management
-import UserMgmnt from "./pages/TMS/UserMgmnt/UserMgmnt";
 
 // LDMS Dashboards
 import LdmsLayout from "./pages/LDMS/Layout/LdmsLayout";
@@ -97,45 +87,14 @@ import EpsmsLayout from "./pages/EPSMS/EpsmsLayout";
 import CRPForm from "./pages/EPSMS/RecordForm/CRPForm";
 import ViewRecCRPs from "./pages/EPSMS/ViewRecordedCRPs/ViewRecCRPs";
 
-<<<<<<< Updated upstream
-// MOU Form
-import MOULayout from "./pages/EPSMS/MOUForm/MOULayout.jsx";
-import MOUDashboard from "./pages/EPSMS/MOUForm/MOUDashboard.jsx";
-=======
 import MOULayout from "./pages/EPSMS/MOUForm/MOULayout.jsx";
 import CanteenForm from "./pages/PrernaCanteen/CanteenForm.jsx";
->>>>>>> Stashed changes
+import StateLogin from "./pages/StateLoginPortal/StateLogin.jsx";
+import StateLoginDashboard from "./pages/StateLoginPortal/StateLoginDashboard";
+import HomeDashboard from "./pages/StateLoginPortal/Dashboards/HomeDashboard";
 
 export default function App() {
-  // Extract isAuthenticated and logout alongside authReady
-  const { authReady, isAuthenticated, logout } = useAuth();
-  const location = useLocation();
-  const navType = useNavigationType();
-
-  // ==========================================
-  // SECURITY LOGIC: BROWSER BACK/FORWARD LOGOUT
-  // ==========================================
-  React.useEffect(() => {
-    // Only run this check if the user is actively logged in
-    if (!authReady || !isAuthenticated) return;
-
-    // Define the base paths of your secured portal
-    const isPortalRoute =
-      location.pathname.startsWith("/dashboard") ||
-      location.pathname.startsWith("/tms") ||
-      location.pathname.startsWith("/ldms") ||
-      location.pathname.startsWith("/epsms") ||
-      location.pathname.startsWith("/mou") ||
-      location.pathname.startsWith("/error");
-
-    // If the user uses the Browser Back/Forward buttons (which registers as "POP")
-    // and lands on a public route (like / or /login), kill their session instantly.
-    if (navType === "POP" && !isPortalRoute) {
-      if (logout) {
-        logout();
-      }
-    }
-  }, [location.pathname, navType, authReady, isAuthenticated, logout]);
+  const { authReady } = useAuth();
 
   if (!authReady) {
     return <div>Restoring session…</div>;
@@ -194,18 +153,6 @@ export default function App() {
               path="/tms/smmu/tp-TvA"
               element={<SmmuTargetAchievement />}
             />
-            <Route
-              path="/tms/smmu/create-training-plan"
-              element={<SmmuCreateTrainingPlan />}
-            />
-            <Route
-              path="/tms/smmu/list-training-plans"
-              element={<SmmuListTrainingPlan />}
-            />
-            <Route
-              path="/tms/smmu/dmmu-users"
-              element={<UserMgmnt targetRole="dmmu" />}
-            />
           </Route>
 
           {/* DMMU Routes */}
@@ -219,10 +166,6 @@ export default function App() {
             <Route
               path="/tms/dmmu/tp-TvA"
               element={<DmmuTargetAchievement />}
-            />
-            <Route
-              path="/tms/dmmu/bmmu-users"
-              element={<UserMgmnt targetRole="bmmu" />}
             />
           </Route>
           {/* BMMU Routes */}
@@ -256,14 +199,14 @@ export default function App() {
               element={<TpTrainingRequestClosure />}
             />
             {/* AFTER UIDAI API */}
-            <Route
-              path="/tms/tp/batches/create/:id"
-              element={<TpCreateBatch />}
-            />
             {/* <Route
               path="/tms/tp/batches/create/:id"
-              element={<SiteDevErrorPage />}
+              element={<TpCreateBatch />}
             /> */}
+            <Route
+              path="/tms/tp/batches/create/:id"
+              element={<SiteDevErrorPage />}
+            />
             <Route path="/tms/tp/cp-list" element={<TpListCP />} />
             <Route path="/tms/tp/cp/create" element={<TpCreateCP />} />
             <Route path="/tms/tp/cp/edit/:cpId" element={<TpCreateCP />} />
@@ -355,14 +298,14 @@ export default function App() {
             }
           >
             {/* AFTER UIDAI API */}
-            <Route
-              path="/tms/batch-detail/:id"
-              element={<TrainingBatchDetail />}
-            />
             {/* <Route
               path="/tms/batch-detail/:id"
-              element={<SiteDevErrorPage />}
+              element={<TrainingBatchDetail />}
             /> */}
+            <Route
+              path="/tms/batch-detail/:id"
+              element={<SiteDevErrorPage />}
+            />
           </Route>
 
           {/* Catch-all for unknown TMS paths */}
@@ -413,7 +356,7 @@ export default function App() {
           </Route>
         </Route>
 
-        {/* CRP-EP MAPPING FORM */}
+        {/* EPSMS */}
         <Route
           element={<ProtectedRoute allowedRoles={["crp_record", "dmmu"]} />}
         >
@@ -422,16 +365,6 @@ export default function App() {
             <Route path="recorded-crps" element={<ViewRecCRPs />} />
           </Route>
         </Route>
-<<<<<<< Updated upstream
-
-        {/* EPSMS MOU FORM*/}
-        <Route element={<ProtectedRoute allowedRoles={["bmmu"]} />}>
-          <Route path="/mou" element={<MOULayout />}>
-            <Route path="dashboard" element={<MOUDashboard />} />
-          </Route>
-        </Route>
-
-=======
         {/* NEW MOU PAGE */}
         <Route element={<ProtectedRoute />}>
           <Route path="/mou-layout" element={<MOULayout />} />
@@ -440,7 +373,10 @@ export default function App() {
           path="/canteen-form"
           element={<CanteenForm />}
         />
->>>>>>> Stashed changes
+
+        <Route path="/state-login" element={<StateLogin />} />
+        <Route path="/state-dashboard" element={<StateLoginDashboard />} />
+        <Route path="/state-home-dashboard" element={<HomeDashboard />} />
         {/* 404 */}
         {/* <Route path="*" element={<div>404</div>} /> */}
         <Route path="*" element={<ErrorPage />} />
