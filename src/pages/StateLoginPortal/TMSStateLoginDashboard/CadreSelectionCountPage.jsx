@@ -1778,25 +1778,18 @@ import api, { LOOKUP_API } from "../../../api/axios";
 // 1. Core Chart.js imports for Bar layout structure
 import {
     Chart as ChartJS,
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
+    ArcElement,
     Tooltip,
     Legend,
 } from "chart.js";
-import { Bar } from "react-chartjs-2";
 
-// 2. Register required ChartJS modules
+import { Pie } from "react-chartjs-2";
+
 ChartJS.register(
-    CategoryScale,
-    LinearScale,
-    BarElement,
-    Title,
+    ArcElement,
     Tooltip,
     Legend
 );
-
 const CadreSelectionCountPage = () => {
     // --- Live API Data States ---
     const [cadreDataList, setCadreDataList] = useState([]);
@@ -1956,48 +1949,196 @@ const CadreSelectionCountPage = () => {
     }, [cadreDataList]);
 
     // --- Dynamic Visual Insights Graph Section ---
+    // const chartConfigData = useMemo(() => {
+    //     const labels = cadreDataList.map((item) => item.block_name || item.district_name || item.block || item.district || "N/A");
+    //     const values = cadreDataList.map((item) => Number(item.selectedCount || item.selected_count || item.count || 0));
+
+    //     return {
+    //         labels: labels,
+    //         datasets: [
+    //             {
+    //                 label: "Selected Cadre Strength",
+    //                 data: values,
+    //                 backgroundColor: "rgba(37, 99, 235, 0.85)",
+    //                 hoverBackgroundColor: "#2563eb",
+    //                 borderRadius: 8,
+    //                 barThickness: labels.length > 10 ? undefined : 45,
+    //             },
+    //         ],
+    //     };
+    // }, [cadreDataList]);
+
+    // const chartConfigData = useMemo(() => {
+    //     const planSummary = {};
+
+    //     cadreDataList.forEach((item) => {
+    //         const plan =
+    //             item.training_name ||
+    //             item.plan_name ||
+    //             item.plan ||
+    //             "Unknown Plan";
+
+    //         const cadreCount = Number(
+    //             item.beneficiary_count ||
+    //             item.selectedCount ||
+    //             item.selected_count ||
+    //             item.count ||
+    //             0
+    //         );
+
+    //         const trainerCount = Number(
+    //             item.trainer_count || 0
+    //         );
+
+    //         if (!planSummary[plan]) {
+    //             planSummary[plan] = {
+    //                 cadreCount: 0,
+    //                 trainerCount: 0,
+    //             };
+    //         }
+
+    //         planSummary[plan].cadreCount += cadreCount;
+    //         planSummary[plan].trainerCount += trainerCount;
+    //     });
+
+    //     const labels = Object.keys(planSummary);
+
+    //     const values = labels.map(
+    //         (plan) => planSummary[plan].cadreCount
+    //     );
+
+    //     return {
+    //         labels,
+    //         datasets: [
+    //             {
+    //                 label: "Cadre Count",
+    //                 data: values,
+    //                 backgroundColor: [
+    //                     "#2563eb",
+    //                     "#10b981",
+    //                     "#f59e0b",
+    //                     "#ef4444",
+    //                     "#8b5cf6",
+    //                     "#06b6d4",
+    //                     "#84cc16",
+    //                     "#f97316",
+    //                     "#ec4899",
+    //                     "#14b8a6",
+    //                 ],
+    //                 borderColor: "#fff",
+    //                 borderWidth: 2,
+    //             },
+    //         ],
+    //     };
+    // }, [cadreDataList]);
+
+
     const chartConfigData = useMemo(() => {
-        const labels = cadreDataList.map((item) => item.block_name || item.district_name || item.block || item.district || "N/A");
-        const values = cadreDataList.map((item) => Number(item.selectedCount || item.selected_count || item.count || 0));
+        const planSummary = {};
+
+        // Changed dependency path from cadreDataList to paginatedData
+        paginatedData.forEach((item) => {
+            const plan =
+                item.training_name ||
+                item.plan_name ||
+                item.plan ||
+                "Unknown Plan";
+
+            const cadreCount = Number(
+                item.beneficiary_count ||
+                item.selectedCount ||
+                item.selected_count ||
+                item.count ||
+                0
+            );
+
+            const trainerCount = Number(
+                item.trainer_count || 0
+            );
+
+            if (!planSummary[plan]) {
+                planSummary[plan] = {
+                    cadreCount: 0,
+                    trainerCount: 0,
+                };
+            }
+
+            planSummary[plan].cadreCount += cadreCount;
+            planSummary[plan].trainerCount += trainerCount;
+        });
+
+        const labels = Object.keys(planSummary);
+
+        const values = labels.map(
+            (plan) => planSummary[plan].cadreCount
+        );
 
         return {
-            labels: labels,
+            labels,
             datasets: [
                 {
-                    label: "Selected Cadre Strength",
+                    label: "Cadre Count",
                     data: values,
-                    backgroundColor: "rgba(37, 99, 235, 0.85)",
-                    hoverBackgroundColor: "#2563eb",
-                    borderRadius: 8,
-                    barThickness: labels.length > 10 ? undefined : 45,
+                    backgroundColor: [
+                        "#2563eb",
+                        "#10b981",
+                        "#f59e0b",
+                        "#ef4444",
+                        "#8b5cf6",
+                        "#06b6d4",
+                        "#84cc16",
+                        "#f97316",
+                        "#ec4899",
+                        "#14b8a6",
+                    ],
+                    borderColor: "#fff",
+                    borderWidth: 2,
                 },
             ],
         };
-    }, [cadreDataList]);
+    }, [paginatedData]); // Added paginatedData here as the driver dependency
+
+
+    // const chartOptions = {
+    //     responsive: true,
+    //     maintainAspectRatio: false,
+    //     plugins: {
+    //         legend: {
+    //             display: true,
+    //             position: "top",
+    //             labels: {
+    //                 boxWidth: 12,
+    //                 font: { size: 13, weight: "500" },
+    //                 color: "#475569",
+    //             },
+    //         },
+    //     },
+    //     scales: {
+    //         x: {
+    //             grid: { display: false },
+    //             ticks: { color: "#64748b", font: { size: 12 } },
+    //         },
+    //         y: {
+    //             beginAtZero: true,
+    //             grid: { color: "#f1f5f9" },
+    //             ticks: { color: "#64748b" },
+    //         },
+    //     },
+    // };
 
     const chartOptions = {
         responsive: true,
         maintainAspectRatio: false,
         plugins: {
             legend: {
-                display: true,
-                position: "top",
-                labels: {
-                    boxWidth: 12,
-                    font: { size: 13, weight: "500" },
-                    color: "#475569",
+                position: "right",
+            },
+            tooltip: {
+                callbacks: {
+                    label: function (context) {
+                        return `Cadres: ${context.raw}`;
+                    },
                 },
-            },
-        },
-        scales: {
-            x: {
-                grid: { display: false },
-                ticks: { color: "#64748b", font: { size: 12 } },
-            },
-            y: {
-                beginAtZero: true,
-                grid: { color: "#f1f5f9" },
-                ticks: { color: "#64748b" },
             },
         },
     };
@@ -2109,7 +2250,7 @@ const CadreSelectionCountPage = () => {
                         {loading ? (
                             <div className="chart-empty-state">Loading analysis metrics matrix plots...</div>
                         ) : cadreDataList.length > 0 ? (
-                            <Bar data={chartConfigData} options={chartOptions} />
+                            <Pie data={chartConfigData} options={chartOptions} />
                         ) : (
                             <div className="chart-empty-state">No matrix values match to generate graphics plot views.</div>
                         )}
@@ -2126,25 +2267,67 @@ const CadreSelectionCountPage = () => {
                                 <th>Block</th>
                                 <th>Theme</th>
                                 <th>Plan Framework</th>
-                                <th className="num-col">Selected Cadre Count</th>
+                                <th className="num-col">Cadre Count</th>
+                                <th className="num-col">Trainer Count</th>
                             </tr>
                         </thead>
                         <tbody>
                             {loading ? (
                                 <tr>
-                                    <td colSpan="6" className="empty-state">Compiling records dashboard summaries...</td>
+                                    <td colSpan="6" className="empty-state">
+                                        Compiling records dashboard summaries...
+                                    </td>
                                 </tr>
                             ) : paginatedData.length > 0 ? (
                                 paginatedData.map((row, index) => {
                                     const serialNumber = (page - 1) * rowsPerPage + index + 1;
+
                                     return (
-                                        <tr key={row.id || index}>
+                                        <tr key={index}>
                                             <td>{serialNumber}</td>
-                                            <td><strong>{row.district_name || row.district || "All Districts"}</strong></td>
-                                            <td>{row.block_name || row.block || "All Blocks"}</td>
-                                            <td><span className="theme-tag">{row.theme_name || row.theme || "N/A"}</span></td>
-                                            <td className="plan-text-col">{row.plan_name || row.plan || row.training_name || "N/A"}</td>
-                                            <td className="num-col font-bold value-highlight">{row.selectedCount || row.selected_count || row.count || 0}</td>
+
+                                            <td>
+                                                <strong>
+                                                    {row.district_name_en ||
+                                                        row.district_name ||
+                                                        row.district ||
+                                                        "N/A"}
+                                                </strong>
+                                            </td>
+
+                                            <td>
+                                                {row.block_name_en ||
+                                                    row.block_name ||
+                                                    row.block ||
+                                                    "N/A"}
+                                            </td>
+
+                                            <td>
+                                                <span className="theme-tag">
+                                                    {row.theme_name ||
+                                                        row.theme ||
+                                                        "N/A"}
+                                                </span>
+                                            </td>
+
+                                            <td className="plan-text-col">
+                                                {row.training_name ||
+                                                    row.plan_name ||
+                                                    row.plan ||
+                                                    "N/A"}
+                                            </td>
+
+                                            <td className="num-col font-bold value-highlight">
+                                                {row.beneficiary_count ||
+                                                    row.selectedCount ||
+                                                    row.selected_count ||
+                                                    row.count ||
+                                                    0}
+                                            </td>
+                                            {/* Trainer Count */}
+                                            <td className="num-col font-bold value-highlight">
+                                                {row.trainer_count || 0}
+                                            </td>
                                         </tr>
                                     );
                                 })
@@ -2156,14 +2339,7 @@ const CadreSelectionCountPage = () => {
                                 </tr>
                             )}
                         </tbody>
-                        {!loading && cadreDataList.length > 0 && (
-                            <tfoot>
-                                <tr>
-                                    <td colSpan="5" className="text-right">Total Dynamic Selected Count:</td>
-                                    <td className="num-col final-total-sum">{aggregateTotalCount}</td>
-                                </tr>
-                            </tfoot>
-                        )}
+
                     </table>
                 </div>
 

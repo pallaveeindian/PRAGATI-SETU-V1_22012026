@@ -196,6 +196,10 @@ const Dashboard = () => {
                                 label: "Training Pending",
                                 value: 70,
                             },
+                            {
+                                label: "Training Ongoing",
+                                value: 100,
+                            },
                         ]}
                     />
 
@@ -219,6 +223,10 @@ const Dashboard = () => {
                                 label: "Non Enterprise Form",
                                 value: 710,
                             },
+                            {
+                                label: "Total Forms",
+                                value: 3350,
+                            },
                         ]}
                     />
 
@@ -239,7 +247,7 @@ const Dashboard = () => {
                                 value: 180,
                             },
                             {
-                                label: "Total Data",
+                                label: "Total Support Form",
                                 value: 500,
                             },
                         ]}
@@ -254,16 +262,28 @@ const Dashboard = () => {
                         ]}
                         stats={[
                             {
-                                label: "Total MOU",
+                                label: "State MOU",
                                 value: 450,
                             },
                             {
-                                label: "Lakhpati Didi MOU",
+                                label: "District MOU",
                                 value: 280,
                             },
                             {
-                                label: "Non Lakhpati Didi MOU",
+                                label: "Block MOU",
                                 value: 170,
+                            },
+                            {
+                                label: "CLF MOU",
+                                value: 150,
+                            },
+                            {
+                                label: "VO MOU",
+                                value: 100,
+                            },
+                            {
+                                label: "SHG MOU",
+                                value: 200,
                             },
                         ]}
                     />
