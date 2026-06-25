@@ -92,6 +92,8 @@ import CanteenForm from "./pages/PrernaCanteen/CanteenForm.jsx";
 import StateLogin from "./pages/StateLoginPortal/StateLogin.jsx";
 import StateLoginDashboard from "./pages/StateLoginPortal/StateLoginDashboard";
 import HomeDashboard from "./pages/StateLoginPortal/Dashboards/HomeDashboard";
+import AssemblerDashboardBatchCreator from "./pages/TMS/BatchCreator/AssemblerDashboardBatchCreator.jsx";
+
 
 export default function App() {
   const { authReady } = useAuth();
@@ -377,6 +379,13 @@ export default function App() {
         <Route path="/state-login" element={<StateLogin />} />
         <Route path="/state-dashboard" element={<StateLoginDashboard />} />
         <Route path="/state-home-dashboard" element={<HomeDashboard />} />
+
+
+        <Route
+          path="/tms/batch-creator/"
+          element={<AssemblerDashboardBatchCreator />}
+        />
+
         {/* 404 */}
         {/* <Route path="*" element={<div>404</div>} /> */}
         <Route path="*" element={<ErrorPage />} />
