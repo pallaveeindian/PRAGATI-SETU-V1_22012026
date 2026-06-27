@@ -164,7 +164,27 @@ const MENU = {
       to: "/tms/training-requests",
       icon: FaChartBar,
     },
+    // {
+    //   label: "Training Batches",
+    //   icon: FaBook,
+    //   children: [
+    //     {
+    //       label: "Batch Creator",
+    //       to: "/tms/batch-creator/",
+    //       children: [
+    //         {
+    //           label: "Preview Batch Creator",
+    //           to: "/tms/preview-batch-creator/",
+    //         },
+    //       ],
+    //     },
+    //     {
+    //       label: "Batch List",
+    //       to: "/tms/batches-list/",
 
+    //     },
+    //   ],
+    // },
     {
       label: "Training Batches",
       icon: FaBook,
