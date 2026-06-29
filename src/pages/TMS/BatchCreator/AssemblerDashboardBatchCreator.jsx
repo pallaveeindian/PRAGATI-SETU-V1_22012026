@@ -1015,6 +1015,378 @@
 // export default AssemblerDashboardBatchCreator;
 
 
+// import React, { useEffect, useState, useCallback } from "react";
+// import AcheivenmentVsTarget from "./AcheivenmentVsTarget";
+// import ParticipantCount from "./ParticipantCount";
+// import FilterComponent from "./FilterComponent";
+// import ParticipantTable from "./TraineesDisplayTable";
+// import TmsLeftNav from "../layout/tms_LeftNav";
+// import Header from "../layout/header";
+
+// const AssemblerDashboardBatchCreator = () => {
+//     const [filters, setFilters] = useState({
+//         financialYear: "",
+//         trainingTheme: "",
+//         trainingPlan: "",
+//         trainingPlanDays: "",
+//         participantType: "",
+//         gender: "",
+//         designation: "",
+//         religion: "",
+//         socialCategory: "",
+//         pldStatus: "",
+//         panchayat: "",
+//         village: "",
+//         ageRange: "",
+//         searchValue: "",
+//         startDate: "",
+//         endDate: "",
+//         trainingCenter: "", // Added placeholder for center details
+//     });
+
+//     const [achievementData, setAchievementData] = useState({
+//         achievement: 0,
+//         target: 0,
+//     });
+
+//     const [participantData, setParticipantData] = useState({
+//         selectedParticipants: 0,
+//         totalLimit: 0,
+//     });
+
+//     // Modal view status visibility toggle variables
+//     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+//     // ===========================
+//     // FILTER CHANGE HANDLER
+//     // ===========================
+//     const handleChange = (key, value) => {
+//         setFilters((prev) => ({
+//             ...prev,
+//             [key]: value,
+//         }));
+//     };
+
+//     // ===========================
+//     // ACHIEVEMENT CARD
+//     // ===========================
+//     useEffect(() => {
+//         if (
+//             filters.financialYear &&
+//             filters.trainingTheme &&
+//             filters.trainingPlan
+//         ) {
+//             setAchievementData({
+//                 achievement: 285,
+//                 target: 440,
+//             });
+//         } else {
+//             setAchievementData({
+//                 achievement: 0,
+//                 target: 0,
+//             });
+//         }
+//     }, [
+//         filters.financialYear,
+//         filters.trainingTheme,
+//         filters.trainingPlan,
+//     ]);
+
+//     // ===========================
+//     // PARTICIPANT COUNT LIMIT INITIALIZATION
+//     // ===========================
+//     useEffect(() => {
+//         if (filters.participantType === "Trainer" || filters.participantType === "Beneficiary") {
+//             setParticipantData((prev) => ({
+//                 ...prev,
+//                 totalLimit: 40,
+//             }));
+//         } else {
+//             setParticipantData({
+//                 selectedParticipants: 0,
+//                 totalLimit: 0,
+//             });
+//         }
+//     }, [filters.participantType]);
+
+//     // ===========================
+//     // SELECTION UPDATE HANDLER
+//     // ===========================
+//     const handleSelectionChange = useCallback((count) => {
+//         setParticipantData((prev) => ({
+//             ...prev,
+//             selectedParticipants: count,
+//         }));
+//     }, []);
+
+//     // ===========================
+//     // CONFIRM & SAVE SUBMITTER
+//     // ===========================
+//     const handleConfirmAndSave = () => {
+//         // Prepare data state package payload context
+//         const batchPayload = {
+//             selectedTraineesCount: participantData.selectedParticipants,
+//             trainingTheme: filters.trainingTheme || "Not Selected",
+//             trainingCenter: filters.trainingCenter || "Default Center - Hall A",
+//             financialYear: filters.financialYear || "Not Selected",
+//             dates: {
+//                 start: filters.startDate || "Not Set",
+//                 end: filters.endDate || "Not Set"
+//             },
+//             status: "Draft"
+//         };
+
+//         console.log("Saving form state to local draft buffers...", batchPayload);
+
+//         // Simulating writing state downstream into a draft persistence engine
+//         localStorage.setItem("tms_batch_draft", JSON.stringify({ filters, participantData }));
+
+//         alert("Progress successfully synchronized! The batch state has been saved as a draft.");
+//         setIsPreviewOpen(false);
+//     };
+
+//     return (
+//         <>
+//             <Header />
+//             <div style={{ display: "flex", width: "100%", minHeight: "100vh", background: "#f8fafc" }}>
+//                 {/* Sidebar navigation panel */}
+//                 <TmsLeftNav />
+
+//                 {/* Main content view dashboard container */}
+//                 <div
+//                     style={{
+//                         flex: 1,
+//                         minWidth: 0,
+//                         background: "#fff",
+//                         borderRadius: "12px",
+//                         padding: "16px",
+//                         margin: "16px",
+//                         boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+//                         display: "flex",
+//                         flexDirection: "column",
+//                     }}
+//                 >
+//                     {/* Header row area (Metrics widgets + filters) */}
+//                     <div
+//                         style={{
+//                             display: "flex",
+//                             alignItems: "flex-start",
+//                             gap: "16px",
+//                             marginBottom: "16px",
+//                             width: "100%",
+//                         }}
+//                     >
+//                         <div style={{ flexShrink: 0 }}>
+//                             <AcheivenmentVsTarget
+//                                 achievement={achievementData.achievement}
+//                                 target={achievementData.target} />
+//                         </div>
+
+//                         <div style={{ flex: 1 }}>
+//                             <FilterComponent
+//                                 filters={filters}
+//                                 onFilterChange={setFilters}
+//                                 handleChange={handleChange} />
+//                         </div>
+
+//                         <div style={{ flexShrink: 0 }}>
+//                             <ParticipantCount
+//                                 selectedParticipants={participantData.selectedParticipants}
+//                                 totalLimit={participantData.totalLimit} />
+//                         </div>
+//                     </div>
+
+//                     {/* Main Data Table Display Section */}
+//                     <div style={{ width: "100%", flex: 1, marginBottom: "60px" }}>
+//                         {filters.participantType ? (
+//                             <ParticipantTable
+//                                 filters={filters}
+//                                 handleChange={handleChange}
+//                                 participantType={filters.participantType}
+//                                 onSelectionChange={handleSelectionChange} />
+//                         ) : (
+//                             <div
+//                                 style={{
+//                                     textAlign: 'center',
+//                                     padding: '40px',
+//                                     color: '#8c8c8c',
+//                                     border: '1px dashed #d9d9d9',
+//                                     borderRadius: '8px',
+//                                     marginTop: '20px'
+//                                 }}
+//                             >
+//                                 Please select a Participant Type (Trainer or Beneficiary) to view the trainees list.
+//                             </div>
+//                         )}
+//                     </div>
+
+//                     {/* FLOATING ACTION BOTTOM BAR CONTAINER */}
+//                     {/* {filters.participantType && (
+
+//                         <button
+//                             onClick={() => setIsPreviewOpen(true)}
+//                             disabled={participantData.selectedParticipants === 0}
+//                             style={{
+//                                 background: participantData.selectedParticipants === 0 ? "#94a3b8" : "#2563eb",
+//                                 color: "#ffffff",
+//                                 padding: "10px 24px",
+//                                 border: "none",
+//                                 borderRadius: "6px",
+//                                 fontWeight: "600",
+//                                 fontSize: "14px",
+//                                 cursor: participantData.selectedParticipants === 0 ? "not-allowed" : "pointer",
+//                                 transition: "background 0.2s ease"
+//                             }}
+//                         >
+//                             Confirm & Submit
+//                         </button>
+
+//                     )} */}
+
+//                     {filters.participantType && (
+//                         <div style={{
+//                             display: "flex",
+//                             justifyContent: "flex-end",
+//                             width: "100%",
+//                             marginTop: "16px"
+//                         }}>
+//                             <button
+//                                 onClick={() => setIsPreviewOpen(true)}
+//                                 disabled={participantData.selectedParticipants === 0}
+//                                 style={{
+//                                     background: participantData.selectedParticipants === 0 ? "#94a3b8" : "#2563eb",
+//                                     color: "#ffffff",
+//                                     padding: "10px 24px",
+//                                     border: "none",
+//                                     borderRadius: "6px",
+//                                     fontWeight: "600",
+//                                     fontSize: "14px",
+//                                     cursor: participantData.selectedParticipants === 0 ? "not-allowed" : "pointer",
+//                                     transition: "background 0.2s ease"
+//                                 }}
+//                             >
+//                                 Confirm & Submit
+//                             </button>
+//                         </div>
+//                     )}
+//                 </div>
+//             </div>
+
+//             {/* PREVIEW MODAL OVERLAY COMPONENT */}
+//             {isPreviewOpen && (
+//                 <div style={{
+//                     position: "fixed",
+//                     top: 0,
+//                     left: 0,
+//                     width: "100vw",
+//                     height: "100vh",
+//                     background: "rgba(15, 23, 42, 0.6)",
+//                     backdropFilter: "blur(4px)",
+//                     display: "flex",
+//                     justifyContent: "center",
+//                     alignItems: "center",
+//                     zIndex: 1000
+//                 }}>
+//                     <div style={{
+//                         background: "#ffffff",
+//                         width: "100%",
+//                         maxWidth: "540px",
+//                         borderRadius: "12px",
+//                         boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
+//                         padding: "24px",
+//                         animation: "fadeIn 0.2s ease"
+//                     }}>
+//                         {/* Modal Top Header Bar */}
+//                         <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
+//                             <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>Batch Preview Details</h3>
+//                             <button
+//                                 onClick={() => setIsPreviewOpen(false)}
+//                                 style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#64748b" }}
+//                             >
+//                                 &times;
+//                             </button>
+//                         </div>
+
+//                         {/* Modal Body Info Stack Fields */}
+//                         <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "24px" }}>
+//                             <div style={{ display: "flex", justifyContent: "space-between", background: "#f8fafc", padding: "10px 14px", borderRadius: "6px" }}>
+//                                 <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>Selected Trainees Count:</span>
+//                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "700" }}>{participantData.selectedParticipants} Trainees</span>
+//                             </div>
+
+//                             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+//                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Training Theme:</span>
+//                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600", textAlign: "right" }}>{filters.trainingTheme || "Not Specified"}</span>
+//                             </div>
+
+//                             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+//                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Selected Training Center:</span>
+//                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>{filters.trainingCenter || "Main Academic Hub Center"}</span>
+//                             </div>
+
+//                             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+//                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Financial Year:</span>
+//                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>{filters.financialYear || "Not Specified"}</span>
+//                             </div>
+
+//                             <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+//                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Scheduled Batch Dates:</span>
+//                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>
+//                                     {filters.startDate ? `${filters.startDate} to ${filters.endDate || 'N/A'}` : "Dates Not Selected"}
+//                                 </span>
+//                             </div>
+//                         </div>
+
+//                         {/* Informative Help Context Box */}
+//                         <div style={{ background: "#eff6ff", borderLeft: "4px solid #3b82f6", padding: "10px 14px", borderRadius: "4px", marginBottom: "24px" }}>
+//                             <p style={{ margin: 0, fontSize: "12px", color: "#1e3a8a", lineHeight: "1.5" }}>
+//                                 * Clicking <strong>Confirm & Save</strong> preserves this operational data buffer block status as a draft file instance to prevent losing pipeline changes.
+//                             </p>
+//                         </div>
+
+//                         {/* Modal Actions Footer Bar Buttons */}
+//                         <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
+//                             <button
+//                                 onClick={() => setIsPreviewOpen(false)}
+//                                 style={{
+//                                     background: "#ffffff",
+//                                     border: "1px solid #cbd5e1",
+//                                     color: "#475569",
+//                                     padding: "8px 16px",
+//                                     borderRadius: "6px",
+//                                     fontWeight: "500",
+//                                     fontSize: "14px",
+//                                     cursor: "pointer"
+//                                 }}
+//                             >
+//                                 Back to Edit
+//                             </button>
+//                             <button
+//                                 onClick={handleConfirmAndSave}
+//                                 style={{
+//                                     background: "#16a34a",
+//                                     border: "none",
+//                                     color: "#ffffff",
+//                                     padding: "8px 20px",
+//                                     borderRadius: "6px",
+//                                     fontWeight: "600",
+//                                     fontSize: "14px",
+//                                     cursor: "pointer"
+//                                 }}
+//                             >
+//                                 Confirm & Save (Draft)
+//                             </button>
+//                         </div>
+//                     </div>
+//                 </div>
+//             )}
+//         </>
+//     );
+// };
+
+// export default AssemblerDashboardBatchCreator;
+
+
 import React, { useEffect, useState, useCallback } from "react";
 import AcheivenmentVsTarget from "./AcheivenmentVsTarget";
 import ParticipantCount from "./ParticipantCount";
@@ -1041,20 +1413,11 @@ const AssemblerDashboardBatchCreator = () => {
         searchValue: "",
         startDate: "",
         endDate: "",
-        trainingCenter: "", // Added placeholder for center details
+        trainingCenter: "",
     });
 
-    const [achievementData, setAchievementData] = useState({
-        achievement: 0,
-        target: 0,
-    });
-
-    const [participantData, setParticipantData] = useState({
-        selectedParticipants: 0,
-        totalLimit: 0,
-    });
-
-    // Modal view status visibility toggle variables
+    const [achievementData, setAchievementData] = useState({ achievement: 0, target: 0 });
+    const [participantData, setParticipantData] = useState({ selectedParticipants: 0, totalLimit: 0 });
     const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
     // ===========================
@@ -1068,32 +1431,18 @@ const AssemblerDashboardBatchCreator = () => {
     };
 
     // ===========================
-    // ACHIEVEMENT CARD
+    // ACHIEVEMENT CARD DYNAMICS
     // ===========================
     useEffect(() => {
-        if (
-            filters.financialYear &&
-            filters.trainingTheme &&
-            filters.trainingPlan
-        ) {
-            setAchievementData({
-                achievement: 285,
-                target: 440,
-            });
+        if (filters.financialYear && filters.trainingTheme && filters.trainingPlan) {
+            setAchievementData({ achievement: 285, target: 440 });
         } else {
-            setAchievementData({
-                achievement: 0,
-                target: 0,
-            });
+            setAchievementData({ achievement: 0, target: 0 });
         }
-    }, [
-        filters.financialYear,
-        filters.trainingTheme,
-        filters.trainingPlan,
-    ]);
+    }, [filters.financialYear, filters.trainingTheme, filters.trainingPlan]);
 
     // ===========================
-    // PARTICIPANT COUNT LIMIT INITIALIZATION
+    // PARTICIPANT LIMIT DYNAMICS
     // ===========================
     useEffect(() => {
         if (filters.participantType === "Trainer" || filters.participantType === "Beneficiary") {
@@ -1102,10 +1451,7 @@ const AssemblerDashboardBatchCreator = () => {
                 totalLimit: 40,
             }));
         } else {
-            setParticipantData({
-                selectedParticipants: 0,
-                totalLimit: 0,
-            });
+            setParticipantData({ selectedParticipants: 0, totalLimit: 0 });
         }
     }, [filters.participantType]);
 
@@ -1123,7 +1469,6 @@ const AssemblerDashboardBatchCreator = () => {
     // CONFIRM & SAVE SUBMITTER
     // ===========================
     const handleConfirmAndSave = () => {
-        // Prepare data state package payload context
         const batchPayload = {
             selectedTraineesCount: participantData.selectedParticipants,
             trainingTheme: filters.trainingTheme || "Not Selected",
@@ -1136,11 +1481,7 @@ const AssemblerDashboardBatchCreator = () => {
             status: "Draft"
         };
 
-        console.log("Saving form state to local draft buffers...", batchPayload);
-
-        // Simulating writing state downstream into a draft persistence engine
         localStorage.setItem("tms_batch_draft", JSON.stringify({ filters, participantData }));
-
         alert("Progress successfully synchronized! The batch state has been saved as a draft.");
         setIsPreviewOpen(false);
     };
@@ -1148,131 +1489,114 @@ const AssemblerDashboardBatchCreator = () => {
     return (
         <>
             <Header />
-            <div style={{ display: "flex", width: "100%", minHeight: "100vh", background: "#f8fafc" }}>
-                {/* Sidebar navigation panel */}
+            <div style={{ display: "flex", width: "100%", minHeight: "100vh", backgroundColor: "#f1f5f9" }}>
                 <TmsLeftNav />
 
-                {/* Main content view dashboard container */}
-                <div
-                    style={{
-                        flex: 1,
-                        minWidth: 0,
-                        background: "#fff",
-                        borderRadius: "12px",
-                        padding: "16px",
-                        margin: "16px",
-                        boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
-                        display: "flex",
-                        flexDirection: "column",
-                    }}
-                >
-                    {/* Header row area (Metrics widgets + filters) */}
-                    <div
-                        style={{
-                            display: "flex",
-                            alignItems: "flex-start",
-                            gap: "16px",
-                            marginBottom: "16px",
-                            width: "100%",
-                        }}
-                    >
-                        <div style={{ flexShrink: 0 }}>
-                            <AcheivenmentVsTarget
-                                achievement={achievementData.achievement}
-                                target={achievementData.target} />
+                <div style={{
+                    flex: 1,
+                    minWidth: 0,
+                    backgroundColor: "#ffffff",
+                    borderRadius: "16px",
+                    padding: "24px",
+                    margin: "24px",
+                    boxShadow: "0 4px 20px -2px rgba(15, 23, 42, 0.06)",
+                    display: "flex",
+                    flexDirection: "column",
+                }}>
+
+                    {/* Top Panel - Stats Indicators Grid */}
+                    <div style={{
+                        display: "grid",
+                        gridTemplateColumns: "auto 1fr auto",
+                        alignItems: "stretch",
+                        gap: "16px",
+                        marginBottom: "24px",
+                        width: "100%",
+                    }}>
+                        <div style={{ padding: "12px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                            <AcheivenmentVsTarget achievement={achievementData.achievement} target={achievementData.target} />
                         </div>
 
-                        <div style={{ flex: 1 }}>
-                            <FilterComponent
-                                filters={filters}
-                                onFilterChange={setFilters}
-                                handleChange={handleChange} />
+                        <div style={{ padding: "12px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center" }}>
+                            <FilterComponent filters={filters} onFilterChange={setFilters} handleChange={handleChange} />
                         </div>
 
-                        <div style={{ flexShrink: 0 }}>
-                            <ParticipantCount
-                                selectedParticipants={participantData.selectedParticipants}
-                                totalLimit={participantData.totalLimit} />
+                        <div style={{ padding: "12px", backgroundColor: "#f8fafc", borderRadius: "12px", border: "1px solid #e2e8f0" }}>
+                            <ParticipantCount selectedParticipants={participantData.selectedParticipants} totalLimit={participantData.totalLimit} />
                         </div>
                     </div>
 
-                    {/* Main Data Table Display Section */}
-                    <div style={{ width: "100%", flex: 1, marginBottom: "60px" }}>
+                    {/* Operational Parameter Safeguard Notice Banner */}
+                    {(!filters.financialYear || !filters.trainingPlan || !filters.participantType) && (
+                        <div style={{
+                            backgroundColor: "#fffbeb",
+                            border: "1px solid #fef3c7",
+                            borderRadius: "8px",
+                            padding: "14px 16px",
+                            marginBottom: "20px",
+                            color: "#b45309",
+                            fontSize: "14px",
+                            fontWeight: "500"
+                        }}>
+                            💡 <strong>Required Configurations Missing:</strong> Please select a <strong>Financial Year</strong>, <strong>Training Plan</strong>, and <strong>Participant Type</strong> to extract eligible workspace data layers.
+                        </div>
+                    )}
+
+                    {/* Main Display Selection Table Element */}
+                    <div style={{ width: "100%", flex: 1, marginBottom: "20px" }}>
                         {filters.participantType ? (
                             <ParticipantTable
                                 filters={filters}
                                 handleChange={handleChange}
-                                participantType={filters.participantType}
-                                onSelectionChange={handleSelectionChange} />
+                                onSelectionChange={handleSelectionChange}
+                            />
                         ) : (
-                            <div
-                                style={{
-                                    textAlign: 'center',
-                                    padding: '40px',
-                                    color: '#8c8c8c',
-                                    border: '1px dashed #d9d9d9',
-                                    borderRadius: '8px',
-                                    marginTop: '20px'
-                                }}
-                            >
-                                Please select a Participant Type (Trainer or Beneficiary) to view the trainees list.
+                            <div style={{
+                                textAlign: 'center',
+                                padding: '60px 20px',
+                                color: '#94a3b8',
+                                border: '2px dashed #cbd5e1',
+                                borderRadius: '12px',
+                                backgroundColor: '#f8fafc'
+                            }}>
+                                Selection grid placeholder. Choose configuration parameters on the selection deck above to view data rows.
                             </div>
                         )}
                     </div>
 
-                    {/* FLOATING ACTION BOTTOM BAR CONTAINER */}
-                    {/* {filters.participantType && (
-
-                        <button
-                            onClick={() => setIsPreviewOpen(true)}
-                            disabled={participantData.selectedParticipants === 0}
-                            style={{
-                                background: participantData.selectedParticipants === 0 ? "#94a3b8" : "#2563eb",
-                                color: "#ffffff",
-                                padding: "10px 24px",
-                                border: "none",
-                                borderRadius: "6px",
-                                fontWeight: "600",
-                                fontSize: "14px",
-                                cursor: participantData.selectedParticipants === 0 ? "not-allowed" : "pointer",
-                                transition: "background 0.2s ease"
-                            }}
-                        >
-                            Confirm & Submit
-                        </button>
-
-                    )} */}
-
+                    {/* Bottom Execution Layout Action Row Bar Wrapper */}
                     {filters.participantType && (
                         <div style={{
                             display: "flex",
                             justifyContent: "flex-end",
                             width: "100%",
-                            marginTop: "16px"
+                            paddingTop: "16px",
+                            borderTop: "1px solid #f1f5f9"
                         }}>
                             <button
                                 onClick={() => setIsPreviewOpen(true)}
                                 disabled={participantData.selectedParticipants === 0}
                                 style={{
-                                    background: participantData.selectedParticipants === 0 ? "#94a3b8" : "#2563eb",
-                                    color: "#ffffff",
-                                    padding: "10px 24px",
+                                    background: participantData.selectedParticipants === 0 ? "#cbd5e1" : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                                    color: participantData.selectedParticipants === 0 ? "#94a3b8" : "#ffffff",
+                                    padding: "12px 32px",
                                     border: "none",
-                                    borderRadius: "6px",
+                                    borderRadius: "8px",
                                     fontWeight: "600",
                                     fontSize: "14px",
+                                    boxShadow: participantData.selectedParticipants === 0 ? "none" : "0 4px 12px rgba(37, 99, 235, 0.15)",
                                     cursor: participantData.selectedParticipants === 0 ? "not-allowed" : "pointer",
-                                    transition: "background 0.2s ease"
+                                    transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)"
                                 }}
                             >
-                                Confirm & Submit
+                                Confirm & Submit Batch
                             </button>
                         </div>
                     )}
                 </div>
             </div>
 
-            {/* PREVIEW MODAL OVERLAY COMPONENT */}
+            {/* PREVIEW CONFIGURATION OVERLAY MODAL */}
             {isPreviewOpen && (
                 <div style={{
                     position: "fixed",
@@ -1280,7 +1604,7 @@ const AssemblerDashboardBatchCreator = () => {
                     left: 0,
                     width: "100vw",
                     height: "100vh",
-                    background: "rgba(15, 23, 42, 0.6)",
+                    background: "rgba(15, 23, 42, 0.5)",
                     backdropFilter: "blur(4px)",
                     display: "flex",
                     justifyContent: "center",
@@ -1291,45 +1615,43 @@ const AssemblerDashboardBatchCreator = () => {
                         background: "#ffffff",
                         width: "100%",
                         maxWidth: "540px",
-                        borderRadius: "12px",
-                        boxShadow: "0 20px 25px -5px rgba(0,0,0,0.15)",
-                        padding: "24px",
-                        animation: "fadeIn 0.2s ease"
+                        borderRadius: "16px",
+                        boxShadow: "0 25px 50px -12px rgba(0,0,0,0.2)",
+                        padding: "32px",
+                        border: "1px solid #e2e8f0"
                     }}>
-                        {/* Modal Top Header Bar */}
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid #f1f5f9", paddingBottom: "12px" }}>
-                            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#1e293b" }}>Batch Preview Details</h3>
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px", borderBottom: "1px solid #f1f5f9", paddingBottom: "16px" }}>
+                            <h3 style={{ margin: 0, fontSize: "18px", fontWeight: "700", color: "#0f172a" }}>Batch Processing Details Preview</h3>
                             <button
                                 onClick={() => setIsPreviewOpen(false)}
-                                style={{ background: "none", border: "none", fontSize: "20px", cursor: "pointer", color: "#64748b" }}
+                                style={{ background: "none", border: "none", fontSize: "24px", cursor: "pointer", color: "#94a3b8" }}
                             >
                                 &times;
                             </button>
                         </div>
 
-                        {/* Modal Body Info Stack Fields */}
                         <div style={{ display: "flex", flexDirection: "column", gap: "14px", marginBottom: "24px" }}>
-                            <div style={{ display: "flex", justifyContent: "space-between", background: "#f8fafc", padding: "10px 14px", borderRadius: "6px" }}>
-                                <span style={{ fontSize: "14px", color: "#64748b", fontWeight: "500" }}>Selected Trainees Count:</span>
-                                <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "700" }}>{participantData.selectedParticipants} Trainees</span>
+                            <div style={{ display: "flex", justifyContent: "space-between", background: "#f0fdf4", border: "1px solid #bbf7d0", padding: "12px 14px", borderRadius: "8px" }}>
+                                <span style={{ fontSize: "14px", color: "#166534", fontWeight: "600" }}>Selected Targets Pool:</span>
+                                <span style={{ fontSize: "14px", color: "#14532d", fontWeight: "800" }}>{participantData.selectedParticipants} Trainees</span>
                             </div>
 
-                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Training Theme:</span>
                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600", textAlign: "right" }}>{filters.trainingTheme || "Not Specified"}</span>
                             </div>
 
-                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Selected Training Center:</span>
                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>{filters.trainingCenter || "Main Academic Hub Center"}</span>
                             </div>
 
-                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Financial Year:</span>
                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>{filters.financialYear || "Not Specified"}</span>
                             </div>
 
-                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "8px" }}>
+                            <div style={{ display: "flex", justifyContent: "space-between", borderBottom: "1px solid #f1f5f9", paddingBottom: "10px" }}>
                                 <span style={{ fontSize: "14px", color: "#64748b" }}>Scheduled Batch Dates:</span>
                                 <span style={{ fontSize: "14px", color: "#0f172a", fontWeight: "600" }}>
                                     {filters.startDate ? `${filters.startDate} to ${filters.endDate || 'N/A'}` : "Dates Not Selected"}
@@ -1337,14 +1659,12 @@ const AssemblerDashboardBatchCreator = () => {
                             </div>
                         </div>
 
-                        {/* Informative Help Context Box */}
-                        <div style={{ background: "#eff6ff", borderLeft: "4px solid #3b82f6", padding: "10px 14px", borderRadius: "4px", marginBottom: "24px" }}>
-                            <p style={{ margin: 0, fontSize: "12px", color: "#1e3a8a", lineHeight: "1.5" }}>
-                                * Clicking <strong>Confirm & Save</strong> preserves this operational data buffer block status as a draft file instance to prevent losing pipeline changes.
+                        <div style={{ background: "#eff6ff", borderLeft: "4px solid #3b82f6", padding: "12px", borderRadius: "6px", marginBottom: "24px" }}>
+                            <p style={{ margin: 0, fontSize: "12.5px", color: "#1e40af", lineHeight: "1.5" }}>
+                                * Clicking <strong>Confirm & Save</strong> preserves workspace target structures into a persistent local storage configuration draft layer.
                             </p>
                         </div>
 
-                        {/* Modal Actions Footer Bar Buttons */}
                         <div style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}>
                             <button
                                 onClick={() => setIsPreviewOpen(false)}
@@ -1352,8 +1672,8 @@ const AssemblerDashboardBatchCreator = () => {
                                     background: "#ffffff",
                                     border: "1px solid #cbd5e1",
                                     color: "#475569",
-                                    padding: "8px 16px",
-                                    borderRadius: "6px",
+                                    padding: "10px 18px",
+                                    borderRadius: "8px",
                                     fontWeight: "500",
                                     fontSize: "14px",
                                     cursor: "pointer"
@@ -1364,17 +1684,17 @@ const AssemblerDashboardBatchCreator = () => {
                             <button
                                 onClick={handleConfirmAndSave}
                                 style={{
-                                    background: "#16a34a",
+                                    background: "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
                                     border: "none",
                                     color: "#ffffff",
-                                    padding: "8px 20px",
-                                    borderRadius: "6px",
+                                    padding: "10px 24px",
+                                    borderRadius: "8px",
                                     fontWeight: "600",
                                     fontSize: "14px",
                                     cursor: "pointer"
                                 }}
                             >
-                                Confirm & Save (Draft)
+                                Confirm & Save Draft
                             </button>
                         </div>
                     </div>

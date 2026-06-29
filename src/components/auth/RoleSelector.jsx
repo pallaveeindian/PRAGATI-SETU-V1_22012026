@@ -9,13 +9,17 @@ export const ADMIN_ROLES = [
 
 export const GENERAL_ROLES = [
   { id: "training_partner", label: "TRAINING PARTNER" },
+  {
+    id: "dtp",
+    label: "District TP-ID",
+  },
   { id: "tp_contact_person", label: "TRAINING CENTRE" },
 ];
 
 export default function RoleSelector({
   userType = "Admin",
   value = "",
-  onChange = () => {},
+  onChange = () => { },
 }) {
   const roles = userType === "Admin" ? ADMIN_ROLES : GENERAL_ROLES;
   return (

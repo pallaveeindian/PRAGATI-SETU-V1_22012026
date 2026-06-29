@@ -212,6 +212,75 @@ const MENU = {
       icon: FaUserCheck,
     },
   ],
+  dtp: [
+    {
+      label: "Dashboard",
+      to: "/tms/tp/dashboard",
+      icon: FaTachometerAlt,
+    },
+    {
+      label: "Centre Management",
+      to: "/tms/tp/centre-list",
+      icon: FaIndustry,
+    },
+    {
+      label: "Register New Centre",
+      to: "/tms/tp/centre/new",
+      icon: FaBuilding,
+    },
+    {
+      label: "Training Requests",
+      to: "/tms/training-requests",
+      icon: FaChartBar,
+    },
+    // {
+    //   label: "Training Batches",
+    //   icon: FaBook,
+    //   children: [
+    //     {
+    //       label: "Batch Creator",
+    //       to: "/tms/batch-creator/",
+    //       children: [
+    //         {
+    //           label: "Preview Batch Creator",
+    //           to: "/tms/preview-batch-creator/",
+    //         },
+    //       ],
+    //     },
+    //     {
+    //       label: "Batch List",
+    //       to: "/tms/batches-list/",
+
+    //     },
+    //   ],
+    // },
+    {
+      label: "Training Batches",
+      icon: FaBook,
+      children: [
+        { label: "Batch Creator", to: "/tms/batch-creator/", },
+        {
+          label: "Batch List",
+          to: "/tms/batches-list/",
+        },
+      ],
+    },
+    {
+      label: "TC IDs",
+      to: "/tms/tp/cp-list",
+      icon: FaUsers,
+    },
+    {
+      label: "Register TC ID",
+      to: "/tms/tp/cp/create",
+      icon: FaUserEdit,
+    },
+    {
+      label: "Assign Centre to TC ID",
+      to: "/tms/tp/cp/assign",
+      icon: FaUserCheck,
+    },
+  ],
   master_trainer: [
     {
       label: "Dashboard",
@@ -262,6 +331,7 @@ function getRoleKey(user) {
   if (id === 8) return "state_admin";
   if (id === 9) return "pmu_admin";
   if (id === 11) return "tp_contact_person";
+  if (id === 13) return "dtp";
   return "bmmu";
 }
 

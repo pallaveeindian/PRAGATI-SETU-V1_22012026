@@ -34,6 +34,8 @@ const ROLE_TMS_ROUTE = {
   dmmu: "/tms/dmmu/dashboard",
   smmu: "/tms/smmu/dashboard",
   training_partner: "/tms/tp/dashboard",
+
+  dtp: "/tms/dtp/dashboard", // NEW
   master_trainer: "/tms/mt/dashboard",
   tp_contact_person: "/tms/cp/dashboard",
   default: "/tms",
@@ -81,6 +83,7 @@ const ROLE_ID_TO_KEY = {
   9: "pmu_admin",
   10: "dcnrlm",
   11: "tp_contact_person",
+  13: "dtp", // NEW
 };
 
 const ADMIN_ROLE_KEYS = new Set([
@@ -94,6 +97,7 @@ const ADMIN_ROLE_KEYS = new Set([
 
 const GENERAL_ROLE_KEYS = new Set([
   "training_partner",
+  "dtp", // NEW
   "master_trainer",
   "crp_ep",
   "crp_ld",
@@ -302,7 +306,6 @@ export default function Login() {
     // );
 
     const backendRoleKey = ROLE_ID_TO_KEY[Number(backendUser.role_id)];
-
     if (backendRoleKey !== data.role) {
       alert("Role mismatch");
       return;

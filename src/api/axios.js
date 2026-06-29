@@ -595,6 +595,11 @@ export const TMS_API = {
   tpcpCentreDetails: makeCrud("/tms/tpcp_to_centre/details/"),
   trainingPlans: makeCrud("/tms/training-plans/"),
 
+
+  // FIXED: Changed from makeCrud to a clean, single GET request method
+  eligiblebatchTrainees: (params) =>
+    api.get("/tms/batch-creator/trainees/", { params }),
+
   // ------------------------------------
   // User Management
   // ------------------------------------

@@ -94,6 +94,9 @@ import StateLoginDashboard from "./pages/StateLoginPortal/StateLoginDashboard";
 import HomeDashboard from "./pages/StateLoginPortal/Dashboards/HomeDashboard";
 import AssemblerDashboardBatchCreator from "./pages/TMS/BatchCreator/AssemblerDashboardBatchCreator";
 import PreviewBatchCreator from "./pages/TMS/BatchCreator/PreviewBatchCreator"
+import DTPDashboard from "../src/pages/TMS/DTP/DTPDashboard";
+
+
 
 export default function App() {
   const { authReady } = useAuth();
@@ -388,6 +391,10 @@ export default function App() {
         <Route
           path="/tms/preview-batch-creator/"
           element={<PreviewBatchCreator />}
+        />
+        <Route
+          path="/tms/dtp/dashboard"
+          element={<DTPDashboard />}
         />
 
         {/* 404 */}
