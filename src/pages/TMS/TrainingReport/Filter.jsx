@@ -374,9 +374,6 @@ export default function TrainingReportManager({ user }) {
           "Backend only returns participants with marked attendance. Pending batches may return empty results.",
         );
       }
-
-      console.log("FINAL PARAMS SENDING TO BACKEND:", params);
-
       if (isExport) {
         params.export = "excel";
         const res = await api.get("/tms/cmp-training-report/", {

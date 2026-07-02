@@ -292,6 +292,8 @@ export default function CRPForm() {
         <div className="epsms-card">
           <SHGList
             blockId={geoFilters.block_id}
+            panchayatId={geoFilters.panchayat_id}
+            villageId={geoFilters.village_id}
             onSelectMember={(memberData) => {
               setSelectedMember(memberData);
               autoFetchCLF(memberData);

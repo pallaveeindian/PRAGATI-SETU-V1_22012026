@@ -4,209 +4,217 @@ import { EPSAKHI_API } from "../../../../api/axios";
 import SHGMembers from "./SHGMembers";
 import { FaEye, FaSearch, FaArrowLeft, FaTimes } from "react-icons/fa";
 
-export default function SHGList({ blockId, onSelectMember }) {
-    const [rows, setRows] = useState([]);
-    const [meta, setMeta] = useState({});
-    const [loading, setLoading] = useState(false);
+export default function SHGList({
+  blockId,
+  panchayatId,
+  villageId,
+  onSelectMember,
+}) {
+  const [rows, setRows] = useState([]);
+  const [meta, setMeta] = useState({});
+  const [loading, setLoading] = useState(false);
 
-    const [page, setPage] = useState(1);
-    const [search, setSearch] = useState("");
-    const [query, setQuery] = useState("");
+  const [page, setPage] = useState(1);
+  const [search, setSearch] = useState("");
+  const [query, setQuery] = useState("");
 
-    const [selectedSHG, setSelectedSHG] = useState(null);
-    const pageSize = 10;
-    const totalPages = Math.ceil((meta.total || 0) / pageSize);
-    const [jumpPage, setJumpPage] = useState("");
+  const [selectedSHG, setSelectedSHG] = useState(null);
+  const pageSize = 10;
+  const totalPages = Math.ceil((meta.total || 0) / pageSize);
+  const [jumpPage, setJumpPage] = useState("");
 
-    useEffect(() => {
-        if (!blockId) return;
+  useEffect(() => {
+    if (!blockId) return;
 
-        fetchSHGs();
-    }, [blockId, page, query]);
+    fetchSHGs();
+  }, [blockId, panchayatId, villageId, page, query]);
 
-    async function fetchSHGs() {
-        setLoading(true);
+  async function fetchSHGs() {
+    setLoading(true);
 
-        try {
-            const res = await EPSAKHI_API.upsrlmShgList(blockId, {
-                page,
-                page_size: 10,
-                search: query || undefined,
-            });
+    const searchParts = [];
 
-            const data = res.data?.data || [];
-            const meta = res.data?.meta || {};
-
-            setRows(data);
-            setMeta(meta);
-        } catch (err) {
-            console.error("Failed to fetch SHG list", err);
-        } finally {
-            setLoading(false);
-        }
+    if (panchayatId) {
+      searchParts.push(panchayatId);
     }
 
-    function handleSearch() {
-        setPage(1);
-        setQuery(search);
+    if (villageId) {
+      searchParts.push(villageId);
     }
 
-    if (!blockId) {
-        return <div className="epsms-muted">Select a block to view SHGs.</div>;
+    if (query?.trim()) {
+      searchParts.push(query.trim());
     }
 
-    function handleClear() {
-        setSearch("");
-        setQuery("");
-        setPage(1);
+    try {
+      const res = await EPSAKHI_API.upsrlmShgList(blockId, {
+        page,
+        page_size: 10,
+        search: searchParts.length ? searchParts.join(" ") : undefined,
+      });
+
+      const data = res.data?.data || [];
+      const meta = res.data?.meta || {};
+
+      setRows(data);
+      setMeta(meta);
+    } catch (err) {
+      console.error("Failed to fetch SHG list", err);
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  function handleSearch() {
+    setPage(1);
+    setQuery(search);
+  }
+
+  if (!blockId) {
+    return <div className="epsms-muted">Select a block to view SHGs.</div>;
+  }
+
+  function handleClear() {
+    setSearch("");
+    setQuery("");
+    setPage(1);
+  }
+
+  function handleJump() {
+    const p = parseInt(jumpPage);
+
+    if (!isNaN(p) && p >= 1 && p <= totalPages) {
+      setPage(p);
     }
 
-    function handleJump() {
-        const p = parseInt(jumpPage);
+    setJumpPage("");
+  }
 
-        if (!isNaN(p) && p >= 1 && p <= totalPages) {
-            setPage(p);
-        }
-
-        setJumpPage("");
-    }
-
-    // ---------------- MEMBERS VIEW ----------------
-    if (selectedSHG) {
-        return (
-            <SHGMembers
-                shg={selectedSHG}
-                onBack={() => setSelectedSHG(null)}
-                onSelectMember={onSelectMember}
-            />
-        );
-    }
-
+  // ---------------- MEMBERS VIEW ----------------
+  if (selectedSHG) {
     return (
-        <div className="shglist-container">
+      <SHGMembers
+        shg={selectedSHG}
+        onBack={() => setSelectedSHG(null)}
+        onSelectMember={onSelectMember}
+      />
+    );
+  }
 
-            {/* Header */}
-            <div className="shglist-header">
-                <h3 className="compH3">SHG List</h3>
+  return (
+    <div className="shglist-container">
+      {/* Header */}
+      <div className="shglist-header">
+        <h3 className="compH3">SHG List</h3>
 
-                <div className="search-bar">
-                    <input
-                        type="text"
-                        placeholder="Search SHG name, code, nicCode, uuid"
-                        value={search}
-                        onChange={(e) => setSearch(e.target.value)}
-                    />
+        <div className="search-bar">
+          <input
+            type="text"
+            placeholder="Search SHG name, code, nicCode, uuid"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-                    <button onClick={handleSearch} title="Search">
-                        <FaSearch />
+          <button onClick={handleSearch} title="Search">
+            <FaSearch />
+          </button>
+
+          {search && (
+            <button
+              className="clear-btn"
+              onClick={handleClear}
+              title="Clear search"
+            >
+              <FaTimes />
+            </button>
+          )}
+        </div>
+      </div>
+
+      {/* Table */}
+      <div className="table-wrapper">
+        <table className="epsms-table">
+          <thead>
+            <tr>
+              <th>Sno.</th>
+              <th>SHG Name</th>
+              <th>SHG Code</th>
+              <th>Category</th>
+              <th>Type</th>
+              <th>Social Category</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {loading ? (
+              <tr>
+                <td colSpan="7" className="loading">
+                  Loading SHGs...
+                </td>
+              </tr>
+            ) : rows.length === 0 ? (
+              <tr>
+                <td colSpan="7" className="loading">
+                  No SHGs found
+                </td>
+              </tr>
+            ) : (
+              rows.map((r, i) => (
+                <tr key={r.code}>
+                  <td>{(page - 1) * 10 + i + 1}</td>
+                  <td>{r.name}</td>
+                  <td>{r.code}</td>
+                  <td>{r.shgCategory}</td>
+                  <td>{r.shgType}</td>
+                  <td>{r.socialCategory}</td>
+
+                  <td>
+                    <button
+                      className="view-btn"
+                      onClick={() => setSelectedSHG(r)}
+                    >
+                      <FaEye />
                     </button>
+                  </td>
+                </tr>
+              ))
+            )}
+          </tbody>
+        </table>
+      </div>
 
-                    {search && (
-                        <button
-                            className="clear-btn"
-                            onClick={handleClear}
-                            title="Clear search"
-                        >
-                            <FaTimes />
-                        </button>
-                    )}
-                </div>
-            </div>
+      {/* Pagination */}
+      <div className="pagination">
+        <button disabled={page <= 1} onClick={() => setPage(page - 1)}>
+          Prev
+        </button>
 
-            {/* Table */}
-            <div className="table-wrapper">
-                <table className="epsms-table">
-                    <thead>
-                        <tr>
-                            <th>Sno.</th>
-                            <th>SHG Name</th>
-                            <th>SHG Code</th>
-                            <th>Category</th>
-                            <th>Type</th>
-                            <th>Social Category</th>
-                            <th>Action</th>
-                        </tr>
-                    </thead>
+        <div className="page-info">
+          <span>Page {meta.page || page}</span>
+          <small>of {totalPages || 1}</small>
+        </div>
 
-                    <tbody>
-                        {loading ? (
-                            <tr>
-                                <td colSpan="7" className="loading">
-                                    Loading SHGs...
-                                </td>
-                            </tr>
-                        ) : rows.length === 0 ? (
-                            <tr>
-                                <td colSpan="7" className="loading">
-                                    No SHGs found
-                                </td>
-                            </tr>
-                        ) : (
-                            rows.map((r, i) => (
-                                <tr key={r.code}>
-                                    <td>{(page - 1) * 10 + i + 1}</td>
-                                    <td>{r.name}</td>
-                                    <td>{r.code}</td>
-                                    <td>{r.shgCategory}</td>
-                                    <td>{r.shgType}</td>
-                                    <td>{r.socialCategory}</td>
+        <button disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+          Next
+        </button>
 
-                                    <td>
-                                        <button
-                                            className="view-btn"
-                                            onClick={() => setSelectedSHG(r)}
-                                        >
-                                            <FaEye />
-                                        </button>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-            </div>
+        {/* Jump to page */}
+        <div className="jump-box">
+          <input
+            type="number"
+            min="1"
+            max={totalPages || 1}
+            placeholder="Go"
+            value={jumpPage}
+            onChange={(e) => setJumpPage(e.target.value)}
+          />
 
-            {/* Pagination */}
-            <div className="pagination">
+          <button onClick={handleJump}>Go</button>
+        </div>
+      </div>
 
-                <button
-                    disabled={page <= 1}
-                    onClick={() => setPage(page - 1)}
-                >
-                    Prev
-                </button>
-
-                <div className="page-info">
-                    <span>Page {meta.page || page}</span>
-                    <small>of {totalPages || 1}</small>
-                </div>
-
-                <button
-                    disabled={page >= totalPages}
-                    onClick={() => setPage(page + 1)}
-                >
-                    Next
-                </button>
-
-                {/* Jump to page */}
-                <div className="jump-box">
-                    <input
-                        type="number"
-                        min="1"
-                        max={totalPages || 1}
-                        placeholder="Go"
-                        value={jumpPage}
-                        onChange={(e) => setJumpPage(e.target.value)}
-                    />
-
-                    <button onClick={handleJump}>
-                        Go
-                    </button>
-                </div>
-
-            </div>
-
-            <style>{`
+      <style>{`
         .shglist-container {
           display:flex;
           flex-direction:column;
@@ -390,6 +398,6 @@ export default function SHGList({ blockId, onSelectMember }) {
         }
 
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

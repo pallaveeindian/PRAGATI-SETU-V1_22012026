@@ -844,7 +844,6 @@ export default function MOUFormCreate({
       };
 
       const formData = new FormData();
-      console.log("JSON PAYLOAD BEFORE FILES", jsonPayload);
       formData.append("payload", JSON.stringify(jsonPayload));
 
       // Attach Files (Safe injection)
@@ -861,14 +860,11 @@ export default function MOUFormCreate({
         if (doc.doc_file) formData.append(`mou_doc_${idx}`, doc.doc_file);
       });
 
-      console.log("SENDING MULTIPART FORMDATA...");
       const res = await EPSAKHI_API.mouFormCreate(formData);
-      console.log("SUCCESS", res?.data);
 
       alert("MOU Submitted Successfully");
       setForm(initialState);
     } catch (err) {
-      console.log("ERROR RESPONSE", err?.response?.data);
       alert(
         JSON.stringify(err?.response?.data, null, 2) || "Submission Failed",
       );

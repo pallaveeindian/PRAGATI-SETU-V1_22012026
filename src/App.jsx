@@ -26,6 +26,13 @@ import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
 import PublicReports from "./pages/PublicReports";
 import WhatsNew from "./pages/WhatsNew";
 
+// All Login Pages
+import LoginParent from "./pages/LoginComps/LoginParent";
+import TmsLogin from "./pages/LoginComps/TmsLogin";
+import LdmsLogin from "./pages/LoginComps/LdmsLogin";
+import CrpEpLogin from "./pages/LoginComps/CrpEpLogin";
+import MouLogin from "./pages/LoginComps/MouLogin";
+
 // Dashboard / Error Pages
 import DashboardHome from "./pages/Dashboard/DashboardHome";
 import ErrorPage from "./components/ErrorPages/ErrorPage";
@@ -91,7 +98,14 @@ export default function App() {
         />
         <Route path="/what's-new" element={<WhatsNew />} />
         <Route path="/public-reports" element={<PublicReports />} />
+        {/* ----- Login Routes ----- */}
         <Route path="/login" element={<Login />} />
+        <Route path="/module-login" element={<LoginParent />} />
+        <Route path="/module-login?module=tms" element={<TmsLogin />} />
+        <Route path="/module-login?module=ldms" element={<LdmsLogin />} />
+        <Route path="/module-login?module=crp-ep" element={<CrpEpLogin />} />
+        <Route path="/module-login?module=mou" element={<MouLogin />} />
+
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
 
         {/* ----- Protected Application Routes ----- */}

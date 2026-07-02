@@ -27,8 +27,6 @@ export default function CRPTable({ filters }) {
                     page_size: 1000,
                 });
 
-                console.log("CRP RESPONSE:", res.data);
-
                 const payload = res.data?.data ? res.data.data : res.data;
                 const results = Array.isArray(payload)
                     ? payload

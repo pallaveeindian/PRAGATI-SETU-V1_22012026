@@ -1,187 +1,235 @@
-import React, { useEffect, useState } from "react";
+// src/pages/EPSMS/RecordForm/FormComponents/CRPFilters.jsx
+import React, { useEffect, useState, useContext } from "react";
 import { LOOKUP_API } from "../../../../api/axios";
 import {
-    FaMapMarkedAlt,
-    FaMap,
-    FaLocationArrow,
-    FaSearch,
+  FaMapMarkedAlt,
+  FaMap,
+  FaLocationArrow,
+  FaSearch,
+  FaLock,
 } from "react-icons/fa";
+import { AuthContext } from "../../../../contexts/AuthContext";
 
 export default function CRPFilters({ onFetch }) {
-    const [districts, setDistricts] = useState([]);
-    const [blocks, setBlocks] = useState([]);
-    const [panchayats, setPanchayats] = useState([]);
+  const [districts, setDistricts] = useState([]);
+  const [blocks, setBlocks] = useState([]);
+  const [panchayats, setPanchayats] = useState([]);
 
-    const [district, setDistrict] = useState("");
-    const [block, setBlock] = useState("");
-    const [panchayat, setPanchayat] = useState("");
+  const [district, setDistrict] = useState("");
+  const [block, setBlock] = useState("");
+  const [panchayat, setPanchayat] = useState("");
 
-    const [loadingBlocks, setLoadingBlocks] = useState(false);
-    const [loadingPanchayats, setLoadingPanchayats] = useState(false);
+  const [loadingBlocks, setLoadingBlocks] = useState(false);
+  const [loadingPanchayats, setLoadingPanchayats] = useState(false);
 
-    /* LOAD DISTRICTS */
+  const { user } = useContext(AuthContext) || {};
+  const [isDistrictLocked, setIsDistrictLocked] = useState(false);
 
-    useEffect(() => {
-        async function loadDistricts() {
-            try {
-                const res = await LOOKUP_API.districts.list({
-                    page_size: 1000,
-                });
+  // Auto set District if DMMU
+  useEffect(() => {
+    if (!user?.id) return;
 
-                setDistricts(res.data?.results || res.data || []);
-            } catch (e) {
-                console.error(e);
-            }
+    async function resolveUserDistrict() {
+      try {
+        const res = await LOOKUP_API.userGeoscopeByUserId(user.id);
+
+        const districts = res?.data?.districts || [];
+
+        if (districts.length === 1) {
+          setDistrict(districts[0]);
+          setIsDistrictLocked(true);
         }
-
-        loadDistricts();
-    }, []);
-
-    /* LOAD BLOCKS */
-
-    useEffect(() => {
-        if (!district) return;
-
-        async function loadBlocks() {
-            setLoadingBlocks(true);
-
-            try {
-                const res = await LOOKUP_API.blocks.list({
-                    district_id: district,
-                    page_size: 1000,
-                });
-
-                setBlocks(res.data?.results || res.data || []);
-            } catch (e) {
-                console.error(e);
-            }
-
-            setLoadingBlocks(false);
-        }
-
-        loadBlocks();
-
-        setBlock("");
-        setPanchayat("");
-        setPanchayats([]);
-    }, [district]);
-
-    /* LOAD PANCHAYATS */
-
-    useEffect(() => {
-        if (!block) return;
-
-        async function loadPanchayats() {
-            setLoadingPanchayats(true);
-
-            try {
-                const res = await LOOKUP_API.panchayats.list({
-                    block_id: block,
-                    page_size: 10000,
-                });
-
-                setPanchayats(res.data?.results || res.data || []);
-            } catch (e) {
-                console.error(e);
-            }
-
-            setLoadingPanchayats(false);
-        }
-
-        loadPanchayats();
-
-        setPanchayat("");
-    }, [block]);
-
-    /* FETCH */
-
-    function handleFetch() {
-        const filters = {
-            district: district || null,
-            block: block || null,
-            panchayat: panchayat || null,
-        };
-
-        if (onFetch) onFetch(filters);
+      } catch (err) {
+        console.error("Failed to resolve user district", err);
+      }
     }
 
-    return (
-        <div className="crp-filter-wrapper">
-            {/* DISTRICT */}
+    resolveUserDistrict();
+  }, [user?.id]);
 
-            <div className="filter-group">
-                <label>
-                    <FaMapMarkedAlt /> District
-                </label>
+  /* LOAD DISTRICTS */
 
-                <select value={district} onChange={(e) => setDistrict(e.target.value)}>
-                    <option value="">Select District</option>
+  useEffect(() => {
+    async function loadDistricts() {
+      try {
+        const res = await LOOKUP_API.districts.list({
+          page_size: 1000,
+        });
 
-                    {districts.map((d) => (
-                        <option key={d.id || d.district_id} value={d.id || d.district_id}>
-                            {d.district_name_en}
-                        </option>
-                    ))}
-                </select>
-            </div>
+        setDistricts(res.data?.results || res.data || []);
+      } catch (e) {
+        console.error(e);
+      }
+    }
 
-            {/* BLOCK */}
+    loadDistricts();
+  }, []);
 
-            <div className="filter-group">
-                <label>
-                    <FaMap /> Block
-                </label>
+  /* LOAD BLOCKS */
 
-                <select
-                    disabled={!district || loadingBlocks}
-                    value={block}
-                    onChange={(e) => setBlock(e.target.value)}
-                >
-                    <option value="">
-                        {loadingBlocks ? "Loading Blocks..." : "Select Block"}
-                    </option>
+  useEffect(() => {
+    if (!district) return;
 
-                    {blocks.map((b) => (
-                        <option key={b.id || b.block_id} value={b.id || b.block_id}>
-                            {b.block_name_en}
-                        </option>
-                    ))}
-                </select>
-            </div>
+    async function loadBlocks() {
+      setLoadingBlocks(true);
 
-            {/* PANCHAYAT */}
+      try {
+        const res = await LOOKUP_API.blocks.list({
+          district_id: district,
+          page_size: 500,
+        });
 
-            <div className="filter-group">
-                <label>
-                    <FaLocationArrow /> Panchayat
-                </label>
+        setBlocks(res.data?.results || res.data || []);
+      } catch (e) {
+        console.error(e);
+      }
 
-                <select
-                    disabled={!block || loadingPanchayats}
-                    value={panchayat}
-                    onChange={(e) => setPanchayat(e.target.value)}
-                >
-                    <option value="">
-                        {loadingPanchayats ? "Loading Panchayats..." : "Select Panchayat"}
-                    </option>
+      setLoadingBlocks(false);
+    }
 
-                    {panchayats.map((p) => (
-                        <option key={p.id || p.panchayat_id} value={p.id || p.panchayat_id}>
-                            {p.panchayat_name_en}
-                        </option>
-                    ))}
-                </select>
-            </div>
+    loadBlocks();
 
-            {/* FETCH BUTTON */}
+    setBlock("");
+    setPanchayat("");
+    setPanchayats([]);
+  }, [district]);
 
-            <div className="filter-btn-wrapper">
-                <button id="btn" onClick={handleFetch}>
-                    <FaSearch /> Fetch CRPs
-                </button>
-            </div>
+  /* LOAD PANCHAYATS */
 
-            <style>{`
+  useEffect(() => {
+    if (!block) return;
+
+    async function loadPanchayats() {
+      setLoadingPanchayats(true);
+
+      try {
+        const res = await LOOKUP_API.panchayats.list({
+          block_id: block,
+          page_size: 10000,
+        });
+
+        setPanchayats(res.data?.results || res.data || []);
+      } catch (e) {
+        console.error(e);
+      }
+
+      setLoadingPanchayats(false);
+    }
+
+    loadPanchayats();
+
+    setPanchayat("");
+  }, [block]);
+
+  /* FETCH */
+
+  function handleFetch() {
+    const filters = {
+      district: district || null,
+      block: block || null,
+      panchayat: panchayat || null,
+    };
+
+    if (onFetch) onFetch(filters);
+  }
+
+  useEffect(() => {
+    // Don't fetch until a district is selected
+    if (!district) return;
+
+    handleFetch();
+  }, [district, block, panchayat]);
+
+  return (
+    <div className="crp-filter-wrapper">
+      {/* DISTRICT */}
+
+      <div className="filter-group">
+        <label>
+          <FaMapMarkedAlt /> District{" "}
+          {isDistrictLocked && (
+            <FaLock
+              className="lock-icon"
+              title="Locked to your assigned district"
+            />
+          )}
+        </label>
+
+        <select
+          value={district}
+          disabled={isDistrictLocked}
+          onChange={(e) => {
+            if (isDistrictLocked) return;
+            setDistrict(e.target.value);
+          }}
+        >
+          <option value="">Select District</option>
+
+          {districts.map((d) => (
+            <option key={d.id || d.district_id} value={d.id || d.district_id}>
+              {d.district_name_en}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* BLOCK */}
+
+      <div className="filter-group">
+        <label>
+          <FaMap /> Block
+        </label>
+
+        <select
+          disabled={!district || loadingBlocks}
+          value={block}
+          onChange={(e) => setBlock(e.target.value)}
+        >
+          <option value="">
+            {loadingBlocks ? "Loading Blocks..." : "Select Block"}
+          </option>
+
+          {blocks.map((b) => (
+            <option key={b.id || b.block_id} value={b.id || b.block_id}>
+              {b.block_name_en}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* PANCHAYAT */}
+
+      <div className="filter-group">
+        <label>
+          <FaLocationArrow /> Panchayat
+        </label>
+
+        <select
+          disabled={!block || loadingPanchayats}
+          value={panchayat}
+          onChange={(e) => setPanchayat(e.target.value)}
+        >
+          <option value="">
+            {loadingPanchayats ? "Loading Panchayats..." : "Select Panchayat"}
+          </option>
+
+          {panchayats.map((p) => (
+            <option key={p.id || p.panchayat_id} value={p.id || p.panchayat_id}>
+              {p.panchayat_name_en}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* FETCH BUTTON */}
+
+      <div className="filter-btn-wrapper">
+        <button id="btn" onClick={handleFetch}>
+          <FaSearch /> Fetch CRPs
+        </button>
+      </div>
+
+      <style>{`
 
       /* WRAPPER */
 
@@ -214,19 +262,21 @@ export default function CRPFilters({ onFetch }) {
       .filter-group svg{
         color:var(--epsms-red);
       }
-
+      
+      .lock-icon {
+        font-size: 11px !important;
+        margin-left: 2px;
+      }
 
       /* SELECT */
 
       .filter-group select{
-
         padding:10px;
         border-radius:6px;
         border:1px solid var(--epsms-border);
         font-size:14px;
         background:white;
         transition:all .25s ease;
-
       }
 
       .filter-group select:hover{
@@ -293,18 +343,15 @@ export default function CRPFilters({ onFetch }) {
       /* TABLET */
 
       @media(max-width:1024px){
-
         .crp-filter-wrapper{
           grid-template-columns:1fr 1fr;
         }
-
       }
 
 
       /* MOBILE */
 
       @media(max-width:640px){
-
         .crp-filter-wrapper{
           grid-template-columns:1fr;
         }
@@ -313,7 +360,6 @@ export default function CRPFilters({ onFetch }) {
           width:100%;
           justify-content:center;
         }
-
       }
 
 
@@ -331,6 +377,6 @@ export default function CRPFilters({ onFetch }) {
       }
 
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

@@ -66,7 +66,6 @@ const MOUDashboard = () => {
   /* ================= MEMBER SELECT ================= */
 
   const handleSelectMemberFromList = async (payload) => {
-    // console.log("Initial Selected Member Payload:", payload);
     setClfName("-"); // Reset CLF name while fetching
 
     try {
@@ -92,10 +91,7 @@ const MOUDashboard = () => {
       };
 
       setSelectedMemberPayload(enrichedPayload);
-      // console.log(
-      //   "Enriched Payload (with SHG API fallbacks):",
-      //   enrichedPayload,
-      // );
+ 
 
       // 3. Fetch CLF based on the selected member's code
       const clf = await LOOKUP_API.upsrlmFindClf({

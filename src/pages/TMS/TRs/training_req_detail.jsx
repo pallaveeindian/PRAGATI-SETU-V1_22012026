@@ -1037,7 +1037,7 @@ export default function TrainingRequestDetail() {
                           </div>
                         )}
 
-                      {isTP &&
+                      {/* {isTP &&
                         (tr.status || "").toUpperCase() === "BATCHING" && (
                           <button
                             className="btn-primary"
@@ -1047,7 +1047,7 @@ export default function TrainingRequestDetail() {
                           >
                             Create Batches
                           </button>
-                        )}
+                        )} */}
 
                       {["ONGOING", "PENDING", "COMPLETED", "REJECTED"].includes(
                         (tr.status || "").toUpperCase(),

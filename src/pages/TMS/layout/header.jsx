@@ -36,7 +36,6 @@ const Header = () => {
     const fetchStatus = async () => {
       try {
         const res = await TMS_API.firstLogin.status(); // ✅ GET API
-        console.log("STATUS:", res.data);
 
         if (res?.data?.must_change_password) {
           setMustChange(true);

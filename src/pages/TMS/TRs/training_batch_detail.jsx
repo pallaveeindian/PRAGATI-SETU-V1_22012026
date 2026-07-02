@@ -225,7 +225,6 @@ export default function TrainingBatchDetail() {
   }, [batchId, refreshToken]);
 
   function handleRefresh() {
-    console.log("🔄 Refresh clicked");
     try {
       localStorage.removeItem(DETAIL_CACHE_PREFIX + batchId);
     } catch (e) {}

@@ -2,304 +2,436 @@
 import React, { useEffect, useState } from "react";
 import { LOOKUP_API, EPSAKHI_API } from "../../../../api/axios";
 import {
-    FaCheckCircle,
-    FaMapMarkerAlt,
-    FaTimes,
-    FaSpinner,
-    FaUser,
-    FaLock,
-    FaIdCard,
-    FaSyncAlt,
+  FaCheckCircle,
+  FaMapMarkerAlt,
+  FaTimes,
+  FaSpinner,
+  FaUser,
+  FaLock,
+  FaIdCard,
+  FaSyncAlt,
 } from "react-icons/fa";
 
 export default function PanchayatsList({ crpData, blockId }) {
-    const [panchayats, setPanchayats] = useState([]);
-    const [selected, setSelected] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [assigning, setAssigning] = useState(false);
-    const [done, setDone] = useState(false);
-    const [search, setSearch] = useState("");
-    const [alreadyAssigned, setAlreadyAssigned] = useState({});
-    const [showModal, setShowModal] = useState(false);
-    const [modalState, setModalState] = useState("loading");
+  const [panchayats, setPanchayats] = useState([]);
+  const [selected, setSelected] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [assigning, setAssigning] = useState(false);
+  const [done, setDone] = useState(false);
+  const [search, setSearch] = useState("");
+  const [alreadyAssigned, setAlreadyAssigned] = useState({});
+  const [showModal, setShowModal] = useState(false);
+  const [modalState, setModalState] = useState("loading");
 
-    const filteredPanchayats = panchayats.filter((p) =>
-        (p.panchayat_name_en || "").toLowerCase().includes(search.toLowerCase()),
-    );
+  const filteredPanchayats = panchayats.filter((p) =>
+    (p.panchayat_name_en || "").toLowerCase().includes(search.toLowerCase()),
+  );
 
-    useEffect(() => {
-        if (!blockId || !crpData) return;
+  useEffect(() => {
+    if (!blockId || !crpData) return;
 
-        async function load() {
-            setLoading(true);
+    async function load() {
+      setLoading(true);
 
-            const res = await LOOKUP_API.panchayats.list({
-                block_id: blockId,
-                page_size: 10000,
+      const res = await LOOKUP_API.panchayats.list({
+        block_id: blockId,
+        page_size: 10000,
+      });
+
+      const list = res.data?.results || res.data || [];
+      setPanchayats(list);
+
+      /* Check if already assigned */
+      const assignedMap = {};
+
+      await Promise.all(
+        list.map(async (p) => {
+          try {
+            const r = await EPSAKHI_API.crpPanchayatMap.list({
+              panchayat_id: p.id || p.panchayat_id,
             });
 
-            const list = res.data?.results || res.data || [];
-            setPanchayats(list);
+            const exists = (r.data?.results || r.data || []).length > 0;
 
-            /* Check if already assigned */
+            if (exists) assignedMap[p.id || p.panchayat_id] = true;
+          } catch (e) {}
+        }),
+      );
 
-            const assignedMap = {};
-
-            await Promise.all(
-                list.map(async (p) => {
-                    try {
-                        const r = await EPSAKHI_API.crpPanchayatMap.list({
-                            panchayat_id: p.id || p.panchayat_id,
-                        });
-
-                        const exists = (r.data?.results || r.data || []).length > 0;
-
-                        if (exists) assignedMap[p.id || p.panchayat_id] = true;
-                    } catch (e) { }
-                }),
-            );
-
-            setAlreadyAssigned(assignedMap);
-            setLoading(false);
-        }
-
-        load();
-    }, [blockId, crpData]);
-
-    function toggle(p) {
-        const id = p.id || p.panchayat_id;
-
-        if (alreadyAssigned[id]) return;
-
-        const exists = selected.find(
-            (x) => (x.id || x.panchayat_id) === id
-        );
-
-        // ❌ Block if already 7
-        if (!exists && selected.length >= 7) {
-            alert("❌ Maximum 7 Panchayats allowed");
-            return;
-        }
-
-        if (!exists) {
-            setSelected((prev) => [...prev, p]);
-        }
+      setAlreadyAssigned(assignedMap);
+      setLoading(false);
     }
 
-    function remove(id) {
-        setSelected((prev) => prev.filter((x) => (x.id || x.panchayat_id) !== id));
+    load();
+  }, [blockId, crpData]);
+
+  function toggle(p) {
+    const id = p.id || p.panchayat_id;
+    const isCrpHome = String(id) === String(crpData.crp.panchayat.panchayat_id);
+
+    if (isCrpHome) {
+      alert("Cannot assign CRP's home panchayat.");
+      return;
     }
 
-    async function assign() {
-        // ❌ MIN validation
-        if (selected.length < 4) {
-            alert("⚠️ Please select at least 4 Panchayats");
-            return;
-        }
+    if (alreadyAssigned[id]) return;
 
-        // ❌ MAX safety (extra safety)
-        if (selected.length > 7) {
-            alert("❌ Maximum 7 Panchayats allowed");
-            return;
-        }
+    const exists = selected.find((x) => (x.id || x.panchayat_id) === id);
 
-        setShowModal(true);
-        setModalState("loading");
-
-        try {
-            const payload = {
-                crp_id: crpData.crp.master_user.id,
-                allocated_panchayats: selected.map((x) => x.panchayat_id),
-            };
-
-            await EPSAKHI_API.crpPanchayatBulk(payload);
-
-            setModalState("success");
-        } catch (err) {
-            console.error(err);
-            setModalState("error");
-        }
+    // ❌ Block if already 5
+    if (!exists && selected.length >= 5) {
+      alert("❌ Maximum 5 Panchayats allowed");
+      return;
     }
 
-    if (!crpData) return null;
+    if (!exists) {
+      setSelected((prev) => [...prev, p]);
+    } else {
+      setSelected((prev) =>
+        prev.filter((x) => (x.id || x.panchayat_id) !== id),
+      );
+    }
+  }
 
-    return (
-        <div className="epsms-card panchayat-card">
-            {/* SECTION 1 USER ACCOUNT */}
-            <h3>
-                <FaUser /> CRP User Account
-            </h3>
+  function remove(id) {
+    setSelected((prev) => prev.filter((x) => (x.id || x.panchayat_id) !== id));
+  }
 
-            <div className="crp-account">
-                <div>
-                    <FaIdCard /> Username: {crpData.username}
-                </div>
-                <div>
-                    <FaLock /> Password: {crpData.password}
-                </div>
-            </div>
+  async function assign() {
+    // ❌ MIN validation
+    if (selected.length < 2) {
+      alert("⚠️ Please select at least 2 Panchayats");
+      return;
+    }
 
-            {/* SECTION 2 PROFILE */}
-            <h3>
-                <FaUser /> CRP Profile
-            </h3>
+    // ❌ MAX safety (extra safety)
+    if (selected.length > 5) {
+      alert("❌ Maximum 5 Panchayats allowed");
+      return;
+    }
 
-            <div className="crp-profile">
-                <div>Name: {crpData.crp.name}</div>
-                <div>Mobile: {crpData.crp.mobile_number}</div>
-                <div>Category: {crpData.crp.category}</div>
-                <div>SHG: {crpData.crp.lokos_shg_code}</div>
-            </div>
+    setShowModal(true);
+    setModalState("loading");
+    setAssigning(true);
 
-            {/* SECTION 3 ALL PANCHAYATS */}
-            <h3>
-                <FaMapMarkerAlt /> Panchayats in Block
-            </h3>
+    try {
+      const payload = {
+        crp_id: crpData.crp.master_user_id || crpData.crp.master_user?.id,
+        allocated_panchayats: selected.map((x) => x.id || x.panchayat_id),
+      };
 
-            <div className="panchayat-search">
-                <input
-                    type="text"
-                    placeholder="Search Panchayat..."
-                    value={search}
-                    onChange={(e) => setSearch(e.target.value)}
-                />
-            </div>
+      await EPSAKHI_API.crpPanchayatBulk(payload);
 
-            {loading && (
-                <div className="loading">
-                    <FaSpinner className="spin" /> Loading Panchayats...
-                </div>
-            )}
+      setModalState("success");
+    } catch (err) {
+      console.error(err);
+      setModalState("error");
+    } finally {
+      setAssigning(false);
+    }
+  }
 
-            <div className="panchayat-list">
-                {filteredPanchayats.map((p) => {
-                    const id = p.id || p.panchayat_id;
+  if (!crpData) return null;
 
-                    const isAssigned = alreadyAssigned[id];
-                    const isSelected = selected.find(
-                        (x) => (x.id || x.panchayat_id) === id
-                    );
+  return (
+    <div className="epsms-card panchayat-card">
+      {/* SECTION 1 USER ACCOUNT */}
+      <h3>
+        <FaUser /> CRP User Account
+      </h3>
 
-                    const isDisabled =
-                        isAssigned ||
-                        (selected.length >= 7 && !isSelected);
+      <div className="crp-account">
+        <div>
+          <FaIdCard /> Username: {crpData.username}
+        </div>
+        <div>
+          <FaLock /> Password: {crpData.password}
+        </div>
+      </div>
 
-                    return (
-                        <div
-                            key={id || p.panchayat_name_en}
-                            className={`panchayat-item 
-                ${isAssigned ? "assigned" : ""} 
-                ${isDisabled ? "disabled" : ""}
-                ${isSelected ? "selected" : ""}
-              `}
-                            onClick={() => {
-                                if (isDisabled) return;
-                                toggle(p);
-                            }}
-                            title={
-                                isAssigned
-                                    ? "Already assigned to another CRP"
-                                    : isDisabled
-                                        ? "Maximum 7 Panchayats allowed"
-                                        : ""
-                            }
-                        >
-                            {p.panchayat_name_en}
+      {/* SECTION 2 PROFILE */}
+      <h3>
+        <FaUser /> CRP Profile
+      </h3>
 
-                            {isAssigned && (
-                                <span className="assigned-tag">Assigned</span>
-                            )}
-                        </div>
-                    );
-                })}
-            </div>
+      <div className="crp-profile">
+        <div>Name: {crpData.crp.name}</div>
+        <div>Mobile: {crpData.crp.mobile_number}</div>
+        <div>Category: {crpData.crp.category}</div>
+        <div>SHG: {crpData.crp.lokos_shg_code}</div>
+      </div>
 
-            <div style={{ marginTop: "10px", fontWeight: "600" }}>
-                Selected: {selected.length} / 7 (Min 4 required)
-            </div>
+      {/* SECTION 3 ALL PANCHAYATS */}
+      <h3>
+        <FaMapMarkerAlt /> Panchayats in Block
+      </h3>
 
-            {/* SECTION 4 SELECTED */}
-            <h3>Assigned Panchayats</h3>
+      <div className="panchayat-search">
+        <input
+          type="text"
+          placeholder="Search Panchayat..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+        />
+      </div>
 
-            <div className="selected-badges">
-                {selected.map((p) => (
-                    <div
-                        key={p.id || p.panchayat_id || p.panchayat_name_en}
-                        className="badge"
-                    >
-                        {p.panchayat_name_en}
-                        <FaTimes onClick={() => remove(p.id || p.panchayat_id)} />
-                    </div>
-                ))}
-            </div>
+      {loading && (
+        <div className="loading">
+          <FaSpinner className="spin" /> Loading Panchayats...
+        </div>
+      )}
 
-            {/* ASSIGN BUTTON */}
-            <button
-                className="assign-btn"
-                onClick={assign}
-                disabled={assigning || selected.length < 4}
+      <div className="panchayat-list">
+        {filteredPanchayats.map((p) => {
+          const id = p.id || p.panchayat_id;
+          const crpHomeId = crpData.crp.panchayat.panchayat_id;
+
+          const isCrpHome = String(id) === String(crpHomeId);
+          const isAssigned = alreadyAssigned[id];
+          const isSelected = selected.find(
+            (x) => (x.id || x.panchayat_id) === id,
+          );
+
+          const isDisabled =
+            isCrpHome || isAssigned || (selected.length >= 5 && !isSelected);
+
+          return (
+            <div
+              key={id || p.panchayat_name_en}
+              className={`panchayat-item 
+                                ${isCrpHome ? "crp-home" : ""} 
+                                ${isAssigned && !isCrpHome ? "assigned" : ""} 
+                                ${isDisabled && !isCrpHome && !isAssigned ? "disabled" : ""}
+                                ${isSelected ? "selected" : ""}
+                            `}
+              onClick={() => {
+                if (isDisabled) return;
+                toggle(p);
+              }}
+              title={
+                isCrpHome
+                  ? "CRP cannot be assigned to their home panchayat"
+                  : isAssigned
+                    ? "Already assigned to another CRP"
+                    : isDisabled
+                      ? "Maximum 5 Panchayats allowed"
+                      : ""
+              }
             >
-                {assigning ? (
-                    <>
-                        <FaSpinner className="spin" /> Assigning...
-                    </>
-                ) : (
-                    <>
-                        <FaCheckCircle /> Assign Panchayats
-                    </>
-                )}
-            </button>
+              {p.panchayat_name_en}
 
-            {showModal && (
-                <div className="assign-modal-overlay">
-                    <div className="assign-modal-card">
-                        {modalState === "loading" && (
-                            <>
-                                <FaSpinner className="spin big-loader" />
-                                <h3>Assigning Panchayats</h3>
-                                <p>Please wait while we map panchayats to CRP...</p>
-                            </>
-                        )}
+              {isCrpHome && <span className="crp-tag">CRP</span>}
+              {isAssigned && !isCrpHome && (
+                <span className="assigned-tag">Assigned</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
 
-                        {modalState === "success" && (
-                            <>
-                                <FaCheckCircle className="success-icon" />
-                                <h3>Panchayats Assigned Successfully</h3>
+      <div style={{ marginTop: "10px", fontWeight: "600" }}>
+        Selected: {selected.length} / 5 (Min 2 required)
+      </div>
 
-                                <button
-                                    className="modal-close-btn"
-                                    onClick={() => window.location.reload()}
-                                >
-                                    <FaSyncAlt /> Close
-                                </button>
-                            </>
-                        )}
-                    </div>
-                </div>
+      {/* SECTION 4 SELECTED */}
+      <h3>Assigned Panchayats</h3>
+
+      <div className="selected-badges">
+        {selected.length === 0 && (
+          <div style={{ fontSize: "14px", color: "#64748b" }}>
+            No panchayats selected yet. Select 2 to 5 panchayats.
+          </div>
+        )}
+        {selected.map((p) => (
+          <div
+            key={p.id || p.panchayat_id || p.panchayat_name_en}
+            className="badge"
+          >
+            {p.panchayat_name_en}
+            <FaTimes onClick={() => remove(p.id || p.panchayat_id)} />
+          </div>
+        ))}
+      </div>
+
+      {/* ASSIGN BUTTON */}
+      <button
+        className="assign-btn"
+        onClick={assign}
+        disabled={assigning || selected.length < 2}
+      >
+        {assigning ? (
+          <>
+            <FaSpinner className="spin" /> Assigning...
+          </>
+        ) : (
+          <>
+            <FaCheckCircle /> Assign Panchayats
+          </>
+        )}
+      </button>
+
+      {showModal && (
+        <div className="assign-modal-overlay">
+          <div className="assign-modal-card">
+            {modalState === "loading" && (
+              <>
+                <FaSpinner className="spin big-loader" />
+                <h3>Assigning Panchayats</h3>
+                <p>Please wait while we map panchayats to CRP...</p>
+              </>
             )}
 
-            <style>{`
+            {modalState === "success" && (
+              <>
+                <FaCheckCircle className="success-icon" />
+                <h3>Panchayats Assigned Successfully</h3>
+
+                <button
+                  className="modal-close-btn"
+                  onClick={() => window.location.reload()}
+                >
+                  <FaSyncAlt /> Close
+                </button>
+              </>
+            )}
+
+            {modalState === "error" && (
+              <>
+                <FaTimes className="big-loader" />
+                <h3>Assignment Failed</h3>
+                <p>There was an error saving the assignment.</p>
+
+                <button
+                  className="modal-close-btn"
+                  onClick={() => setShowModal(false)}
+                >
+                  Close
+                </button>
+              </>
+            )}
+          </div>
+        </div>
+      )}
+
+      <style>{`
         .panchayat-card h3{
+          margin-top:16px;
+          padding-bottom:10px;
+          padding-top:10px;
+        }
+
+        .crp-account{
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(260px,1fr));
+          gap:16px;
           margin-top:16px;
         }
 
+        .crp-account > div{
+          display:flex;
+          align-items:center;
+          gap:12px;
+          padding:16px 18px;
+          background:linear-gradient(135deg,#ffffff 0%,#f8fafc 100%);
+          border:1px solid #e2e8f0;
+          border-radius:12px;
+          color:#334155;
+          font-size:15px;
+          font-weight:500;
+          transition:all .25s ease;
+          box-shadow:0 4px 12px rgba(15,23,42,.04);
+        }
+
+        .crp-account > div svg{
+          flex-shrink:0;
+          width:18px;
+          height:18px;
+          color:var(--epsms-red);
+        }
+
+        .crp-account > div:hover{
+          transform:translateY(-3px);
+          border-color:var(--epsms-red);
+          box-shadow:0 10px 24px rgba(15,23,42,.08);
+        }
+
+        .crp-profile{
+          margin-top:16px;
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+          gap:16px;
+        }
+
+        .crp-profile > div{
+          position:relative;
+          padding:18px 18px 16px;
+          background:#fff;
+          border:1px solid #e2e8f0;
+          border-radius:12px;
+          transition:all .25s ease;
+          box-shadow:0 4px 12px rgba(0, 0, 0, 0.04);
+          overflow:hidden;
+          color:#0f172a;
+          font-size:15px;
+          font-weight:600;
+          line-height:1.5;
+        }
+
+        .crp-profile > div::before{
+          content:"";
+          position:absolute;
+          left:0;
+          top:0;
+          width:4px;
+          height:100%;
+          background:linear-gradient(
+            to bottom,
+            var(--epsms-red),
+            #f59e0b
+          );
+        }
+
+        .crp-profile > div:hover{
+          transform:translateY(-3px);
+          border-color:var(--epsms-red);
+          box-shadow:0 12px 24px rgba(15,23,42,.08);
+        }
+
+        .crp-profile > div::first-line{
+          color:#000000;
+          font-size:14px;
+          font-weight:700;
+          text-transform:uppercase;
+          letter-spacing:.08em;
+        }
+
+
         .panchayat-search{
-        margin-top:10px;
+          margin-top:10px;
         }
 
         .panchayat-search input{
-        width:100%;
-        padding:10px;
-        border-radius:6px;
-        border:1px solid var(--epsms-border);
-        font-size:14px;
-        transition:all .25s ease;
+          width:100%;
+          padding:10px;
+          border-radius:6px;
+          border:1px solid var(--epsms-border);
+          font-size:14px;
+          transition:all .25s ease;
         }
 
         .panchayat-search input:focus{
-        outline:none;
-        border-color:var(--epsms-red);
-        box-shadow:0 0 0 2px rgba(201,88,53,.15);
+          outline:none;
+          border-color:var(--epsms-red);
+          box-shadow:0 0 0 2px rgba(201,88,53,.15);
+        }
+
+        .loading {
+          margin-top: 16px;
+          font-size: 14px;
+          color: #64748b;
+          display: flex;
+          align-items: center;
+          gap: 8px;
         }
 
         .panchayat-list{
@@ -307,6 +439,9 @@ export default function PanchayatsList({ crpData, blockId }) {
           grid-template-columns:repeat(auto-fit,minmax(180px,1fr));
           gap:10px;
           margin-top:10px;
+          max-height: 250px;
+          overflow-y: auto;
+          padding-right: 5px;
         }
 
         .panchayat-item{
@@ -316,6 +451,11 @@ export default function PanchayatsList({ crpData, blockId }) {
           cursor:pointer;
           transition:.2s;
           background:#fafafa;
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          font-size: 14px;
+          color: #334155;
         }
 
         .panchayat-item:hover{
@@ -323,20 +463,46 @@ export default function PanchayatsList({ crpData, blockId }) {
           transform:translateY(-2px);
         }
 
+        /* CRP Home Panchayat Highlights */
+        .panchayat-item.crp-home {
+          background: #f3e8ff; 
+          border-color: #d8b4fe; 
+          color: #6b21a8; 
+          cursor: not-allowed;
+        }
+
+        .panchayat-item.crp-home:hover {
+          transform: none;
+        }
+
+        .crp-tag {
+          margin-left: 6px;
+          font-size: 11px;
+          background: #9333ea; 
+          color: white;
+          padding: 2px 6px;
+          border-radius: 4px;
+          font-weight: 700;
+        }
+
         .panchayat-item.assigned{
-        background:#f3f4f6;
-        border-color:#d1d5db;
-        cursor:not-allowed;
-        opacity:.6;
+          background:#f3f4f6;
+          border-color:#d1d5db;
+          cursor:not-allowed;
+          opacity:.6;
+        }
+
+        .panchayat-item.assigned:hover {
+          transform: none;
         }
 
         .assigned-tag{
-        margin-left:6px;
-        font-size:11px;
-        background:#dc2626;
-        color:white;
-        padding:2px 6px;
-        border-radius:4px;
+          margin-left:6px;
+          font-size:11px;
+          background:#dc2626;
+          color:white;
+          padding:2px 6px;
+          border-radius:4px;
         }
 
         .panchayat-item.disabled {
@@ -346,7 +512,7 @@ export default function PanchayatsList({ crpData, blockId }) {
         }
 
         .panchayat-item.selected {
-          background: #d1fae5; /* light green */
+          background: #d1fae5; 
           border-color: var(--epsms-green);
           box-shadow: 0 0 0 1px var(--epsms-green);
         }
@@ -366,6 +532,7 @@ export default function PanchayatsList({ crpData, blockId }) {
           display:flex;
           align-items:center;
           gap:6px;
+          font-size: 13px;
         }
 
         .badge svg{
@@ -383,6 +550,12 @@ export default function PanchayatsList({ crpData, blockId }) {
           display:flex;
           gap:8px;
           align-items:center;
+          font-weight: 600;
+        }
+
+        .assign-btn:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
         }
 
         .assign-success{
@@ -499,6 +672,15 @@ export default function PanchayatsList({ crpData, blockId }) {
           .big-loader{
             font-size:44px;
           }
+          
+          .crp-account, .crp-profile {
+            flex-direction: column;
+            gap: 6px;
+          }
+          
+          .crp-profile {
+            grid-template-columns: 1fr;
+          }
 
         }
 
@@ -517,6 +699,6 @@ export default function PanchayatsList({ crpData, blockId }) {
         }
 
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

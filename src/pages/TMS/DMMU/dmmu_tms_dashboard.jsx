@@ -142,7 +142,6 @@ export default function DmmuTmsDashboard() {
   async function fetchKpis(district, saveCache = false) {
     setLoadingKpis(true);
     try {
-      console.log("Fetching KPIs for district:", district);
 
       // Parallel API calls for all metrics
       const [beneficiariesRes, trainersRes, trainingsRes, pldsRes] =
@@ -182,7 +181,6 @@ export default function DmmuTmsDashboard() {
         }
       }
 
-      console.log("✅ KPIs loaded:", newKpis);
     } catch (err) {
       console.error("fetchKpis failed:", err);
     } finally {
