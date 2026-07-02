@@ -17,7 +17,7 @@ import dhanyawaad from "../../assets/namaste.png";
 | 15 June 2026, 8:00 PM IST
 |
 */
-const MAINTENANCE_END_TIME = "2026-06-25T06:00:00+05:30";
+const MAINTENANCE_END_TIME = "2026-07-02T18:00:00+05:30";
 
 const ServerMaintenance = () => {
   const [timeLeft, setTimeLeft] = useState(0);
