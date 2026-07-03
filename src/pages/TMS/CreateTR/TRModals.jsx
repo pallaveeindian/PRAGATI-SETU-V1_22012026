@@ -190,9 +190,18 @@ export function PreviewConfirmModal({
             Cancel
           </button>
 
+          {/* NEW: Updated Minimum 15 Warning */}
           {!hasParticipants && (
-            <div style={{ color: "#dc3545", marginBottom: 8, fontSize: 13 }}>
-              ⚠ Please add at least one participant to continue.
+            <div
+              style={{
+                color: "#dc3545",
+                marginBottom: 8,
+                fontSize: 13,
+                display: "flex",
+                alignItems: "center",
+              }}
+            >
+              ⚠ Participant selection does not meet the minimum requirement.
             </div>
           )}
 

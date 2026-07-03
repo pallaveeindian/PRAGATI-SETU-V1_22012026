@@ -761,8 +761,8 @@ export default function CreateTrainingRequest() {
       `Plan ${trState.selectedPlan.id}`);
   const hasParticipants =
     trState.form.training_type === "BENEFICIARY"
-      ? trState.selectedBeneficiaries.length > 0
-      : trState.selectedTrainersMap.size > 0;
+      ? trState.selectedBeneficiaries.length >= 15
+      : trState.selectedTrainersMap.size >= 15;
 
   const cardStyle = {
     background: "#fff",

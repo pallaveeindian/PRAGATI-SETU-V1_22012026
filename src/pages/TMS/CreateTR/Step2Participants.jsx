@@ -110,6 +110,14 @@ export default function Step2Participants({
     cursor: "pointer",
   };
 
+  // IMPLEMENTATION OF TR PARTICIPANT MINIMUM LIMIT - 15
+  const currentCount =
+    form.training_type === "BENEFICIARY"
+      ? selectedBeneficiaries.length
+      : selectedTrainerIds.size;
+
+  const hasEnough = currentCount >= 15;
+
   return (
     <>
       <div
@@ -126,7 +134,15 @@ export default function Step2Participants({
             Choose beneficiaries (SHGs) or trainers depending on selection.
           </div>
         </div>
-        <div>
+        <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
+          {/* NEW: Counter warning if under 15 */}
+          {!hasEnough && (
+            <span style={{ color: "#dc2626", fontSize: 13, fontWeight: 600 }}>
+              ⚠ Participant selection does not meet the minimum requirement
+              (Selected: {currentCount})
+            </span>
+          )}
+
           <button
             className="btnPrimaryHover"
             style={btnOutline}
@@ -135,9 +151,14 @@ export default function Step2Participants({
             Back
           </button>
           <button
-            style={{ ...btnPrimary, marginLeft: 8 }}
+            style={{
+              ...btnPrimary,
+              opacity: hasEnough ? 1 : 0.6,
+              cursor: hasEnough ? "pointer" : "not-allowed",
+            }}
             onClick={goToNext}
-            className="btnPrimaryHover"
+            disabled={!hasEnough}
+            className={hasEnough ? "btnPrimaryHover" : ""}
           >
             Next
           </button>
@@ -179,7 +200,10 @@ export default function Step2Participants({
           <option value="STATE">State</option>
         </select>
       </div>
-
+      <h3 style={{ fontSize: 16, color: "#6c757d", marginBottom: 12, textAlign: "center" }}>
+        Please Click SHG List button below to navigate back to SHG List after
+        you have selected the members below,
+      </h3>
       {form.training_type === "BENEFICIARY" ? (
         <>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
