@@ -1649,6 +1649,7 @@
 
 import React, { useState, useEffect, useMemo } from "react";
 import { TMS_API } from "../../../api/axios";
+import { getUser } from "../../../utils/storage";
 
 const selectStyle = {
     width: "100%",
@@ -1668,7 +1669,8 @@ const labelStyle = {
     color: "#374151",
 };
 
-const FilterComponent = ({ onFilterChange }) => {
+const FilterComponent = ({ filters,
+    handleChange, }) => {
     const financialYears = [
         "2022-23",
         "2023-24",
@@ -1697,27 +1699,39 @@ const FilterComponent = ({ onFilterChange }) => {
 
     const [apiThemes, setApiThemes] = useState([]);
     const [apiPlans, setApiPlans] = useState([]);
+    const [trainingCenters, setTrainingCenters] = useState([]);
+    const [parentPartnerId, setParentPartnerId] = useState(null);
+    const user = getUser();
 
-    const [filters, setFilters] = useState({
-        financialYear: "2026-27",
-        trainingTheme: "",
-        trainingThemeId: "",
-        trainingPlan: "",
-        trainingPlanDays: "",
-        participantType: "Beneficiary",
-        gender: "",
-        designation: "",
-        pldStatus: "",
-        socialCategory: "",
-        religion: "",
-        panchayat: "",
-        village: "",
-        searchType: "Lokos SHG Code",
-        searchValue: "",
-        ageGroup: "",
-        startDate: "",
-        endDate: "",
-    });
+    useEffect(() => {
+        console.log("========== USER OBJECT ==========");
+        console.log(user);
+        console.log("Partner ID:", user?.id);
+        console.log("District ID:", user?.district_id);
+        console.log("Centre ID:", user?.centre_id);
+        console.log("=================================");
+    }, [user]);
+
+    // const [filters, setFilters] = useState({
+    //     financialYear: "2026-27",
+    //     trainingTheme: "",
+    //     trainingThemeId: "",
+    //     trainingPlan: "",
+    //     trainingPlanDays: "",
+    //     participantType: "Beneficiary",
+    //     gender: "",
+    //     designation: "",
+    //     pldStatus: "",
+    //     socialCategory: "",
+    //     religion: "",
+    //     panchayat: "",
+    //     village: "",
+    //     searchType: "Lokos SHG Code",
+    //     searchValue: "",
+    //     ageGroup: "",
+    //     startDate: "",
+    //     endDate: "",
+    // });
 
     // 1. Fetch all themes on component initialization mount
     useEffect(() => {
@@ -1738,7 +1752,142 @@ const FilterComponent = ({ onFilterChange }) => {
         fetchInitialThemes();
     }, []);
 
+    useEffect(() => {
+        const fetchParentPartner = async () => {
+            try {
+                const response = await TMS_API.parentPartner();
+
+                console.log("===== Parent Partner API =====");
+                console.log(response);
+                console.log("Response Data:", response.data);
+
+                const data = response?.data?.results || response?.data;
+
+                console.log("Parsed Data:", data);
+
+                const partner = Array.isArray(data) ? data[0] : data;
+
+                console.log("Selected Partner:", partner);
+                console.log("Partner ID:", partner?.id);
+                console.log("Partner ID (partner_id):", partner?.partner_id);
+                console.log("Parent Partner ID:", partner?.parent_partner_id);
+
+                setParentPartnerId(
+                    partner?.id ??
+                    partner?.partner_id ??
+                    partner?.parent_partner_id ??
+                    null
+                );
+            } catch (err) {
+                console.error("Parent Partner API Error", err);
+            }
+        };
+
+        fetchParentPartner();
+    }, []);
+
+    useEffect(() => {
+        console.log("Current parentPartnerId =", parentPartnerId);
+    }, [parentPartnerId]);
+
+    // useEffect(() => {
+    //     const fetchTrainingCenters = async () => {
+    //         console.log("District ID :", filters.districtId);
+    //         console.log("Parent Partner ID :", parentPartnerId);
+
+    //         if (!filters.districtId || !parentPartnerId) {
+    //             console.log("API skipped");
+    //             return;
+    //         }
+
+    //         try {
+    //             const response = await TMS_API.trainingPartnerCentres.list({
+    //                 params: {
+    //                     district_id: filters.districtId,
+    //                     partner_id: parentPartnerId,
+    //                 },
+    //             });
+
+    //             console.log("Training Centre API Response");
+    //             console.log(response);
+    //             console.log("Response Data:", response.data);
+
+    //             const data =
+    //                 response?.data?.results ||
+    //                 response?.data ||
+    //                 [];
+
+    //             console.log("Training Centres:", data);
+
+    //             setTrainingCenters(Array.isArray(data) ? data : []);
+    //         } catch (err) {
+    //             console.error(err);
+    //         }
+    //     };
+
+    //     fetchTrainingCenters();
+    // }, [filters.districtId, parentPartnerId]);
+
     // 2. Fetch specific Training Plans matching chosen Theme identifier
+
+    useEffect(() => {
+        const fetchTrainingCenters = async () => {
+            if (!filters.districtId || !parentPartnerId) {
+                setTrainingCenters([]);
+                return;
+            }
+
+            try {
+                const params = {
+                    district_id: Number(filters.districtId),
+                    partner_id: Number(parentPartnerId),
+                };
+
+                console.log("Training Centre Params:", params);
+
+                const response = await TMS_API.trainingPartnerCentres.list({
+                    params,
+                });
+
+                const data =
+                    response?.data?.results ||
+                    response?.data ||
+                    [];
+
+                console.log("API Response:", data);
+
+                // Extra frontend validation
+                const filteredCenters = data.filter((center) => {
+                    const district =
+                        center.district_id ??
+                        center.district ??
+                        center.district?.id;
+
+                    const partner =
+                        center.partner_id ??
+                        center.partner ??
+                        center.partner?.id ??
+                        center.training_partner ??
+                        center.training_partner_id;
+
+                    return (
+                        Number(district) === Number(filters.districtId) &&
+                        Number(partner) === Number(parentPartnerId)
+                    );
+                });
+
+                console.log("Filtered Centers:", filteredCenters);
+
+                setTrainingCenters(filteredCenters);
+            } catch (err) {
+                console.error(err);
+                setTrainingCenters([]);
+            }
+        };
+
+        fetchTrainingCenters();
+    }, [filters.districtId, parentPartnerId]);
+
     useEffect(() => {
         const fetchDependentPlans = async () => {
             if (!filters.trainingThemeId) {
@@ -1785,25 +1934,41 @@ const FilterComponent = ({ onFilterChange }) => {
         });
     }, [apiPlans, filters.trainingThemeId]);
 
+    // useEffect(() => {
+    //     if (filters.participantType === "Beneficiary") {
+    //         setFilters((prev) => ({ ...prev, searchType: "Lokos SHG Code" }));
+    //     } else {
+    //         setFilters((prev) => ({ ...prev, searchType: "Mobile No" }));
+    //     }
+    // }, [filters.participantType]);
+
+
+
+
+    // useEffect(() => {
+    //     if (onFilterChange) {
+    //         onFilterChange(filters);
+    //     }
+    // }, [filters, onFilterChange]);
+
+    // const handleChange = (field, value) => {
+    //     setFilters((prev) => ({
+    //         ...prev,
+    //         [field]: value,
+    //     }));
+    // };
+
     useEffect(() => {
-        if (filters.participantType === "Beneficiary") {
-            setFilters((prev) => ({ ...prev, searchType: "Lokos SHG Code" }));
-        } else {
-            setFilters((prev) => ({ ...prev, searchType: "Mobile No" }));
-        }
+        handleChange(
+            "searchType",
+            filters.participantType === "Beneficiary"
+                ? "Lokos SHG Code"
+                : "Mobile No"
+        );
     }, [filters.participantType]);
 
-    useEffect(() => {
-        if (onFilterChange) {
-            onFilterChange(filters);
-        }
-    }, [filters, onFilterChange]);
-
-    const handleChange = (field, value) => {
-        setFilters((prev) => ({
-            ...prev,
-            [field]: value,
-        }));
+    const updateFilter = (field, value) => {
+        handleChange(field, value);
     };
 
     const handleThemeChange = (e) => {
@@ -1811,14 +1976,20 @@ const FilterComponent = ({ onFilterChange }) => {
         const themeId = selectedOption.getAttribute("data-id") || "";
         const themeValue = e.target.value;
 
-        setFilters((prev) => ({
-            ...prev,
-            trainingTheme: themeValue,
-            trainingThemeId: themeId,
-            trainingPlan: "",
-            trainingPlanDays: "",
-            endDate: "",
-        }));
+        handleChange("trainingTheme", themeValue);
+        handleChange("trainingThemeId", themeId);
+        handleChange("trainingPlan", "");
+        handleChange("trainingPlanDays", "");
+        handleChange("endDate", "");
+
+        // setFilters((prev) => ({
+        //     ...prev,
+        //     trainingTheme: themeValue,
+        //     trainingThemeId: themeId,
+        //     trainingPlan: "",
+        //     trainingPlanDays: "",
+        //     endDate: "",
+        // }));
     };
 
     const handleTrainingPlanChange = (planIdentifier) => {
@@ -1829,8 +2000,11 @@ const FilterComponent = ({ onFilterChange }) => {
         console.log(NewselectedPlan);
 
         console.log(planIdentifier);
-        handleChange("trainingPlan", NewselectedPlan.id);
-        handleChange("trainingPlanDays", NewselectedPlan.no_of_days);
+        // handleChange("trainingPlan", NewselectedPlan.id);
+        // handleChange("trainingPlanDays", NewselectedPlan.no_of_days);
+
+        updateFilter("trainingPlan", NewselectedPlan.id);
+        updateFilter("trainingPlanDays", NewselectedPlan.no_of_days);
 
         const startDate = filters?.startDate;
         if (!startDate || !NewselectedPlan) {
@@ -1867,13 +2041,17 @@ const FilterComponent = ({ onFilterChange }) => {
 
             <div
                 style={{
-                    display: "grid",
-                    gridTemplateColumns: "repeat(auto-fit,minmax(220px,1fr))",
+                    display: "flex",
+                    flexWrap: "wrap",
                     gap: "16px",
+                    alignItems: "flex-end",
                 }}
             >
                 {/* Financial Year */}
-                <div>
+                <div style={{
+                    flex: "1 1 220px",
+                    minWidth: "220px",
+                }}>
                     <label style={labelStyle}>Financial Year</label>
                     <select
                         style={selectStyle}
@@ -1888,7 +2066,10 @@ const FilterComponent = ({ onFilterChange }) => {
                 </div>
 
                 {/* Training Theme */}
-                <div>
+                <div style={{
+                    flex: "1 1 220px",
+                    minWidth: "220px",
+                }}>
                     <label style={labelStyle}>Training Theme</label>
                     <select
                         style={selectStyle}
@@ -1915,7 +2096,10 @@ const FilterComponent = ({ onFilterChange }) => {
                 </div>
 
                 {/* Training Plan */}
-                <div>
+                <div style={{
+                    flex: "1 1 220px",
+                    minWidth: "220px",
+                }}>
                     <label style={labelStyle}>Training Plan</label>
                     <select
                         style={selectStyle}
@@ -1939,7 +2123,10 @@ const FilterComponent = ({ onFilterChange }) => {
                 </div>
 
                 {/* Participant Type */}
-                <div>
+                <div style={{
+                    flex: "1 1 220px",
+                    minWidth: "220px",
+                }}>
                     <label style={labelStyle}>Participant Type</label>
                     <select
                         style={selectStyle}
@@ -1949,6 +2136,27 @@ const FilterComponent = ({ onFilterChange }) => {
                         <option value="">None</option>
                         {participantTypes.map((item) => (
                             <option key={item} value={item}>{item}</option>
+                        ))}
+                    </select>
+                </div>
+
+                <div style={{
+                    flex: "1 1 220px",
+                    minWidth: "220px",
+                }}>
+                    <label style={labelStyle}>Training Center</label>
+
+                    <select
+                        style={selectStyle}
+                        value={filters.trainingCenter || ""}
+                        onChange={(e) => handleChange("trainingCenter", e.target.value)}
+                    >
+                        <option value="">Select Training Center</option>
+
+                        {trainingCenters.map((center) => (
+                            <option key={center.id} value={center.id}>
+                                {center.venue_name || center.center_name || center.name}
+                            </option>
                         ))}
                     </select>
                 </div>
@@ -1976,7 +2184,7 @@ const FilterComponent = ({ onFilterChange }) => {
                     Apply Filters
                 </button>
 
-                <button
+                {/* <button
                     style={{
                         padding: "10px 20px",
                         border: "1px solid #d1d5db",
@@ -1987,30 +2195,82 @@ const FilterComponent = ({ onFilterChange }) => {
                     }}
                     onClick={() =>
                         setFilters({
-                            financialYear: "2026-27",
-                            trainingTheme: "",
-                            trainingThemeId: "",
-                            trainingPlan: "",
-                            participantType: "Beneficiary",
-                            gender: "",
-                            designation: "",
-                            pldStatus: "",
-                            socialCategory: "",
-                            religion: "",
-                            panchayat: "",
-                            village: "",
-                            searchType: "Lokos SHG Code",
-                            searchValue: "",
-                            ageGroup: "",
-                            startDate: "",
-                            endDate: "",
+                            // financialYear: "2026-27",
+                            // trainingTheme: "",
+                            // trainingThemeId: "",
+                            // trainingPlan: "",
+                            // participantType: "Beneficiary",
+                            // gender: "",
+                            // designation: "",
+                            // pldStatus: "",
+                            // socialCategory: "",
+                            // religion: "",
+                            // panchayat: "",
+                            // village: "",
+                            // searchType: "Lokos SHG Code",
+                            // searchValue: "",
+                            // ageGroup: "",
+                            // startDate: "",
+                            // endDate: "",
+                            handleChange("financialYear", "2026-27");
+                handleChange("trainingTheme", "");
+                handleChange("trainingThemeId", "");
+                handleChange("trainingPlan", "");
+                handleChange("trainingPlanDays", "");
+                handleChange("participantType", "Beneficiary");
+                handleChange("gender", "");
+                handleChange("designation", "");
+                handleChange("pldStatus", "");
+                handleChange("socialCategory", "");
+                handleChange("religion", "");
+                handleChange("panchayat", "");
+                handleChange("village", "");
+                handleChange("searchType", "Lokos SHG Code");
+                handleChange("searchValue", "");
+                handleChange("ageGroup", "");
+                handleChange("startDate", "");
+                handleChange("endDate", "");
                         })
                     }
+                >
+                Reset
+            </button> */}
+
+                <button
+                    style={{
+                        padding: "10px 20px",
+                        border: "1px solid #d1d5db",
+                        borderRadius: "8px",
+                        background: "#fff",
+                        cursor: "pointer",
+                        color: "#c00202",
+                    }}
+                    onClick={() => {
+                        handleChange("financialYear", "2026-27");
+                        handleChange("trainingTheme", "");
+                        handleChange("trainingThemeId", "");
+                        handleChange("trainingPlan", "");
+                        handleChange("trainingPlanDays", "");
+                        handleChange("participantType", "Beneficiary");
+                        handleChange("gender", "");
+                        handleChange("designation", "");
+                        handleChange("pldStatus", "");
+                        handleChange("socialCategory", "");
+                        handleChange("religion", "");
+                        handleChange("block", "");
+                        handleChange("panchayat", "");
+                        handleChange("village", "");
+                        handleChange("searchType", "Lokos SHG Code");
+                        handleChange("searchValue", "");
+                        handleChange("ageRange", "");
+                        handleChange("startDate", "");
+                        handleChange("endDate", "");
+                    }}
                 >
                     Reset
                 </button>
             </div>
-        </div>
+        </div >
     );
 };
 

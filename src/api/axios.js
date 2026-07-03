@@ -597,8 +597,38 @@ export const TMS_API = {
 
 
   // FIXED: Changed from makeCrud to a clean, single GET request method
-  eligiblebatchTrainees: (params) =>
-    api.get("/tms/batch-creator/trainees/", { params }),
+  // eligiblebatchTrainees: (params) =>
+  //   api.get("/tms/batch-creator/trainees/", { params }),
+
+  // ------------------------------------
+  // Batch Creator APIs
+  // ------------------------------------
+  batchCreator: {
+    // Get Eligible Trainees
+    trainees: (params) =>
+      api.get("/tms/batch-creator/trainees/", { params }),
+
+    // Create Batch (Separate / Combined)
+    create: (data) =>
+      api.post("/tms/batch-creator/create/", data),
+
+    // Update Batch
+    update: (batchId, data) =>
+      api.put(
+        `/tms/batch-creator/update/${encodeURIComponent(batchId)}/`,
+        data
+      ),
+
+    // Delete Batch
+    delete: (batchId) =>
+      api.delete(
+        `/tms/batch-creator/delete/${encodeURIComponent(batchId)}/`
+      ),
+  },
+
+  // partner ID API
+  parentPartner: (params = {}) =>
+    api.get("/tms/dtp/parent-partner/", { params }),
 
   // ------------------------------------
   // User Management
