@@ -17,8 +17,9 @@ const ROLE_TMS_ROUTE = {
   dmmu: "/tms/dmmu/dashboard",
   smmu: "/tms/smmu/dashboard",
   training_partner: "/tms/tp/dashboard",
-  master_trainer: "/tms/mt/dashboard",
+  dtp: "/tms/dtp/dashboard",
   tp_contact_person: "/tms/cp/dashboard",
+  master_trainer: "/tms/mt/dashboard",
   default: "/tms",
 };
 
@@ -34,6 +35,7 @@ const ROLE_ID_TO_KEY = {
   9: "pmu_admin",
   10: "dcnrlm",
   11: "tp_contact_person",
+  13: "dtp",
 };
 
 const ADMIN_ROLE_KEYS = new Set([
@@ -46,6 +48,7 @@ const ADMIN_ROLE_KEYS = new Set([
 ]);
 const GENERAL_ROLE_KEYS = new Set([
   "training_partner",
+  "dtp",
   "master_trainer",
   "crp_ep",
   "crp_ld",

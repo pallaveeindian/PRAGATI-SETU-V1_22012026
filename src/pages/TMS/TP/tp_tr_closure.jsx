@@ -6,7 +6,10 @@ import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
-import { getCanonicalRole, ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils";
+import {
+  getCanonicalRole,
+  ROLE_WELCOME_MESSAGES,
+} from "../../../utils/roleUtils";
 
 /* ─── tiny helpers ─────────────────────────────────────────── */
 function InfoItem({ label, value, children }) {
@@ -90,7 +93,6 @@ export default function TpTrainingRequestClosure() {
     try {
       const resp = await api.get(`/tms/batches/${batchId}/detail/`);
       const data = resp?.data;
-      console.log("Fetched batch detail:", data);
 
       if (!data) throw new Error("Empty response");
 
@@ -156,33 +158,45 @@ export default function TpTrainingRequestClosure() {
 
     // Map Beneficiaries
     if (trainingType === "BENEFICIARY") {
-      return (batch.beneficiary_participations || []).filter(bb => {
-        if (!bb.is_active) return false;
-        // Lookup summary using the through-table ID
-        const summary = (batch.beneficiary_summaries || []).find(s => s.batch_beneficiary === bb.id);
-        return summary?.is_successful === true;
-      }).map(bb => {
-        // Resolve full beneficiary info from array
-        const fullBen = (batch.beneficiary || []).find(b => b.id === bb.beneficiary) || {};
-        const summary = (batch.beneficiary_summaries || []).find(s => s.batch_beneficiary === bb.id);
-        return {
-          ...bb,
-          display_name: fullBen.member_name || `Beneficiary #${bb.beneficiary}`,
-          attendance_pct: summary?.attendance_percentage || "0.00"
-        };
-      });
+      return (batch.beneficiary_participations || [])
+        .filter((bb) => {
+          if (!bb.is_active) return false;
+          // Lookup summary using the through-table ID
+          const summary = (batch.beneficiary_summaries || []).find(
+            (s) => s.batch_beneficiary === bb.id,
+          );
+          return summary?.is_successful === true;
+        })
+        .map((bb) => {
+          // Resolve full beneficiary info from array
+          const fullBen =
+            (batch.beneficiary || []).find((b) => b.id === bb.beneficiary) ||
+            {};
+          const summary = (batch.beneficiary_summaries || []).find(
+            (s) => s.batch_beneficiary === bb.id,
+          );
+          return {
+            ...bb,
+            display_name:
+              fullBen.member_name || `Beneficiary #${bb.beneficiary}`,
+            attendance_pct: summary?.attendance_percentage || "0.00",
+          };
+        });
     }
 
     // Map Trainers
     if (trainingType === "TRAINER") {
-      return (batch.trainer_participations || []).filter(bt => bt.is_active && bt.attended === true).map(bt => {
-        const fullTr = (batch.trainer || []).find(t => t.id === bt.trainer) || {};
-        return {
-          ...bt,
-          display_name: fullTr.full_name || `Trainer #${bt.trainer}`,
-          attendance_pct: "100.00"
-        };
-      });
+      return (batch.trainer_participations || [])
+        .filter((bt) => bt.is_active && bt.attended === true)
+        .map((bt) => {
+          const fullTr =
+            (batch.trainer || []).find((t) => t.id === bt.trainer) || {};
+          return {
+            ...bt,
+            display_name: fullTr.full_name || `Trainer #${bt.trainer}`,
+            attendance_pct: "100.00",
+          };
+        });
     }
     return [];
   }, [batch, trainingType]);
@@ -234,7 +248,13 @@ export default function TpTrainingRequestClosure() {
     if (isExposureVisit) t += parseFloat(exposureVisitCost) || 0;
     if (isFieldVisit) t += parseFloat(fieldVisitCost) || 0;
     return t.toFixed(2);
-  }, [participantSubtotal, isExposureVisit, exposureVisitCost, isFieldVisit, fieldVisitCost]);
+  }, [
+    participantSubtotal,
+    isExposureVisit,
+    exposureVisitCost,
+    isFieldVisit,
+    fieldVisitCost,
+  ]);
 
   /* ═══════════════════════════════════════════════════════════
      SUBMIT
@@ -251,23 +271,33 @@ export default function TpTrainingRequestClosure() {
     for (const p of successfulParticipants) {
       const c = costs[p.id] || {};
       if (c.hra === "" || c.ta_da === "") {
-        setSubmitError("Please fill in TA and DA for every participant before submitting.");
+        setSubmitError(
+          "Please fill in TA and DA for every participant before submitting.",
+        );
         return;
       }
     }
 
-    if (isExposureVisit && (exposureVisitCost === "" || parseFloat(exposureVisitCost) <= 0)) {
+    if (
+      isExposureVisit &&
+      (exposureVisitCost === "" || parseFloat(exposureVisitCost) <= 0)
+    ) {
       setSubmitError("Please enter a valid Exposure Visit Cost (must be > 0).");
       return;
     }
-    if (isFieldVisit && (fieldVisitCost === "" || parseFloat(fieldVisitCost) <= 0)) {
+    if (
+      isFieldVisit &&
+      (fieldVisitCost === "" || parseFloat(fieldVisitCost) <= 0)
+    ) {
       setSubmitError("Please enter a valid Field Visit Cost (must be > 0).");
       return;
     }
 
     const trainingRequestId = batch?.request?.id;
     if (!trainingRequestId) {
-      setSubmitError("Could not determine Training Request ID. Please contact admin.");
+      setSubmitError(
+        "Could not determine Training Request ID. Please contact admin.",
+      );
       return;
     }
 
@@ -276,44 +306,46 @@ export default function TpTrainingRequestClosure() {
       // 1. Submit Line-Item Costs
       for (const p of successfulParticipants) {
         const c = costs[p.id] || { hra: "0", ta_da: "0" };
-        await api.post('/tms/tp-batch-cost-breakups/', {
+        await api.post("/tms/tp-batch-cost-breakups/", {
           batch: parseInt(batchId, 10),
-          batch_beneficiary: trainingType === 'BENEFICIARY' ? p.id : null,
-          batch_trainer: trainingType === 'TRAINER' ? p.id : null,
+          batch_beneficiary: trainingType === "BENEFICIARY" ? p.id : null,
+          batch_trainer: trainingType === "TRAINER" ? p.id : null,
           participant_type: trainingType,
           hra: parseFloat(c.hra || 0),
           ta_da: parseFloat(c.ta_da || 0),
           is_active: 1,
-          created_by: user.id
+          created_by: user.id,
         });
       }
 
       // 2. Submit Master Invoice (Backend auto-calculates grand_total)
-      const costResp = await api.post('/tms/batch-costs/', {
+      const costResp = await api.post("/tms/batch-costs/", {
         batch: parseInt(batchId, 10),
         training: trainingRequestId,
         is_exposure_visit: isExposureVisit,
-        exposure_visit_cost: isExposureVisit ? parseFloat(exposureVisitCost || 0) : 0,
+        exposure_visit_cost: isExposureVisit
+          ? parseFloat(exposureVisitCost || 0)
+          : 0,
         is_field_visit: isFieldVisit,
         field_visit_cost: isFieldVisit ? parseFloat(fieldVisitCost || 0) : 0,
         is_active: 1,
-        created_by: user.id
+        created_by: user.id,
       });
       const masterCostId = costResp.data.id;
 
       // 3. Submit Closure Request
-      await api.post('/tms/batch-closure-requests/', {
+      await api.post("/tms/batch-closure-requests/", {
         batch: parseInt(batchId, 10),
         batch_costing: masterCostId,
         certificates_issued: false,
         is_active: 1,
-        created_by: user.id
+        created_by: user.id,
       });
 
       // 4. Update Batch Status to REVIEW
       await api.patch(`/tms/batches/${batchId}/`, {
         status: "REVIEW",
-        updated_by: user.id
+        updated_by: user.id,
       });
 
       setSubmitSuccess(true);
@@ -325,7 +357,11 @@ export default function TpTrainingRequestClosure() {
       }
     } catch (e) {
       const d = e?.response?.data;
-      const msg = d?.non_field_errors?.[0] || d?.detail || (typeof d === "object" ? Object.values(d).flat().join(" | ") : null) || "Submission failed. Please try again.";
+      const msg =
+        d?.non_field_errors?.[0] ||
+        d?.detail ||
+        (typeof d === "object" ? Object.values(d).flat().join(" | ") : null) ||
+        "Submission failed. Please try again.";
       setSubmitError(msg);
     } finally {
       setSubmitting(false);
@@ -338,7 +374,10 @@ export default function TpTrainingRequestClosure() {
   if (loading) {
     return (
       <div className="app-shell">
-        <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} />
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
         <div className="main-area" style={{ padding: 40, color: "#2b4e72" }}>
           <div className="spinner-wrap">
             <div className="spinner" />
@@ -352,7 +391,10 @@ export default function TpTrainingRequestClosure() {
   if (fetchError) {
     return (
       <div className="app-shell">
-        <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} />
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
         <div className="main-area" style={{ padding: 40 }}>
           <div className="alert alert-error">{fetchError}</div>
         </div>
@@ -368,7 +410,10 @@ export default function TpTrainingRequestClosure() {
       {/* <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} /> */}
       <Header />
       <div className="content-area">
-        <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} />
+        <LeftNav
+          collapsed={navCollapsed}
+          onToggle={() => setNavCollapsed((v) => !v)}
+        />
         <div className="main-area">
           {/* <div className="dashboard-header">
             <h2 className="dashboard-title">{roleMessage}</h2>
@@ -376,41 +421,67 @@ export default function TpTrainingRequestClosure() {
 
           <main style={{ padding: 18 }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
-
               {/* ════════ STATUS BANNERS ════════ */}
               {alreadySubmitted && !submitSuccess && (
                 <div className="alert alert-info">
-                  Closure has already been submitted. Batch is under DMMU review. The data below is read-only.
+                  Closure has already been submitted. Batch is under DMMU
+                  review. The data below is read-only.
                 </div>
               )}
               {submitSuccess && (
                 <div className="alert alert-success">
-                  Batch closure submitted successfully! The batch is now under DMMU review.
+                  Batch closure submitted successfully! The batch is now under
+                  DMMU review.
                 </div>
               )}
 
               {/* ════════ BATCH & TRAINING PLAN DETAILS ════════ */}
               <div className="cl-card">
-                <div className="cl-card-title">📖 Training & Batch Overview</div>
+                <div className="cl-card-title">
+                  📖 Training & Batch Overview
+                </div>
                 <div className="info-grid">
-                  <InfoItem label="Batch Code" value={batch?.code || `#${batchId}`} />
+                  <InfoItem
+                    label="Batch Code"
+                    value={batch?.code || `#${batchId}`}
+                  />
                   <InfoItem label="Status">
-                    <span className={`status-badge status-${String(batch?.status || "").toLowerCase()}`}>
+                    <span
+                      className={`status-badge status-${String(batch?.status || "").toLowerCase()}`}
+                    >
                       {batch?.status}
                     </span>
                   </InfoItem>
                   <InfoItem label="Participant Type" value={trainingType} />
                   <InfoItem label="Batch Type" value={batch?.batch_type} />
-                  <InfoItem label="Start Date" value={fmtDate(batch?.start_date)} />
+                  <InfoItem
+                    label="Start Date"
+                    value={fmtDate(batch?.start_date)}
+                  />
                   <InfoItem label="End Date" value={fmtDate(batch?.end_date)} />
 
-                  <div style={{ gridColumn: "1 / -1", borderTop: "1px solid #e2e8f0", margin: "8px 0" }} />
+                  <div
+                    style={{
+                      gridColumn: "1 / -1",
+                      borderTop: "1px solid #e2e8f0",
+                      margin: "8px 0",
+                    }}
+                  />
 
                   <InfoItem label="Training Plan" value={tp?.training_name} />
-                  <InfoItem label="Training Level" value={tp?.level_of_training} />
-                  <InfoItem label="Training Type" value={tp?.type_of_training} />
+                  <InfoItem
+                    label="Training Level"
+                    value={tp?.level_of_training}
+                  />
+                  <InfoItem
+                    label="Training Type"
+                    value={tp?.type_of_training}
+                  />
                   <InfoItem label="No. of Days" value={tp?.no_of_days} />
-                  <InfoItem label="District" value={req?.district?.district_name_en} />
+                  <InfoItem
+                    label="District"
+                    value={req?.district?.district_name_en}
+                  />
                   <InfoItem label="Block" value={req?.block?.block_name_en} />
                 </div>
               </div>
@@ -422,28 +493,76 @@ export default function TpTrainingRequestClosure() {
                   <InfoItem label="Venue Name" value={centre?.venue_name} />
                   <InfoItem label="Centre Type" value={centre?.centre_type} />
                   <InfoItem label="Address" value={centre?.venue_address} />
-                  <InfoItem label="Training Halls" value={`${centre?.training_hall_count || 0} (Capacity: ${centre?.training_hall_capacity || 0})`} />
-                  <InfoItem label="Toilets / Bathrooms" value={centre?.toilets_bathrooms} />
-                  <InfoItem label="Power & Water" value={centre?.power_water_facility} />
+                  <InfoItem
+                    label="Training Halls"
+                    value={`${centre?.training_hall_count || 0} (Capacity: ${centre?.training_hall_capacity || 0})`}
+                  />
+                  <InfoItem
+                    label="Toilets / Bathrooms"
+                    value={centre?.toilets_bathrooms}
+                  />
+                  <InfoItem
+                    label="Power & Water"
+                    value={centre?.power_water_facility}
+                  />
                 </div>
-                <div style={{ display: "flex", gap: 12, marginTop: 16, flexWrap: "wrap" }}>
-                  <span className={`facility-badge ${centre?.medical_kit ? "yes" : "no"}`}>Medical Kit</span>
-                  <span className={`facility-badge ${centre?.open_space ? "yes" : "no"}`}>Open Space</span>
-                  <span className={`facility-badge ${centre?.field_visit_facility ? "yes" : "no"}`}>Field Visit</span>
-                  <span className={`facility-badge ${centre?.transport_facility ? "yes" : "no"}`}>Transport</span>
-                  <span className={`facility-badge ${centre?.dining_facility ? "yes" : "no"}`}>Dining Room</span>
+                <div
+                  style={{
+                    display: "flex",
+                    gap: 12,
+                    marginTop: 16,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <span
+                    className={`facility-badge ${centre?.medical_kit ? "yes" : "no"}`}
+                  >
+                    Medical Kit
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.open_space ? "yes" : "no"}`}
+                  >
+                    Open Space
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.field_visit_facility ? "yes" : "no"}`}
+                  >
+                    Field Visit
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.transport_facility ? "yes" : "no"}`}
+                  >
+                    Transport
+                  </span>
+                  <span
+                    className={`facility-badge ${centre?.dining_facility ? "yes" : "no"}`}
+                  >
+                    Dining Room
+                  </span>
                 </div>
               </div>
 
               {/* ════════ MASTER TRAINERS & SCHEDULES ════════ */}
-              <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))", gap: 20 }}>
+              <div
+                style={{
+                  display: "grid",
+                  gridTemplateColumns: "repeat(auto-fit, minmax(400px, 1fr))",
+                  gap: 20,
+                }}
+              >
                 <div className="cl-card">
                   <div className="cl-card-title">🧑‍🏫 Master Trainers</div>
                   {batch?.master_trainers?.length > 0 ? (
                     <table className="table">
-                      <thead><tr><th>Name</th><th>Designation</th><th>Mobile</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Name</th>
+                          <th>Designation</th>
+                          <th>Mobile</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {batch.master_trainers.map(mt => (
+                        {batch.master_trainers.map((mt) => (
                           <tr key={mt.id}>
                             <td style={{ fontWeight: 500 }}>{mt.full_name}</td>
                             <td>{mt.designation}</td>
@@ -452,25 +571,39 @@ export default function TpTrainingRequestClosure() {
                         ))}
                       </tbody>
                     </table>
-                  ) : <div className="empty-msg">No master trainers assigned.</div>}
+                  ) : (
+                    <div className="empty-msg">
+                      No master trainers assigned.
+                    </div>
+                  )}
                 </div>
 
                 <div className="cl-card">
                   <div className="cl-card-title">📅 Batch Schedules</div>
                   {batch?.schedules?.length > 0 ? (
                     <table className="table">
-                      <thead><tr><th>Date</th><th>Start Time</th><th>Remarks</th></tr></thead>
+                      <thead>
+                        <tr>
+                          <th>Date</th>
+                          <th>Start Time</th>
+                          <th>Remarks</th>
+                        </tr>
+                      </thead>
                       <tbody>
-                        {batch.schedules.map(s => (
+                        {batch.schedules.map((s) => (
                           <tr key={s.id}>
-                            <td style={{ fontWeight: 500 }}>{fmtDate(s.schedule_date)}</td>
+                            <td style={{ fontWeight: 500 }}>
+                              {fmtDate(s.schedule_date)}
+                            </td>
                             <td>{s.start_time || "—"}</td>
                             <td>{s.remarks || "—"}</td>
                           </tr>
                         ))}
                       </tbody>
                     </table>
-                  ) : <div className="empty-msg">No schedules found.</div>}
+                  ) : (
+                    <div className="empty-msg">No schedules found.</div>
+                  )}
                 </div>
               </div>
 
@@ -479,59 +612,143 @@ export default function TpTrainingRequestClosure() {
                 <div className="cl-card-title">📝 Daily Attendance Records</div>
                 {batch?.attendances?.length > 0 ? (
                   <div style={{ display: "flex", gap: 12, flexWrap: "wrap" }}>
-                    {batch.attendances.map(att => (
-                      <div key={att.id} style={{ border: "1px solid #cbd5e1", borderRadius: 8, padding: 12, background: "#f8fafc", minWidth: 160 }}>
-                        <div style={{ fontWeight: 600, color: "#1e293b", marginBottom: 4 }}>Day: {fmtDate(att.date)}</div>
+                    {batch.attendances.map((att) => (
+                      <div
+                        key={att.id}
+                        style={{
+                          border: "1px solid #cbd5e1",
+                          borderRadius: 8,
+                          padding: 12,
+                          background: "#f8fafc",
+                          minWidth: 160,
+                        }}
+                      >
+                        <div
+                          style={{
+                            fontWeight: 600,
+                            color: "#1e293b",
+                            marginBottom: 4,
+                          }}
+                        >
+                          Day: {fmtDate(att.date)}
+                        </div>
                         {att.csv_upload ? (
-                          <a href={normalizeMediaUrl(att.csv_upload)} target="_blank" rel="noreferrer" style={{ fontSize: 13, color: "#2563eb", textDecoration: "none", fontWeight: 500 }}>
+                          <a
+                            href={normalizeMediaUrl(att.csv_upload)}
+                            target="_blank"
+                            rel="noreferrer"
+                            style={{
+                              fontSize: 13,
+                              color: "#2563eb",
+                              textDecoration: "none",
+                              fontWeight: 500,
+                            }}
+                          >
                             📥 Download CSV
                           </a>
                         ) : (
-                          <span style={{ fontSize: 13, color: "#94a3b8" }}>No CSV Uploaded</span>
+                          <span style={{ fontSize: 13, color: "#94a3b8" }}>
+                            No CSV Uploaded
+                          </span>
                         )}
                       </div>
                     ))}
                   </div>
-                ) : <div className="empty-msg">No attendance recorded.</div>}
+                ) : (
+                  <div className="empty-msg">No attendance recorded.</div>
+                )}
               </div>
 
               {/* ════════ BATCH MEDIA GALLERY ════════ */}
               <div className="cl-card">
-                <div className="cl-card-title">📸 Batch Media (Photos & Docs)</div>
+                <div className="cl-card-title">
+                  📸 Batch Media (Photos & Docs)
+                </div>
                 {batch?.batch_pictures?.length > 0 ? (
                   <div style={{ display: "flex", gap: 16, flexWrap: "wrap" }}>
-                    {batch.batch_pictures.map(m => {
+                    {batch.batch_pictures.map((m) => {
                       const src = normalizeMediaUrl(m.file);
-                      const isImage = src && !src.toLowerCase().endsWith(".pdf");
+                      const isImage =
+                        src && !src.toLowerCase().endsWith(".pdf");
                       return (
-                        <div key={m.id} style={{ width: 140, background: "#f1f5f9", borderRadius: 8, overflow: "hidden", border: "1px solid #cbd5e1" }}>
+                        <div
+                          key={m.id}
+                          style={{
+                            width: 140,
+                            background: "#f1f5f9",
+                            borderRadius: 8,
+                            overflow: "hidden",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        >
                           {isImage ? (
-                            <img src={src} alt={m.category} onClick={() => setMediaPreviewSrc(src)} style={{ width: "100%", height: 100, objectFit: "cover", cursor: "zoom-in" }} />
+                            <img
+                              src={src}
+                              alt={m.category}
+                              onClick={() => setMediaPreviewSrc(src)}
+                              style={{
+                                width: "100%",
+                                height: 100,
+                                objectFit: "cover",
+                                cursor: "zoom-in",
+                              }}
+                            />
                           ) : (
-                            <div onClick={() => window.open(src, "_blank")} style={{ height: 100, display: "flex", alignItems: "center", justifyContent: "center", cursor: "pointer", background: "#e2e8f0" }}>
-                              <span style={{ fontSize: 13, fontWeight: 600, color: "#334155" }}>View PDF</span>
+                            <div
+                              onClick={() => window.open(src, "_blank")}
+                              style={{
+                                height: 100,
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "center",
+                                cursor: "pointer",
+                                background: "#e2e8f0",
+                              }}
+                            >
+                              <span
+                                style={{
+                                  fontSize: 13,
+                                  fontWeight: 600,
+                                  color: "#334155",
+                                }}
+                              >
+                                View PDF
+                              </span>
                             </div>
                           )}
-                          <div style={{ padding: "8px", fontSize: 12, textAlign: "center", fontWeight: 600, color: "#475569" }}>
+                          <div
+                            style={{
+                              padding: "8px",
+                              fontSize: 12,
+                              textAlign: "center",
+                              fontWeight: 600,
+                              color: "#475569",
+                            }}
+                          >
                             {m.category}
                           </div>
                         </div>
                       );
                     })}
                   </div>
-                ) : <div className="empty-msg">No media uploaded by TC ID.</div>}
+                ) : (
+                  <div className="empty-msg">No media uploaded by TC ID.</div>
+                )}
               </div>
 
               {/* ════════ PARTICIPANTS COST TABLE ════════ */}
               <div className="cl-card">
                 <div className="cl-card-title">
                   Successful Participants — Cost Breakup
-                  <span className="count-badge">{successfulParticipants.length}</span>
+                  <span className="count-badge">
+                    {successfulParticipants.length}
+                  </span>
                 </div>
 
                 {successfulParticipants.length === 0 ? (
                   <div className="empty-msg">
-                    No successful participants found (must have ≥80% attendance & not dropped out).
+                    No successful participants found (must have ≥80% attendance
+                    & not dropped out).
                   </div>
                 ) : (
                   <div style={{ overflowX: "auto" }}>
@@ -548,13 +765,28 @@ export default function TpTrainingRequestClosure() {
                       </thead>
                       <tbody>
                         {successfulParticipants.map((p, i) => {
-                          const c = costs[p.id] || { hra: "", ta_da: "", total_cost: "" };
+                          const c = costs[p.id] || {
+                            hra: "",
+                            ta_da: "",
+                            total_cost: "",
+                          };
                           return (
                             <tr key={p.id}>
                               <td>{i + 1}</td>
-                              <td style={{ fontWeight: 600, color: "#0f172a" }}>{p.display_name}</td>
+                              <td style={{ fontWeight: 600, color: "#0f172a" }}>
+                                {p.display_name}
+                              </td>
                               <td>
-                                <span style={{ background: "#dcfce7", color: "#166534", padding: "3px 8px", borderRadius: 20, fontSize: 12, fontWeight: "bold" }}>
+                                <span
+                                  style={{
+                                    background: "#dcfce7",
+                                    color: "#166534",
+                                    padding: "3px 8px",
+                                    borderRadius: 20,
+                                    fontSize: 12,
+                                    fontWeight: "bold",
+                                  }}
+                                >
                                   {p.attendance_pct}%
                                 </span>
                               </td>
@@ -563,25 +795,57 @@ export default function TpTrainingRequestClosure() {
                                 <>
                                   <td>₹{fmt(c.hra)}</td>
                                   <td>₹{fmt(c.ta_da)}</td>
-                                  <td><strong style={{ color: "#1e40af" }}>₹{fmt(c.total_cost)}</strong></td>
+                                  <td>
+                                    <strong style={{ color: "#1e40af" }}>
+                                      ₹{fmt(c.total_cost)}
+                                    </strong>
+                                  </td>
                                 </>
                               ) : (
                                 /* ── EDITABLE ── */
                                 <>
                                   <td>
                                     <input
-                                      className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
-                                      value={c.hra} onChange={(e) => handleCostChange(p.id, "hra", e.target.value)}
+                                      className="cost-input"
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      value={c.hra}
+                                      onChange={(e) =>
+                                        handleCostChange(
+                                          p.id,
+                                          "hra",
+                                          e.target.value,
+                                        )
+                                      }
                                     />
                                   </td>
                                   <td>
                                     <input
-                                      className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
-                                      value={c.ta_da} onChange={(e) => handleCostChange(p.id, "ta_da", e.target.value)}
+                                      className="cost-input"
+                                      type="number"
+                                      min="0"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      value={c.ta_da}
+                                      onChange={(e) =>
+                                        handleCostChange(
+                                          p.id,
+                                          "ta_da",
+                                          e.target.value,
+                                        )
+                                      }
                                     />
                                   </td>
                                   <td>
-                                    <span className={parseFloat(c.total_cost) > 0 ? "computed-total computed-total--active" : "computed-total"}>
+                                    <span
+                                      className={
+                                        parseFloat(c.total_cost) > 0
+                                          ? "computed-total computed-total--active"
+                                          : "computed-total"
+                                      }
+                                    >
                                       ₹{fmt(c.total_cost)}
                                     </span>
                                   </td>
@@ -593,10 +857,25 @@ export default function TpTrainingRequestClosure() {
                       </tbody>
                       <tfoot>
                         <tr>
-                          <td colSpan={5} style={{ textAlign: "right", fontWeight: 700, color: "#2b4e72", padding: "10px" }}>
+                          <td
+                            colSpan={5}
+                            style={{
+                              textAlign: "right",
+                              fontWeight: 700,
+                              color: "#2b4e72",
+                              padding: "10px",
+                            }}
+                          >
                             Subtotal:
                           </td>
-                          <td style={{ fontWeight: 700, color: "#2b4e72", padding: "10px", fontSize: 16 }}>
+                          <td
+                            style={{
+                              fontWeight: 700,
+                              color: "#2b4e72",
+                              padding: "10px",
+                              fontSize: 16,
+                            }}
+                          >
                             ₹{fmt(participantSubtotal)}
                           </td>
                         </tr>
@@ -639,23 +918,35 @@ export default function TpTrainingRequestClosure() {
                   <div className="visit-row">
                     <label className="toggle-label">
                       <input
-                        type="checkbox" checked={isFieldVisit} disabled={alreadySubmitted}
+                        type="checkbox"
+                        checked={isFieldVisit}
+                        disabled={alreadySubmitted}
                         onChange={(e) => {
                           setIsFieldVisit(e.target.checked);
                           if (!e.target.checked) setFieldVisitCost("");
                         }}
                       />
-                      <span>Have the participants of this batch attended a Field Visit?</span>
+                      <span>
+                        Have the participants of this batch attended a Field
+                        Visit?
+                      </span>
                     </label>
                     {isFieldVisit && (
                       <div className="visit-cost-field">
                         <span className="visit-cost-label">Cost (₹):</span>
                         {alreadySubmitted ? (
-                          <span className="computed-total computed-total--active">₹{fmt(fieldVisitCost)}</span>
+                          <span className="computed-total computed-total--active">
+                            ₹{fmt(fieldVisitCost)}
+                          </span>
                         ) : (
                           <input
-                            className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
-                            value={fieldVisitCost} onChange={(e) => setFieldVisitCost(e.target.value)}
+                            className="cost-input"
+                            type="number"
+                            min="0"
+                            step="0.01"
+                            placeholder="0.00"
+                            value={fieldVisitCost}
+                            onChange={(e) => setFieldVisitCost(e.target.value)}
                           />
                         )}
                       </div>
@@ -669,7 +960,10 @@ export default function TpTrainingRequestClosure() {
                 <div className="grand-total-title">Master Invoice Summary</div>
 
                 <div className="grand-total-row">
-                  <span>Participant Costs ({successfulParticipants.length} participants)</span>
+                  <span>
+                    Participant Costs ({successfulParticipants.length}{" "}
+                    participants)
+                  </span>
                   <span>₹{fmt(participantSubtotal)}</span>
                 </div>
 
@@ -702,8 +996,20 @@ export default function TpTrainingRequestClosure() {
 
               {/* ════════ SUBMIT BUTTON ════════ */}
               {!alreadySubmitted && (
-                <div style={{ display: "flex", justifyContent: "flex-end", gap: 12, marginTop: 24, marginBottom: 32 }}>
-                  <button className="btn btn-outline" onClick={() => navigate(-1)} disabled={submitting}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    gap: 12,
+                    marginTop: 24,
+                    marginBottom: 32,
+                  }}
+                >
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate(-1)}
+                    disabled={submitting}
+                  >
                     ← Back
                   </button>
                   <button
@@ -711,14 +1017,26 @@ export default function TpTrainingRequestClosure() {
                     onClick={handleSubmit}
                     disabled={submitting || successfulParticipants.length === 0}
                   >
-                    {submitting ? "Submitting securely…" : "Submit Closure Request →"}
+                    {submitting
+                      ? "Submitting securely…"
+                      : "Submit Closure Request →"}
                   </button>
                 </div>
               )}
 
               {alreadySubmitted && (
-                <div style={{ display: "flex", justifyContent: "flex-end", marginTop: 24, marginBottom: 32 }}>
-                  <button className="btn btn-outline" onClick={() => navigate(-1)}>
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "flex-end",
+                    marginTop: 24,
+                    marginBottom: 32,
+                  }}
+                >
+                  <button
+                    className="btn btn-outline"
+                    onClick={() => navigate(-1)}
+                  >
                     ← Back to Batches
                   </button>
                 </div>
@@ -730,8 +1048,24 @@ export default function TpTrainingRequestClosure() {
 
         {/* Lightbox for media preview */}
         {mediaPreviewSrc && (
-          <div onClick={() => setMediaPreviewSrc(null)} style={{ position: "fixed", inset: 0, background: "rgba(0,0,0,0.8)", display: "flex", alignItems: "center", justifyContent: "center", zIndex: 4000, cursor: "zoom-out" }}>
-            <img src={mediaPreviewSrc} alt="Preview" style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 6 }} />
+          <div
+            onClick={() => setMediaPreviewSrc(null)}
+            style={{
+              position: "fixed",
+              inset: 0,
+              background: "rgba(0,0,0,0.8)",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              zIndex: 4000,
+              cursor: "zoom-out",
+            }}
+          >
+            <img
+              src={mediaPreviewSrc}
+              alt="Preview"
+              style={{ maxWidth: "90%", maxHeight: "90%", borderRadius: 6 }}
+            />
           </div>
         )}
 

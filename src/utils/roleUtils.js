@@ -11,6 +11,7 @@ export const ROLE_ID_MAP = {
   9: "pmu_admin",
   10: "dcnrlm",
   11: "tp_contact_person",
+  13: "dtp",
 };
 
 export const ROLE_WELCOME_MESSAGES = {
@@ -18,6 +19,7 @@ export const ROLE_WELCOME_MESSAGES = {
   dmmu: "DMMU — Training Management",
   smmu: "SMMU — Training Management",
   training_partner: "Training Partner Dashboard",
+  dtp: "District Training Partner Dashboard",
   tp_contact_person: "TC ID Dashboard",
   master_trainer: "Master Trainer Dashboard",
   crp_ep: "CRP-EP Dashboard",
@@ -57,6 +59,12 @@ export function getCanonicalRole(obj = {}) {
     if (nameStr.includes("smmu") || nameStr.includes("state_mission"))
       return "smmu";
     if (nameStr.includes("training_partner")) return "training_partner";
+    if (
+      nameStr === "dtp" ||
+      nameStr.includes("district_training_partner") ||
+      nameStr.includes("district training partner")
+    )
+      return "dtp";
     if (nameStr.includes("master_trainer")) return "master_trainer";
     if (nameStr.includes("dcnrlm")) return "dcnrlm";
     if (

@@ -5,7 +5,7 @@ import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { TMS_API } from "../../../api/axios";
+import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 import {
   FaSearch,
   FaSyncAlt,
@@ -60,7 +60,7 @@ function saveCache(payload) {
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch { }
+  } catch {}
 }
 
 /* ---------------- partner resolver ---------------- */
@@ -71,7 +71,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch { }
+  } catch {}
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -375,17 +375,46 @@ export default function TpCentreList() {
   const [viewOpen, setViewOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
 
+  async function ensureUserGeoscope(userId) {
+    try {
+      const cached = JSON.parse(
+        localStorage.getItem("ps_user_geoscope") || "null",
+      );
+      if (cached) return cached;
+    } catch {}
+
+    try {
+      const resp = await LOOKUP_API.userGeoscopeByUserId(userId);
+      if (resp?.data) {
+        localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
+        return resp.data;
+      }
+    } catch {}
+    return null;
+  }
+
   async function fetchCentres(force = false) {
     if (!user?.id) return;
     setLoading(true);
     try {
       const partnerId = await resolveTrainingPartnerIdForUser(user.id);
-      if (!partnerId) return;
-
-      const resp = await TMS_API.trainingPartnerCentres.list({
+      let centreParams = {
         partner: partnerId,
         page_size: 500,
-      });
+      };
+
+      // Strict Guard: If logged in user is a DTP, ONLY fetch centres for their district
+      const isDTP = user?.role_id === 13 || user?.role === 13;
+      if (isDTP) {
+        const geoscope = await ensureUserGeoscope(user.id);
+        if (geoscope && geoscope.districts && geoscope.districts.length > 0) {
+          centreParams.district = geoscope.districts[0];
+        } else if (geoscope && geoscope.district_id) {
+          centreParams.district = geoscope.district_id;
+        }
+      }
+      if (!partnerId && !isDTP) return;
+      const resp = await TMS_API.trainingPartnerCentres.list(centreParams);
 
       const items = resp?.data?.results || [];
       setCentres(items);

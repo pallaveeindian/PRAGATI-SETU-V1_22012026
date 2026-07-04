@@ -86,6 +86,11 @@ export default function TrainingBatchList() {
 
   const [tpPartnerId, setTpPartnerId] = useState(null);
   const [tpPartnerName, setTpPartnerName] = useState(null);
+
+  const [dtpDistrictId, setDtpDistrictId] = useState(null);
+  const [dtpPartnerId, setDtpPartnerId] = useState(null);
+  const [dtpPartnerName, setDtpPartnerName] = useState("");
+
   // ⭐ PAGINATION CHANGE
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
@@ -170,13 +175,20 @@ export default function TrainingBatchList() {
         created_by: user?.id,
       };
     }
-
+    // 🔒 DISTRICT TRAINING PARTNER
+    if (role === "dtp") {
+      return {
+        district_id: dtpDistrictId,
+        partner: dtpPartnerId,
+      };
+    }
     return {};
   }
 
   function getScopeKey() {
     if (requestId) return `req_${requestId}`;
     if (role === "training_partner") return `tp_${user?.id}`;
+    if (role === "dtp") return `dtp_${user?.id}`;
     if (role === "bmmu") return "bmmu";
     if (role === "dmmu") return "dmmu";
     return role || "global";
@@ -235,6 +247,60 @@ export default function TrainingBatchList() {
             }));
           }
         }
+
+        if (role === "dtp") {
+          let districtId = null;
+
+          try {
+            const geoRes = await LOOKUP_API.userGeoscopeByUserId(user.id);
+
+            console.log("GEOSCOPE RESPONSE =", geoRes.data);
+
+            districtId =
+              geoRes?.data?.districts?.[0] ?? geoRes?.data?.district ?? null;
+
+            console.log("DISTRICT ID =", districtId);
+
+            if (districtId) {
+              setDtpDistrictId(String(districtId));
+
+              setFilters((f) => ({
+                ...f,
+                district_id: String(districtId),
+                block_id: "",
+                aspirational_only: false,
+              }));
+            }
+          } catch (err) {
+            console.error("Failed to load DTP geoscope", err);
+          }
+
+          // Parent Partner API
+          try {
+            const partnerRes = await TMS_API.parentPartner();
+
+            const partnerId = partnerRes?.data?.partner_id;
+
+            if (partnerId) {
+              setDtpPartnerId(String(partnerId));
+
+              setFilters((f) => ({
+                ...f,
+                partner: String(partnerId),
+              }));
+
+              try {
+                const pRes = await TMS_API.trainingPartners.retrieve(partnerId);
+
+                setDtpPartnerName(pRes?.data?.name || "");
+              } catch (err) {
+                console.error(err);
+              }
+            }
+          } catch (err) {
+            console.error(err);
+          }
+        }
       } catch (e) {
         console.error("Lookup load failed", e);
       }
@@ -245,6 +311,8 @@ export default function TrainingBatchList() {
     if (role !== "dmmu") return;
 
     const geo = getGeoscope() || {};
+    console.log(localStorage.getItem("ps_user_geoscope"));
+
     const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
 
     if (!dmmuDistrictId) return;
@@ -340,6 +408,13 @@ export default function TrainingBatchList() {
             Object.entries(filters).filter(([k]) => k !== "partner"),
           );
         }
+        if (role === "dtp") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(
+              ([k]) => !["district_id", "partner"].includes(k),
+            ),
+          );
+        }
 
         finalParams = {
           ...baseParams,
@@ -370,6 +445,55 @@ export default function TrainingBatchList() {
     }
   }
 
+  const handleDeleteBatch = async (batchId) => {
+    const confirmed = window.confirm(
+      "Are you sure you want to delete this batch?",
+    );
+
+    if (!confirmed) return;
+
+    try {
+      await TMS_API.batchCreator.delete(batchId);
+
+      alert("Batch deleted successfully.");
+
+      // Refresh the list
+      fetchBatches();
+    } catch (err) {
+      console.error("Delete failed:", err);
+
+      alert(
+        err?.response?.data?.detail ||
+          err?.response?.data?.error ||
+          err?.response?.data?.message ||
+          "Failed to delete batch.",
+      );
+    }
+  };
+
+  const handleViewBatch = async (batchId) => {
+    try {
+      const response = await TMS_API.batchDetailV2(batchId);
+
+      console.log("Batch Detail V2:", response.data);
+
+      // Agar BatchDetail page same hi use karna hai
+      navigate(`/tms/batch-detail/${batchId}`, {
+        state: {
+          batchData: response.data,
+        },
+      });
+    } catch (err) {
+      console.error("Failed to fetch batch detail:", err);
+
+      alert(
+        err?.response?.data?.detail ||
+          err?.response?.data?.message ||
+          "Unable to fetch batch details.",
+      );
+    }
+  };
+
   // 🚀 Auto-fetch for BMMU (no geographical filters, block-scoped only)
   useEffect(() => {
     if (role === "bmmu") {
@@ -382,6 +506,11 @@ export default function TrainingBatchList() {
       fetchBatches();
     }
   }, [role, tpPartnerId]);
+  useEffect(() => {
+    if (role === "dtp" && dtpDistrictId && dtpPartnerId) {
+      fetchBatches();
+    }
+  }, [role, dtpDistrictId, dtpPartnerId]);
 
   /* ---------------- initial load ---------------- */
 
@@ -389,7 +518,9 @@ export default function TrainingBatchList() {
     if (!user?.id || didInitRef.current || isRequestScoped) return;
 
     // 🚫 BMMU & TP are auto-fetched elsewhere
-    if (role === "bmmu" || role === "training_partner") return;
+    // if (role === "bmmu" || role === "training_partner") return;
+    if (role === "bmmu" || role === "training_partner" || role === "dtp")
+      return;
 
     didInitRef.current = true;
 
@@ -493,9 +624,12 @@ export default function TrainingBatchList() {
                         <select
                           className="input"
                           value={filters.district_id}
-                          disabled={role === "dmmu"}
+                          // disabled={role === "dmmu"}
+                          disabled={role === "dmmu" || role === "dtp"}
                           onChange={(e) => {
-                            if (role === "dmmu") return;
+                            // if (role === "dmmu") return;
+
+                            if (role === "dmmu" || role === "dtp") return;
 
                             setBlocks([]);
                             setFilters((f) => ({
@@ -526,6 +660,7 @@ export default function TrainingBatchList() {
                           <input
                             type="checkbox"
                             checked={filters.aspirational_only}
+                            disabled={role === "dtp"}
                             onChange={(e) =>
                               setFilters((f) => ({
                                 ...f,
@@ -578,26 +713,41 @@ export default function TrainingBatchList() {
                           ))}
                         </select>
                       )}
-                      {role !== "training_partner" && role !== "tpcp" && (
+                      {/* {role !== "training_partner" && role !== "tpcp" && ( */}
+                      {role !== "training_partner" &&
+                        role !== "dtp" &&
+                        role !== "tpcp" && (
+                          <select
+                            className="input"
+                            value={filters.partner}
+                            onChange={(e) =>
+                              setFilters((f) => ({
+                                ...f,
+                                partner: e.target.value,
+                              }))
+                            }
+                          >
+                            <option value="">Training Partner</option>
+                            {partners.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.name}
+                              </option>
+                            ))}
+                          </select>
+                        )}
+                      {role === "dtp" && (
                         <select
                           className="input"
                           value={filters.partner}
-                          onChange={(e) =>
-                            setFilters((f) => ({
-                              ...f,
-                              partner: e.target.value,
-                            }))
-                          }
+                          disabled
                         >
-                          <option value="">Training Partner</option>
-                          {partners.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.name}
-                            </option>
-                          ))}
+                          <option value={filters.partner}>
+                            {dtpPartnerName}
+                          </option>
                         </select>
                       )}
                     </div>
+
                     <div
                       style={{
                         display: "flex",
@@ -769,20 +919,50 @@ export default function TrainingBatchList() {
                           <td>{b.batch_type}</td>
                           <td>{renderCentreName(b.centre)}</td>
                           <td>{b.centre?.partner?.name || "-"}</td>
-                          <td>{b.request?.block?.block_name_en || "-"}</td>
-                          <td>
-                            {b.request?.district?.district_name_en || "-"}
-                          </td>
+                          <td>{b.block?.block_name_en || "-"}</td>
+                          <td>{b.district?.district_name_en || "-"}</td>
 
                           <td>
-                            <button
+                            {/* <button
                               className="btn-sm btn-flat"
                               onClick={() =>
                                 navigate(`/tms/batch-detail/${b.id}`)
                               }
                             >
                               View
+                            </button> */}
+                            <button
+                              className="btn-sm btn-flat"
+                              onClick={() => handleViewBatch(b.id)}
+                            >
+                              View
                             </button>
+                            {["DRAFT", "REJECTED"].includes(
+                              String(b.status).toUpperCase(),
+                            ) && (
+                              <button
+                                className="btn-sm btn-flat"
+                                onClick={() =>
+                                  navigate("/tms/batch-creator/", {
+                                    state: {
+                                      resume: true,
+                                      batchId: b.id,
+                                    },
+                                  })
+                                }
+                              >
+                                Resume
+                              </button>
+                            )}
+
+                            {role === "dtp" && (
+                              <button
+                                className="btn-sm btn-danger"
+                                onClick={() => handleDeleteBatch(b.id)}
+                              >
+                                Delete
+                              </button>
+                            )}
 
                             {/* ── TRAINING PARTNER → TP closure form ── */}
                             {role === "training_partner" &&
@@ -1162,6 +1342,22 @@ export default function TrainingBatchList() {
     font-size: 13px; /*  CHANGE */
   }
 
+}
+  .btn-danger{
+  background:#dc3545;
+  color:#fff;
+  border:none;
+  border-radius:5px;
+  padding:5px 10px;
+  margin-top:6px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btn-danger:hover{
+  background:#b02a37;
+  transform:translateY(-2px);
+  box-shadow:0 4px 10px rgba(0,0,0,0.15);
 }
 `}</style>
     </div>

@@ -50,6 +50,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
   const [partners, setPartners] = useState([]);
+  const [partnerId, setPartnerId] = useState("");
   const [themes, setThemes] = useState([]);
   const [trainingPlans, setTrainingPlans] = useState([]);
 
@@ -80,11 +81,43 @@ export default function TrainingReqListFilter({ user, onApply }) {
           const pRes = await TMS_API.trainingPartners.list({ page_size: 100 });
           setPartners(pRes?.data?.results || []);
         }
+
+        if (role === "dtp") {
+          const pRes = await TMS_API.trainingPartners.list({ page_size: 100 });
+          setPartners(pRes?.data?.results || []);
+          const resp = await TMS_API.parentPartner();
+          setPartnerId(resp.data.partner_id);
+        }
       } catch (err) {
         console.error("Training request filter lookup failed", err);
       }
     })();
-  }, [role, user?.id]);
+  }, [role, user?.id, partnerId]);
+
+  /* ================= DTP AUTO DISTRICT ================= */
+  useEffect(() => {
+    if (role !== "dtp") return;
+
+    const geo = getGeoscope() || {};
+    const dtpDistrictId = geo.district_id || safeFirst(geo.districts);
+
+    if (!dtpDistrictId) return;
+
+    setFilters((f) => {
+      // Ensure it updates both if the partnerId resolves slightly after district
+      if (f.district_id === dtpDistrictId && f.partner_id === partnerId)
+        return f;
+      return {
+        ...f,
+        district_id: dtpDistrictId,
+        partner_id: partnerId,
+        mandal_id: "",
+        block_id: "",
+        district_category_id: "",
+        aspirational_only: false,
+      };
+    });
+  }, [role, partnerId]);
 
   /* ================= DMMU AUTO DISTRICT ================= */
   useEffect(() => {
@@ -226,9 +259,9 @@ export default function TrainingReqListFilter({ user, onApply }) {
             <select
               className="filter-input"
               value={filters.district_id}
-              disabled={role === "dmmu"}
+              disabled={role === "dmmu" || role === "dtp"} // UPDATED: Lock for DTP
               onChange={(e) =>
-                role === "dmmu"
+                role === "dmmu" || role === "dtp"
                   ? null
                   : setFilters((f) => ({
                       ...f,
@@ -301,8 +334,11 @@ export default function TrainingReqListFilter({ user, onApply }) {
             <select
               className="filter-input"
               value={filters.partner_id}
+              disabled={role === "dtp"} // UPDATED: Lock for DTP
               onChange={(e) =>
-                setFilters((f) => ({ ...f, partner_id: e.target.value }))
+                role === "dtp"
+                  ? null
+                  : setFilters((f) => ({ ...f, partner_id: e.target.value }))
               }
             >
               <option value="">Training Partner</option>
@@ -386,7 +422,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             ))}
           </select>
 
-                    {/* ===== Financial Year ===== */}
+          {/* ===== Financial Year ===== */}
           <select
             className="filter-input"
             value={filters.financial_year}
@@ -395,10 +431,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             }
           >
             <option value="">Financial Year</option>
-            {[
-              "2025-26",
-              "2026-27",
-            ].map((s) => (
+            {["2025-26", "2026-27"].map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -466,6 +499,13 @@ export default function TrainingReqListFilter({ user, onApply }) {
 .filter-input:focus{
   border-color:#5a8cc2;
   box-shadow:0 0 0 2px rgba(61,107,166,0.2);
+}
+
+.filter-input:disabled {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
 }
 
 .fetch-btn{

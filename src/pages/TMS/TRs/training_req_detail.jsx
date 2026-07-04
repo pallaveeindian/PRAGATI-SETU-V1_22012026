@@ -1006,7 +1006,7 @@ export default function TrainingRequestDetail() {
 
                     {/* ACTION BUTTONS */}
                     <div style={{ marginTop: 12 }}>
-                      {isDmmu &&
+                      {/* {isDmmu &&
                         (tr.status || "").toUpperCase() === "PENDING" && (
                           <div className="action-box">
                             <strong>Note:</strong> Request is PENDING.
@@ -1020,9 +1020,9 @@ export default function TrainingRequestDetail() {
                               Go to DMMU Review
                             </button>
                           </div>
-                        )}
+                        )} */}
 
-                      {isTP &&
+                      {/* {isTP &&
                         (tr.status || "").toUpperCase() === "REJECTED" && (
                           <div className="action-box">
                             <strong>Note:</strong> Request is REJECTED.
@@ -1035,7 +1035,7 @@ export default function TrainingRequestDetail() {
                               Review Batches
                             </button>
                           </div>
-                        )}
+                        )} */}
 
                       {/* {isTP &&
                         (tr.status || "").toUpperCase() === "BATCHING" && (

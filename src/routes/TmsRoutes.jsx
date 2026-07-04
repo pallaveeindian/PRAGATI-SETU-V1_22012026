@@ -28,6 +28,12 @@ import TpCreateCP from "../pages/TMS/TP/tp_create_cp";
 import TpCpAssignment from "../pages/TMS/TP/tp_cp_assignment";
 import TpTrainingRequestClosure from "../pages/TMS/TP/tp_tr_closure";
 import TpCreateBatch from "../pages/TMS/TP/tp_create_batch";
+import TPUserMgmnt from "../pages/TMS/TP/UserMgmnt";
+
+// DTP Screens
+import DTPDashboard from "../pages/TMS/DTP/DTPDashboard";
+import AssemblerDashboardBatchCreator from "../pages/TMS/BatchCreator/AssemblerDashboardBatchCreator";
+import PreviewBatchCreator from "../pages/TMS/BatchCreator/PreviewBatchCreator";
 
 // TMS workflow screens
 import CreateTrainingRequest from "../pages/TMS/tms_create_tr";
@@ -101,6 +107,10 @@ export default function TmsRoutes() {
       {/* Training Partner Routes */}
       <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
         <Route path="tp/dashboard" element={<TpDashboard />} />
+      </Route>
+      <Route
+        element={<ProtectedRoute allowedRoles={["training_partner", "dtp"]} />}
+      >
         <Route path="tp/centre-list" element={<TpCentreList />} />
         <Route path="tp/centre/new" element={<TpCentreRegistration />} />
         <Route path="tp/centre/:centreId" element={<TpCentreRegistration />} />
@@ -114,6 +124,21 @@ export default function TmsRoutes() {
         <Route path="tp/cp/create" element={<TpCreateCP />} />
         <Route path="tp/cp/edit/:cpId" element={<TpCreateCP />} />
         <Route path="tp/cp/assign" element={<TpCpAssignment />} />
+        {/* User Management */}
+        <Route path="tp/users" element={<TPUserMgmnt />} />
+      </Route>
+
+      {/* DTP Routes */}
+      <Route element={<ProtectedRoute allowedRoles="dtp" />}>
+        <Route path="dtp/dashboard" element={<DTPDashboard />} />
+        <Route
+          path="batch-creator"
+          element={<AssemblerDashboardBatchCreator />}
+        />
+        <Route
+          path="preview-batch-creator"
+          element={<PreviewBatchCreator />}
+        />
       </Route>
 
       {/* TPCP Routes */}
@@ -148,7 +173,7 @@ export default function TmsRoutes() {
       <Route
         element={
           <ProtectedRoute
-            allowedRoles={["smmu", "dmmu", "bmmu", "training_partner"]}
+            allowedRoles={["smmu", "dmmu", "bmmu", "training_partner", "dtp"]}
           />
         }
       >
@@ -168,6 +193,7 @@ export default function TmsRoutes() {
               "bmmu",
               "training_partner",
               "tp_contact_person",
+              "dtp",
             ]}
           />
         }

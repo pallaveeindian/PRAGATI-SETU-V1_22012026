@@ -739,6 +739,61 @@ export const TMS_API = {
   // Find Training Partner acc to latest target for TR creation
   trainingPartnerByTarget: (params) =>
     api.get("/tms/tp/by-target/", { params }),
+
+  // ------------------------------------
+  // TP & DTP User Management
+  // ------------------------------------
+  userManagement: {
+    // List users (params: { type: 'dtp' } or { type: 'tpcp' })
+    list: (params) => api.get("/tms/tp/user-management/", { params }),
+
+    // Get single user details
+    detail: (userId) =>
+      api.get(`/tms/tp/user-management/${encodeURIComponent(userId)}/`),
+
+    // Update username and/or assigned centres
+    update: (userId, data) =>
+      api.put(`/tms/tp/user-management/${encodeURIComponent(userId)}/`, data),
+
+    // Delete user
+    destroy: (userId) =>
+      api.delete(`/tms/tp/user-management/${encodeURIComponent(userId)}/`),
+
+    // Reset password & remove first login tracker
+    resetPassword: (userId) =>
+      api.post(
+        `/tms/tp/user-management/${encodeURIComponent(userId)}/reset-password/`,
+      ),
+  },
+
+  batchCreator: {
+    // Get Eligible Trainees
+    trainees: (params) => api.get("/tms/batch-creator/trainees/", { params }),
+
+    // Create Batch (Separate / Combined)
+    create: (data) => api.post("/tms/batch-creator/create/", data),
+
+    // Update Batch
+    update: (batchId, data) =>
+      api.put(
+        `/tms/batch-creator/update/${encodeURIComponent(batchId)}/`,
+        data,
+      ),
+
+    // Delete Batch
+    delete: (batchId) =>
+      api.delete(`/tms/batch-creator/delete/${encodeURIComponent(batchId)}/`),
+  },
+
+  // partner ID API
+  parentPartner: (params = {}) =>
+    api.get("/tms/dtp/parent-partner/", { params }),
+
+  // Batch Detail V2
+  batchDetailV2: (batchId) =>
+    api.get(
+      `/tms/batches/comprehensive-detail/${encodeURIComponent(batchId)}/`,
+    ),
 };
 
 // ------------------------

@@ -9,6 +9,7 @@ export const ADMIN_ROLES = [
 
 export const GENERAL_ROLES = [
   { id: "training_partner", label: "TRAINING PARTNER" },
+  { id: "dtp", label: "DISTRICT TC" },
   { id: "tp_contact_person", label: "TRAINING CENTRE" },
 ];
 

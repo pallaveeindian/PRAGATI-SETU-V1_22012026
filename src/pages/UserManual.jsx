@@ -1,19 +1,18 @@
-// src/pages/UserManual.jsx
-
 import React, { useEffect, useContext } from "react";
 import { Link } from "react-router-dom";
-import ps_logo from "../assets/PS_TRANS.png";
 import up_logo from "../assets/upgov_logo.jpg";
-import nav_logo from "../assets/top_nav_banner.png";
-import HeroLayout from "./HeroComponents/HeroLayout.jsx";
-import Footer from "../components/layout/Footer.jsx";
 import aboutImg from "../assets/User-manual.jpeg";
 import GovHeader from "./GovHeader.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
+import Footer from "../components/layout/Footer.jsx";
 import { LanguageContext } from "./LanguageContext";
 
-export default function UserManual() {
+// Importing PDF files
+import TRCreationGuide from "../assets/UserManuals/TRCreationGuide.pdf";
+import CRPEPMappingFormGuide from "../assets/UserManuals/CRPEPMappingFormGuide.pdf";
+import MOUGuide from "../assets/UserManuals/MOUGuide.pdf";
 
+export default function UserManual() {
   const { lang } = useContext(LanguageContext);
 
   /* ================= FONT SIZE CONTROLS ================= */
@@ -25,29 +24,70 @@ export default function UserManual() {
     setFontScale(1);
   }, []);
 
-  /* ================= CONTENT (UNCHANGED ENGLISH + HINDI ADDED) ================= */
+  /* ================= CONTENT ================= */
   const content = {
     en: {
       title1: "User",
-      title2: " Manual",
-      p1: `The Pragati Setu Login Process provides secure and role-based access to various mission applications including BMS, TMS, LDMS, and EMS. Users begin by opening the official Pragati Setu login page through a supported web browser and selecting the required application module based on their operational needs.`,
-      p2: `The system supports multiple User Types such as Admin and General Users, followed by selection of an authorized Role including State IT Admin, PMU IT Admin, SMMU, DMMU, BMMU, and other designated roles. This ensures that each user gains access only to the features and data permitted under their responsibility and administrative level.`,
-      p3: `After selecting the application and role, users must enter their registered Username and Password credentials and click the Log In button. Upon successful authentication, the system redirects the user to the respective dashboard. This structured login workflow enhances security, prevents unauthorized access, and ensures controlled and efficient digital operations across all administrative tiers.`
+      title2: " Manuals & Guides",
+      intro:
+        "Welcome to the Pragati Setu User Manuals section. Below you will find comprehensive guides to assist you in navigating and operating various portals and modules effectively.",
+      tableHeaders: ["S.No", "Document Name", "Description", "Action"],
+      manuals: [
+        {
+          id: 1,
+          name: "Training Request Creation",
+          desc: "Cadre Selection Process and Training Request creation guidelines on the TMS Portal.",
+          file: TRCreationGuide,
+        },
+        {
+          id: 2,
+          name: "CRP-EP Account & Mapping",
+          desc: "CRP-EP Account creation and panchayat mapping process for Udhyam Sakhi App login on the CRP-EP Mapping portal.",
+          file: CRPEPMappingFormGuide,
+        },
+        {
+          id: 3,
+          name: "SHG-MOU Registration",
+          desc: "Complete step-by-step SHG-MOU Registration process on the Enterprise MOU portal.",
+          file: MOUGuide,
+        },
+      ],
+      download: "Download PDF",
     },
     hi: {
-      title1: "यूज़र",
-      title2: " मैनुअल",
-      p1: `प्रगति सेतु लॉगिन प्रक्रिया विभिन्न मिशन एप्लिकेशनों जैसे BMS, TMS, LDMS और EMS तक सुरक्षित और भूमिका-आधारित पहुँच प्रदान करती है। उपयोगकर्ता सबसे पहले समर्थित वेब ब्राउज़र के माध्यम से आधिकारिक लॉगिन पेज खोलते हैं और अपनी आवश्यकता के अनुसार संबंधित मॉड्यूल का चयन करते हैं।`,
-      p2: `यह प्रणाली विभिन्न उपयोगकर्ता प्रकारों जैसे Admin और General Users को सपोर्ट करती है, और अधिकृत भूमिकाओं जैसे State IT Admin, PMU IT Admin, SMMU, DMMU, BMMU आदि का चयन करने की सुविधा देती है। इससे यह सुनिश्चित होता है कि प्रत्येक उपयोगकर्ता को केवल उन्हीं फीचर्स और डेटा तक पहुँच मिले जो उनकी जिम्मेदारी के अनुसार अनुमत हैं।`,
-      p3: `एप्लिकेशन और भूमिका चयन के बाद, उपयोगकर्ता को अपना पंजीकृत Username और Password दर्ज करना होता है और Log In बटन पर क्लिक करना होता है। सफल लॉगिन के बाद उपयोगकर्ता को संबंधित डैशबोर्ड पर भेज दिया जाता है। यह प्रक्रिया सुरक्षा बढ़ाती है, अनधिकृत पहुँच को रोकती है और सभी प्रशासनिक स्तरों पर नियंत्रित और कुशल संचालन सुनिश्चित करती है।`
-    }
+      title1: "उपयोगकर्ता",
+      title2: " मैनुअल और गाइड",
+      intro:
+        "प्रगति सेतु उपयोगकर्ता मैनुअल अनुभाग में आपका स्वागत है। नीचे आपको विभिन्न पोर्टल्स और मॉड्यूल को प्रभावी ढंग से संचालित करने में सहायता के लिए विस्तृत मार्गदर्शिकाएँ मिलेंगी।",
+      tableHeaders: ["क्र.सं.", "दस्तावेज़ का नाम", "विवरण", "कार्रवाई"],
+      manuals: [
+        {
+          id: 1,
+          name: "प्रशिक्षण अनुरोध निर्माण",
+          desc: "TMS पोर्टल पर कैडर चयन प्रक्रिया और प्रशिक्षण अनुरोध निर्माण के दिशा-निर्देश।",
+          file: TRCreationGuide,
+        },
+        {
+          id: 2,
+          name: "CRP-EP खाता और मैपिंग",
+          desc: "CRP-EP मैपिंग पोर्टल पर उद्यम सखी ऐप लॉगिन के लिए CRP-EP खाता निर्माण और पंचायत मैपिंग प्रक्रिया।",
+          file: CRPEPMappingFormGuide,
+        },
+        {
+          id: 3,
+          name: "SHG-MOU पंजीकरण",
+          desc: "एंटरप्राइज MOU पोर्टल पर संपूर्ण चरण-दर-चरण SHG-MOU पंजीकरण प्रक्रिया।",
+          file: MOUGuide,
+        },
+      ],
+      download: "PDF डाउनलोड करें",
+    },
   };
 
   const t = content[lang];
 
   return (
     <div className="home-shell">
-
       <GovHeader
         logo={up_logo}
         title="Government Of Uttar Pradesh"
@@ -58,30 +98,73 @@ export default function UserManual() {
 
       <main className="home-hero">
         <div className="about-section">
-
-          <div className="about-left">
-            <h1>
-              <span className="contrast-color-two">{t.title1}</span>
-              <span className="contrast-color-one">{t.title2}</span>
-            </h1>
-
-            <div className="pragati-card">
-              <p>{t.p1}</p>
+          {/* Top Intro Section */}
+          <div className="about-intro-grid">
+            <div className="about-left">
+              <h1>
+                <span className="contrast-color-two">{t.title1}</span>
+                <span className="contrast-color-one">{t.title2}</span>
+              </h1>
+              <p className="intro-text">{t.intro}</p>
             </div>
-
-            <div className="pragati-card">
-              <p>{t.p2}</p>
-            </div>
-
-            <div className="pragati-card">
-              <p>{t.p3}</p>
+            <div className="about-right">
+              <img src={aboutImg} alt="Pragati Setu Diagram" />
             </div>
           </div>
 
-          <div className="about-right">
-            <img src={aboutImg} alt="Pragati Setu Diagram" />
+          {/* Table Section */}
+          <div className="table-wrapper">
+            <table className="manual-table">
+              <thead>
+                <tr>
+                  <th width="8%">{t.tableHeaders[0]}</th>
+                  <th width="25%">{t.tableHeaders[1]}</th>
+                  <th width="52%">{t.tableHeaders[2]}</th>
+                  <th width="15%" style={{ textAlign: "center" }}>
+                    {t.tableHeaders[3]}
+                  </th>
+                </tr>
+              </thead>
+              <tbody>
+                {t.manuals.map((manual) => (
+                  <tr key={manual.id}>
+                    <td className="center-cell">
+                      <strong>{manual.id}</strong>
+                    </td>
+                    <td className="doc-name">{manual.name}</td>
+                    <td className="doc-desc">{manual.desc}</td>
+                    <td className="center-cell">
+                      <a
+                        href={manual.file}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="download-btn"
+                        download
+                      >
+                        <svg
+                          xmlns="http://www.w3.org/2000/svg"
+                          width="18"
+                          height="18"
+                          viewBox="0 0 24 24"
+                          fill="none"
+                          stroke="currentColor"
+                          strokeWidth="2"
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          style={{ marginRight: "6px" }}
+                        >
+                          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                          <polyline points="7 10 12 15 17 10"></polyline>
+                          <line x1="12" y1="15" x2="12" y2="3"></line>
+                        </svg>
+                        {t.download}
+                      </a>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
           </div>
-
         </div>
       </main>
 
@@ -92,157 +175,211 @@ export default function UserManual() {
 
       {/* ================= STYLES ================= */}
       <style>{`
-                         /* ===== ABOUT LAYOUT ===== */
-                   .about-section {
-                     max-width: 1400px;
-                     margin: 60px auto;
-                     display: grid;
-                     grid-template-columns: 1.1fr 0.9fr;
-                     gap: 40px;
-                     align-items: center;
-                   }
-                   
-                   .about-left h1 {
-                     font-size: 38px;
-                     font-weight: 800;
-                     margin-bottom: 18px;
-                     color: #0f172a;
-                   }
-                   
-                   .about-left p {
-                     font-size: 17px;
-                     line-height: 1.8;
-                     color: #334155;
-                     margin-bottom: 14px;
-                   }
-                   
-                   /* IMAGE SIZE FIX */
-                   .about-right {
-                     display: flex;
-                     
-                   }
-                   
-                   .about-right img {
-                     width: 100%;
-                     max-width: 780px;
-                     height: auto;
-                     object-fit: contain;
-                     border-radius: 16px;
-                   }
-                     .contrast-color-one {
-      color: #ff7a00;
-  }
+        /* ===== Root shell ===== */
+        .home-shell {
+          display: flex;
+          flex-direction: column;
+          min-height: 100vh;
+          background: linear-gradient(180deg,
+            #ffffff 0%,
+            #fff6f8 35%,
+            #f9e3e6 60%,
+            #f4cfd6 75%,
+            #ebb8c4 100%);
+        }
 
-  .contrast-color-two {
-      color: #0f172a;
-  }
-                      .pragati-card {
-      max-width: 900px;
-      margin: 40px auto;
-      padding: 30px 35px;
-      background: #ffffff;
-      border: 2px solid #ff7a00;
-      /* Orange Border */
-      border-radius: 16px;
-      box-shadow: 0 5px 5px rgba(255, 122, 0, 0.25);
-      /* Orange Shadow */
-      transition: all 0.3s ease;
-  }
+        /* ================= GLOBAL FONT SCALING ================= */
+        :root {
+          --font-scale: 1;
+        }
 
-  .pragati-card p {
-      font-size: 18px;
-      line-height: 1.7;
-      color: #333;
-      margin: 0;
-  }
+        body {
+          font-size: calc(16px * var(--font-scale));
+        }
 
-  /* Hover Effect */
-  .pragati-card:hover {
-      transform: translateY(-5px);
-      box-shadow: 0 2px 5px rgba(255, 122, 0, 0.35);
-  }
+        /* ===== HERO ===== */
+        .home-hero {
+          width: 100%;
+          overflow-x: visible;
+        }
 
-                           /* ===== Root shell ===== */
-                           .home-shell {
-                             display: flex;
-                             flex-direction: column;
-                             min-height: 100vh;
-                            background: linear-gradient(180deg,
-              #ffffff 0%,
-              #fff6f8 35%,
-              #f9e3e6 60%,
-              #f4cfd6 75%,
-              #ebb8c4 100%);
-                           }
-                   
-                           /* ================= GLOBAL FONT SCALING ================= */
-                           :root {
-                             --font-scale: 1;
-                           }
-                   
-                           body {
-                             font-size: calc(16px * var(--font-scale));
-                           }
-                   
-                          
-                           /* ===== HERO ===== */
-                           .home-hero {
-                             width: 100%;
-                             overflow-x: visible;
-                           }
-                   
-                           .hero-inner {
-                             width: 100%;
-                           }
-                   
-                           /* ===== FOOTER ===== */
-                           .home-footer {
-                             text-align: center;
-                             font-size: 28px;
-                             font-weight: 800;
-                           }
-                              @media (max-width: 992px) {
-      .about-section {
-          grid-template-columns: 1fr;
-          gap: 30px;
-          padding-left: 5px;
-          padding-right: 5px
-      }
+        /* ===== ABOUT LAYOUT ===== */
+        .about-section {
+          max-width: 1200px;
+          margin: 60px auto;
+          padding: 0 20px;
+        }
 
-      .about-left h1 {
-          font-size: 28px;
+        .about-intro-grid {
+          display: grid;
+          grid-template-columns: 1.2fr 0.8fr;
+          gap: 40px;
+          align-items: center;
+          margin-bottom: 50px;
+        }
+
+        .about-left h1 {
+          font-size: 38px;
+          font-weight: 800;
+          margin-bottom: 18px;
+          color: #0f172a;
+        }
+
+        .intro-text {
+          font-size: 18px;
+          line-height: 1.8;
+          color: #334155;
+          background: #ffffff;
+          padding: 24px;
+          border-left: 5px solid #ff7a00;
+          border-radius: 8px;
+          box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+        }
+
+        .contrast-color-one {
+          color: #ff7a00;
+        }
+
+        .contrast-color-two {
+          color: #0f172a;
+        }
+
+        .about-right img {
+          width: 100%;
+          max-width: 500px;
+          height: auto;
+          object-fit: contain;
+          border-radius: 16px;
+          box-shadow: 0 10px 25px rgba(0,0,0,0.1);
+        }
+
+        /* ===== TABLE STYLES ===== */
+        .table-wrapper {
+          background: #ffffff;
+          border-radius: 12px;
+          padding: 1px;
+          box-shadow: 0 10px 30px rgba(255, 122, 0, 0.15);
+          overflow-x: auto;
+          margin-bottom: 40px;
+          border: 1px solid rgba(255, 122, 0, 0.3);
+        }
+
+        .manual-table {
+          width: 100%;
+          border-collapse: collapse;
+          min-width: 800px;
+        }
+
+        .manual-table th {
+          background: linear-gradient(90deg, #ff7a00, #e86b00);
+          color: #ffffff;
+          font-size: 17px;
+          font-weight: 700;
+          padding: 18px;
+          text-align: left;
+        }
+        
+        .manual-table th:first-child {
+          border-top-left-radius: 11px;
+        }
+        
+        .manual-table th:last-child {
+          border-top-right-radius: 11px;
+        }
+
+        .manual-table td {
+          padding: 20px 18px;
+          border-bottom: 1px solid #f1f5f9;
+          color: #334155;
+          vertical-align: middle;
+        }
+
+        .manual-table tr:last-child td {
+          border-bottom: none;
+        }
+
+        .manual-table tr:hover {
+          background-color: #fffaf6;
+        }
+
+        .center-cell {
           text-align: center;
-      }
+        }
 
-      .about-left h3 {
-          font-size: 20px;
-      }
+        .doc-name {
+          font-size: 18px;
+          font-weight: 700;
+          color: #0f172a;
+        }
 
-      .about-left p {
-          font-size: 16px;
-      }
-           .pragati-card {
-    margin: 20px;
-    padding: 22px;
-  }
+        .doc-desc {
+          font-size: 15px;
+          line-height: 1.6;
+          color: #475569;
+        }
 
-  .pragati-card p {
-    font-size: 16px;
-  }
-}
+        /* ===== DOWNLOAD BUTTON ===== */
+        .download-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          background: #0f172a;
+          color: #ffffff;
+          padding: 10px 18px;
+          font-size: 14px;
+          font-weight: 600;
+          border-radius: 8px;
+          text-decoration: none;
+          transition: all 0.3s ease;
+          border: 2px solid transparent;
+          white-space: nowrap;
+        }
 
-@media (max-width: 480px) {
-  .pragati-card {
-    padding: 18px;
-    border-radius: 12px;
-  }
+        .download-btn:hover {
+          background: #ffffff;
+          color: #ff7a00;
+          border-color: #ff7a00;
+          box-shadow: 0 4px 12px rgba(255, 122, 0, 0.2);
+          transform: translateY(-2px);
+        }
 
-  .pragati-card p {
-    font-size: 15px;
-  }
-      }
+        /* ===== FOOTER ===== */
+        .home-footer {
+          text-align: center;
+          font-size: 28px;
+          font-weight: 800;
+          margin-top: auto;
+        }
 
-                         `}</style>
+        /* ===== RESPONSIVE ===== */
+        @media (max-width: 992px) {
+          .about-intro-grid {
+            grid-template-columns: 1fr;
+            text-align: center;
+          }
+
+          .intro-text {
+            border-left: none;
+            border-top: 5px solid #ff7a00;
+            text-align: left;
+          }
+
+          .about-right {
+            display: flex;
+            justify-content: center;
+          }
+        }
+
+        @media (max-width: 768px) {
+          .about-left h1 {
+            font-size: 32px;
+          }
+          
+          .manual-table th, .manual-table td {
+            padding: 15px 12px;
+          }
+        }
+      `}</style>
     </div>
   );
 }

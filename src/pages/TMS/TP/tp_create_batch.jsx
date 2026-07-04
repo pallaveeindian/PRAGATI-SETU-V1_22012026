@@ -1040,8 +1040,6 @@ function BatchSubmitSection({
         .map((p) => Number(typeof p === "object" ? p.id : p))
         .filter(Boolean);
 
-      console.log(`Batch ${b.title} selected IDs:`, selectedIds);
-
       if (selectedIds.length < 1) {
         alert(`"${b.title}" must have at least 1 participant`);
         return false;
@@ -1051,9 +1049,6 @@ function BatchSubmitSection({
     }
 
     const uniqueSelectedIds = [...new Set(allSelectedIds)];
-
-    console.log("Total IDs:", totalIds);
-    console.log("All Selected:", uniqueSelectedIds);
 
     const missingCount = totalIds.filter(
       (id) => !uniqueSelectedIds.includes(id),
@@ -1072,7 +1067,6 @@ function BatchSubmitSection({
   }
 
   async function execute() {
-    console.log("EXECUTE STARTED");
     setSubmitting(true);
 
     try {
@@ -1082,7 +1076,6 @@ function BatchSubmitSection({
       }
 
       if (isReviewMode) {
-        console.log("Deleting old batches...");
         await deleteAllExistingBatchesAndParticipants(trainingReq);
       }
 
@@ -1190,7 +1183,6 @@ function BatchSubmitSection({
 
       // Build payload and swap out the old external IDs with new ones
       const payload = buildPayload();
-      console.log("Payload:", payload);
 
       for (const item of payload.batches) {
         const { batch, participants } = item;

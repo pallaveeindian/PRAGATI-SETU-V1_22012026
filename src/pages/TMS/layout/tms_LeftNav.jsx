@@ -11,12 +11,14 @@ import {
   FaBook,
   FaHandsHelping,
   FaDatabase,
+  FaCalendar,
   FaAddressBook,
   FaClipboardCheck,
   FaBullseye,
   FaIndustry,
   FaBuilding,
   FaChalkboardTeacher,
+  FaUser,
   FaUserCheck,
   FaUserEdit,
   FaChalkboard,
@@ -54,6 +56,7 @@ const MENU = {
         {
           label: "Batch List",
           to: "/tms/batches-list/",
+          icon: FaAddressBook,
         },
       ],
     },
@@ -84,6 +87,7 @@ const MENU = {
         {
           label: "Batch List",
           to: "/tms/batches-list/",
+          icon: FaAddressBook,
         },
       ],
     },
@@ -109,10 +113,12 @@ const MENU = {
         {
           label: "All Modules list",
           to: "/tms/smmu/list-training-plans",
+          icon: FaAddressBook,
         },
         {
           label: "Add New Module",
           to: "/tms/smmu/create-training-plan",
+          icon: FaBook,
         },
       ],
     },
@@ -133,6 +139,7 @@ const MENU = {
         {
           label: "Batch List",
           to: "/tms/batches-list/",
+          icon: FaAddressBook,
         },
       ],
     },
@@ -171,23 +178,78 @@ const MENU = {
         {
           label: "Batch List",
           to: "/tms/batches-list/",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Batch Calendar",
+          to: "/tms/batches-list/",
+          icon: FaCalendar,
         },
       ],
     },
     {
-      label: "TC IDs",
-      to: "/tms/tp/cp-list",
+      label: "User Management",
+      to: "/tms/tp/users",
       icon: FaUsers,
     },
+  ],
+  dtp: [
     {
-      label: "Register TC ID",
-      to: "/tms/tp/cp/create",
-      icon: FaUserEdit,
+      label: "Dashboard",
+      to: "/tms/dtp/dashboard",
+      icon: FaTachometerAlt,
     },
     {
-      label: "Assign Centre to TC ID",
-      to: "/tms/tp/cp/assign",
-      icon: FaUserCheck,
+      label: "Centre Management",
+      to: "/tms/tp/centre-list",
+      icon: FaIndustry,
+    },
+    {
+      label: "Register New Centre",
+      to: "/tms/tp/centre/new",
+      icon: FaBuilding,
+    },
+    {
+      label: "Training Requests",
+      to: "/tms/training-requests",
+      icon: FaChartBar,
+    },
+    {
+      label: "Training Batches",
+      icon: FaBook,
+      children: [
+        {
+          label: "Batch Creator",
+          to: "/tms/batch-creator/",
+          icon: FaBook,
+        },
+        {
+          label: "Batch List",
+          to: "/tms/batches-list/",
+          icon: FaAddressBook,
+        },
+      ],
+    },
+    {
+      label: "TC Management",
+      icon: FaUsers,
+      children: [
+        {
+          label: "TC-ID List",
+          to: "/tms/tp/cp-list",
+          icon: FaUser,
+        },
+        {
+          label: "Register TC-ID",
+          to: "/tms/tp/cp/create",
+          icon: FaUserEdit,
+        },
+        {
+          label: "Assign Centre to TC-ID",
+          to: "/tms/tp/cp/assign",
+          icon: FaUserCheck,
+        },
+      ],
     },
   ],
   master_trainer: [
@@ -210,6 +272,7 @@ const MENU = {
         {
           label: "Batch List",
           to: "/tms/cp/batch-list",
+          icon: FaAddressBook,
         },
       ],
     },
@@ -232,14 +295,15 @@ const MENU = {
 
 function getRoleKey(user) {
   const id = Number(user?.role_id ?? user?.role);
+  if (id === 8) return "state_admin";
+  if (id === 9) return "pmu_admin";
   if (id === 1) return "bmmu";
   if (id === 2) return "dmmu";
   if (id === 3) return "smmu";
   if (id === 4) return "training_partner";
-  if (id === 7) return "master_trainer";
-  if (id === 8) return "state_admin";
-  if (id === 9) return "pmu_admin";
+  if (id === 13) return "dtp";
   if (id === 11) return "tp_contact_person";
+  if (id === 7) return "master_trainer";
   return "bmmu";
 }
 
@@ -271,7 +335,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
     };
   }, [showUserPopup]);
 
-  // 👈 NEW: Fetch Organization Name if the user is a Training Partner
+  // Fetch Organization Name if the user is a Training Partner
   useEffect(() => {
     if (roleKey === "training_partner" && user?.id && !orgName) {
       const fetchOrgName = async () => {
@@ -301,8 +365,8 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
       </button>
       <aside
         className={`tms-leftnav 
-  ${collapsed ? "collapsed" : ""} 
-  ${mobileOpen ? "mobile-open" : ""}`}
+        ${collapsed ? "collapsed" : ""} 
+        ${mobileOpen ? "mobile-open" : ""}`}
       >
         {/* LOGO */}
 
@@ -412,7 +476,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
                           }
                         >
                           <span className="dot" />
-                          <item.icon size={20} />
+                          <sub.icon size={20} />
                           <span>{sub.label}</span>
                         </NavLink>
                       ))}

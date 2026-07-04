@@ -134,6 +134,19 @@ export default function TrainingRequestList() {
     return null;
   }
 
+  async function resolvePartnerId(userId) {
+    if (!userId) return null;
+
+    try {
+      const resp = await TMS_API.parentPartner();
+      if (resp?.data) {
+        const partnerId = resp.data.partner_id;
+        return partnerId;
+      }
+    } catch {}
+    return null;
+  }
+
   /* ---------------- lookup maps ---------------- */
 
   async function fetchAndStoreLookupMaps(items = []) {
@@ -230,6 +243,16 @@ export default function TrainingRequestList() {
         params.partner_id = partnerId;
       }
 
+      if (role === "dtp" && geoscope?.districts?.[0]) {
+        const partnerId = await resolvePartnerId(user.id);
+        if (!partnerId) {
+          setRequests([]);
+          setLoading(false);
+          return;
+        }
+        params.district_id = geoscope.districts[0];
+        params.partner_id = partnerId;
+      }
       const resp = await TMS_API.trainingRequestsList.list(params);
       const items = resp?.data?.results || [];
 
@@ -279,6 +302,16 @@ export default function TrainingRequestList() {
           setLoading(false);
           return;
         }
+        params.partner_id = partnerId;
+      }
+      if (role === "dtp" && geoscope?.districts?.[0]) {
+        const partnerId = await resolvePartnerId(user.id);
+        if (!partnerId) {
+          setRequests([]);
+          setLoading(false);
+          return;
+        }
+        params.district_id = geoscope.districts[0];
         params.partner_id = partnerId;
       }
 

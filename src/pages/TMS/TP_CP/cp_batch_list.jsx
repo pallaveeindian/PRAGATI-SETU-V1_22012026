@@ -25,7 +25,7 @@ function loadJson(key) {
 function saveJson(key, payload) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch { }
+  } catch {}
 }
 
 function fmtDate(iso) {
@@ -71,19 +71,19 @@ export default function CpBatchList() {
     async function loadCentre() {
       try {
         const cpResp = await api.get(
-          `/tms/training-partner-contact-persons/?master_user=${user.id}`
+          `/tms/training-partner-contact-persons/?master_user=${user.id}`,
         );
         const cp = cpResp?.data?.results?.[0];
         if (!cp) return;
 
         const linkResp = await api.get(
-          `/tms/tpcp-centre-links/?contact_person=${cp.id}`
+          `/tms/tpcp-centre-links/?contact_person=${cp.id}`,
         );
         const link = linkResp?.data?.results?.[0];
         if (!link?.allocated_centre) return;
 
         const centreResp = await api.get(
-          `/tms/training-partner-centres/${link.allocated_centre}/detail/`
+          `/tms/training-partner-centres/${link.allocated_centre}/detail/`,
         );
 
         const centreData = centreResp?.data;
@@ -133,15 +133,11 @@ export default function CpBatchList() {
         params.request__training_type = filters.training_type;
       }
 
-      console.log("FINAL PARAMS:", params);
-
       const resp = await api.get(
-        `/tms/batches-list/?${new URLSearchParams(params)}`
+        `/tms/batches-list/?${new URLSearchParams(params)}`,
       );
 
       const data = resp?.data?.results || [];
-
-      console.log("RESULT COUNT:", data.length);
 
       setBatches(data);
     } catch (e) {
@@ -151,56 +147,6 @@ export default function CpBatchList() {
       setBatchesLoading(false);
     }
   }
-
-  // async function fetchFilteredBatches() {
-  //   if (!centre?.id) return;
-
-  //   setBatchesLoading(true);
-
-  //   try {
-  //     const params = {
-  //       centre: centre.id,
-
-  //       // ✅ STANDARDIZED NAMES
-  //       block_id: filters.block_id || "",
-  //       status: filters.status || "",
-  //       batch_type: filters.batch_type || "",
-  //       request__training_type: filters.training_type || "",
-
-  //       page_size: 500,
-  //     };
-
-  //     const cleanParams = Object.fromEntries(
-  //       Object.entries(params).filter(([_, v]) => v)
-  //     );
-
-  //     console.log("🚀 SENDING TO API:", cleanParams);
-
-  //     const resp = await api.get(
-  //       `/tms/batches-list/?${new URLSearchParams(cleanParams)}`
-  //     );
-
-  //     setBatches(resp?.data?.results || []);
-
-  //   } catch (e) {
-  //     console.error("❌ Fetch failed", e);
-  //     setBatches([]);
-  //   } finally {
-  //     setBatchesLoading(false);
-  //   }
-  // }
-  // /* ⭐ AUTO LOAD (FIXED) */
-  // useEffect(() => {
-  //   if (!centre?.id) return;
-
-  //   fetchFilteredBatches();
-  // }, [
-  //   filters.block_id,
-  //   filters.status,
-  //   filters.training_type,
-  //   filters.batch_type,
-  //   centre?.id
-  // ]);
 
   const rows_first = useMemo(() => batches, [batches]);
 
@@ -262,7 +208,13 @@ export default function CpBatchList() {
   /* ⭐ ORIGINAL CACHE API (UNCHANGED) */
   async function fetchBatches(force = false) {
     if (!centre?.id) return;
-    if (!force && !filters.block_id && !filters.status && !filters.batch_type && !filters.training_type) {
+    if (
+      !force &&
+      !filters.block_id &&
+      !filters.status &&
+      !filters.batch_type &&
+      !filters.training_type
+    ) {
       const cached = loadJson(CP_BATCHES_CACHE_KEY);
       if (cached?.payload) {
         setBatches(cached.payload || []);
@@ -275,7 +227,9 @@ export default function CpBatchList() {
         centre: centre.id,
         page_size: 500,
       });
-      const items = (resp?.data?.results || []).filter(b => b.is_active === true);
+      const items = (resp?.data?.results || []).filter(
+        (b) => b.is_active === true,
+      );
       setBatches(items);
       saveJson(CP_BATCHES_CACHE_KEY, items);
     } catch (e) {
@@ -302,19 +256,51 @@ export default function CpBatchList() {
   function renderAction(batch) {
     const status = (batch.status || "").toUpperCase();
     if (status === "ONGOING") {
-      return <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/cp/batch-detail/${batch.id}`)}>View</button>;
+      return (
+        <button
+          className="btn-sm btn-flat"
+          onClick={() => navigate(`/tms/cp/batch-detail/${batch.id}`)}
+        >
+          View
+        </button>
+      );
     }
     if (status === "PENDING") {
-      return <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}>View</button>;
+      return (
+        <button
+          className="btn-sm btn-flat"
+          onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}
+        >
+          View
+        </button>
+      );
     }
     if (status === "SCHEDULED") {
-      return <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}>View</button>;
+      return (
+        <button
+          className="btn-sm btn-flat"
+          onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}
+        >
+          View
+        </button>
+      );
     }
     if (status === "COMPLETED") {
       return (
         <>
-          <button className="btn-sm btn-flat" style={{ marginRight: 6 }} onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}>View</button>
-          <button className="btn-sm btn-flat" onClick={() => navigate(`/tms/cp/batch-closure/${batch.id}`)}>Send Closure Request</button>
+          <button
+            className="btn-sm btn-flat"
+            style={{ marginRight: 6 }}
+            onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}
+          >
+            View
+          </button>
+          <button
+            className="btn-sm btn-flat"
+            onClick={() => navigate(`/tms/cp/batch-closure/${batch.id}`)}
+          >
+            Send Closure Request
+          </button>
         </>
       );
     }
@@ -403,7 +389,7 @@ export default function CpBatchList() {
                       try {
                         localStorage.removeItem(CP_ROOT_CACHE_KEY);
                         localStorage.removeItem(CP_CENTRE_CACHE_KEY);
-                      } catch { }
+                      } catch {}
                       setCpRecord(null);
                       setCentreLink(null);
                       setCentre(null);
@@ -488,7 +474,7 @@ export default function CpBatchList() {
                     onClick={() => {
                       try {
                         localStorage.removeItem(CP_BATCHES_CACHE_KEY);
-                      } catch { }
+                      } catch {}
                       fetchBatches(true);
                     }}
                     disabled={batchesLoading || !hasCentre}
@@ -517,7 +503,6 @@ export default function CpBatchList() {
                     }}
                   >
                     <div className="filter-panel">
-
                       {/* ⭐ FILTER: district locked */}
                       <input
                         className="input"
@@ -657,5 +642,3 @@ export default function CpBatchList() {
     </div>
   );
 }
-
-
