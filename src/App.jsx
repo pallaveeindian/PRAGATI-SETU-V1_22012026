@@ -298,19 +298,20 @@ export default function App() {
                   "bmmu",
                   "training_partner",
                   "tp_contact_person",
+                  "dtp"
                 ]}
               />
             }
           >
             {/* AFTER UIDAI API */}
-            {/* <Route
-              path="/tms/batch-detail/:id"
-              element={<TrainingBatchDetail />}
-            /> */}
             <Route
               path="/tms/batch-detail/:id"
-              element={<SiteDevErrorPage />}
+              element={<TrainingBatchDetail />}
             />
+            {/* <Route
+              path="/tms/batch-detail/:id"
+              element={<SiteDevErrorPage />}
+            /> */}
           </Route>
 
           {/* Catch-all for unknown TMS paths */}

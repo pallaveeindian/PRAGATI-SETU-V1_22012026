@@ -26,7 +26,7 @@ function saveCache(id, payload) {
       DETAIL_CACHE_PREFIX + id,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch (e) {}
+  } catch (e) { }
 }
 
 function fmtDate(iso) {
@@ -142,7 +142,7 @@ export default function TrainingBatchDetail() {
 
     try {
       // 1. Batch detail
-      const batchResp = await api.get(`/tms/batches/${batchId}/detail/`);
+      const batchResp = await TMS_API.batchDetailV2(batchId);
       const batchResponse = batchResp?.data || null;
       setBatchData(batchResponse);
 
@@ -228,7 +228,7 @@ export default function TrainingBatchDetail() {
     console.log("🔄 Refresh clicked");
     try {
       localStorage.removeItem(DETAIL_CACHE_PREFIX + batchId);
-    } catch (e) {}
+    } catch (e) { }
     setSelectedAttendanceDate(null);
     setSelectedAttendanceRecords([]);
     setSelectedMediaDate(null);
@@ -999,12 +999,12 @@ export default function TrainingBatchDetail() {
                                   }}
                                   onMouseEnter={
                                     (e) =>
-                                      (e.currentTarget.style.background =
-                                        "#f4f8fd") // UI CHANGE hover
+                                    (e.currentTarget.style.background =
+                                      "#f4f8fd") // UI CHANGE hover
                                   }
                                   onMouseLeave={(e) =>
-                                    (e.currentTarget.style.background =
-                                      "transparent")
+                                  (e.currentTarget.style.background =
+                                    "transparent")
                                   }
                                 >
                                   <td className="tdStyle">{index + 1}</td>
@@ -1026,11 +1026,10 @@ export default function TrainingBatchDetail() {
                                         {fmtDate(p.registered_on)}
                                       </td>
                                       <td
-                                        className={`table-cell-bold ${
-                                          p.is_replaced
+                                        className={`table-cell-bold ${p.is_replaced
                                             ? "replaced-yes"
                                             : "replaced-no"
-                                        }`}
+                                          }`}
                                       >
                                         {p.is_replaced ? "Yes" : "No"}
                                       </td>

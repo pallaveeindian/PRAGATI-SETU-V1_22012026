@@ -630,6 +630,12 @@ export const TMS_API = {
   parentPartner: (params = {}) =>
     api.get("/tms/dtp/parent-partner/", { params }),
 
+  batchDetailV2: (batchId) =>
+    api.get(
+      `/tms/batches/comprehensive-detail/${encodeURIComponent(batchId)}/`,
+    ),
+
+
   // ------------------------------------
   // User Management
   // ------------------------------------

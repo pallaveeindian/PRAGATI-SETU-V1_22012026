@@ -517,6 +517,31 @@ export default function TrainingBatchList() {
       );
     }
   };
+
+  const handleViewBatch = async (batchId) => {
+    try {
+      const response = await TMS_API.batchDetailV2(batchId);
+
+      console.log("Batch Detail V2:", response.data);
+
+      // Agar BatchDetail page same hi use karna hai
+      navigate(`/tms/batch-detail/${batchId}`, {
+        state: {
+          batchData: response.data,
+        },
+      });
+
+    } catch (err) {
+      console.error("Failed to fetch batch detail:", err);
+
+      alert(
+        err?.response?.data?.detail ||
+        err?.response?.data?.message ||
+        "Unable to fetch batch details."
+      );
+    }
+  };
+
   // 🚀 Auto-fetch for BMMU (no geographical filters, block-scoped only)
   useEffect(() => {
     if (role === "bmmu") {
@@ -965,14 +990,36 @@ export default function TrainingBatchList() {
                           </td>
 
                           <td>
-                            <button
+                            {/* <button
                               className="btn-sm btn-flat"
                               onClick={() =>
                                 navigate(`/tms/batch-detail/${b.id}`)
                               }
                             >
                               View
+                            </button> */}
+                            <button
+                              className="btn-sm btn-flat"
+                              onClick={() => handleViewBatch(b.id)}
+                            >
+                              View
                             </button>
+                            {["DRAFT", "REJECTED"].includes(String(b.status).toUpperCase()) && (
+                              <button
+                                className="btn-sm btn-flat"
+                                onClick={() =>
+                                  navigate("/tms/batch-creator/", {
+                                    state: {
+                                      resume: true,
+                                      batchId: b.id,
+                                    },
+                                  })
+                                }
+                              >
+                                Resume
+                              </button>
+                            )}
+
                             {role === "dtp" && (
                               <button
                                 className="btn-sm btn-danger"
