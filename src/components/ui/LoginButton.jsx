@@ -40,8 +40,8 @@ export default function LoginButton({ closeMenu }) {
       delay: "0.36s",
     },
     {
-      path: "/login?module=epsms",
-      label: "EPSMS Portal",
+      path: "/login?module=mou",
+      label: "MOU Portal",
       color: "#9333ea",
       delay: "0.54s",
     },

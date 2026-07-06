@@ -95,22 +95,22 @@ export default function App() {
         <Route path="/what's-new" element={<WhatsNew />} />
         <Route path="/public-reports" element={<PublicReports />} />
         {/* ENABLE AT / REPLACE AT MAINTAINANCE */}
-        <Route path="/login" element={<ServerMaintenance />} />
+        <Route path="/login" element={<Login />} />
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
 
         {/* DISABLE AT MAINTAINANCE */}
         {/* ----- Protected Application Routes ----- */}
-        {/* <Route element={<ProtectedRoute />}>
-          <Route path="/dashboard" element={<DashboardHome />} /> */}
+        <Route element={<ProtectedRoute />}>
+          <Route path="/dashboard" element={<DashboardHome />} />
 
-        {/* Sub-Software Routing (Delegated to /src/routes/*) */}
-        {/* <Route path="/tms/*" element={<TmsRoutes />} />
+          {/* Sub-Software Routing (Delegated to /src/routes/*) */}
+          <Route path="/tms/*" element={<TmsRoutes />} />
           <Route path="/ldms/*" element={<LdmsRoutes />} />
           <Route path="/crp-ep/*" element={<CrpEpRoutes />} />
           <Route path="/mou/*" element={<MouRoutes />} />
 
           <Route path="/error" element={<ErrorPage />} />
-        </Route> */}
+        </Route>
 
         {/* Catch-all 404 */}
         <Route path="*" element={<ErrorPage />} />
