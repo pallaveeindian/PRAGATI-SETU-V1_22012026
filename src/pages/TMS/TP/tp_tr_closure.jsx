@@ -91,7 +91,6 @@ export default function TpTrainingRequestClosure() {
     setLoading(true);
     setFetchError(null);
     try {
-      // ⚠️ SURGICAL FIX: Using the new Comprehensive Detail endpoint
       const resp = await api.get(
         `/tms/batches/comprehensive-detail/${batchId}/`,
       );
@@ -120,7 +119,6 @@ export default function TpTrainingRequestClosure() {
       if (data?.participant_costs?.length) {
         const map = {};
         data.participant_costs.forEach((pc) => {
-          // batch_beneficiary / batch_trainer are IDs of the through-table rows
           const key = pc.batch_beneficiary ?? pc.batch_trainer;
           if (key != null) {
             map[key] = {
@@ -151,20 +149,24 @@ export default function TpTrainingRequestClosure() {
      DERIVED DATA EXTRACTIONS
   ═══════════════════════════════════════════════════════════ */
 
-  // ⚠️ SURGICAL FIXES: Adjusted to use direct Batch model fields natively
   const trainingType = batch?.participant_type; // 'BENEFICIARY' | 'TRAINER'
-  const alreadySubmitted = Boolean(batch?.batch_costing);
+
+  // ⚠️ SURGICAL FIX: Detect if the batch was rejected by DMMU at the closure stage
+  const isClosureRejected =
+    batch?.status === "REJECTED" && Boolean(batch?.batch_closing);
+
+  // ⚠️ SURGICAL FIX: If it is rejected, we do NOT treat it as "already submitted" so inputs unlock.
+  const alreadySubmitted = Boolean(batch?.batch_costing) && !isClosureRejected;
+
   const tp = batch?.training_plan || {};
   const centre = batch?.centre || {};
 
-  // Safely extract the block name from the dynamic block_coverages mapping if available
   const blockName =
     batch?.combined_batch_details?.[0]?.block?.block_name_en || "—";
 
   const successfulParticipants = useMemo(() => {
     if (!batch) return [];
 
-    // Map Beneficiaries using the new nested attendance_summary structure
     if (trainingType === "BENEFICIARY") {
       return (batch.beneficiary_participations || [])
         .filter(
@@ -184,7 +186,6 @@ export default function TpTrainingRequestClosure() {
         });
     }
 
-    // Map Trainers using the new nested attendance_summary structure
     if (trainingType === "TRAINER") {
       return (batch.trainer_participations || [])
         .filter(
@@ -215,9 +216,16 @@ export default function TpTrainingRequestClosure() {
     initializedRef.current = true;
     const init = {};
     successfulParticipants.forEach((p) => {
-      init[p.id] = { hra: "", ta_da: "", total_cost: "" };
+      // Preserve pre-filled costs from rejection payload if they exist
+      const existing = costs[p.id] || {};
+      init[p.id] = {
+        hra: existing.hra || "",
+        ta_da: existing.ta_da || "",
+        total_cost: existing.total_cost || "",
+      };
     });
-    setCosts(init);
+    setCosts((prev) => ({ ...prev, ...init }));
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [successfulParticipants, alreadySubmitted]);
 
   /* ═══════════════════════════════════════════════════════════
@@ -262,12 +270,11 @@ export default function TpTrainingRequestClosure() {
   ]);
 
   /* ═══════════════════════════════════════════════════════════
-     SUBMIT
+     SUBMIT (SMART POST vs PATCH)
   ═══════════════════════════════════════════════════════════ */
   async function handleSubmit() {
     setSubmitError(null);
 
-    // ── validations ──
     if (successfulParticipants.length === 0) {
       setSubmitError("No successful participants found for this batch.");
       return;
@@ -298,16 +305,23 @@ export default function TpTrainingRequestClosure() {
       return;
     }
 
-    // ⚠️ SURGICAL FIX: Extract training_request natively from the participant mapping
     const trainingRequestId =
       successfulParticipants[0]?.training_request || null;
 
     setSubmitting(true);
     try {
-      // 1. Submit Line-Item Costs
+      // 1. Submit Line-Item Costs (PATCH if exists, otherwise POST)
       for (const p of successfulParticipants) {
         const c = costs[p.id] || { hra: "0", ta_da: "0" };
-        await api.post("/tms/tp-batch-cost-breakups/", {
+
+        // Find existing record for this participant
+        const existingCostLine = (batch.participant_costs || []).find((pc) =>
+          trainingType === "BENEFICIARY"
+            ? pc.batch_beneficiary === p.id
+            : pc.batch_trainer === p.id,
+        );
+
+        const payload = {
           batch: parseInt(batchId, 10),
           batch_beneficiary: trainingType === "BENEFICIARY" ? p.id : null,
           batch_trainer: trainingType === "TRAINER" ? p.id : null,
@@ -315,14 +329,28 @@ export default function TpTrainingRequestClosure() {
           hra: parseFloat(c.hra || 0),
           ta_da: parseFloat(c.ta_da || 0),
           is_active: 1,
-          created_by: user.id,
-        });
+        };
+
+        if (existingCostLine?.id) {
+          await api.patch(
+            `/tms/tp-batch-cost-breakups/${existingCostLine.id}/`,
+            {
+              ...payload,
+              updated_by: user.id,
+            },
+          );
+        } else {
+          await api.post("/tms/tp-batch-cost-breakups/", {
+            ...payload,
+            created_by: user.id,
+          });
+        }
       }
 
-      // 2. Submit Master Invoice
-      const costResp = await api.post("/tms/batch-costs/", {
+      // 2. Submit Master Invoice (PATCH if exists, otherwise POST)
+      const costPayload = {
         batch: parseInt(batchId, 10),
-        training: trainingRequestId, // Passes null natively if batch is unlinked
+        training: trainingRequestId,
         is_exposure_visit: isExposureVisit,
         exposure_visit_cost: isExposureVisit
           ? parseFloat(exposureVisitCost || 0)
@@ -330,20 +358,50 @@ export default function TpTrainingRequestClosure() {
         is_field_visit: isFieldVisit,
         field_visit_cost: isFieldVisit ? parseFloat(fieldVisitCost || 0) : 0,
         is_active: 1,
-        created_by: user.id,
-      });
-      const masterCostId = costResp.data.id;
+      };
 
-      // 3. Submit Closure Request
-      await api.post("/tms/batch-closure-requests/", {
+      let masterCostId;
+      if (batch.batch_costing?.id) {
+        const costResp = await api.patch(
+          `/tms/batch-costs/${batch.batch_costing.id}/`,
+          {
+            ...costPayload,
+            updated_by: user.id,
+          },
+        );
+        masterCostId = costResp.data.id || batch.batch_costing.id;
+      } else {
+        const costResp = await api.post("/tms/batch-costs/", {
+          ...costPayload,
+          created_by: user.id,
+        });
+        masterCostId = costResp.data.id;
+      }
+
+      // 3. Submit Closure Request (PATCH if exists, otherwise POST)
+      const closurePayload = {
         batch: parseInt(batchId, 10),
         batch_costing: masterCostId,
         certificates_issued: false,
         is_active: 1,
-        created_by: user.id,
-      });
+      };
 
-      // 4. Update Batch Status to REVIEW
+      if (batch.batch_closing?.id) {
+        await api.patch(
+          `/tms/batch-closure-requests/${batch.batch_closing.id}/`,
+          {
+            ...closurePayload,
+            updated_by: user.id,
+          },
+        );
+      } else {
+        await api.post("/tms/batch-closure-requests/", {
+          ...closurePayload,
+          created_by: user.id,
+        });
+      }
+
+      // 4. Update Batch Status back to REVIEW
       await api.patch(`/tms/batches/${batchId}/`, {
         status: "REVIEW",
         updated_by: user.id,
@@ -351,7 +409,6 @@ export default function TpTrainingRequestClosure() {
 
       setSubmitSuccess(true);
 
-      // Re-fetch to lock UI into read-only
       const freshData = await fetchBatch(false);
       if (freshData?.status === "CLOSED") {
         navigate(`/tms/batch-certificate/${batchId}`, { replace: true });
@@ -418,12 +475,31 @@ export default function TpTrainingRequestClosure() {
           <main style={{ padding: 18 }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               {/* ════════ STATUS BANNERS ════════ */}
+
+              {/* ⚠️ SURGICAL FIX: Reject Banner */}
+              {isClosureRejected && !submitSuccess && (
+                <div className="alert alert-error">
+                  <strong style={{ fontSize: 16 }}>
+                    Batch Closure Rejected
+                  </strong>{" "}
+                  <br />
+                  <br />
+                  <strong>Reason:</strong>{" "}
+                  {batch.rejection_reason || "No reason provided by DMMU."}{" "}
+                  <br />
+                  <br />
+                  Please update the cost breakup below and resubmit the closure
+                  request.
+                </div>
+              )}
+
               {alreadySubmitted && !submitSuccess && (
                 <div className="alert alert-info">
                   Closure has already been submitted. Batch is under DMMU
                   review. The data below is read-only.
                 </div>
               )}
+
               {submitSuccess && (
                 <div className="alert alert-success">
                   Batch closure submitted successfully! The batch is now under
@@ -796,7 +872,7 @@ export default function TpTrainingRequestClosure() {
                                   </td>
                                 </>
                               ) : (
-                                /* ── EDITABLE ── */
+                                /* ── EDITABLE (Unlocks if Rejected) ── */
                                 <>
                                   <td>
                                     <input
@@ -987,7 +1063,9 @@ export default function TpTrainingRequestClosure() {
                   >
                     {submitting
                       ? "Submitting securely…"
-                      : "Submit Closure Request →"}
+                      : isClosureRejected
+                        ? "Resubmit Closure Request →"
+                        : "Submit Closure Request →"}
                   </button>
                 </div>
               )}

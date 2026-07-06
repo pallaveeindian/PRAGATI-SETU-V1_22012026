@@ -26,7 +26,10 @@ function normalizeMediaUrl(url) {
   return url;
 }
 
-export default function EkycVerificationTable({ ekycVerifications = [] }) {
+export default function EkycVerificationTable({
+  ekycVerifications = [],
+  batchData = {},
+}) {
   if (!ekycVerifications || ekycVerifications.length === 0) {
     return null;
   }
@@ -41,7 +44,9 @@ export default function EkycVerificationTable({ ekycVerifications = [] }) {
         <table className="table table-compact ekyc-table">
           <thead>
             <tr>
-              <th className="thStyle">Participant ID</th>
+              {/* --- SURGICAL ADDITION: New Headers --- */}
+              <th className="thStyle">S.No.</th>
+              <th className="thStyle">Participant Name</th>
               <th className="thStyle">Role</th>
               <th className="thStyle">Status</th>
               <th className="thStyle">Verified On</th>
@@ -49,52 +54,79 @@ export default function EkycVerificationTable({ ekycVerifications = [] }) {
             </tr>
           </thead>
           <tbody>
-            {ekycVerifications.map((kyc) => (
-              <tr key={kyc.id}>
-                <td className="table-cell table-cell-bold">
-                  {kyc.participant_id || "-"}
-                </td>
+            {/* --- SURGICAL ADDITION: Index and Dynamic Name Lookup --- */}
+            {ekycVerifications.map((kyc, index) => {
+              let pName = "Unknown";
+              const pId = String(kyc.participant_id);
 
-                <td className="table-cell">
-                  <span className="role-pill">
-                    {kyc.participant_role || "-"}
-                  </span>
-                </td>
+              if (kyc.participant_role?.toLowerCase() === "trainer") {
+                // Check master trainers first
+                const mt = (batchData.master_trainer_participations || []).find(
+                  (m) => String(m.id) === pId,
+                );
+                if (mt) pName = mt.master_trainer?.full_name || "Unknown";
 
-                <td className="table-cell">
-                  <span
-                    style={{
-                      fontWeight: 600,
-                      color:
-                        kyc.ekyc_status === "VERIFIED"
-                          ? "#16a34a"
-                          : kyc.ekyc_status === "FAILED"
-                            ? "#dc2626"
-                            : "#d97706",
-                    }}
-                  >
-                    {kyc.ekyc_status || "PENDING"}
-                  </span>
-                </td>
+                // Fallback to regular trainers if not a master trainer
+                if (pName === "Unknown") {
+                  const tr = (batchData.trainer_participations || []).find(
+                    (t) => String(t.id) === pId,
+                  );
+                  if (tr) pName = tr.trainer?.full_name || "Unknown";
+                }
+              } else {
+                // Trainees (Beneficiaries)
+                const bn = (batchData.beneficiary_participations || []).find(
+                  (b) => String(b.id) === pId,
+                );
+                if (bn) pName = bn.beneficiary?.member_name || "Unknown";
+              }
 
-                <td className="table-cell">{fmtDate(kyc.verified_on)}</td>
+              return (
+                <tr key={kyc.id}>
+                  <td className="table-cell table-cell-bold">{index + 1}</td>
+                  <td className="table-cell table-cell-bold">{pName}</td>
 
-                <td className="table-cell">
-                  {kyc.ekyc_document ? (
-                    <a
-                      href={normalizeMediaUrl(kyc.ekyc_document)}
-                      target="_blank"
-                      rel="noreferrer"
-                      className="doc-link"
+                  <td className="table-cell">
+                    <span className="role-pill">
+                      {kyc.participant_role || "-"}
+                    </span>
+                  </td>
+
+                  <td className="table-cell">
+                    <span
+                      style={{
+                        fontWeight: 600,
+                        color:
+                          kyc.ekyc_status === "VERIFIED"
+                            ? "#16a34a"
+                            : kyc.ekyc_status === "FAILED"
+                              ? "#dc2626"
+                              : "#d97706",
+                      }}
                     >
-                      View Doc
-                    </a>
-                  ) : (
-                    <span style={{ color: "#94a3b8" }}>-</span>
-                  )}
-                </td>
-              </tr>
-            ))}
+                      {kyc.ekyc_status || "PENDING"}
+                    </span>
+                  </td>
+
+                  <td className="table-cell">{fmtDate(kyc.verified_on)}</td>
+
+                  <td className="table-cell">
+                    {kyc.ekyc_document ? (
+                      <a
+                        href={normalizeMediaUrl(kyc.ekyc_document)}
+                        target="_blank"
+                        rel="noreferrer"
+                        className="doc-link"
+                      >
+                        View Doc
+                      </a>
+                    ) : (
+                      <span style={{ color: "#94a3b8" }}>-</span>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
           </tbody>
         </table>
       </div>

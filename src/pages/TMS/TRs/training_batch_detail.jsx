@@ -87,6 +87,13 @@ export default function TrainingBatchDetail() {
   const displayedParticipants = useMemo(() => {
     if (!batchData) return [];
 
+    // --- SURGICAL ADDITION: Create a quick lookup map for costs ---
+    const costsMap = {};
+    (batchData.participant_costs || []).forEach((c) => {
+      const pId = c.batch_beneficiary || c.batch_trainer;
+      if (pId) costsMap[pId] = c.total_cost;
+    });
+
     let participants = [];
 
     if (
@@ -100,6 +107,7 @@ export default function TrainingBatchDetail() {
             ...person,
             attendance_summary: p.attendance_summary,
             participation_id: p.id,
+            total_cost: costsMap[p.id],
           });
         });
       });
@@ -108,12 +116,14 @@ export default function TrainingBatchDetail() {
         ...(tp.trainer || {}),
         attendance_summary: tp.attendance_summary,
         participation_id: tp.id,
+        total_cost: costsMap[tp.id],
       }));
     } else {
       participants = (batchData.beneficiary_participations || []).map((bp) => ({
         ...(bp.beneficiary || {}),
         attendance_summary: bp.attendance_summary,
         participation_id: bp.id,
+        total_cost: costsMap[bp.id],
       }));
     }
 
@@ -222,6 +232,7 @@ export default function TrainingBatchDetail() {
 
                   <EkycVerificationTable
                     ekycVerifications={batchData.ekyc_verifications || []}
+                    batchData={batchData}
                   />
 
                   <FinancialSummaryCard

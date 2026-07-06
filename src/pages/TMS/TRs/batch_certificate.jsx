@@ -68,6 +68,16 @@ function buildMediaUrl(url) {
   }
 }
 
+function fmtDate(iso) {
+  try {
+    if (!iso) return "-";
+    const d = new Date(iso);
+    return d.toLocaleDateString("en-IN");
+  } catch (e) {
+    return iso || "-";
+  }
+}
+
 export default function BatchCertificate() {
   const { user } = useContext(AuthContext) || {};
   const { id: batchId } = useParams();
@@ -93,22 +103,23 @@ export default function BatchCertificate() {
 
   const didRunRef = useRef(false);
 
-  const requestLevel = batchDetail?.request?.level || null;
   const isBMMU = role === "bmmu";
   const isDMMU = role === "dmmu";
   const isSMMU = role === "smmu";
   const isBatchClosed = batchDetail?.status === "CLOSED";
-  const canGenerate =
-    isBatchClosed &&
-    ((isBMMU && requestLevel === "BLOCK") ||
-      (isDMMU && requestLevel === "DISTRICT"));
+
+  // SURGICAL FIX: ONLY DMMU can generate the certificate.
+  const canGenerate = isBatchClosed && isDMMU;
 
   /* ---------------- fetchers ---------------- */
 
   async function fetchBatchDetail() {
     if (!batchId) return null;
     try {
-      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      // SURGICAL FIX: Hooked up to Comprehensive Detail V2
+      const resp = await api.get(
+        `/tms/batches/comprehensive-detail/${batchId}/`,
+      );
       return resp?.data || null;
     } catch (e) {
       console.error("fetch batch detail failed", e);
@@ -156,8 +167,7 @@ export default function BatchCertificate() {
       const blob = new Blob([resp.data], { type: "application/pdf" });
       const url = URL.createObjectURL(blob);
 
-      // SURGICAL CHANGE: Open directly in the browser's default PDF viewer!
-      // This gives the user native Print and Download buttons automatically.
+      // Open directly in the browser's default PDF viewer!
       window.open(url, "_blank");
 
       setShowFinancialModal(false);
@@ -254,8 +264,9 @@ export default function BatchCertificate() {
 
       const oldStatus = currentReport.status || "DRAFT";
       let newStatus = oldStatus;
-      if (isBMMU) newStatus = "BMM_SIGNED";
-      else if (isDMMU) newStatus = "DMM_SIGNED";
+
+      // SURGICAL FIX: DMMU Uploads initial DMM_SIGNED. SMMU countersigns. BMMU does nothing.
+      if (isDMMU) newStatus = "DMM_SIGNED";
       else if (isSMMU && oldStatus === "DMM_SIGNED") newStatus = "SMM_SIGNED";
 
       formData.append("status", newStatus);
@@ -311,10 +322,17 @@ export default function BatchCertificate() {
     const fileUrl = reportRow?.report_file
       ? buildMediaUrl(reportRow.report_file)
       : null;
+
+    // SURGICAL FIX: Upload capabilities
     const canUpload =
-      (isBMMU && !["DMM_SIGNED", "SMM_SIGNED"].includes(status)) ||
-      (isDMMU && status !== "SMM_SIGNED") ||
+      (isDMMU && (status === "DRAFT" || status === "BMM_SIGNED")) ||
       (isSMMU && status === "DMM_SIGNED");
+
+    // SURGICAL FIX: Viewing capabilities (BMMU restricted until DMM/SMM signs)
+    let canView = !!fileUrl;
+    if (isBMMU && !["DMM_SIGNED", "SMM_SIGNED"].includes(status)) {
+      canView = false;
+    }
 
     return (
       <table className="table table-compact">
@@ -327,9 +345,9 @@ export default function BatchCertificate() {
         </thead>
         <tbody>
           <tr>
-            <td>{status}</td>
+            <td>{status === "DRAFT" ? "Pending DMMU Signature" : status}</td>
             <td>
-              {fileUrl ? (
+              {canView ? (
                 <button
                   className="btn-sm btn-flat"
                   onClick={() => window.open(fileUrl, "_blank")}
@@ -337,7 +355,9 @@ export default function BatchCertificate() {
                   View PDF
                 </button>
               ) : (
-                "-"
+                <span style={{ color: "#64748b", fontSize: "13px" }}>
+                  {isBMMU ? "Awaiting DMMU Signature" : "-"}
+                </span>
               )}
             </td>
             {canUpload && <td>{renderUploadButton()}</td>}
@@ -352,8 +372,8 @@ export default function BatchCertificate() {
     ? `Batch Certificate — ${batchDetail.code}`
     : "Batch Certificate";
 
-  const isTrainingCompleted =
-    batchDetail?.status === "CLOSED" || batchDetail?.status === "COMPLETED";
+  const requestLevelName =
+    batchDetail?.combined_batch_details?.[0]?.block?.block_name_en || "-";
 
   return (
     <div className="app-shell">
@@ -416,11 +436,12 @@ export default function BatchCertificate() {
                         <strong>Status:</strong> {batchDetail.status}
                       </div>
                       <div>
-                        <strong>Level:</strong> {requestLevel}
+                        <strong>Block:</strong> {requestLevelName}
                       </div>
                       <div>
-                        <strong>Dates:</strong> {batchDetail.start_date} to{" "}
-                        {batchDetail.end_date}
+                        <strong>Dates:</strong>{" "}
+                        {fmtDate(batchDetail.start_date)} to{" "}
+                        {fmtDate(batchDetail.end_date)}
                       </div>
                     </div>
                   </div>
@@ -440,7 +461,7 @@ export default function BatchCertificate() {
                       </div>
                     ) : (
                       <div>
-                        {/* 1. Generate Button (Only visible to the assigned authority) */}
+                        {/* 1. Generate Button (Only visible to the DMMU) */}
                         {canGenerate && (
                           <button
                             className="btn"
@@ -454,7 +475,7 @@ export default function BatchCertificate() {
                           </button>
                         )}
 
-                        {isSMMU && !canGenerate && (
+                        {!canGenerate && (
                           <div
                             style={{
                               marginBottom: 16,
@@ -463,7 +484,7 @@ export default function BatchCertificate() {
                             }}
                           >
                             Signed certificates will be generated and uploaded
-                            by the respective authorities.
+                            by the DMMU.
                           </div>
                         )}
 

@@ -15,13 +15,6 @@ export default function FinancialSummaryCard({ batchCosting }) {
 
       <div className="financial-grid">
         <div className="financial-item">
-          <div className="financial-label">Exposure Visit Cost</div>
-          <div className="financial-value">
-            ₹ {batchCosting.exposure_visit_cost || 0}
-          </div>
-        </div>
-
-        <div className="financial-item">
           <div className="financial-label">Field Visit Cost</div>
           <div className="financial-value">
             ₹ {batchCosting.field_visit_cost || 0}

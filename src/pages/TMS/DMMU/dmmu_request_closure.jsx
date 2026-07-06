@@ -58,7 +58,6 @@ export default function DmmuBatchClosureReview() {
   const roleKey = getCanonicalRole(user);
   const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "DMMU Dashboard";
 
-  // Note: We are using the parameter 'id' from your route, but it now represents the BATCH ID.
   const { id: batchId } = useParams();
   const navigate = useNavigate();
 
@@ -87,7 +86,10 @@ export default function DmmuBatchClosureReview() {
     setLoading(true);
     setFetchError(null);
     try {
-      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      // ⚠️ SURGICAL FIX: Using the new Comprehensive Detail V2 endpoint
+      const resp = await api.get(
+        `/tms/batches/comprehensive-detail/${batchId}/`,
+      );
       const data = resp?.data;
 
       if (!data) throw new Error("Empty response");
@@ -117,12 +119,16 @@ export default function DmmuBatchClosureReview() {
   /* ═══════════════════════════════════════════════════════════
      DERIVED DATA EXTRACTIONS
   ═══════════════════════════════════════════════════════════ */
-  const trainingType = batch?.request?.training_type; // 'BENEFICIARY' | 'TRAINER'
-  const tp = batch?.request?.training_plan || {};
-  const req = batch?.request || {};
+  // ⚠️ SURGICAL FIXES: Extracted using native base references instead of request__
+  const trainingType = batch?.participant_type; // 'BENEFICIARY' | 'TRAINER'
+  const tp = batch?.training_plan || {};
   const centre = batch?.centre || {};
   const batchCosting = batch?.batch_costing || {};
   const isReviewStatus = batch?.status === "REVIEW";
+
+  // Safely extract the block name from the dynamic block_coverages mapping if available
+  const blockName =
+    batch?.combined_batch_details?.[0]?.block?.block_name_en || "—";
 
   const successfulParticipants = useMemo(() => {
     if (!batch) return [];
@@ -130,21 +136,16 @@ export default function DmmuBatchClosureReview() {
     // Map Beneficiaries
     if (trainingType === "BENEFICIARY") {
       return (batch.beneficiary_participations || [])
-        .filter((bb) => {
-          if (!bb.is_active) return false;
-          const summary = (batch.beneficiary_summaries || []).find(
-            (s) => s.batch_beneficiary === bb.id,
-          );
-          return summary?.is_successful === true;
-        })
+        .filter(
+          (bb) =>
+            bb.is_active !== false &&
+            bb.attendance_summary?.is_successful === true,
+        )
         .map((bb) => {
-          const fullBen =
-            (batch.beneficiary || []).find((b) => b.id === bb.beneficiary) ||
-            {};
-          const summary = (batch.beneficiary_summaries || []).find(
-            (s) => s.batch_beneficiary === bb.id,
-          );
-          // Find line item cost
+          const ben = bb.beneficiary || {};
+          const summary = bb.attendance_summary || {};
+
+          // Find line item cost natively from pre-fetched arrays
           const costLine =
             (batch.participant_costs || []).find(
               (c) => c.batch_beneficiary === bb.id,
@@ -152,16 +153,15 @@ export default function DmmuBatchClosureReview() {
 
           return {
             ...bb,
-            display_name:
-              fullBen.member_name || `Beneficiary #${bb.beneficiary}`,
-            attendance_pct: summary?.attendance_percentage || "0.00",
+            display_name: ben.member_name || `Beneficiary #${ben.id || bb.id}`,
+            attendance_pct: summary.attendance_percentage || "0.00",
             hra: costLine.hra || 0,
             ta_da: costLine.ta_da || 0,
             total_cost: costLine.total_cost || 0,
-            age: fullBen.age || "-",
-            gender: fullBen.gender || "-",
-            category: fullBen.social_category || "-",
-            mobile: fullBen.mobile || "-",
+            age: ben.age || "-",
+            gender: ben.gender || "-",
+            category: ben.social_category || "-",
+            mobile: ben.mobile || "-",
           };
         });
     }
@@ -169,25 +169,31 @@ export default function DmmuBatchClosureReview() {
     // Map Trainers
     if (trainingType === "TRAINER") {
       return (batch.trainer_participations || [])
-        .filter((bt) => bt.is_active && bt.attended === true)
+        .filter(
+          (bt) =>
+            bt.is_active !== false &&
+            bt.attendance_summary?.is_successful === true,
+        )
         .map((bt) => {
-          const fullTr =
-            (batch.trainer || []).find((t) => t.id === bt.trainer) || {};
+          const tr = bt.trainer || {};
+          const summary = bt.attendance_summary || {};
+
           const costLine =
             (batch.participant_costs || []).find(
               (c) => c.batch_trainer === bt.id,
             ) || {};
+
           return {
             ...bt,
-            display_name: fullTr.full_name || `Trainer #${bt.trainer}`,
-            attendance_pct: "100.00",
+            display_name: tr.full_name || `Trainer #${tr.id || bt.id}`,
+            attendance_pct: summary.attendance_percentage || "0.00",
             hra: costLine.hra || 0,
             ta_da: costLine.ta_da || 0,
             total_cost: costLine.total_cost || 0,
-            age: fullTr.date_of_birth ? `DOB: ${fullTr.date_of_birth}` : "-",
-            gender: fullTr.gender || "-",
-            category: fullTr.social_category || "-",
-            mobile: fullTr.mobile_no || "-",
+            age: tr.date_of_birth ? `DOB: ${tr.date_of_birth}` : "-",
+            gender: tr.gender || "-",
+            category: tr.social_category || "-",
+            mobile: tr.mobile_no || "-",
           };
         });
     }
@@ -324,10 +330,6 @@ export default function DmmuBatchClosureReview() {
         />
 
         <div className="main-area">
-          <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div>
-
           <main style={{ padding: 18 }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               {/* Header */}
@@ -415,11 +417,7 @@ export default function DmmuBatchClosureReview() {
                     value={tp?.type_of_training}
                   />
                   <InfoItem label="No. of Days" value={tp?.no_of_days} />
-                  <InfoItem
-                    label="District"
-                    value={req?.district?.district_name_en}
-                  />
-                  <InfoItem label="Block" value={req?.block?.block_name_en} />
+                  <InfoItem label="Block" value={blockName} />
                 </div>
               </div>
 
@@ -586,7 +584,7 @@ export default function DmmuBatchClosureReview() {
               >
                 <div className="cl-card">
                   <div className="cl-card-title">🧑‍🏫 Master Trainers</div>
-                  {batch?.master_trainers?.length > 0 ? (
+                  {batch?.master_trainer_participations?.length > 0 ? (
                     <table className="table">
                       <thead>
                         <tr>
@@ -596,11 +594,13 @@ export default function DmmuBatchClosureReview() {
                         </tr>
                       </thead>
                       <tbody>
-                        {batch.master_trainers.map((mt) => (
-                          <tr key={mt.id}>
-                            <td style={{ fontWeight: 500 }}>{mt.full_name}</td>
-                            <td>{mt.designation}</td>
-                            <td>{mt.mobile_no}</td>
+                        {batch.master_trainer_participations.map((mtp) => (
+                          <tr key={mtp.id}>
+                            <td style={{ fontWeight: 500 }}>
+                              {mtp.master_trainer?.full_name || "-"}
+                            </td>
+                            <td>{mtp.master_trainer?.designation || "-"}</td>
+                            <td>{mtp.master_trainer?.mobile_no || "-"}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -842,9 +842,7 @@ export default function DmmuBatchClosureReview() {
                     })}
                   </div>
                 ) : (
-                  <div className="empty-msg">
-                    No media uploaded by TC.
-                  </div>
+                  <div className="empty-msg">No media uploaded by TC.</div>
                 )}
               </div>
 
@@ -904,6 +902,7 @@ export default function DmmuBatchClosureReview() {
                                 {p.attendance_pct}%
                               </span>
                             </td>
+                            {/* ── READ-ONLY ── */}
                             <td>₹{fmt(p.hra)}</td>
                             <td>₹{fmt(p.ta_da)}</td>
                             <td>
@@ -917,7 +916,7 @@ export default function DmmuBatchClosureReview() {
                       <tfoot>
                         <tr>
                           <td
-                            colSpan={5}
+                            colSpan={9}
                             style={{
                               textAlign: "right",
                               fontWeight: 700,

@@ -8,7 +8,7 @@ import TmsLeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
 import { TMS_API } from "../../../api/axios";
 import { getUser } from "../../../utils/storage";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
 
 const AssemblerDashboardBatchCreator = () => {
   const [filters, setFilters] = useState({
@@ -33,6 +33,7 @@ const AssemblerDashboardBatchCreator = () => {
     districtId: "",
     batchType: "Separate",
   });
+  const navigate = useNavigate();
 
   // Strategy Mode Switcher State: "SEPARATE" or "COMBINED"
   const [batchType, setBatchType] = useState("SEPARATE");
@@ -306,6 +307,13 @@ const AssemblerDashboardBatchCreator = () => {
     try {
       const response = await TMS_API.batchDetailV2(batchId);
       const data = response.data;
+
+      // --- SURGICAL ADDITION: Redirect if rejected at Closure stage ---
+      if (data?.batch_closing?.id) {
+        navigate(`/tms/tp/tr-closure/${batchId}`, { replace: true });
+        return; // Stop execution here
+      }
+      // ----------------------------------------------------------------
       const selectedIds =
         data?.participant_type === "TRAINER"
           ? data?.trainer || []

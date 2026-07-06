@@ -8,15 +8,6 @@ import { AuthContext } from "../../../contexts/AuthContext";
 // SURGICAL ADDITION: Import default 'api' for the blob export and patch updates
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 
-/* ================= GEO ================= */
-function getGeoscope() {
-  try {
-    return JSON.parse(localStorage.getItem("ps_user_geoscope"));
-  } catch {
-    return null;
-  }
-}
-
 export default function DmmuTargetAchievement() {
   const { user } = useContext(AuthContext) || {};
 
@@ -27,6 +18,7 @@ export default function DmmuTargetAchievement() {
   const [financialYear, setFinancialYear] = useState("2023-24");
   const [searchPartner, setSearchPartner] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
+  const [geoscope, setGeoscope] = useState(null);
 
   const [districts, setDistricts] = useState([]);
   const [plans, setPlans] = useState([]);
@@ -47,10 +39,24 @@ export default function DmmuTargetAchievement() {
 
   /* ================= AUTO DISTRICT ================= */
   useEffect(() => {
-    const geo = getGeoscope() || {};
+    const fetchGeoscope = async () => {
+      if (!user?.id) return;
 
-    let districtId =
-      geo.district_id || (Array.isArray(geo.districts) ? geo.districts[0] : "");
+      try {
+        const res = await LOOKUP_API.userGeoscopeByUserId(user.id);
+        setGeoscope(res.data);
+      } catch (err) {
+        console.error("Failed to fetch user geoscope:", err);
+      }
+    };
+
+    fetchGeoscope();
+  }, [user?.id]);
+
+  useEffect(() => {
+    if (!geoscope) return;
+
+    let districtId = geoscope?.districts?.[0];
 
     if (user?.district_id) {
       districtId = user.district_id;
@@ -62,7 +68,7 @@ export default function DmmuTargetAchievement() {
       ...f,
       district_id: String(districtId),
     }));
-  }, [user]);
+  }, [user, geoscope]);
 
   /* ================= FETCH ================= */
   // SURGICAL ADDITION: Accept page parameter

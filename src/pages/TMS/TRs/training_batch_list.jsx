@@ -795,14 +795,17 @@ export default function TrainingBatchList() {
                                   Review
                                 </button>
                               )}
-                            {role === "dtp" && (
-                              <button
-                                className="btn-sm btn-danger"
-                                onClick={() => handleDeleteBatch(b.id)}
-                              >
-                                Delete
-                              </button>
-                            )}
+                            {role === "dtp" &&
+                              ["DRAFT", "REJECTED"].includes(
+                                String(b.status).toUpperCase(),
+                              ) && (
+                                <button
+                                  className="btn-sm btn-danger"
+                                  onClick={() => handleDeleteBatch(b.id)}
+                                >
+                                  Delete
+                                </button>
+                              )}
                             {(role === "dtp" || role === "training_partner") &&
                               ["COMPLETED", "REVIEW"].includes(
                                 String(b.status).toUpperCase(),

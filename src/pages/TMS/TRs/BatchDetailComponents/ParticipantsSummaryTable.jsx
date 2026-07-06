@@ -59,12 +59,14 @@ export default function ParticipantsSummaryTable({
                 <>
                   <th className="thStyle">Designation</th>
                   <th className="thStyle">Replaced</th>
+                  <th className="thStyle">Total Cost (₹)</th>
                 </>
               ) : (
                 <>
                   <th className="thStyle">Age</th>
                   <th className="thStyle">PLD</th>
                   <th className="thStyle">Category</th>
+                  <th className="thStyle">Total Cost (₹)</th>
                 </>
               )}
             </tr>
@@ -156,12 +158,32 @@ export default function ParticipantsSummaryTable({
                         >
                           {p.is_replaced ? "Yes" : "No"}
                         </td>
+                        {/* --- SURGICAL ADDITION --- */}
+                        <td className="tdStyle">
+                          {p.total_cost ? (
+                            <strong style={{ color: "#166534" }}>
+                              ₹{p.total_cost}
+                            </strong>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
                       </>
                     ) : (
                       <>
                         <td className="tdStyle">{p.age || "-"}</td>
                         <td className="tdStyle">{p.pld_status || "-"}</td>
                         <td className="tdStyle">{p.social_category || "-"}</td>
+                        {/* --- SURGICAL ADDITION --- */}
+                        <td className="tdStyle">
+                          {p.total_cost ? (
+                            <strong style={{ color: "#166534" }}>
+                              ₹{p.total_cost}
+                            </strong>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
                       </>
                     )}
                   </tr>
