@@ -150,7 +150,7 @@ export default function CpBatchList() {
 
   function renderAction(batch) {
     const status = (batch.status || "").toUpperCase();
-    if (["ONGOING", "PENDING", "SCHEDULED"].includes(status)) {
+    if (["ONGOING", "SCHEDULED"].includes(status)) {
       return (
         <button
           className="btn-sm btn-flat"
@@ -160,7 +160,20 @@ export default function CpBatchList() {
         </button>
       );
     }
-    if (status === "COMPLETED") {
+    if (["CLOSED", "PENDING", "REJECTED"].includes(status)) {
+      return (
+        <>
+          <button
+            className="btn-sm btn-flat"
+            style={{ marginRight: 6 }}
+            onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}
+          >
+            View
+          </button>
+        </>
+      );
+    }
+    if (["COMPLETED"].includes(status)) {
       return (
         <>
           <button
