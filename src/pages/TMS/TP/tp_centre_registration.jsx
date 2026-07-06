@@ -1,11 +1,11 @@
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import TopNav from "../layout/tms_TopNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
+import { getCanonicalRole } from "../../../utils/roleUtils";
 import {
   FaArrowLeft,
   FaArrowRight,
@@ -81,10 +81,15 @@ export default function TpCentreRegistration() {
   const [navCollapsed, setNavCollapsed] = useState(false);
 
   const isEdit = Boolean(centreId);
+  const role = getCanonicalRole(user || {});
 
   const [step, setStep] = useState(0);
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
+
+  /* ===================== SCOPE RESOLUTION ===================== */
+  const [resolvedPartnerId, setResolvedPartnerId] = useState(null);
+  const [dtpDistrictId, setDtpDistrictId] = useState(null);
 
   /* ===================== LOOKUPS ===================== */
 
@@ -120,12 +125,58 @@ export default function TpCentreRegistration() {
     other_details: "",
     training_hall_count: 1,
     training_hall_capacity: 20,
-    // centre_type: "",
     centre_type_other: "",
   });
 
   const [rooms, setRooms] = useState([{ ...EMPTY_ROOM }]);
   const [media, setMedia] = useState([{ ...EMPTY_MEDIA }]);
+
+  /* ===================== INIT SCOPE (DTP / TP) ===================== */
+
+  useEffect(() => {
+    async function resolveScope() {
+      if (!user?.id) return;
+
+      if (role === "dtp") {
+        try {
+          const partnerRes = await TMS_API.parentPartner();
+          if (partnerRes?.data?.partner_id) {
+            setResolvedPartnerId(partnerRes.data.partner_id);
+          }
+        } catch (e) {
+          console.error("Failed to load DTP parent partner", e);
+        }
+
+        try {
+          const geoRes = await LOOKUP_API.userGeoscopeByUserId(user.id);
+          const dId =
+            geoRes?.data?.districts?.[0] ?? geoRes?.data?.district ?? null;
+          if (dId) {
+            setDtpDistrictId(String(dId));
+            if (!isEdit) {
+              // Lock the district in form state for new registrations
+              setCentre((prev) => ({ ...prev, district: String(dId) }));
+            }
+          }
+        } catch (e) {
+          console.error("Failed to load DTP geoscope", e);
+        }
+      } else {
+        // Regular Training Partner
+        try {
+          const tp = await TMS_API.trainingPartners.list({
+            search: user.id,
+            fields: "id",
+          });
+          const pid = tp?.data?.results?.[0]?.id;
+          if (pid) setResolvedPartnerId(pid);
+        } catch (e) {
+          console.error("Failed to resolve TP ID", e);
+        }
+      }
+    }
+    resolveScope();
+  }, [user, role, isEdit]);
 
   /* ===================== LOAD DISTRICTS ===================== */
 
@@ -214,22 +265,19 @@ export default function TpCentreRegistration() {
   async function handleConfirmSubmit() {
     setSubmitting(true);
     try {
-      const tp = await TMS_API.trainingPartners.list({
-        search: user.id,
-        fields: "id",
-      });
-      const partnerId = tp?.data?.results?.[0]?.id;
-      if (!partnerId) throw new Error("Training Partner not found");
+      if (!resolvedPartnerId)
+        throw new Error("Training Partner Scope not resolved");
 
       const centrePayload = {
         ...centre,
-        partner: partnerId,
+        partner: resolvedPartnerId,
         created_by: user.id,
         toilets_bathrooms: Number(centre.toilets_bathrooms),
         training_hall_count: Number(centre.training_hall_count),
         training_hall_capacity: Number(centre.training_hall_capacity),
       };
 
+      console.log(centrePayload);
       // 1. Create or Update the main Centre record
       const centreResp = isEdit
         ? await TMS_API.trainingPartnerCentres.update(centreId, centrePayload)
@@ -266,7 +314,7 @@ export default function TpCentreRegistration() {
 
         if (m.file) {
           const fd = new FormData();
-          fd.append("partner", partnerId);
+          fd.append("partner", resolvedPartnerId);
           fd.append("centre", finalCentreId);
           fd.append("category", m.category);
 
@@ -349,15 +397,6 @@ export default function TpCentreRegistration() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav
-          left={
-            <div className="app-title">
-              Pragati Setu —{" "}
-              {isEdit ? "Edit Training Centre" : "New Training Centre"}
-            </div>
-          }
-        /> */}
-
           <main style={{ padding: "50px 18px" }}>
             {/* ===== Page Header ===== */}
             <div className="tp-page-header">
@@ -574,6 +613,7 @@ export default function TpCentreRegistration() {
                       <select
                         value={centre.district}
                         className="input-blue"
+                        disabled={role === "dtp"} // 👈 SURGICAL FIX: Lock district for DTPs
                         onChange={(e) =>
                           setCentre({ ...centre, district: e.target.value })
                         }

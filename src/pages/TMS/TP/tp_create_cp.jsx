@@ -1,43 +1,53 @@
+// src/pages/TMS/TP/tp_cp_create.jsx
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import TopNav from "../layout/tms_TopNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
-import {
-  FaUserPlus,
-  FaUserEdit,
-  FaSyncAlt,
-  FaUser,
-  FaIdBadge,
-} from "react-icons/fa";
+import { getCanonicalRole } from "../../../utils/roleUtils";
+import { FaUserEdit } from "react-icons/fa";
 
 /* ---------------- helpers ---------------- */
 
-function generateThUrid() {
-  const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-  let body = "";
-  for (let i = 0; i < 11; i++) {
-    body += chars.charAt(Math.floor(Math.random() * chars.length));
+const TP_SELF_PARTNER_KEY = "tms_self_partner_id_v1";
+
+async function resolveTrainingPartnerIdForUser(userId) {
+  if (!userId) return null;
+  const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
+  if (cached) return Number(cached);
+
+  try {
+    const resp = await TMS_API.trainingPartners.list({
+      search: userId,
+      fields: "id",
+    });
+    const pid = resp?.data?.results?.[0]?.id || null;
+    if (pid) localStorage.setItem(TP_SELF_PARTNER_KEY, String(pid));
+    return pid;
+  } catch (err) {
+    console.error("Failed to resolve TP ID", err);
+    return null;
   }
-  return `TH_${body}`;
 }
 
 /* ================= VALIDATIONS ================= */
 
 const passwordRegex =
   /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*#?&])[A-Za-z\d@$!%*#?&]{8,12}$/;
-
 const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const mobileRegex = /^\d{10}$/;
 
-function validateUserForm({ username, password }) {
+function validateUserForm({ username, password }, isEditMode) {
   const errors = {};
 
-  if (!username || username.length < 10 || username.length > 20) {
-    errors.username = "Username must be 10–20 characters";
+  if (!username || username.length < 5 || username.length > 20) {
+    errors.username = "Username must be 5–20 characters";
+  }
+
+  if (!isEditMode && !password) {
+    errors.password = "Password is strictly required for new accounts.";
   }
 
   if (password && !passwordRegex.test(password)) {
@@ -51,7 +61,6 @@ function validateUserForm({ username, password }) {
 function validateCPForm({ name, mobile_number, email, address }) {
   const errors = {};
 
-  // Name: only alphabets and spaces, max 50 chars
   if (!name || !name.trim()) {
     errors.name = "Name is required";
   } else if (name.length > 50) {
@@ -81,6 +90,8 @@ export default function TpCreateCP() {
   const { cpId } = useParams();
   const isEditMode = Boolean(cpId);
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const role = getCanonicalRole(user || {});
+
   const [userErrors, setUserErrors] = useState({});
   const [cpErrors, setCpErrors] = useState({});
 
@@ -101,13 +112,29 @@ export default function TpCreateCP() {
   const [masterUserId, setMasterUserId] = useState(null);
   const [loading, setLoading] = useState(false);
   const [status, setStatus] = useState("");
-  const [cpExists, setCpExists] = useState(false);
   const [partnerId, setPartnerId] = useState(null);
 
-  /* ================= NEW STATES ================= */
+  /* ---------------- INIT (DTP / TP RESOLUTION) ---------------- */
+  useEffect(() => {
+    async function initScope() {
+      if (role === "dtp") {
+        try {
+          const res = await TMS_API.parentPartner();
+          if (res?.data?.partner_id) setPartnerId(res.data.partner_id);
+        } catch (e) {
+          console.error("Failed to load DTP parent partner", e);
+        }
+      } else {
+        const pid = await resolveTrainingPartnerIdForUser(user?.id);
+        setPartnerId(pid);
+      }
+    }
 
-  const [masterUsers, setMasterUsers] = useState([]);
-  const [loadingMasters, setLoadingMasters] = useState(false);
+    // Only strictly needed on Create. Edit mode infers it from CP record.
+    if (!isEditMode) {
+      initScope();
+    }
+  }, [role, user, isEditMode]);
 
   /* ---------------- PREFILL (EDIT MODE) ---------------- */
 
@@ -120,7 +147,6 @@ export default function TpCreateCP() {
         const { data: cp } =
           await TMS_API.trainingPartnerContactPersons.retrieve(cpId);
 
-        setCpExists(true);
         setPartnerId(cp.partner);
         setMasterUserId(cp.master_user);
 
@@ -135,101 +161,71 @@ export default function TpCreateCP() {
           const { data: mu } = await api.get(
             `/lookups/users/${cp.master_user}/`,
           );
-
           setUserForm({
             username: mu.username || "",
             password: "", // NEVER prefill password
           });
         }
       } catch (e) {
-        navigate("/tms/tp/dashboard", { replace: true });
+        console.error("Failed to preload edit data", e);
+        navigate("/tms/tp/cp", { replace: true });
       } finally {
         setLoading(false);
       }
     }
 
     preload();
-  }, [cpId, isEditMode]);
+  }, [cpId, isEditMode, navigate]);
 
-  /* ================= FETCH MASTER USERS ================= */
-  /* created_by = logged-in user */
+  /* ---------------- CREATE (ONE-SHOT API) ---------------- */
 
-  async function fetchMasterUsers() {
-    if (!user?.id) return;
+  async function handleOneShotSubmit() {
+    const uErrors = validateUserForm(userForm, isEditMode);
+    const cErrors = validateCPForm(cpForm);
+    setUserErrors(uErrors);
+    setCpErrors(cErrors);
 
-    setLoadingMasters(true);
+    if (Object.keys(uErrors).length > 0 || Object.keys(cErrors).length > 0) {
+      setStatus("Please fix validation errors before submitting.");
+      return;
+    }
+
+    if (!partnerId) {
+      setStatus("Error: Training Partner Scope not resolved.");
+      return;
+    }
+
+    setStatus("Creating TC ID...");
+    setLoading(true);
+
     try {
-      const resp = await api.get("/lookups/master-users/", {
-        params: {
-          created_by: user.id,
-        },
-      });
+      const payload = {
+        username: userForm.username,
+        password: userForm.password,
+        role: 11, // Map to TC ID role
+        name: cpForm.name,
+        mobile_number: cpForm.mobile_number,
+        email: cpForm.email,
+        address: cpForm.address,
+        partner: partnerId,
+      };
 
-      setMasterUsers(resp.data?.results || []);
+      await api.post("/tms/tpcp/create-oneshot/", payload);
+
+      setStatus("TC ID created successfully ✓");
+      setTimeout(() => navigate("/tms/tp/cp-list"), 1500);
     } catch (e) {
-      console.error("Failed to fetch master users", e);
+      console.error(e);
+      setStatus(e?.response?.data?.error || "TC ID creation failed.");
     } finally {
-      setLoadingMasters(false);
+      setLoading(false);
     }
   }
 
-  /* Fetch master users on create mode */
-
-  useEffect(() => {
-    if (!isEditMode) {
-      fetchMasterUsers();
-    }
-  }, [user.id, isEditMode]);
-
-  async function fetchContactPersonByMaster(masterUserId) {
-    try {
-      const resp = await TMS_API.trainingPartnerContactPersons.list({
-        master_user: masterUserId,
-        page_size: 1,
-      });
-
-      const cp = resp?.data?.results?.[0];
-
-      if (cp) {
-        setCpExists(true);
-        setPartnerId(cp.partner);
-        setCpForm({
-          name: cp.name || "",
-          mobile_number: cp.mobile_number || "",
-          email: cp.email || "",
-          address: cp.address || "",
-        });
-      } else {
-        setCpExists(false);
-
-        setCpForm({
-          name: "",
-          mobile_number: "",
-          email: "",
-          address: "",
-        });
-      }
-    } catch (e) {
-      console.error("Failed to fetch TC ID", e);
-    }
-  }
-
-  /* ================= MASTER USER SELECT ================= */
-
-  function handleMasterSelect(u) {
-    setMasterUserId(u.id);
-
-    setUserForm({
-      username: u.username || "",
-      password: "",
-    });
-    fetchContactPersonByMaster(u.id);
-  }
-
-  /* ---------------- CREATE / UPDATE USER ---------------- */
+  /* ---------------- UPDATE (EDIT MODE API) ---------------- */
 
   async function handleUserSubmit() {
-    const errors = validateUserForm(userForm);
+    const errors = validateUserForm(userForm, isEditMode);
     setUserErrors(errors);
 
     if (Object.keys(errors).length > 0) {
@@ -237,46 +233,25 @@ export default function TpCreateCP() {
       return;
     }
 
-    setStatus(isEditMode ? "Updating user…" : "Creating user…");
-
+    setStatus("Updating user login details…");
     try {
-      if (masterUserId) {
-        const payload = {
-          username: userForm.username,
-          TH_urid: generateThUrid(),
-          updated_by: user.id,
-        };
+      const payload = {
+        username: userForm.username,
+        updated_by: user.id,
+      };
 
-        if (userForm.password) {
-          payload.password = userForm.password;
-          payload.pass_updated_by = user.id;
-        }
-
-        await api.put(`/lookups/users/${masterUserId}/`, payload);
-      } else {
-        const resp = await api.post("/lookups/users/create/", {
-          username: userForm.username,
-          password: userForm.password,
-          role: 11,
-          TH_urid: generateThUrid(),
-          is_active: 1,
-          is_suspended: 0,
-          is_locked: 0,
-          created_by: user.id,
-        });
-
-        setMasterUserId(resp.data.id);
-        await fetchMasterUsers();
+      if (userForm.password) {
+        payload.password = userForm.password;
+        payload.pass_updated_by = user.id;
       }
 
-      setStatus("User saved successfully ✓");
+      await api.patch(`/lookups/users/${masterUserId}/`, payload);
+      setStatus("Login details updated successfully ✓");
     } catch (e) {
       console.error(e);
-      alert("User operation failed");
+      setStatus("User update failed.");
     }
   }
-
-  /* ---------------- CREATE / UPDATE CP ---------------- */
 
   async function handleCPSubmit() {
     const errors = validateCPForm(cpForm);
@@ -287,49 +262,25 @@ export default function TpCreateCP() {
       return;
     }
 
-    if (!masterUserId) {
-      setStatus("Please select or create a user before saving TC ID");
-      return;
-    }
-
-    setStatus(
-      isEditMode ? "Updating TC ID…" : "Creating TC ID…",
-    );
-
+    setStatus("Updating TC details…");
     try {
-      if (isEditMode) {
-        await TMS_API.trainingPartnerContactPersons.update(cpId, {
-          ...cpForm,
-          partner: partnerId,
-          master_user: masterUserId,
-          updated_by: user.id,
-        });
-      } else {
-        const tpResp = await TMS_API.trainingPartners.list({
-          search: user.id,
-          fields: "id",
-        });
+      await TMS_API.trainingPartnerContactPersons.update(cpId, {
+        ...cpForm,
+        partner: partnerId,
+        master_user: masterUserId,
+        updated_by: user.id,
+      });
 
-        const tpId = tpResp?.data?.results?.[0]?.id;
-
-        await TMS_API.trainingPartnerContactPersons.create({
-          ...cpForm,
-          partner: tpId,
-          master_user: masterUserId,
-          created_by: user.id,
-        });
-
-        await fetchContactPersonByMaster(masterUserId);
-      }
-
-      setStatus("TC ID saved successfully ✓");
+      setStatus("TC details updated successfully ✓");
+      setTimeout(() => navigate("/tms/tp/cp-list"), 1500);
     } catch (e) {
       console.error(e);
-      alert("TC ID operation failed");
+      setStatus("TC details update failed.");
     }
   }
 
-  const isUserInvalid = Object.keys(validateUserForm(userForm)).length > 0;
+  const isUserInvalid =
+    Object.keys(validateUserForm(userForm, isEditMode)).length > 0;
   const isCPInvalid = Object.keys(validateCPForm(cpForm)).length > 0;
 
   /* ---------------- RENDER ---------------- */
@@ -343,222 +294,400 @@ export default function TpCreateCP() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav
-          left={
-            <div className="app-title">
-              Pragati Setu — {isEditMode ? "Edit" : "Create"} Contact Person
-            </div>
-          }
-        /> */}
+          <main style={{ padding: 18, minHeight: "100vh" }}>
+            <div
+              style={{
+                width: "100%",
+                maxWidth: "800px",
+                margin: "0 auto",
+              }}
+            >
+              <h2
+                className="tp-title"
+                style={{
+                  color: "#2b4e72",
+                  display: "flex",
+                  alignItems: "center",
+                  gap: "8px",
+                  marginBottom: "20px",
+                }}
+              >
+                <FaUserEdit />
+                TC ID {isEditMode ? "Update" : "Registration"} Section
+              </h2>
 
-          <main style={{ padding: 18 }}>
-            <h2 className="tp-title">
-              {" "}
-              <FaUserEdit /> TC ID Create/Update Section{" "}
-            </h2>
-            <div className="tp-card">
-              {loading ? (
-                <p>Loading TC IDs…</p>
-              ) : (
-                <>
-                  {!isEditMode && (
-                    <div
-                      style={{ display: "flex", alignItems: "center", gap: 12 }}
+              <div
+                className="tp-card"
+                style={{
+                  background: "#fff",
+                  borderRadius: "10px",
+                  padding: "24px",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                  borderTop: "4px solid #3d6ba6",
+                  width: "100%",
+                }}
+              >
+                {loading ? (
+                  <p style={{ color: "#64748b" }}>Processing data...</p>
+                ) : (
+                  <>
+                    <h3
+                      style={{
+                        color: "#3d6ba6",
+                        marginTop: 0,
+                        marginBottom: "16px",
+                        borderBottom: "1px solid #e4ecf5",
+                        paddingBottom: "8px",
+                      }}
                     >
-                      <h3 style={{ margin: 0 }}>TC User IDs</h3>
-                      <button
-                        type="button"
-                        className="tp-btn"
-                        style={{ padding: "4px 10px", fontSize: 12 }}
-                        onClick={fetchMasterUsers}
-                        disabled={loadingMasters}
-                      >
-                        <FaSyncAlt /> {loadingMasters ? "Refreshing…" : "Refresh"}
-                      </button>
-                    </div>
-                  )}
+                      Login Details
+                    </h3>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                        marginBottom: "20px",
+                      }}
+                    >
+                      <div>
+                        <input
+                          className="input"
+                          placeholder="Username (5-20 characters)"
+                          value={userForm.username}
+                          disabled={isEditMode}
+                          onChange={(e) => {
+                            if (isEditMode) return;
+                            const updated = {
+                              ...userForm,
+                              username: e.target.value,
+                            };
+                            setUserForm(updated);
+                            setUserErrors(
+                              validateUserForm(updated, isEditMode),
+                            );
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        />
+                        {userErrors.username && (
+                          <div
+                            className="error-text"
+                            style={{
+                              color: "#ef4444",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {userErrors.username}
+                          </div>
+                        )}
+                      </div>
 
-                  {/* ================= MASTER USER LIST ================= */}
-                  {!isEditMode && (
-                    <>
-                      {/* <h3>Master Users</h3> */}
+                      <div>
+                        <input
+                          type="text"
+                          className="input"
+                          placeholder={
+                            isEditMode
+                              ? "Reset password (optional)"
+                              : "Password (Required)"
+                          }
+                          value={userForm.password}
+                          onChange={(e) => {
+                            const updated = {
+                              ...userForm,
+                              password: e.target.value,
+                            };
+                            setUserForm(updated);
+                            setUserErrors(
+                              validateUserForm(updated, isEditMode),
+                            );
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        />
+                        {userErrors.password && (
+                          <div
+                            className="error-text"
+                            style={{
+                              color: "#ef4444",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {userErrors.password}
+                          </div>
+                        )}
+                      </div>
 
-                      {loadingMasters ? (
-                        <p>Loading users…</p>
-                      ) : masterUsers.length === 0 ? (
-                        <p>No users created by you</p>
-                      ) : (
-                        <div style={{ marginBottom: 16 }}>
-                          {masterUsers.map((u) => (
-                            <label
-                              key={u.id}
-                              style={{
-                                display: "flex",
-                                gap: 8,
-                                alignItems: "center",
-                                marginBottom: 6,
-                                cursor: "pointer",
-                              }}
-                            >
-                              <input
-                                // type="checkbox"
-                                type="radio"
-                                name="masterUser"
-                                checked={masterUserId === u.id}
-                                onChange={() => handleMasterSelect(u)}
-                              />
-                              <span>{u.username}</span>
-                            </label>
-                          ))}
-                        </div>
+                      {isEditMode && (
+                        <button
+                          className="tp-btn"
+                          disabled={isUserInvalid}
+                          onClick={handleUserSubmit}
+                          style={{
+                            alignSelf: "flex-start",
+                            background: "#3d6ba6",
+                            color: "#fff",
+                            border: "none",
+                            padding: "8px 16px",
+                            borderRadius: "6px",
+                            cursor: isUserInvalid ? "not-allowed" : "pointer",
+                            opacity: isUserInvalid ? 0.6 : 1,
+                          }}
+                        >
+                          Update Login Details
+                        </button>
                       )}
+                    </div>
 
-                      <hr style={{ margin: "24px 0" }} />
-                    </>
-                  )}
+                    <h3
+                      style={{
+                        color: "#3d6ba6",
+                        marginTop: "32px",
+                        marginBottom: "16px",
+                        borderBottom: "1px solid #e4ecf5",
+                        paddingBottom: "8px",
+                      }}
+                    >
+                      TC Profile Details
+                    </h3>
+                    <div
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        gap: "12px",
+                      }}
+                    >
+                      <div>
+                        <input
+                          className="input"
+                          placeholder="Full Name"
+                          value={cpForm.name}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (!/^[A-Za-z\s]*$/.test(value)) return;
+                            const updated = { ...cpForm, name: e.target.value };
+                            setCpForm(updated);
+                            setCpErrors(validateCPForm(updated));
+                          }}
+                          onPaste={(e) => {
+                            const pastedText = e.clipboardData.getData("text");
+                            if (!/^[A-Za-z\s]+$/.test(pastedText))
+                              e.preventDefault();
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        />
+                        {cpErrors.name && (
+                          <div
+                            className="error-text"
+                            style={{
+                              color: "#ef4444",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {cpErrors.name}
+                          </div>
+                        )}
+                      </div>
 
-                  <h3>Login Details</h3>
+                      <div>
+                        <input
+                          className="input"
+                          placeholder="Mobile Number"
+                          inputMode="numeric"
+                          pattern="\d*"
+                          value={cpForm.mobile_number}
+                          onChange={(e) => {
+                            const updated = {
+                              ...cpForm,
+                              mobile_number: e.target.value,
+                            };
+                            setCpForm(updated);
+                            setCpErrors(validateCPForm(updated));
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        />
+                        {cpErrors.mobile_number && (
+                          <div
+                            className="error-text"
+                            style={{
+                              color: "#ef4444",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {cpErrors.mobile_number}
+                          </div>
+                        )}
+                      </div>
 
-                  <input
-                    className="input"
-                    placeholder="Username"
-                    value={userForm.username}
-                    disabled={isEditMode}
-                    onChange={(e) => {
-                      if (isEditMode) return;
-                      const updated = { ...userForm, username: e.target.value };
-                      setUserForm(updated);
-                      setUserErrors(validateUserForm(updated));
-                    }}
-                  />
-                  {userErrors.username && (
-                    <div className="error-text">{userErrors.username}</div>
-                  )}
+                      <div>
+                        <input
+                          className="input"
+                          placeholder="Email Address"
+                          value={cpForm.email}
+                          onChange={(e) => {
+                            const updated = {
+                              ...cpForm,
+                              email: e.target.value,
+                            };
+                            setCpForm(updated);
+                            setCpErrors(validateCPForm(updated));
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                          }}
+                        />
+                        {cpErrors.email && (
+                          <div
+                            className="error-text"
+                            style={{
+                              color: "#ef4444",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {cpErrors.email}
+                          </div>
+                        )}
+                      </div>
 
-                  <input
-                    type="text"
-                    className="input"
-                    placeholder={
-                      isEditMode ? "Reset password (optional)" : "Password"
-                    }
-                    value={userForm.password}
-                    onChange={(e) => {
-                      const updated = { ...userForm, password: e.target.value };
-                      setUserForm(updated);
-                      setUserErrors(validateUserForm(updated));
-                    }}
-                    style={{ marginTop: 8 }}
-                  />
-                  {userErrors.password && (
-                    <div className="error-text">{userErrors.password}</div>
-                  )}
+                      <div>
+                        <textarea
+                          className="input"
+                          placeholder="Residential/Office Address"
+                          value={cpForm.address}
+                          rows={3}
+                          onChange={(e) => {
+                            const updated = {
+                              ...cpForm,
+                              address: e.target.value,
+                            };
+                            setCpForm(updated);
+                            setCpErrors(validateCPForm(updated));
+                          }}
+                          style={{
+                            width: "100%",
+                            padding: "10px",
+                            borderRadius: "6px",
+                            border: "1px solid #cbd5e1",
+                            resize: "none",
+                          }}
+                        />
+                        {cpErrors.address && (
+                          <div
+                            className="error-text"
+                            style={{
+                              color: "#ef4444",
+                              fontSize: "12px",
+                              marginTop: "4px",
+                            }}
+                          >
+                            {cpErrors.address}
+                          </div>
+                        )}
+                      </div>
+                    </div>
 
-                  <button
-                    className="tp-btn"
-                    disabled={isUserInvalid}
-                    onClick={handleUserSubmit}
-                  >
-                    {masterUserId ? "Update User" : "Create User"}
-                  </button>
+                    <div
+                      style={{
+                        marginTop: "24px",
+                        display: "flex",
+                        justifyContent: "space-between",
+                        alignItems: "center",
+                      }}
+                    >
+                      <div
+                        style={{
+                          fontSize: "14px",
+                          fontWeight: "600",
+                          color:
+                            status.includes("fail") || status.includes("error")
+                              ? "#ef4444"
+                              : "#16a34a",
+                        }}
+                      >
+                        {status}
+                      </div>
 
-                  <hr style={{ margin: "24px 0" }} />
-
-                  <h3>TC Details</h3>
-
-                  <input
-                    className="input"
-                    placeholder="Name"
-                    value={cpForm.name}
-                    onChange={(e) => {
-                      const value = e.target.value;
-                      if (!/^[A-Za-z\s]*$/.test(value)) return;
-                      const updated = { ...cpForm, name: e.target.value };
-                      setCpForm(updated);
-                      setCpErrors(validateCPForm(updated));
-                    }}
-                    onPaste={(e) => {
-                      const pastedText = e.clipboardData.getData("text");
-                      if (!/^[A-Za-z\s]+$/.test(pastedText)) {
-                        e.preventDefault();
-                      }
-                    }}
-                  />
-                  {cpErrors.name && (
-                    <div className="error-text">{cpErrors.name}</div>
-                  )}
-
-                  <input
-                    className="input"
-                    placeholder="Mobile"
-                    inputMode="numeric"
-                    pattern="\d*"
-                    value={cpForm.mobile_number}
-                    onChange={(e) => {
-                      const updated = {
-                        ...cpForm,
-                        mobile_number: e.target.value,
-                      };
-                      setCpForm(updated);
-                      setCpErrors(validateCPForm(updated));
-                    }}
-                  />
-                  {cpErrors.mobile_number && (
-                    <div className="error-text">{cpErrors.mobile_number}</div>
-                  )}
-
-                  <input
-                    className="input"
-                    placeholder="Email"
-                    value={cpForm.email}
-                    onChange={(e) => {
-                      const updated = { ...cpForm, email: e.target.value };
-                      setCpForm(updated);
-                      setCpErrors(validateCPForm(updated));
-                    }}
-                  />
-                  {cpErrors.email && (
-                    <div className="error-text">{cpErrors.email}</div>
-                  )}
-
-                  <textarea
-                    className="input"
-                    placeholder="Address"
-                    value={cpForm.address}
-                    onChange={(e) => {
-                      const updated = { ...cpForm, address: e.target.value };
-                      setCpForm(updated);
-                      setCpErrors(validateCPForm(updated));
-                    }}
-                  />
-                  {cpErrors.address && (
-                    <div className="error-text">{cpErrors.address}</div>
-                  )}
-
-                  <button
-                    className="tp-btn"
-                    disabled={isCPInvalid || !masterUserId}
-                    onClick={handleCPSubmit}
-                  >
-                    {isEditMode
-                      ? "Update TC ID"
-                      : "Create TC ID"}
-                  </button>
-                  {status && (
-                    <div style={{ marginTop: 10, fontSize: 13 }}>{status}</div>
-                  )}
-                </>
-              )}
+                      {isEditMode ? (
+                        <button
+                          className="tp-btn"
+                          disabled={isCPInvalid}
+                          onClick={handleCPSubmit}
+                          style={{
+                            background: "#16a34a",
+                            color: "#fff",
+                            border: "none",
+                            padding: "10px 24px",
+                            borderRadius: "6px",
+                            cursor: isCPInvalid ? "not-allowed" : "pointer",
+                            opacity: isCPInvalid ? 0.6 : 1,
+                            fontWeight: "600",
+                          }}
+                        >
+                          Update TC Profile
+                        </button>
+                      ) : (
+                        <button
+                          className="tp-btn"
+                          disabled={isUserInvalid || isCPInvalid}
+                          onClick={handleOneShotSubmit}
+                          style={{
+                            background: "#2563eb",
+                            color: "#fff",
+                            border: "none",
+                            padding: "10px 24px",
+                            borderRadius: "6px",
+                            cursor:
+                              isUserInvalid || isCPInvalid
+                                ? "not-allowed"
+                                : "pointer",
+                            opacity: isUserInvalid || isCPInvalid ? 0.6 : 1,
+                            fontWeight: "600",
+                          }}
+                        >
+                          Register TC ID
+                        </button>
+                      )}
+                    </div>
+                  </>
+                )}
+              </div>
             </div>
           </main>
           <Footer />
         </div>
       </div>
-      <style>{`.content-area {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
-`}</style>
+      <style>{`
+        .content-area { display: flex; flex: 1; min-height: 0; }
+        .main-area { flex: 1; display: flex; flex-direction: column; background: #f8fafc; min-width: 0; }
+        .input:focus { border-color: #3b82f6; outline: none; box-shadow: 0 0 0 3px rgba(59,130,246,0.1); }
+      `}</style>
     </div>
   );
 }

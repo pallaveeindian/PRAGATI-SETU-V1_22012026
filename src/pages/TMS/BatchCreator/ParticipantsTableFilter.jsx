@@ -1,3 +1,4 @@
+// src\pages\TMS\BatchCreator\ParticipantsTableFilter.jsx
 import React, { useState, useEffect, useRef, useContext } from "react";
 import { LOOKUP_API } from "../../../api/axios";
 import { AuthContext } from "../../../contexts/AuthContext";
@@ -19,7 +20,6 @@ const ParticipantTableFilters = ({
   const [blocks, setBlocks] = useState([]);
   const [panchayats, setPanchayats] = useState([]);
   const [villages, setVillages] = useState([]);
-  console.log("PLD Status:", pldStatus);
   // Custom Dropdown states for Panchayat
   const [isPanchayatOpen, setIsPanchayatOpen] = useState(false);
   const [panchayatPageSize, setPanchayatPageSize] = useState(5000);
@@ -55,12 +55,8 @@ const ParticipantTableFilters = ({
         if (userId) {
           const response = await LOOKUP_API.userGeoscopeByUserId(userId);
 
-          console.log("GEOSCOPE RESPONSE", response.data);
-
           districtId =
             response?.data?.districts?.[0] ?? response?.data?.district ?? null;
-
-          console.log("DISTRICT ID =", districtId);
 
           if (districtId) {
             handleValueChange("districtId", districtId);
@@ -286,7 +282,9 @@ const ParticipantTableFilters = ({
         <div>
           <label style={labelStyle}>Batch Type</label>
           <select
-            value={filters.batchType || "Separate"}
+            // SURGICAL FIX: Strictly force the value to "Separate" if resuming,
+            // ignoring any stray state that might have leaked through.
+            value={isResumeMode ? "Separate" : filters.batchType || "Separate"}
             disabled={isResumeMode}
             style={{
               ...selectStyle,
@@ -305,7 +303,12 @@ const ParticipantTableFilters = ({
             }}
           >
             <option value="Separate">Separate Batch (Single Block)</option>
-            <option value="Combined">Combined Batch (Multiple Blocks)</option>
+
+            {/* SURGICAL FIX: Completely hide the "Combined" option in Resume Mode 
+                so the user knows it's fundamentally not possible to switch right now. */}
+            {!isResumeMode && (
+              <option value="Combined">Combined Batch (Multiple Blocks)</option>
+            )}
           </select>
         </div>
 

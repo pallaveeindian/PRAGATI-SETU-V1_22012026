@@ -1,15 +1,15 @@
+// src/pages/TMS/BatchCreator/TrainingBatchList.jsx
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
-// import TopNav from "../layout/tms_TopNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
-import { getCanonicalRole } from "../../../utils/roleUtils";
-
-import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
-/* ===================================================== */
+import {
+  getCanonicalRole,
+  ROLE_WELCOME_MESSAGES,
+} from "../../../utils/roleUtils";
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
@@ -40,36 +40,25 @@ function loadCache(scope) {
   }
 }
 
-/* ---------------- partner resolver ---------------- */
-
 async function resolveTrainingPartnerIdForUser(userId) {
   if (!userId) return null;
-
   const cacheKey = `tp_self_partner_id_${userId}`;
-
   try {
     const cached = localStorage.getItem(cacheKey);
     if (cached) return Number(cached);
   } catch {}
-
   try {
     const resp = await TMS_API.trainingPartners.list({
       search: userId,
       fields: "id",
     });
-
     const pid = resp?.data?.results?.[0]?.id || null;
-
-    if (pid) {
-      localStorage.setItem(cacheKey, String(pid));
-    }
+    if (pid) localStorage.setItem(cacheKey, String(pid));
     return pid;
   } catch {
     return null;
   }
 }
-
-/* ===================================================== */
 
 export default function TrainingBatchList() {
   const { user } = useContext(AuthContext) || {};
@@ -86,24 +75,27 @@ export default function TrainingBatchList() {
 
   const [tpPartnerId, setTpPartnerId] = useState(null);
   const [tpPartnerName, setTpPartnerName] = useState(null);
-
   const [dtpDistrictId, setDtpDistrictId] = useState(null);
   const [dtpPartnerId, setDtpPartnerId] = useState(null);
   const [dtpPartnerName, setDtpPartnerName] = useState("");
 
-  // ⭐ PAGINATION CHANGE
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+  const visibleBatches = batches.filter((b) => {
+    // Hide DRAFT batches from everyone except DTP
+    if (String(b.status).toUpperCase() === "DRAFT" && role !== "dtp") {
+      return false;
+    }
 
-  // ⭐ PAGINATION CHANGE
-  const totalPages = Math.ceil(batches.length / rowsPerPage);
+    return true;
+  });
 
-  // ⭐ PAGINATION CHANGE
-  const paginatedBatches = batches.slice(
+  const totalPages = Math.ceil(visibleBatches.length / rowsPerPage);
+
+  const paginatedBatches = visibleBatches.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage,
   );
-  /* ---------------- filters ---------------- */
 
   const [filters, setFilters] = useState({
     mandal_id: "",
@@ -111,19 +103,14 @@ export default function TrainingBatchList() {
     district_id: "",
     block_id: "",
     aspirational_only: false,
-
     centre_id: "",
     partner: "",
-
     status: "",
     training_type: "",
     batch_type: "",
-
     theme: "",
     training_plan: "",
   });
-
-  /* ---------------- lookups ---------------- */
 
   const [mandals, setMandals] = useState([]);
   const [districtCategories, setDistrictCategories] = useState([]);
@@ -135,9 +122,6 @@ export default function TrainingBatchList() {
   const [plans, setPlans] = useState([]);
 
   const didInitRef = useRef(false);
-
-  /* ===================================================== */
-  /* ---------------- geoscope helpers ---------------- */
 
   function getGeoscope() {
     try {
@@ -154,34 +138,15 @@ export default function TrainingBatchList() {
 
   function getDefaultScopeParams() {
     if (requestId) return { request: requestId };
-
     const geo = getGeoscope() || {};
     const blockId = geo.block_id || safeFirst(geo.blocks);
     const districtId = geo.district_id || safeFirst(geo.districts);
 
-    // 🔒 BMMU → BLOCK-LOCKED
-    if (role === "bmmu" && blockId) {
-      return { block_id: blockId };
-    }
-
-    // 🔒 DMMU → DISTRICT-LOCKED
-    if (role === "dmmu" && districtId) {
-      return { district_id: districtId };
-    }
-
-    // 🔒 TRAINING PARTNER → SELF-CREATED ONLY
-    if (role === "training_partner") {
-      return {
-        created_by: user?.id,
-      };
-    }
-    // 🔒 DISTRICT TRAINING PARTNER
-    if (role === "dtp") {
-      return {
-        district_id: dtpDistrictId,
-        partner: dtpPartnerId,
-      };
-    }
+    if (role === "bmmu" && blockId) return { block_id: blockId };
+    if (role === "dmmu" && districtId) return { district_id: districtId };
+    if (role === "training_partner") return { created_by: user?.id };
+    if (role === "dtp")
+      return { district_id: dtpDistrictId, partner: dtpPartnerId };
     return {};
   }
 
@@ -193,9 +158,6 @@ export default function TrainingBatchList() {
     if (role === "dmmu") return "dmmu";
     return role || "global";
   }
-
-  /* ===================================================== */
-  /* ---------------- load lookups ---------------- */
 
   useEffect(() => {
     (async () => {
@@ -223,47 +185,30 @@ export default function TrainingBatchList() {
 
         if (role === "training_partner") {
           const pid = await resolveTrainingPartnerIdForUser(user.id);
-
           if (pid) {
             setTpPartnerId(pid);
-
-            // OPTIONAL: fetch partner name explicitly
             try {
               const pRes = await TMS_API.trainingPartners.retrieve(pid);
               setTpPartnerName(pRes?.data?.name || "Your Organisation");
             } catch {
               setTpPartnerName("Your Organisation");
             }
-
             const cRes = await TMS_API.trainingPartnerCentres.list({
               partner: pid,
             });
             setCentres(cRes?.data?.results || []);
-
-            setFilters((f) => ({
-              ...f,
-              partner: String(pid),
-              centre_id: "",
-            }));
+            setFilters((f) => ({ ...f, partner: String(pid), centre_id: "" }));
           }
         }
 
         if (role === "dtp") {
           let districtId = null;
-
           try {
             const geoRes = await LOOKUP_API.userGeoscopeByUserId(user.id);
-
-            console.log("GEOSCOPE RESPONSE =", geoRes.data);
-
             districtId =
               geoRes?.data?.districts?.[0] ?? geoRes?.data?.district ?? null;
-
-            console.log("DISTRICT ID =", districtId);
-
             if (districtId) {
               setDtpDistrictId(String(districtId));
-
               setFilters((f) => ({
                 ...f,
                 district_id: String(districtId),
@@ -275,31 +220,18 @@ export default function TrainingBatchList() {
             console.error("Failed to load DTP geoscope", err);
           }
 
-          // Parent Partner API
           try {
             const partnerRes = await TMS_API.parentPartner();
-
             const partnerId = partnerRes?.data?.partner_id;
-
             if (partnerId) {
               setDtpPartnerId(String(partnerId));
-
-              setFilters((f) => ({
-                ...f,
-                partner: String(partnerId),
-              }));
-
+              setFilters((f) => ({ ...f, partner: String(partnerId) }));
               try {
                 const pRes = await TMS_API.trainingPartners.retrieve(partnerId);
-
                 setDtpPartnerName(pRes?.data?.name || "");
-              } catch (err) {
-                console.error(err);
-              }
+              } catch (err) {}
             }
-          } catch (err) {
-            console.error(err);
-          }
+          } catch (err) {}
         }
       } catch (e) {
         console.error("Lookup load failed", e);
@@ -309,18 +241,12 @@ export default function TrainingBatchList() {
 
   useEffect(() => {
     if (role !== "dmmu") return;
-
     const geo = getGeoscope() || {};
-    console.log(localStorage.getItem("ps_user_geoscope"));
-
     const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
-
     if (!dmmuDistrictId) return;
 
     setFilters((f) => {
-      // do not override if already set
       if (f.district_id) return f;
-
       return {
         ...f,
         district_id: dmmuDistrictId,
@@ -330,21 +256,17 @@ export default function TrainingBatchList() {
     });
   }, [role]);
 
-  /* ---------------- cascading ---------------- */
-
   useEffect(() => {
     if (role === "bmmu") return;
     if (!filters.district_id) {
       setBlocks([]);
       return;
     }
-
     LOOKUP_API.blocksByDistrict(filters.district_id)
       .then((r) => {
         let data = r?.data?.results || [];
-        if (filters.aspirational_only) {
+        if (filters.aspirational_only)
           data = data.filter((b) => b.is_aspirational === 1);
-        }
         setBlocks(data);
       })
       .catch(() => setBlocks([]));
@@ -355,34 +277,23 @@ export default function TrainingBatchList() {
       setPlans([]);
       return;
     }
-
     TMS_API.trainingPlans
       .list({ theme: filters.theme })
       .then((r) => setPlans(r?.data?.results || []))
       .catch(() => setPlans([]));
   }, [filters.theme]);
 
-  /* ===================================================== */
-  /* ---------------- fetch batches ---------------- */
-
   async function fetchBatches() {
     if (!user?.id) return;
-
     setLoading(true);
     try {
       let finalParams = {};
-
-      // ✅ REQUEST-SCOPED MODE (NO FILTERS, NO ROLE LOGIC)
       if (isRequestScoped) {
-        finalParams = {
-          request_id: requestId,
-          page_size: 500,
-        };
+        finalParams = { request_id: requestId, page_size: 500 };
       } else {
         const baseParams = getDefaultScopeParams();
         let effectiveFilters = filters;
 
-        // 🔒 HARD ROLE LOCKS (unchanged)
         if (role === "bmmu") {
           effectiveFilters = Object.fromEntries(
             Object.entries(filters).filter(
@@ -396,13 +307,11 @@ export default function TrainingBatchList() {
             ),
           );
         }
-
         if (role === "dmmu") {
           effectiveFilters = Object.fromEntries(
             Object.entries(filters).filter(([k]) => k !== "district_id"),
           );
         }
-
         if (role === "training_partner") {
           effectiveFilters = Object.fromEntries(
             Object.entries(filters).filter(([k]) => k !== "partner"),
@@ -430,15 +339,10 @@ export default function TrainingBatchList() {
       const qs = new URLSearchParams(finalParams).toString();
       const resp = await api.get(`/tms/batches-list/?${qs}`);
       const items = resp?.data?.results || [];
-
       setBatches(items);
       setCurrentPage(1);
-      // ❌ DO NOT CACHE request-scoped results
-      if (!isRequestScoped) {
-        saveCache(getScopeKey(), items);
-      }
+      if (!isRequestScoped) saveCache(getScopeKey(), items);
     } catch (e) {
-      console.error("Batch fetch failed", e);
       setBatches([]);
     } finally {
       setLoading(false);
@@ -449,19 +353,12 @@ export default function TrainingBatchList() {
     const confirmed = window.confirm(
       "Are you sure you want to delete this batch?",
     );
-
     if (!confirmed) return;
-
     try {
       await TMS_API.batchCreator.delete(batchId);
-
       alert("Batch deleted successfully.");
-
-      // Refresh the list
       fetchBatches();
     } catch (err) {
-      console.error("Delete failed:", err);
-
       alert(
         err?.response?.data?.detail ||
           err?.response?.data?.error ||
@@ -474,18 +371,10 @@ export default function TrainingBatchList() {
   const handleViewBatch = async (batchId) => {
     try {
       const response = await TMS_API.batchDetailV2(batchId);
-
-      console.log("Batch Detail V2:", response.data);
-
-      // Agar BatchDetail page same hi use karna hai
       navigate(`/tms/batch-detail/${batchId}`, {
-        state: {
-          batchData: response.data,
-        },
+        state: { batchData: response.data },
       });
     } catch (err) {
-      console.error("Failed to fetch batch detail:", err);
-
       alert(
         err?.response?.data?.detail ||
           err?.response?.data?.message ||
@@ -494,36 +383,23 @@ export default function TrainingBatchList() {
     }
   };
 
-  // 🚀 Auto-fetch for BMMU (no geographical filters, block-scoped only)
   useEffect(() => {
-    if (role === "bmmu") {
-      fetchBatches();
-    }
+    if (role === "bmmu") fetchBatches();
   }, [role]);
 
   useEffect(() => {
-    if (role === "training_partner" && tpPartnerId) {
-      fetchBatches();
-    }
+    if (role === "training_partner" && tpPartnerId) fetchBatches();
   }, [role, tpPartnerId]);
-  useEffect(() => {
-    if (role === "dtp" && dtpDistrictId && dtpPartnerId) {
-      fetchBatches();
-    }
-  }, [role, dtpDistrictId, dtpPartnerId]);
 
-  /* ---------------- initial load ---------------- */
+  useEffect(() => {
+    if (role === "dtp" && dtpDistrictId && dtpPartnerId) fetchBatches();
+  }, [role, dtpDistrictId, dtpPartnerId]);
 
   useEffect(() => {
     if (!user?.id || didInitRef.current || isRequestScoped) return;
-
-    // 🚫 BMMU & TP are auto-fetched elsewhere
-    // if (role === "bmmu" || role === "training_partner") return;
     if (role === "bmmu" || role === "training_partner" || role === "dtp")
       return;
-
     didInitRef.current = true;
-
     const cached = loadCache(getScopeKey());
     if (cached?.payload) setBatches(cached.payload);
     else fetchBatches();
@@ -534,12 +410,7 @@ export default function TrainingBatchList() {
     fetchBatches();
   }, [requestId, user?.id]);
 
-  /* ===================================================== */
-  /* ---------------- render helpers ---------------- */
-
   const renderCentreName = (c) => c?.venue_name || c?.partner?.name || "-";
-
-  /* ===================================================== */
 
   return (
     <div className="app-shell">
@@ -550,38 +421,13 @@ export default function TrainingBatchList() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-wrapper">
-          {/* <TopNav
-          left={
-            <div className="app-title">Pragati Setu — Training Batches</div>
-          }
-        /> */}
-
-          {/* <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div> */}
-
-          <main
-            style={{
-              padding: 18,
-              minHeight: "100vh",
-            }}
-          >
-            <div style={{ maxWidth: 1200, margin: "0 auto" }}>
-              {/* ================= FILTERS ================= */}
-
+          <main style={{ padding: "18px 24px", minHeight: "100vh" }}>
+            {/* SURGICAL FIX: Removed horizontal max-width locks to enlarge table fully */}
+            <div style={{ width: "100%", margin: "0 auto" }}>
               {!isRequestScoped && (
-                // ⭐ CHANGE: filter-panel class added
                 <div className="filter-panel">
                   <div>
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "nowrap", // ✅ force single row
-                        gap: 12,
-                        alignItems: "center",
-                        whiteSpace: "nowrap", // ✅ prevent breaking
-                      }}
-                    >
+                    <div className="filter-row">
                       {role === "smmu" && (
                         <>
                           <select
@@ -600,7 +446,6 @@ export default function TrainingBatchList() {
                               </option>
                             ))}
                           </select>
-
                           <select
                             className="input"
                             onChange={(e) =>
@@ -624,13 +469,9 @@ export default function TrainingBatchList() {
                         <select
                           className="input"
                           value={filters.district_id}
-                          // disabled={role === "dmmu"}
                           disabled={role === "dmmu" || role === "dtp"}
                           onChange={(e) => {
-                            // if (role === "dmmu") return;
-
                             if (role === "dmmu" || role === "dtp") return;
-
                             setBlocks([]);
                             setFilters((f) => ({
                               ...f,
@@ -655,6 +496,9 @@ export default function TrainingBatchList() {
                             display: "flex",
                             alignItems: "center",
                             gap: 6,
+                            fontSize: "14px",
+                            fontWeight: "500",
+                            color: "#3d6ba6",
                           }}
                         >
                           <input
@@ -713,7 +557,7 @@ export default function TrainingBatchList() {
                           ))}
                         </select>
                       )}
-                      {/* {role !== "training_partner" && role !== "tpcp" && ( */}
+
                       {role !== "training_partner" &&
                         role !== "dtp" &&
                         role !== "tpcp" && (
@@ -735,6 +579,7 @@ export default function TrainingBatchList() {
                             ))}
                           </select>
                         )}
+
                       {role === "dtp" && (
                         <select
                           className="input"
@@ -746,17 +591,7 @@ export default function TrainingBatchList() {
                           </option>
                         </select>
                       )}
-                    </div>
 
-                    <div
-                      style={{
-                        display: "flex",
-                        flexWrap: "nowrap", //  force single row
-                        gap: 12,
-                        alignItems: "center",
-                        whiteSpace: "nowrap", //  prevent breaking
-                      }}
-                    >
                       <select
                         className="input"
                         onChange={(e) =>
@@ -844,16 +679,9 @@ export default function TrainingBatchList() {
                         <option value="SEPARATE">Separate</option>
                         <option value="COMBINED">Combined</option>
                       </select>
-                    </div>
-                    <div
-                      style={{
-                        flexBasis: "100%",
-                        display: "flex",
-                        justifyContent: "center",
-                      }}
-                    >
+
                       <button
-                        className="btn btn-primary"
+                        className="btn btn-primary fetch-btn"
                         onClick={fetchBatches}
                       >
                         Fetch Batches
@@ -863,9 +691,6 @@ export default function TrainingBatchList() {
                 </div>
               )}
 
-              {/* ================= TABLE ================= */}
-
-              {/* ⭐ CHANGE: table-wrapper class */}
               <div className="table-wrapper">
                 <table className="table">
                   <thead>
@@ -881,6 +706,7 @@ export default function TrainingBatchList() {
                       <th>Partner</th>
                       <th>Block</th>
                       <th>District</th>
+                      <th>Count</th>
                       <th>Action</th>
                     </tr>
                   </thead>
@@ -888,32 +714,37 @@ export default function TrainingBatchList() {
                   <tbody>
                     {loading ? (
                       <tr>
-                        <td colSpan={12}>Loading…</td>
+                        <td
+                          colSpan={13}
+                          style={{ textAlign: "center", padding: "20px" }}
+                        >
+                          Loading data...
+                        </td>
                       </tr>
-                    ) : batches.length === 0 ? (
+                    ) : visibleBatches.length === 0 ? (
                       <tr>
-                        <td colSpan={12}>No batches found</td>
+                        <td
+                          colSpan={13}
+                          style={{ textAlign: "center", padding: "20px" }}
+                        >
+                          No batches found
+                        </td>
                       </tr>
                     ) : (
-                      // batches.map((b, i) => (
-                      // ⭐ PAGINATION CHANGE
                       paginatedBatches.map((b, i) => (
                         <tr key={b.id}>
                           <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
-                          <td>{b.code}</td>
-
-                          {/* ⭐ CHANGE: status badge */}
+                          <td style={{ fontWeight: "600", color: "#2563eb" }}>
+                            {b.code}
+                          </td>
                           <td>
                             <span
-                              className={`status-badge status-${String(
-                                b.status,
-                              ).toLowerCase()}`}
+                              className={`status-badge status-${String(b.status).toLowerCase()}`}
                             >
                               {b.status}
                             </span>
                           </td>
-
-                          <td>{b.request?.training_type}</td>
+                          <td>{b.participant_type}</td>
                           <td>{b.start_date}</td>
                           <td>{b.end_date}</td>
                           <td>{b.batch_type}</td>
@@ -922,39 +753,48 @@ export default function TrainingBatchList() {
                           <td>{b.block?.block_name_en || "-"}</td>
                           <td>{b.district?.district_name_en || "-"}</td>
 
-                          <td>
-                            {/* <button
-                              className="btn-sm btn-flat"
-                              onClick={() =>
-                                navigate(`/tms/batch-detail/${b.id}`)
-                              }
-                            >
-                              View
-                            </button> */}
+                          {/* SURGICAL FIX: Dynamic participant count logic extraction */}
+                          <td
+                            style={{ textAlign: "center", fontWeight: "600" }}
+                          >
+                            {b.pax_count || 0}
+                          </td>
+
+                          <td style={{ display: "flex", gap: "6px" }}>
                             <button
                               className="btn-sm btn-flat"
                               onClick={() => handleViewBatch(b.id)}
                             >
                               View
                             </button>
-                            {["DRAFT", "REJECTED"].includes(
-                              String(b.status).toUpperCase(),
-                            ) && (
-                              <button
-                                className="btn-sm btn-flat"
-                                onClick={() =>
-                                  navigate("/tms/batch-creator/", {
-                                    state: {
-                                      resume: true,
-                                      batchId: b.id,
-                                    },
-                                  })
-                                }
-                              >
-                                Resume
-                              </button>
-                            )}
-
+                            {role === "dtp" &&
+                              (String(b.status).toUpperCase() === "DRAFT" ||
+                                (String(b.status).toUpperCase() ===
+                                  "REJECTED" &&
+                                  String(b.batch_type).toUpperCase() ===
+                                    "SEPARATE")) && (
+                                <button
+                                  className="btn-sm btn-action-resume"
+                                  onClick={() =>
+                                    navigate("/tms/batch-creator/", {
+                                      state: { resume: true, batchId: b.id },
+                                    })
+                                  }
+                                >
+                                  Resume
+                                </button>
+                              )}
+                            {["dmmu"].includes(role) &&
+                              String(b.status).toUpperCase() === "PENDING" && (
+                                <button
+                                  className="btn-sm btn-action-resume"
+                                  onClick={() =>
+                                    navigate(`/tms/dmmu/batch-review/${b.id}`)
+                                  }
+                                >
+                                  Review
+                                </button>
+                              )}
                             {role === "dtp" && (
                               <button
                                 className="btn-sm btn-danger"
@@ -963,9 +803,7 @@ export default function TrainingBatchList() {
                                 Delete
                               </button>
                             )}
-
-                            {/* ── TRAINING PARTNER → TP closure form ── */}
-                            {role === "training_partner" &&
+                            {(role === "dtp" || role === "training_partner") &&
                               ["COMPLETED", "REVIEW"].includes(
                                 String(b.status).toUpperCase(),
                               ) && (
@@ -978,8 +816,6 @@ export default function TrainingBatchList() {
                                   Closure
                                 </button>
                               )}
-
-                            {/* ── STATUS + ROLE BASED ROUTING ── */}
                             {["bmmu", "dmmu", "smmu"].includes(role) && (
                               <>
                                 {String(b.status).toUpperCase() ===
@@ -1001,7 +837,6 @@ export default function TrainingBatchList() {
                                       : "Certificate"}
                                   </button>
                                 )}
-
                                 {String(b.status).toUpperCase() ===
                                   "CLOSED" && (
                                   <button
@@ -1015,8 +850,6 @@ export default function TrainingBatchList() {
                                 )}
                               </>
                             )}
-
-                            {/* all other roles: no Closure button */}
                           </td>
                         </tr>
                       ))
@@ -1024,7 +857,7 @@ export default function TrainingBatchList() {
                   </tbody>
                 </table>
               </div>
-              {/* ⭐ PAGINATION CHANGE */}
+
               <div className="pagination">
                 <button
                   className="btn-sm btn-flat"
@@ -1033,11 +866,9 @@ export default function TrainingBatchList() {
                 >
                   Prev
                 </button>
-
                 <span className="pagination-info">
                   Page {currentPage} of {totalPages || 1}
                 </span>
-
                 <button
                   className="btn-sm btn-flat"
                   disabled={currentPage === totalPages || totalPages === 0}
@@ -1052,312 +883,214 @@ export default function TrainingBatchList() {
         </div>
       </div>
       <style>{`
-/* ================= FILTER PANEL ================= */
-
-/* FULL HEIGHT LAYOUT */
-
-/* FORCE FULL WIDTH FLOW */
+/* ================= OVERHAULED VISUAL STYLES ================= */
 .content-area {
   display: flex;
   flex: 1;
   width: 100%;
 }
-
-/* SIDEBAR */
-.content-area > *:first-child {
-  flex-shrink: 0;
-}
-
-/* RIGHT SIDE */
+.content-area > *:first-child { flex-shrink: 0; }
 .main-wrapper {
   flex: 1;
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-width: 0; /* 🔥 VERY IMPORTANT */
+  min-width: 0;
+  background-color: #f8fafc;
 }
 
-/* MAIN */
-.main-wrapper main {
- padding: 18,
-  flex: 1;
-  width: 100%;
-}
+/* FILTER PANEL */
+.filter-panel {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: #fff;
+  padding: 8px 12px;
+  margin-bottom: 12px;
 
-/* 🔥 THIS WAS YOUR WIDTH ISSUE */
-.inner-container {
-  width: 100%;
-  max-width: 100%;   /* ❌ remove 1200px restriction */
-  margin: 0;
-}
+  border: 1px solid #dbe4ef;
+  border-radius: 8px;
 
-/* FOOTER */
-.main-wrapper footer {
-  margin-top: auto;
-  width: 100%;
-}
-.filter-panel{
-  background:#fff;
-  padding:16px;
-  border-radius:10px;
-  border:2px solid #3d6ba6;
-  box-shadow:0 6px 16px rgba(0,0,0,0.05);
-  margin-bottom: 20px
-}
-
-.input{
-  padding:7px 10px;
-  border-radius:6px;
-  border:1px solid #a7c6ed;
-  background:#f8fbff;
-  min-width:140px;
-  transition:all .25s ease;
-}
-
-.input:focus{
-  outline:none;
-  border-color:#3d6ba6;
-  box-shadow:0 0 0 2px rgba(61,107,166,0.15);
-}
-
-
-/* ================= BUTTONS ================= */
-
-.btn{
-  padding:7px 14px;
-  border-radius:6px;
-  cursor:pointer;
-  border:none;
-  font-weight:600;
-  transition:all .25s ease;
-}
-
-.btn-primary{
-  background:#3d6ba6;
-  color:#fff;
-}
-
-.btn-primary:hover{
-  background:#5a8cc2;
-  transform:translateY(-2px);
-  box-shadow:0 6px 12px rgba(0,0,0,0.15);
-}
-
-.btn-sm{
-  padding:5px 10px;
-  font-size:13px;
-}
-
-.btn-flat{
-  background:#5a8cc2;
-  color:#fff;
-  border-radius:5px;
-  margin-bottom:6px
-}
-
-.btn-flat:hover{
-  background:#3d6ba6;
-  transform:translateY(-2px);
-  box-shadow:0 4px 10px rgba(0,0,0,0.15);
-}
-
-
-/* ================= TABLE ================= */
-
-.table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
-}
-
-.table thead{
-  background:#3d6ba6;
-  color:#fff;
-  position:sticky;
-  top:0;
-}
-
-.table th{
-  padding:10px;
-  text-align:left;
-  border-right:1px solid rgba(255,255,255,0.2);
-}
-
-.table th:last-child{
-  border-right:none;
-}
-
-.table td{
-  padding:10px;
-  border-bottom:1px solid #e4ecf5;
-  border-right:1px solid #e4ecf5;
-}
-
-.table td:last-child{
-  border-right:none;
-}
-
-.table tbody tr:nth-child(even){
-  background:#f7fbff;
-}
-
-.table tbody tr:hover{
-  background:#e4ecf5;
-  transition:background .2s ease;
-}
-
-
-/* ================= TABLE CONTAINER ================= */
-
-.table-wrapper{
-  background:#fff;
-  border-radius:10px;
-  border:2px solid #3d6ba6;
-  box-shadow:0 6px 16px rgba(0,0,0,0.05);
-  overflow:auto;
-  max-height:600px;
-}
-
-
-/* ================= STATUS BADGES ================= */
-
-.status-badge{
-  padding:3px 8px;
-  border-radius:5px;
-  font-weight:600;
-  font-size:12px;
-}
-
-.status-draft{
-  background: #e7d63d;
-  color:#2b4e72;
-}
-
-.status-pending{
-  background: #ec1414;
-  color: #ffffff;
-}
-
-.status-ongoing{
-  background: #FFF000;
-  color:#155724;
-}
-
-.status-scheduled{
-  background: #33bbd3;
-  color:#0c5460;
-}
-
-.status-completed{
-  background: #50ec74;
-  color:#155724;
-}
-
-.status-rejected{
-  background: #3556eb;
-  color:#721c24;
-}
-/* ================= PAGINATION ================= */
-
-.pagination{
-  display:flex;
-  justify-content:center;
-  align-items:center;
-  gap:14px;
-  padding:12px;
-}
-
-.pagination-info{
-  font-weight:600;
-  color:#2b4e72;
-}
-
-/* HEADER */
-.dashboard-header {
   display: flex;
   align-items: center;
-  margin-bottom: 16px;
+
+  overflow-x: auto;
+  overflow-y: hidden;
+
+  white-space: nowrap;
+
+  box-shadow: 0 2px 6px rgba(0,0,0,.06);
+}
+.filter-panel label{
+    font-size:12px;
+    gap:4px;
+}  
+.filter-row{
+    display:flex;
+    align-items:center;
+    gap:8px;
+    flex-wrap:nowrap;
+    width:max-content;
+}
+.input{
+    height:32px;
+    min-width:110px;
+    padding:0 8px;
+    font-size:12px;
+    border-radius:6px;
+}
+.filter-panel input[type="checkbox"]{
+    width:14px;
+    height:14px;
+}    
+.filter-panel::-webkit-scrollbar{
+    height:5px;
 }
 
-.dashboard-title {
-  margin-top: 25px;
-  margin-left: 30px;
-  color: #2b4e72;
+.filter-panel::-webkit-scrollbar-thumb{
+    background:#cbd5e1;
+    border-radius:20px;
+}    
+.input:focus {
+  outline: none;
+  border-color: #3b82f6;
+  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
+  background: #ffffff;
 }
 
+/* BUTTONS */
+.btn {
+  padding: 8px 16px;
+  border-radius: 8px;
+  cursor: pointer;
+  border: none;
+  font-weight: 600;
+  transition: all 0.2s ease;
+}
+.btn-primary {
+  height:32px;
+  padding:0 16px;
+  font-size:12px;
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+  color: #ffffff;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+}
+.fetch-btn{
+    margin-left:auto;
+    white-space:nowrap;
+}  
+.btn-primary:hover {
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+}
+.btn-sm {
+  padding: 6px 12px;
+  font-size: 13px;
+  font-weight: 600;
+}
+.btn-flat {
+  background: #f1f5f9;
+  color: #475569;
+  border: 1px solid #cbd5e1;
+  border-radius: 6px;
+}
+.btn-flat:hover {
+  background: #e2e8f0;
+  color: #1e293b;
+}
+.btn-action-resume {
+  background: #fef3c7;
+  color: #b45309;
+  border: 1px solid #fde68a;
+  border-radius: 6px;
+}
+.btn-action-resume:hover {
+  background: #fde68a;
+  color: #92400e;
+}
+.btn-danger {
+  background: #fef2f2;
+  color: #b91c1c;
+  border: 1px solid #fecaca;
+  border-radius: 6px;
+}
+.btn-danger:hover {
+  background: #fee2e2;
+  color: #991b1b;
+}
 
-
-/* ================= FILTER RESPONSIVE FIX (CSS ONLY) ================= */
-
-/* TARGET BOTH FILTER ROWS WITHOUT ADDING CLASS */
-.filter-panel > div > div {
+/* TABLE OVERHAUL */
+.table-wrapper {
+  background: #ffffff;
+  border-radius: 12px;
+  border: 1px solid #e2e8f0;
+  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+  overflow: auto;
+  max-height: 82vh;
+}
+.table {
   width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.table thead {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+}
+.table th {
+  background: #f8fafc;
+  color: #475569;
+  padding: 14px 16px;
+  text-align: left;
+  font-weight: 600;
+  border-bottom: 2px solid #e2e8f0;
+  white-space: nowrap;
+}
+.table td {
+  padding: 14px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  color: #334155;
+  vertical-align: middle;
+}
+.table tbody tr:hover {
+  background: #f8fafc;
 }
 
-/*  TABLET VIEW */
-@media (max-width: 1024px){
+/* STATUS BADGES */
+.status-badge {
+  padding: 4px 10px;
+  border-radius: 20px;
+  font-weight: 600;
+  font-size: 12px;
+  display: inline-block;
+  text-align: center;
+}
+.status-draft { background: #fef3c7; color: #b45309; }
+.status-pending { background: #fee2e2; color: #b91c1c; }
+.status-ongoing { background: #dbeafe; color: #1d4ed8; }
+.status-scheduled { background: #e0e7ff; color: #1e40af; }
+.status-completed { background: #dcfce7; color: #15803d; }
+.status-rejected { background: #f6f4f3; color: #ff0000; }
 
-  /* override inline flex nowrap */
-  .filter-panel > div > div {
-    flex-wrap: wrap !important;           /*  CHANGE */
-    white-space: normal !important;       /*  CHANGE */
-    gap: 10px !important;                /*  CHANGE */
-  }
-
-  .input{
-    flex: 1 1 160px;                     /*  CHANGE */
-    min-width: 160px;
-  }
-
+/* PAGINATION */
+.pagination {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 16px;
+  padding: 16px 0;
+}
+.pagination-info {
+  font-weight: 600;
+  color: #64748b;
+  font-size: 14px;
 }
 
-/*  MOBILE VIEW */
-@media (max-width: 768px){
-
-  .input{
-    height: 36px !important;        /*  FIX: control height */
-    padding: 4px 8px !important;    /*  FIX: reduce padding */
-    line-height: 1.2;               /*  FIX */
-  }
-
-  select.input{
-    height: 36px !important;        /*  FIX for dropdown */
-  }
-
-  /* prevent stretching */
-  .filter-panel > div > div > *{
-    flex: unset !important;         /*  FIX: stop stretching */
-  }
-
-}
-
-/*  SMALL MOBILE */
-@media (max-width: 480px){
-
-  .filter-panel{
-                     /*  CHANGE */
-  }
-
-  .input{
-    font-size: 13px; /*  CHANGE */
-  }
-
-}
-  .btn-danger{
-  background:#dc3545;
-  color:#fff;
-  border:none;
-  border-radius:5px;
-  padding:5px 10px;
-  margin-top:6px;
-  cursor:pointer;
-  transition:all .25s ease;
-}
-
-.btn-danger:hover{
-  background:#b02a37;
-  transform:translateY(-2px);
-  box-shadow:0 4px 10px rgba(0,0,0,0.15);
+/* RESPONSIVE TRIMS */
+@media (max-width: 1024px) {
+  .filter-panel > div > div { flex-wrap: wrap !important; gap: 10px !important; }
+  .input { flex: 1 1 160px; min-width: 160px; }
 }
 `}</style>
     </div>

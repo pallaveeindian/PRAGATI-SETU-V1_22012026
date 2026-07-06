@@ -44,6 +44,7 @@ import TrainingBatchDetail from "../pages/TMS/TRs/training_batch_detail";
 import BatchCertificate from "../pages/TMS/TRs/batch_certificate";
 import BmmuCreateTrainingPlan from "../pages/TMS/BMMU/bmmu_create_training_plan";
 import DmmuTrReview from "../pages/TMS/DMMU/dmmu_tr_review";
+import DmmuBatchReview from "../pages/TMS/DMMU/dmmu_batch_review";
 import DmmuRequestClosure from "../pages/TMS/DMMU/dmmu_request_closure";
 import UserMgmnt from "../pages/TMS/UserMgmnt/UserMgmnt";
 import TrainingReport from "../pages/TMS/TrainingReport/TrainingReport";
@@ -86,6 +87,7 @@ export default function TmsRoutes() {
       <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
         <Route path="dmmu/dashboard" element={<DmmuTmsDashboard />} />
         <Route path="dmmu/tr-review/:id" element={<DmmuTrReview />} />
+        <Route path="dmmu/batch-review/:id" element={<DmmuBatchReview />} />
         <Route path="dmmu/tr-closure/:id" element={<DmmuRequestClosure />} />
         <Route path="dmmu/tp-TvA" element={<DmmuTargetAchievement />} />
         <Route
@@ -135,10 +137,7 @@ export default function TmsRoutes() {
           path="batch-creator"
           element={<AssemblerDashboardBatchCreator />}
         />
-        <Route
-          path="preview-batch-creator"
-          element={<PreviewBatchCreator />}
-        />
+        <Route path="preview-batch-creator" element={<PreviewBatchCreator />} />
       </Route>
 
       {/* TPCP Routes */}

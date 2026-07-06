@@ -5,7 +5,7 @@ import LeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { TMS_API } from "../../../api/axios";
+import api from "../../../api/axios";
 import {
   getCanonicalRole,
   ROLE_WELCOME_MESSAGES,
@@ -91,7 +91,10 @@ export default function TpTrainingRequestClosure() {
     setLoading(true);
     setFetchError(null);
     try {
-      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      // ⚠️ SURGICAL FIX: Using the new Comprehensive Detail endpoint
+      const resp = await api.get(
+        `/tms/batches/comprehensive-detail/${batchId}/`,
+      );
       const data = resp?.data;
 
       if (!data) throw new Error("Empty response");
@@ -147,57 +150,59 @@ export default function TpTrainingRequestClosure() {
   /* ═══════════════════════════════════════════════════════════
      DERIVED DATA EXTRACTIONS
   ═══════════════════════════════════════════════════════════ */
-  const trainingType = batch?.request?.training_type; // 'BENEFICIARY' | 'TRAINER'
-  const alreadySubmitted = Boolean(batch?.batch_closing);
-  const tp = batch?.request?.training_plan || {};
-  const req = batch?.request || {};
+
+  // ⚠️ SURGICAL FIXES: Adjusted to use direct Batch model fields natively
+  const trainingType = batch?.participant_type; // 'BENEFICIARY' | 'TRAINER'
+  const alreadySubmitted = Boolean(batch?.batch_costing);
+  const tp = batch?.training_plan || {};
   const centre = batch?.centre || {};
+
+  // Safely extract the block name from the dynamic block_coverages mapping if available
+  const blockName =
+    batch?.combined_batch_details?.[0]?.block?.block_name_en || "—";
 
   const successfulParticipants = useMemo(() => {
     if (!batch) return [];
 
-    // Map Beneficiaries
+    // Map Beneficiaries using the new nested attendance_summary structure
     if (trainingType === "BENEFICIARY") {
       return (batch.beneficiary_participations || [])
-        .filter((bb) => {
-          if (!bb.is_active) return false;
-          // Lookup summary using the through-table ID
-          const summary = (batch.beneficiary_summaries || []).find(
-            (s) => s.batch_beneficiary === bb.id,
-          );
-          return summary?.is_successful === true;
-        })
+        .filter(
+          (bb) =>
+            bb.is_active !== false &&
+            bb.attendance_summary?.is_successful === true,
+        )
         .map((bb) => {
-          // Resolve full beneficiary info from array
-          const fullBen =
-            (batch.beneficiary || []).find((b) => b.id === bb.beneficiary) ||
-            {};
-          const summary = (batch.beneficiary_summaries || []).find(
-            (s) => s.batch_beneficiary === bb.id,
-          );
           return {
             ...bb,
             display_name:
-              fullBen.member_name || `Beneficiary #${bb.beneficiary}`,
-            attendance_pct: summary?.attendance_percentage || "0.00",
+              bb.beneficiary?.member_name ||
+              `Beneficiary #${bb.beneficiary?.id || bb.id}`,
+            attendance_pct:
+              bb.attendance_summary?.attendance_percentage || "0.00",
           };
         });
     }
 
-    // Map Trainers
+    // Map Trainers using the new nested attendance_summary structure
     if (trainingType === "TRAINER") {
       return (batch.trainer_participations || [])
-        .filter((bt) => bt.is_active && bt.attended === true)
+        .filter(
+          (bt) =>
+            bt.is_active !== false &&
+            bt.attendance_summary?.is_successful === true,
+        )
         .map((bt) => {
-          const fullTr =
-            (batch.trainer || []).find((t) => t.id === bt.trainer) || {};
           return {
             ...bt,
-            display_name: fullTr.full_name || `Trainer #${bt.trainer}`,
-            attendance_pct: "100.00",
+            display_name:
+              bt.trainer?.full_name || `Trainer #${bt.trainer?.id || bt.id}`,
+            attendance_pct:
+              bt.attendance_summary?.attendance_percentage || "0.00",
           };
         });
     }
+
     return [];
   }, [batch, trainingType]);
 
@@ -293,13 +298,9 @@ export default function TpTrainingRequestClosure() {
       return;
     }
 
-    const trainingRequestId = batch?.request?.id;
-    if (!trainingRequestId) {
-      setSubmitError(
-        "Could not determine Training Request ID. Please contact admin.",
-      );
-      return;
-    }
+    // ⚠️ SURGICAL FIX: Extract training_request natively from the participant mapping
+    const trainingRequestId =
+      successfulParticipants[0]?.training_request || null;
 
     setSubmitting(true);
     try {
@@ -318,10 +319,10 @@ export default function TpTrainingRequestClosure() {
         });
       }
 
-      // 2. Submit Master Invoice (Backend auto-calculates grand_total)
+      // 2. Submit Master Invoice
       const costResp = await api.post("/tms/batch-costs/", {
         batch: parseInt(batchId, 10),
-        training: trainingRequestId,
+        training: trainingRequestId, // Passes null natively if batch is unlinked
         is_exposure_visit: isExposureVisit,
         exposure_visit_cost: isExposureVisit
           ? parseFloat(exposureVisitCost || 0)
@@ -407,7 +408,6 @@ export default function TpTrainingRequestClosure() {
   ═══════════════════════════════════════════════════════════ */
   return (
     <div className="app-shell">
-      {/* <LeftNav collapsed={navCollapsed} onToggle={() => setNavCollapsed((v) => !v)} /> */}
       <Header />
       <div className="content-area">
         <LeftNav
@@ -415,10 +415,6 @@ export default function TpTrainingRequestClosure() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div> */}
-
           <main style={{ padding: 18 }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               {/* ════════ STATUS BANNERS ════════ */}
@@ -478,11 +474,7 @@ export default function TpTrainingRequestClosure() {
                     value={tp?.type_of_training}
                   />
                   <InfoItem label="No. of Days" value={tp?.no_of_days} />
-                  <InfoItem
-                    label="District"
-                    value={req?.district?.district_name_en}
-                  />
-                  <InfoItem label="Block" value={req?.block?.block_name_en} />
+                  <InfoItem label="Block" value={blockName} />
                 </div>
               </div>
 
@@ -552,7 +544,7 @@ export default function TpTrainingRequestClosure() {
               >
                 <div className="cl-card">
                   <div className="cl-card-title">🧑‍🏫 Master Trainers</div>
-                  {batch?.master_trainers?.length > 0 ? (
+                  {batch?.master_trainer_participations?.length > 0 ? (
                     <table className="table">
                       <thead>
                         <tr>
@@ -562,11 +554,13 @@ export default function TpTrainingRequestClosure() {
                         </tr>
                       </thead>
                       <tbody>
-                        {batch.master_trainers.map((mt) => (
-                          <tr key={mt.id}>
-                            <td style={{ fontWeight: 500 }}>{mt.full_name}</td>
-                            <td>{mt.designation}</td>
-                            <td>{mt.mobile_no}</td>
+                        {batch.master_trainer_participations.map((mtp) => (
+                          <tr key={mtp.id}>
+                            <td style={{ fontWeight: 500 }}>
+                              {mtp.master_trainer?.full_name}
+                            </td>
+                            <td>{mtp.master_trainer?.designation}</td>
+                            <td>{mtp.master_trainer?.mobile_no}</td>
                           </tr>
                         ))}
                       </tbody>
@@ -889,32 +883,6 @@ export default function TpTrainingRequestClosure() {
               <div className="cl-card">
                 <div className="cl-card-title">🚙 Additional Visit Costs</div>
                 <div className="visit-grid">
-                  {/* <div className="visit-row">
-                  <label className="toggle-label">
-                    <input
-                      type="checkbox" checked={isExposureVisit} disabled={alreadySubmitted}
-                      onChange={(e) => {
-                        setIsExposureVisit(e.target.checked);
-                        if (!e.target.checked) setExposureVisitCost("");
-                      }}
-                    />
-                    <span>Have the participants of this batch attended an exposure visit?</span>
-                  </label>
-                  {isExposureVisit && (
-                    <div className="visit-cost-field">
-                      <span className="visit-cost-label">Cost (₹):</span>
-                      {alreadySubmitted ? (
-                        <span className="computed-total computed-total--active">₹{fmt(exposureVisitCost)}</span>
-                      ) : (
-                        <input
-                          className="cost-input" type="number" min="0" step="0.01" placeholder="0.00"
-                          value={exposureVisitCost} onChange={(e) => setExposureVisitCost(e.target.value)}
-                        />
-                      )}
-                    </div>
-                  )}
-                </div> */}
-
                   <div className="visit-row">
                     <label className="toggle-label">
                       <input

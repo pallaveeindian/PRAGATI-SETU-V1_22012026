@@ -48,7 +48,6 @@ export default function TrainingBatchDetail() {
       // daily attendance, cost breakdowns, media, ekyc, and schedules.
       const batchResp = await TMS_API.batchDetailV2(batchId);
       setBatchData(batchResp?.data || null);
-      console.log("Fetched batch detail:", batchResp?.data);
 
       // 2. Closure Request Fetch (kept separate in case it runs on a different endpoint cycle)
       try {

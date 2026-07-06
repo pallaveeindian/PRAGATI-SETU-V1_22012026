@@ -1,3 +1,4 @@
+// src\pages\TMS\BatchCreator\FilterComponent.jsx
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { AuthContext } from "../../../contexts/AuthContext";
@@ -420,19 +421,6 @@ const FilterComponent = ({ filters, handleChange }) => {
           marginTop: "20px",
         }}
       >
-        <button
-          style={{
-            padding: "10px 20px",
-            border: "none",
-            borderRadius: "8px",
-            background: "#2563eb",
-            color: "#fff",
-            cursor: "pointer",
-          }}
-          onClick={() => console.log(filters)}
-        >
-          Apply Filters
-        </button>
         <button
           style={{
             padding: "10px 20px",

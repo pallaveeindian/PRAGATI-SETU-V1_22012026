@@ -1,3 +1,4 @@
+// src/pages/TMS/BatchCreator/AssemblerDashboardBatchCreator
 import React, { useEffect, useState, useCallback } from "react";
 import AcheivenmentVsTarget from "./AcheivenmentVsTarget";
 import ParticipantCount from "./ParticipantCount";
@@ -28,8 +29,8 @@ const AssemblerDashboardBatchCreator = () => {
     startDate: "",
     endDate: "",
     trainingCenter: "",
-    block: "", // Make sure your context fills this
-    districtId: "", // <-- ADD THIS
+    block: "",
+    districtId: "",
     batchType: "Separate",
   });
 
@@ -51,17 +52,13 @@ const AssemblerDashboardBatchCreator = () => {
   const [resumeBatchId, setResumeBatchId] = useState(null);
   const [resumeBeneficiary, setResumeBeneficiary] = useState(null);
   const [isResumeMode, setIsResumeMode] = useState(false);
+  const [rejectionReason, setRejectionReason] = useState("");
   const location = useLocation();
   const user = getUser();
+
   // ===========================
   // FILTER CHANGE HANDLER
   // ===========================
-  // const handleChange = (key, value) => {
-  //     setFilters((prev) => ({
-  //         ...prev,
-  //         [key]: value,
-  //     }));
-  // };
   const handleChange = (key, value) => {
     setFilters((prev) => ({
       ...prev,
@@ -73,9 +70,6 @@ const AssemblerDashboardBatchCreator = () => {
     }
   };
 
-  useEffect(() => {
-    console.log("LOCATION STATE =", location.state);
-  }, []);
   // ===========================
   // ACHIEVEMENT CARD DYNAMICS
   // ===========================
@@ -112,7 +106,6 @@ const AssemblerDashboardBatchCreator = () => {
     (selectedRowsOrIds) => {
       const standardizedRows = selectedRowsOrIds.map((item) => {
         if (typeof item === "object" && item !== null) {
-          // टेबल रो डेटा से सभी संभावित कीज़ को चेक करें
           const rawBlock =
             item.block_id || item.blockId || item.block || item.block_code;
           const explicitBlockId =
@@ -160,14 +153,6 @@ const AssemblerDashboardBatchCreator = () => {
     [filters.block],
   );
 
-  useEffect(() => {
-    console.log("Parent filters:", filters);
-  }, [filters]);
-
-  console.log("filters =", filters);
-  console.log("filters.districtId =", filters.districtId);
-  console.log("Number(filters.districtId) =", Number(filters.districtId));
-
   const handleConfirmAndSave = async (status = "SCHEDULED") => {
     setIsSubmitting(true);
 
@@ -189,7 +174,7 @@ const AssemblerDashboardBatchCreator = () => {
         district_id: Number(filters.districtId),
         start_date: filters.startDate || "2026-07-10",
         end_date: filters.endDate || "2026-07-15",
-        status: status,
+        status: status, // DRAFT, PENDING, SCHEDULED
       };
 
       let finalPayload;
@@ -226,7 +211,7 @@ const AssemblerDashboardBatchCreator = () => {
         };
       }
       // ======================================================
-      // 🔵 COMBINED BATCH LOGIC (MULTIPLE BLOCKS WORKING 100%)
+      // 🔵 COMBINED BATCH LOGIC
       // ======================================================
       else {
         const blockGroupMap = {};
@@ -246,7 +231,6 @@ const AssemblerDashboardBatchCreator = () => {
             blockId = filterBlockArray[idx % filterBlockArray.length];
           }
 
-          // फ़ालबैक अगर फिर भी कुछ न मिले
           if (!blockId) {
             blockId = filterBlockArray[0] || 313581;
           }
@@ -264,7 +248,6 @@ const AssemblerDashboardBatchCreator = () => {
           }
         });
 
-        // मैप को बैकएंड एरे स्ट्रक्चर में बदलें
         const blocks = Object.keys(blockGroupMap).map((bId) => ({
           block_id: Number(bId),
           training_requests: Object.keys(blockGroupMap[bId]).map((tId) => ({
@@ -282,20 +265,28 @@ const AssemblerDashboardBatchCreator = () => {
         finalPayload = {
           ...basePayload,
           batch_type: "COMBINED",
-          blocks, // अब इसमें शत-प्रतिशत अलग-अलग ब्लॉक्स के ऑब्जेक्ट्स बन कर जाएंगे
+          blocks,
         };
       }
 
-      console.log(
-        "FINAL PAYLOAD SENDING TO API:",
-        JSON.stringify(finalPayload, null, 2),
-      );
+      // Route execution depending on Resume Mode
+      if (isResumeMode && resumeBatchId) {
+        await TMS_API.batchCreator.update(resumeBatchId, finalPayload);
+        alert(`Batch successfully updated as ${status}.`);
+      } else {
+        await TMS_API.batchCreator.create(finalPayload);
+        alert(`Batch successfully created as ${status}.`);
+      }
 
-      const response = await TMS_API.batchCreator.create(finalPayload);
-      alert("Batch successfully created.");
+      // Optional: Close the preview modal or redirect user after success
+      setIsPreviewOpen(false);
     } catch (error) {
       console.error("API ERROR:", error);
-      alert(error?.response?.data?.message || "Failed to create batch.");
+      alert(
+        error?.response?.data?.message ||
+          error?.response?.data?.error ||
+          "Failed to process batch.",
+      );
     } finally {
       setIsSubmitting(false);
     }
@@ -306,53 +297,27 @@ const AssemblerDashboardBatchCreator = () => {
 
     if (batchId) {
       setResumeBatchId(batchId);
-      setIsResumeMode(true); // 🔥 THIS IS MISSING
+      setIsResumeMode(true);
       loadResumeBatch(batchId);
     }
   }, [location.state]);
 
   const loadResumeBatch = async (batchId) => {
     try {
-      console.log("======================================");
-
-      console.log("Loading Resume Batch:", batchId);
-
-      console.log("======================================");
-
       const response = await TMS_API.batchDetailV2(batchId);
-
-      console.log("Resume API Response:", response);
-
       const data = response.data;
-
-      console.log("Resume Data:", data);
-
-      console.log("Beneficiary Selected:", data?.beneficiary);
-
-      // Save beneficiary for comparison after trainees API loads
-
-      // setResumeBeneficiary(data?.beneficiary || null);
-
       const selectedIds =
         data?.participant_type === "TRAINER"
           ? data?.trainer || []
           : data?.beneficiary || [];
 
       setResumeBeneficiary(selectedIds);
-
-      console.log("Resume Selected IDs:", selectedIds);
-      // // Batch Type
-
-      // setBatchType(data?.batch_type || "SEPARATE");
-
-      // Restore Filters
-
+      setBatchType("SEPARATE");
+      setRejectionReason(data?.rejection_reason || "");
       setFilters((prev) => ({
         ...prev,
 
-        // 👇 ADD THIS
-
-        batchType: data?.batch_type === "COMBINED" ? "Combined" : "Separate",
+        batchType: "Separate",
 
         financialYear: data?.financial_year || "",
 
@@ -381,104 +346,45 @@ const AssemblerDashboardBatchCreator = () => {
 
         block: String(data?.block || ""),
       }));
-
-      console.log("Filters Restored.");
-
-      console.log("Waiting for ParticipantTable trainees API response...");
-
-      console.log("After trainees API loads, compare using resumeBeneficiary.");
     } catch (error) {
       console.error("Failed to load resume batch:", error);
-
       console.error("Response:", error?.response);
-
       console.error("Data:", error?.response?.data);
     }
   };
 
   const handleResumeTrainees = useCallback(
     (traineesResp) => {
-      console.log("Resume IDs:", resumeBeneficiary);
-
-      console.log("Trainees API:", traineesResp);
-
-      console.log(
-        "Trainees IDs:",
-        traineesResp.map((x) => x.id),
-      );
-
       if (!Array.isArray(resumeBeneficiary) || resumeBeneficiary.length === 0) {
         return;
       }
 
-      console.log("Trainees API Response Received:", traineesResp);
-
       const trainees = traineesResp
-
         .filter(
           (item) =>
             item?.CB_selected === true && resumeBeneficiary.includes(item?.id),
         )
-
         .map((item) => ({
           id: item.id,
-
           block_id: item.block,
-
           tr_id: item.training_request,
         }));
-
-      console.log("Resume Selected Trainees:", trainees);
 
       setSelectedTrainees(trainees);
 
       setParticipantData((prev) => ({
         ...prev,
-
         selectedParticipants: trainees.map((t) => t.id),
       }));
     },
     [resumeBeneficiary],
   );
 
-  //     if (!Array.isArray(resumeBeneficiary) || resumeBeneficiary.length === 0) {
-  //         return;
-  //     }
-
-  //     console.log("Trainees API Response Received:", traineesResp);
-
-  //     const trainees = traineesResp
-  //         .filter(item =>
-  //             item?.CB_selected === true &&
-  //             resumeBeneficiary.includes(item?.id)
-  //         )
-  //         .map(item => {
-  //             // `loadResumeBatch` द्वारा पहले से स्टोर की गई सही `tr_id` और `block_id` को ढूंढें
-  //             const existingMatch = selectedTrainees.find(t => t.id === item.id);
-
-  //             return {
-  //                 id: item.id,
-  //                 block_id: Number(item.block || existingMatch?.block_id),
-  //                 // एक्स्ट्रा सेफ्टी कीज़ का चेक ताकि सही training_request आईडी सेट हो
-  //                 tr_id: Number(item.training_request || item.training_request_id || existingMatch?.tr_id || 40),
-  //             };
-  //         });
-
-  //     console.log("Resume Selected Trainees Synced with Table:", trainees);
-
-  //     setSelectedTrainees(trainees);
-
-  //     setParticipantData(prev => ({
-  //         ...prev,
-  //         selectedParticipants: trainees.map(t => t.id),
-  //     }));
-
-  // }, [resumeBeneficiary, selectedTrainees]);
-
   const resumeSelectedIds = React.useMemo(
     () => selectedTrainees.map((t) => t.id),
     [selectedTrainees],
   );
+
   return (
     <>
       <Header />
@@ -505,6 +411,38 @@ const AssemblerDashboardBatchCreator = () => {
             flexDirection: "column",
           }}
         >
+          {/* SURGICAL FIX 3: Display Rejection Reason Banner if available in Resume Mode */}
+          {isResumeMode && rejectionReason && (
+            <div
+              style={{
+                backgroundColor: "#fef2f2",
+                border: "1px solid #fecaca",
+                borderLeft: "4px solid #ef4444",
+                borderRadius: "8px",
+                padding: "16px 20px",
+                marginBottom: "24px",
+                color: "#991b1b",
+                display: "flex",
+                flexDirection: "column",
+                gap: "4px",
+              }}
+            >
+              <div
+                style={{
+                  fontWeight: "700",
+                  fontSize: "14px",
+                  textTransform: "uppercase",
+                  letterSpacing: "0.5px",
+                }}
+              >
+                ⚠️ Batch Rejected
+              </div>
+              <div style={{ fontSize: "14px", fontWeight: "500" }}>
+                <strong>Reason:</strong> {rejectionReason}
+              </div>
+            </div>
+          )}
+
           {/* Top Panel - Stats Indicators Grid */}
           <div
             style={{
@@ -541,8 +479,6 @@ const AssemblerDashboardBatchCreator = () => {
                 gap: "12px",
               }}
             >
-              {/* Strategy Select Dropdown Switch */}
-              {/* <FilterComponent filters={filters} onFilterChange={setFilters} handleChange={handleChange} /> */}
               <FilterComponent filters={filters} handleChange={handleChange} />
             </div>
 
@@ -589,11 +525,6 @@ const AssemblerDashboardBatchCreator = () => {
           {/* Main Display Selection Table Element */}
           <div style={{ width: "100%", flex: 1, marginBottom: "20px" }}>
             {filters.participantType ? (
-              // <ParticipantTable
-              //     filters={filters}
-              //     handleChange={handleChange}
-              //     onSelectionChange={handleSelectionChange}
-              // />
               <ParticipantTable
                 filters={filters}
                 handleChange={handleChange}

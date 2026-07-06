@@ -2,30 +2,10 @@
 import React, { useContext, useEffect, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import TmsLeftNav from "../layout/tms_LeftNav";
-// import TopNav from "../layout/tms_TopNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { TMS_API } from "../../../api/axios";
+import api from "../../../api/axios";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
-
-const BATCH_CACHE_KEY_PREFIX = "tms_cp_batch_detail_v1::";
-const PLAN_CACHE_KEY_PREFIX = "tms_cp_training_plan_v1::";
-
-function loadJson(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function saveJson(key, payload) {
-  try {
-    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch {}
-}
 
 function fmtDate(iso) {
   try {
@@ -57,16 +37,10 @@ export default function CpBatchDetail() {
   const { user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
-  const [batch, setBatch] = useState(
-    () => loadJson(BATCH_CACHE_KEY_PREFIX + batchId)?.payload || null,
-  );
-  const [trainingPlan, setTrainingPlan] = useState(() => {
-    const cached = loadJson(PLAN_CACHE_KEY_PREFIX + batchId);
-    return cached?.payload || null;
-  });
 
+  // LIVE data state (no local storage cache)
+  const [batch, setBatch] = useState(null);
   const [loadingBatch, setLoadingBatch] = useState(false);
-  const [loadingPlan, setLoadingPlan] = useState(false);
 
   // time_of_training controls
   const [durationMode, setDurationMode] = useState("1"); // "1","2","3","custom"
@@ -77,24 +51,17 @@ export default function CpBatchDetail() {
 
   const didInitRef = useRef(false);
 
-  async function fetchBatch(force = false) {
+  async function fetchBatch() {
     if (!batchId) return;
-    if (!force && batch) return;
     setLoadingBatch(true);
     try {
-      if (!force) {
-        const cached = loadJson(BATCH_CACHE_KEY_PREFIX + batchId);
-        if (cached?.payload) {
-          setBatch(cached.payload);
-          return;
-        }
-      }
-      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      // Swapped to the live comprehensive detail v2 endpoint
+      const resp = await api.get(
+        `/tms/batches/comprehensive-detail/${batchId}/`,
+      );
       const data = resp?.data || null;
       setBatch(data);
-      saveJson(BATCH_CACHE_KEY_PREFIX + batchId, data);
 
-      // if time_of_training already present, prefill UI
       if (data?.time_of_training) {
         const { h, m } = parseHHMMToParts(data.time_of_training);
         setDurationMode("custom");
@@ -109,53 +76,15 @@ export default function CpBatchDetail() {
     }
   }
 
-  async function fetchTrainingPlan(force = false) {
-    if (!batch?.request?.training_plan) return;
-    if (!force && trainingPlan) return;
-    setLoadingPlan(true);
-    try {
-      if (!force) {
-        const cached = loadJson(PLAN_CACHE_KEY_PREFIX + batchId);
-        if (cached?.payload) {
-          setTrainingPlan(cached.payload);
-          return;
-        }
-      }
-      const planId = batch.training_plan.id;
-      const resp = (await TMS_API.trainingPlans.retrieve)
-        ? await TMS_API.trainingPlans.retrieve(planId)
-        : await api.get(`/tms/training-plans/${planId}/`);
-      const data = resp?.data || resp || null;
-      setTrainingPlan(data);
-      saveJson(PLAN_CACHE_KEY_PREFIX + batchId, data);
-    } catch (e) {
-      console.error("cp fetch training plan failed", e);
-      setTrainingPlan(null);
-    } finally {
-      setLoadingPlan(false);
-    }
-  }
-
   useEffect(() => {
     if (didInitRef.current) return;
     didInitRef.current = true;
-    fetchBatch(false);
+    fetchBatch();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [batchId]);
 
-  useEffect(() => {
-    if (batch?.request?.training_plan) {
-      fetchTrainingPlan(false);
-    }
-  }, [batch?.request?.training_plan]);
-
   function handleRefreshAll() {
-    try {
-      localStorage.removeItem(BATCH_CACHE_KEY_PREFIX + batchId);
-      localStorage.removeItem(PLAN_CACHE_KEY_PREFIX + batchId);
-    } catch {}
-    setBatch(null);
-    setTrainingPlan(null);
-    fetchBatch(true);
+    fetchBatch();
   }
 
   function computeTimeOfTrainingPayload() {
@@ -164,7 +93,6 @@ export default function CpBatchDetail() {
       const hh = hours.toString().padStart(2, "0");
       return `${hh}:00`;
     }
-    // custom
     const h = parseInt(customHours || "0", 10);
     const m = parseInt(customMinutes || "0", 10);
     const safeH = Math.min(Math.max(h, 0), 8);
@@ -178,20 +106,13 @@ export default function CpBatchDetail() {
     if (!batchId) return null;
     const payloadTime = computeTimeOfTrainingPayload();
     try {
-      const resp = await (TMS_API.batches?.partialUpdate
-        ? TMS_API.batches.partialUpdate(batchId, {
-            time_of_training: payloadTime,
-          })
-        : api.patch(`/tms/batches/${batchId}/`, {
-            time_of_training: payloadTime,
-          }));
-      const data = resp?.data || resp || null;
-      const updated = {
-        ...(batch || {}),
+      await api.patch(`/tms/batches/${batchId}/`, {
         time_of_training: payloadTime,
-      };
-      setBatch(updated);
-      saveJson(BATCH_CACHE_KEY_PREFIX + batchId, updated);
+      });
+      setBatch((prev) => ({
+        ...(prev || {}),
+        time_of_training: payloadTime,
+      }));
       return payloadTime;
     } catch (e) {
       console.error("patch time_of_training failed", e);
@@ -227,19 +148,7 @@ export default function CpBatchDetail() {
     }
   }
 
-  const hasTimeOfTraining = !!batch?.time_of_training;
-
-  // --- SURGICAL ADDITION: Check if batch end date has passed ---
   let isBatchEnded = false;
-  // if (batch?.end_date) {
-  //   const today = new Date();
-  //   today.setHours(0, 0, 0, 0); // Strip time for accurate day comparison
-  //   const endDate = new Date(batch.end_date);
-  //   endDate.setHours(0, 0, 0, 0);
-  //   if (today > endDate) {
-  //     isBatchEnded = true;
-  //   }
-  // }
   if (
     batch?.status === "COMPLETED" ||
     batch?.status === "CLOSED" ||
@@ -248,8 +157,6 @@ export default function CpBatchDetail() {
   ) {
     isBatchEnded = true;
   }
-
-  // -------------------------------------------------------------
 
   return (
     <div className="app-shell">
@@ -260,13 +167,6 @@ export default function CpBatchDetail() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav
-          left={
-            <div className="app-title">
-              Pragati Setu — Contact Person / Batch Detail
-            </div>
-          }
-        /> */}
           <main style={{ padding: 18 }}>
             <div style={{ maxWidth: 1100, margin: "0 auto" }}>
               <div
@@ -279,8 +179,12 @@ export default function CpBatchDetail() {
               >
                 <h2 style={{ margin: 0 }}>Batch Detail — #{batchId}</h2>
                 <div style={{ marginLeft: "auto", display: "flex", gap: 8 }}>
-                  <button className="btn" onClick={handleRefreshAll}>
-                    Refresh
+                  <button
+                    className="btn"
+                    onClick={handleRefreshAll}
+                    disabled={loadingBatch}
+                  >
+                    {loadingBatch ? "Refreshing…" : "Refresh"}
                   </button>
                   <button
                     className="btn btn-outline"
@@ -292,7 +196,6 @@ export default function CpBatchDetail() {
               </div>
 
               <div style={{ background: "#fff", borderRadius: 8, padding: 18 }}>
-                {/* Batch summary */}
                 {loadingBatch && !batch ? (
                   <div className="table-spinner">Loading batch details…</div>
                 ) : !batch ? (
@@ -333,7 +236,7 @@ export default function CpBatchDetail() {
                       </div>
                     </div>
 
-                    {/* Training Plan info */}
+                    {/* Live Training Plan data parsed from the bundled dataset */}
                     <div
                       style={{
                         padding: 10,
@@ -342,28 +245,19 @@ export default function CpBatchDetail() {
                         marginBottom: 12,
                       }}
                     >
-                      {loadingPlan && !trainingPlan ? (
-                        <div className="table-spinner">
-                          Loading training plan information…
-                        </div>
-                      ) : !trainingPlan ? (
+                      {!batch.training_plan ? (
                         <div className="muted">
-                          Training name:{" "}
-                          <strong>
-                            {batch.request.training_plan
-                              ? `${batch.request.training_plan.training_name}`
-                              : "—"}
-                          </strong>
+                          Training plan details missing for this batch.
                         </div>
                       ) : (
                         <>
                           <div>
                             <strong>Training Name:</strong>{" "}
-                            {trainingPlan.training_name || "-"}
+                            {batch.training_plan.training_name || "-"}
                           </div>
                           <div>
                             <strong>No. of Days:</strong>{" "}
-                            {trainingPlan.no_of_days || "-"}
+                            {batch.training_plan.no_of_days || "-"}
                           </div>
                         </>
                       )}
@@ -406,7 +300,7 @@ export default function CpBatchDetail() {
                               setCustomMinutes("");
                             }
                           }}
-                          disabled={isBatchEnded} // SURGICAL ADDITION
+                          disabled={isBatchEnded}
                         >
                           <option value="1">1 Hour</option>
                           <option value="2">2 Hours</option>
@@ -432,7 +326,7 @@ export default function CpBatchDetail() {
                                 style={{ width: 80 }}
                                 placeholder="Hours"
                                 value={customHours}
-                                disabled={isBatchEnded} // SURGICAL ADDITION
+                                disabled={isBatchEnded}
                                 onChange={(e) =>
                                   setCustomHours(e.target.value.slice(0, 2))
                                 }
@@ -450,7 +344,7 @@ export default function CpBatchDetail() {
                                 style={{ width: 80 }}
                                 placeholder="Minutes"
                                 value={customMinutes}
-                                disabled={isBatchEnded} // SURGICAL ADDITION
+                                disabled={isBatchEnded}
                                 onChange={(e) =>
                                   setCustomMinutes(e.target.value.slice(0, 2))
                                 }
@@ -467,7 +361,7 @@ export default function CpBatchDetail() {
                         <button
                           className="btn"
                           onClick={handleSaveDuration}
-                          disabled={savingDuration || isBatchEnded} // SURGICAL ADDITION
+                          disabled={savingDuration || isBatchEnded}
                         >
                           {savingDuration ? "Saving…" : "Save Duration"}
                         </button>
@@ -497,11 +391,10 @@ export default function CpBatchDetail() {
                         display: "flex",
                         justifyContent: isBatchEnded
                           ? "space-between"
-                          : "flex-end", // SURGICAL MODIFICATION
+                          : "flex-end",
                         alignItems: "center",
                       }}
                     >
-                      {/* SURGICAL ADDITION: Show red warning if batch is ended */}
                       {isBatchEnded && (
                         <div
                           style={{
@@ -515,9 +408,9 @@ export default function CpBatchDetail() {
                       )}
 
                       <button
-                        className={`btn ${isBatchEnded ? "btn-outline" : "btn-primary"}`} // Visual feedback
+                        className={`btn ${isBatchEnded ? "btn-outline" : "btn-primary"}`}
                         onClick={handleOpenAttendanceManager}
-                        disabled={openingManager || isBatchEnded} // SURGICAL DISABLE
+                        disabled={openingManager || isBatchEnded}
                       >
                         {openingManager
                           ? "Opening…"
@@ -532,35 +425,23 @@ export default function CpBatchDetail() {
           <Footer />
         </div>
       </div>
-      <style>{`     .content-area {
+      <style>{`.content-area {
   display: flex;
   flex: 1;              
   min-width: 0;
 }
-  .content-area {
-  display: flex;
-  flex: 1;
-  min-width: 0;
-}
-
-/* ADD THIS */
 .main-area {
   display: flex;
   flex-direction: column;
   flex: 1;
   min-height: 100vh;
 }
-
-/* ADD THIS */
 .main-area main {
   flex: 1;
 }
-
-/* ADD THIS */
 footer {
   margin-top: auto;
 }
-
 `}</style>
     </div>
   );

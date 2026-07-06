@@ -1,32 +1,11 @@
 // src/pages/TMS/TP_CP/cp_batch_list.jsx
-import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
+import React, { useContext, useEffect, useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import TmsLeftNav from "../layout/tms_LeftNav";
-// import TopNav from "../layout/tms_TopNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
-
-const CP_ROOT_CACHE_KEY = "tms_cp_dashboard_cache_v1";
-const CP_CENTRE_CACHE_KEY = "tms_cp_centre_cache_v1";
-const CP_BATCHES_CACHE_KEY = "tms_cp_batches_cache_v1";
-
-function loadJson(key) {
-  try {
-    const raw = localStorage.getItem(key);
-    if (!raw) return null;
-    return JSON.parse(raw);
-  } catch {
-    return null;
-  }
-}
-
-function saveJson(key, payload) {
-  try {
-    localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch {}
-}
+import api, { LOOKUP_API } from "../../../api/axios";
 
 function fmtDate(iso) {
   try {
@@ -42,17 +21,17 @@ export default function CpBatchList() {
   const { user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
+
+  // States for Centre Chain
   const [loadingCentreChain, setLoadingCentreChain] = useState(false);
   const [cpRecord, setCpRecord] = useState(null);
   const [centreLink, setCentreLink] = useState(null);
-  const [centre, setCentre] = useState(
-    () => loadJson(CP_CENTRE_CACHE_KEY)?.payload || null,
-  );
+  const [centre, setCentre] = useState(null);
 
+  // States for Batches & Filters
   const [batchesLoading, setBatchesLoading] = useState(false);
-  const [batches, setBatches] = useState(
-    () => loadJson(CP_BATCHES_CACHE_KEY)?.payload || [],
-  );
+  const [batches, setBatches] = useState([]);
+  const [blocks, setBlocks] = useState([]);
 
   const [filters, setFilters] = useState({
     district_id: "",
@@ -62,224 +41,120 @@ export default function CpBatchList() {
     batch_type: "",
   });
 
-  const [blocks, setBlocks] = useState([]);
-  const didRunRef = useRef(false);
-
+  // 1. Fetch the CP -> Link -> Centre chain on mount
   useEffect(() => {
-    if (!user?.id) return;
-
-    async function loadCentre() {
-      try {
-        const cpResp = await api.get(
-          `/tms/training-partner-contact-persons/?master_user=${user.id}`,
-        );
-        const cp = cpResp?.data?.results?.[0];
-        if (!cp) return;
-
-        const linkResp = await api.get(
-          `/tms/tpcp-centre-links/?contact_person=${cp.id}`,
-        );
-        const link = linkResp?.data?.results?.[0];
-        if (!link?.allocated_centre) return;
-
-        const centreResp = await api.get(
-          `/tms/training-partner-centres/${link.allocated_centre}/detail/`,
-        );
-
-        const centreData = centreResp?.data;
-        setCentre(centreData);
-
-        setFilters((f) => ({
-          ...f,
-          district_id: centreData?.district?.district_id,
-        }));
-      } catch (err) {
-        console.error("Centre load failed", err);
-      }
-    }
-
-    loadCentre();
+    fetchCentreChain();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [user?.id]);
 
+  // 2. Fetch Blocks when district_id is available
   useEffect(() => {
-    if (!filters.district_id) return;
-
+    if (!filters.district_id) {
+      setBlocks([]);
+      return;
+    }
     LOOKUP_API.blocksByDistrict(filters.district_id)
-      .then((res) => {
-        setBlocks(res?.data?.results || []);
-      })
+      .then((res) => setBlocks(res?.data?.results || []))
       .catch(() => setBlocks([]));
   }, [filters.district_id]);
 
-  /* ⭐ FILTER API (RENAMED) */
-  async function fetchFilteredBatches() {
-    if (!centre?.id) return;
-
-    setBatchesLoading(true);
-
-    try {
-      const params = {
-        centre: centre.id,
-        page_size: 500,
-      };
-
-      // ONLY add if exists
-      if (filters.block_id) params.block_id = filters.block_id;
-      if (filters.status) params.status = filters.status;
-      if (filters.batch_type) params.batch_type = filters.batch_type;
-
-      // ⚠️ IMPORTANT FIX (backend correct field)
-      if (filters.training_type) {
-        params.request__training_type = filters.training_type;
-      }
-
-      const resp = await api.get(
-        `/tms/batches-list/?${new URLSearchParams(params)}`,
-      );
-
-      const data = resp?.data?.results || [];
-
-      setBatches(data);
-    } catch (e) {
-      console.error("Fetch failed", e);
-      setBatches([]);
-    } finally {
-      setBatchesLoading(false);
-    }
-  }
-
-  const rows_first = useMemo(() => batches, [batches]);
-
+  // 3. Fetch Batches automatically once the Centre is loaded
   useEffect(() => {
-    if (!user?.id) return;
-    const cached = loadJson(CP_ROOT_CACHE_KEY);
-    if (cached?.payload?.cpRecord) {
-      setCpRecord(cached.payload.cpRecord);
-      setCentreLink(cached.payload.centreLink || null);
-    } else {
-      fetchCentreChain(false);
+    if (centre?.id) {
+      fetchBatches();
     }
-  }, [user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [centre?.id]);
 
-  async function fetchCentreChain(force = false) {
+  // --- API FUNCTIONS ---
+
+  async function fetchCentreChain() {
     if (!user?.id) return;
-    if (!force && cpRecord && centreLink) return;
 
     setLoadingCentreChain(true);
+    setCpRecord(null);
+    setCentreLink(null);
+    setCentre(null);
+    setBatches([]);
+
     try {
+      // Step A: Get Contact Person profile
       const cpResp = await api.get(
         `/tms/training-partner-contact-persons/?master_user=${user.id}`,
       );
-      const cp = cpResp?.data?.results?.[0] || null;
+      const cp = cpResp?.data?.results?.[0];
+      if (!cp) return;
       setCpRecord(cp);
 
-      if (!cp) {
-        saveJson(CP_ROOT_CACHE_KEY, { cpRecord: null, centreLink: null });
-        setCentre(null);
-        setBatches([]);
-        return;
-      }
-
+      // Step B: Get the Centre Mapping Link
       const linkResp = await api.get(
         `/tms/tpcp-centre-links/?contact_person=${cp.id}`,
       );
-      const link = linkResp?.data?.results?.[0] || null;
+      const link = linkResp?.data?.results?.[0];
+      if (!link?.allocated_centre) return;
       setCentreLink(link);
 
-      if (link?.allocated_centre) {
-        const centreResp = await api.get(
-          `/tms/training-partner-centres/${link.allocated_centre}/detail/`,
-        );
-        const centreData = centreResp?.data || null;
-        setCentre(centreData);
-        saveJson(CP_CENTRE_CACHE_KEY, centreData);
-      } else {
-        setCentre(null);
-      }
+      // Step C: Get Centre Details
+      const centreResp = await api.get(
+        `/tms/training-partner-centres/${link.allocated_centre}/detail/`,
+      );
+      const centreData = centreResp?.data;
 
-      saveJson(CP_ROOT_CACHE_KEY, { cpRecord: cp, centreLink: link });
+      if (centreData) {
+        setCentre(centreData);
+        setFilters((f) => ({
+          ...f,
+          district_id: centreData?.district?.district_id || "",
+        }));
+      }
     } catch (e) {
-      console.error("CP centre chain load failed", e);
+      console.error("Centre chain load failed", e);
     } finally {
       setLoadingCentreChain(false);
     }
   }
 
-  /* ⭐ ORIGINAL CACHE API (UNCHANGED) */
-  async function fetchBatches(force = false) {
+  async function fetchBatches() {
     if (!centre?.id) return;
-    if (
-      !force &&
-      !filters.block_id &&
-      !filters.status &&
-      !filters.batch_type &&
-      !filters.training_type
-    ) {
-      const cached = loadJson(CP_BATCHES_CACHE_KEY);
-      if (cached?.payload) {
-        setBatches(cached.payload || []);
-        return;
-      }
-    }
+
     setBatchesLoading(true);
     try {
-      const resp = await TMS_API.batches.list({
-        centre: centre.id,
+      const params = {
+        centre_id: centre.id, // Fixed Param!
         page_size: 500,
-      });
-      const items = (resp?.data?.results || []).filter(
-        (b) => b.is_active === true,
+      };
+
+      if (filters.block_id) params.block_id = filters.block_id;
+      if (filters.status) params.status = filters.status;
+      if (filters.batch_type) params.batch_type = filters.batch_type;
+      if (filters.training_type)
+        params.request__training_type = filters.training_type;
+
+      const resp = await api.get(
+        `/tms/batches-list/?${new URLSearchParams(params)}`,
       );
+
+      // Removed strictly local .filter(is_active) assuming backend handles soft deletes properly
+      const items = resp?.data?.results || [];
       setBatches(items);
-      saveJson(CP_BATCHES_CACHE_KEY, items);
     } catch (e) {
-      console.error("cp batches fetch failed", e);
+      console.error("Fetch batches failed", e);
       setBatches([]);
     } finally {
       setBatchesLoading(false);
     }
   }
 
-  useEffect(() => {
-    if (centre?.id && !didRunRef.current) {
-      didRunRef.current = true;
-      fetchBatches(false);
-    }
-  }, [centre?.id]);
-
   const hasCentre = !!centre;
-  const cpName =
-    cpRecord?.name || user?.first_name || user?.username || "TC ID";
-
   const rows = useMemo(() => batches || [], [batches]);
 
   function renderAction(batch) {
     const status = (batch.status || "").toUpperCase();
-    if (status === "ONGOING") {
+    if (["ONGOING", "PENDING", "SCHEDULED"].includes(status)) {
       return (
         <button
           className="btn-sm btn-flat"
           onClick={() => navigate(`/tms/cp/batch-detail/${batch.id}`)}
-        >
-          View
-        </button>
-      );
-    }
-    if (status === "PENDING") {
-      return (
-        <button
-          className="btn-sm btn-flat"
-          onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}
-        >
-          View
-        </button>
-      );
-    }
-    if (status === "SCHEDULED") {
-      return (
-        <button
-          className="btn-sm btn-flat"
-          onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}
         >
           View
         </button>
@@ -316,18 +191,17 @@ export default function CpBatchList() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav /> */}
           <main
             style={{
-              padding: 20, // UPDATED UI
-              minHeight: "100vh", // UPDATED UI
+              padding: 20,
+              minHeight: "100vh",
             }}
           >
             <div style={{ maxWidth: 1200, margin: "0 auto" }}>
               <h2
                 style={{
                   marginTop: 8,
-                  color: "#2b4e72", // UPDATED UI
+                  color: "#2b4e72",
                   fontWeight: 700,
                 }}
               >
@@ -338,7 +212,7 @@ export default function CpBatchList() {
                 className="muted"
                 style={{
                   marginBottom: 18,
-                  color: "#5a8cc2", // UPDATED UI
+                  color: "#5a8cc2",
                 }}
               >
                 List of all training batches mapped to your assigned centre.
@@ -352,11 +226,11 @@ export default function CpBatchList() {
                 className="card"
                 style={{
                   marginBottom: 22,
-                  padding: 20, // UPDATED UI
-                  borderRadius: 12, // UPDATED UI
+                  padding: 20,
+                  borderRadius: 12,
                   background: "#fff",
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                  borderTop: "4px solid #3d6ba6", // UPDATED UI
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+                  borderTop: "4px solid #3d6ba6",
                 }}
               >
                 <div
@@ -370,7 +244,7 @@ export default function CpBatchList() {
                   <h3
                     style={{
                       margin: 0,
-                      color: "#2b4e72", // UPDATED UI
+                      color: "#2b4e72",
                     }}
                   >
                     My Centre
@@ -380,21 +254,12 @@ export default function CpBatchList() {
                     className="btn btn-sm"
                     style={{
                       marginLeft: "auto",
-                      background: "#3d6ba6", // UPDATED UI
+                      background: "#3d6ba6",
                       color: "#fff",
                       border: "none",
                       borderRadius: 6,
                     }}
-                    onClick={() => {
-                      try {
-                        localStorage.removeItem(CP_ROOT_CACHE_KEY);
-                        localStorage.removeItem(CP_CENTRE_CACHE_KEY);
-                      } catch {}
-                      setCpRecord(null);
-                      setCentreLink(null);
-                      setCentre(null);
-                      fetchCentreChain(true);
-                    }}
+                    onClick={() => fetchCentreChain()}
                     disabled={loadingCentreChain}
                   >
                     {loadingCentreChain ? "Refreshing…" : "Refresh Mapping"}
@@ -418,11 +283,9 @@ export default function CpBatchList() {
                     <div style={{ marginBottom: 8 }}>
                       <strong>Centre Name:</strong> {centre.venue_name}
                     </div>
-
                     <div style={{ marginBottom: 6 }}>
                       <strong>Address:</strong> {centre.venue_address}
                     </div>
-
                     <div style={{ marginBottom: 6 }}>
                       <strong>Type:</strong> {centre.centre_type}
                       &nbsp;|&nbsp;
@@ -440,10 +303,10 @@ export default function CpBatchList() {
                 className="card"
                 style={{
                   background: "#fff",
-                  padding: 20, // UPDATED UI
-                  borderRadius: 12, // UPDATED UI
-                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)", // UPDATED UI
-                  borderTop: "4px solid #5a8cc2", // UPDATED UI
+                  padding: 20,
+                  borderRadius: 12,
+                  boxShadow: "0 4px 14px rgba(0,0,0,0.08)",
+                  borderTop: "4px solid #5a8cc2",
                 }}
               >
                 <div
@@ -456,7 +319,7 @@ export default function CpBatchList() {
                   <h3
                     style={{
                       margin: 0,
-                      color: "#2b4e72", // UPDATED UI
+                      color: "#2b4e72",
                     }}
                   >
                     Batches for My Centre
@@ -466,17 +329,12 @@ export default function CpBatchList() {
                     className="btn btn-sm"
                     style={{
                       marginLeft: "auto",
-                      background: "#3d6ba6", // UPDATED UI
+                      background: "#3d6ba6",
                       color: "#fff",
                       border: "none",
                       borderRadius: 6,
                     }}
-                    onClick={() => {
-                      try {
-                        localStorage.removeItem(CP_BATCHES_CACHE_KEY);
-                      } catch {}
-                      fetchBatches(true);
-                    }}
+                    onClick={() => fetchBatches()}
                     disabled={batchesLoading || !hasCentre}
                   >
                     {batchesLoading ? "Refreshing…" : "Refresh"}
@@ -498,7 +356,7 @@ export default function CpBatchList() {
                     style={{
                       maxHeight: 520,
                       overflow: "auto",
-                      border: "1px solid #d6e3f5", // UPDATED UI
+                      border: "1px solid #d6e3f5",
                       borderRadius: 8,
                     }}
                   >
@@ -532,6 +390,7 @@ export default function CpBatchList() {
                       {/* ⭐ FILTER: status */}
                       <select
                         className="input"
+                        value={filters.status}
                         onChange={(e) =>
                           setFilters((f) => ({
                             ...f,
@@ -549,6 +408,7 @@ export default function CpBatchList() {
                       {/* ⭐ FILTER: training type */}
                       <select
                         className="input"
+                        value={filters.training_type}
                         onChange={(e) =>
                           setFilters((f) => ({
                             ...f,
@@ -564,6 +424,7 @@ export default function CpBatchList() {
                       {/* ⭐ FILTER: batch type */}
                       <select
                         className="input"
+                        value={filters.batch_type}
                         onChange={(e) =>
                           setFilters((f) => ({
                             ...f,
@@ -577,17 +438,26 @@ export default function CpBatchList() {
                       </select>
 
                       {/* ⭐ FILTER: trigger API */}
-                      <button
-                        className="btn btn-primary"
-                        onClick={fetchFilteredBatches}
+                      <div
+                        style={{
+                          display: "flex",
+                          justifyContent: "center",
+                          marginTop: "20px",
+                          marginBottom: "20px",
+                        }}
                       >
-                        Fetch Batches
-                      </button>
+                        <button
+                          className="btn btn-primary"
+                          onClick={() => fetchBatches()}
+                        >
+                          Fetch Batches
+                        </button>
+                      </div>
                     </div>
                     <table className="table table-compact">
                       <thead
                         style={{
-                          background: "#a7c6ed", // UPDATED UI
+                          background: "#a7c6ed",
                           color: "#2b4e72",
                         }}
                       >
@@ -619,7 +489,7 @@ export default function CpBatchList() {
                               <td>{fmtDate(batch.start_date)}</td>
                               <td>{fmtDate(batch.end_date)}</td>
                               <td>{batch.batch_type}</td>
-                              <td>{participantsCount}</td>
+                              <td>{batch.pax_count}</td>
                               <td>{renderAction(batch)}</td>
                             </tr>
                           );

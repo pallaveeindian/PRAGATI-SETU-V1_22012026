@@ -16,14 +16,16 @@ export default function MasterTrainersCard({ masterTrainers }) {
         {masterTrainers.map((trainer, idx) => (
           <div className="master-trainer-info" key={trainer.id || idx}>
             <div>
-              <strong>Name:</strong> {trainer.full_name || trainer.name || "-"}
+              <strong>Name:</strong>{" "}
+              {trainer.master_trainer.full_name || trainer.name || "-"}
             </div>
             <div>
               <strong>Mobile:</strong>{" "}
-              {trainer.mobile_no || trainer.mobile || "-"}
+              {trainer.master_trainer.mobile_no || trainer.mobile || "-"}
             </div>
             <div>
-              <strong>Designation:</strong> {trainer.designation || "-"}
+              <strong>Designation:</strong>{" "}
+              {trainer.master_trainer.designation || "-"}
             </div>
           </div>
         ))}

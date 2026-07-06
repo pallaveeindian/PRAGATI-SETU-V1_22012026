@@ -5,7 +5,8 @@ import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api, { TMS_API } from "../../../api/axios";
+import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
+import { getCanonicalRole } from "../../../utils/roleUtils";
 import {
   FaUserPlus,
   FaEye,
@@ -157,30 +158,104 @@ export default function TpListCP() {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const role = getCanonicalRole(user || {});
 
   const [loading, setLoading] = useState(false);
   const [cps, setCps] = useState([]);
   const [viewCp, setViewCp] = useState(null);
   const [deletingId, setDeletingId] = useState(null);
 
+  // DTP specific states
+  const [dtpPartnerId, setDtpPartnerId] = useState(null);
+  const [dtpPartnerName, setDtpPartnerName] = useState("");
+  const [dtpDistrictId, setDtpDistrictId] = useState(null);
+
+  const [filters, setFilters] = useState({
+    partner: "",
+    district_id: "",
+    block_id: "",
+    aspirational_only: false,
+  });
+
   useEffect(() => {
     async function loadCPs() {
       if (!user?.id) return;
       setLoading(true);
 
-      const tpId = await resolveTrainingPartnerIdForUser(user.id);
-      if (!tpId) return;
+      let currentPartnerId = null;
+      let currentDistrictId = null;
 
-      const resp = await TMS_API.trainingPartnerContactPersons.list({
+      // 1) RESOLVE SCOPE DEPENDING ON ROLE
+      if (role === "dtp") {
+        try {
+          const partnerRes = await TMS_API.parentPartner();
+          const partnerId = partnerRes?.data?.partner_id;
+          if (partnerId) {
+            currentPartnerId = String(partnerId);
+            setDtpPartnerId(currentPartnerId);
+            setFilters((f) => ({ ...f, partner: currentPartnerId }));
+            try {
+              const pRes = await TMS_API.trainingPartners.retrieve(partnerId);
+              setDtpPartnerName(pRes?.data?.name || "");
+            } catch (err) {}
+          }
+        } catch (err) {
+          console.error("Failed to load parent partner", err);
+        }
+
+        try {
+          const geoRes = await LOOKUP_API.userGeoscopeByUserId(user.id);
+          currentDistrictId =
+            geoRes?.data?.districts?.[0] ?? geoRes?.data?.district ?? null;
+          if (currentDistrictId) {
+            currentDistrictId = String(currentDistrictId);
+            setDtpDistrictId(currentDistrictId);
+            setFilters((f) => ({
+              ...f,
+              district_id: currentDistrictId,
+              block_id: "",
+              aspirational_only: false,
+            }));
+          }
+        } catch (err) {
+          console.error("Failed to load DTP geoscope", err);
+        }
+      } else {
+        // Fallback for regular Training Partner role
+        currentPartnerId = await resolveTrainingPartnerIdForUser(user.id);
+        if (currentPartnerId) {
+          setFilters((f) => ({ ...f, partner: String(currentPartnerId) }));
+        }
+      }
+
+      if (!currentPartnerId) {
+        setLoading(false);
+        return; // Break out if no parent partner is found
+      }
+
+      // 2) CONSTRUCT API PARAMS & FETCH
+      const params = {
         page_size: 200,
-      });
+        partner: currentPartnerId,
+      };
 
-      setCps(resp?.data?.results || []);
-      setLoading(false);
+      if (role === "dtp" && currentDistrictId) {
+        params.district_id = currentDistrictId;
+        params.created_by = user.id;
+      }
+
+      try {
+        const resp = await TMS_API.trainingPartnerContactPersons.list(params);
+        setCps(resp?.data?.results || []);
+      } catch (e) {
+        console.error("Failed to fetch contact persons", e);
+      } finally {
+        setLoading(false);
+      }
     }
 
     loadCPs();
-  }, [user]);
+  }, [user, role]);
 
   async function handleDelete(cp) {
     const ok = window.confirm(
@@ -282,7 +357,9 @@ export default function TpListCP() {
                             </button>{" "}
                             <button
                               className="tp-btn-outline"
-                              onClick={() => navigate(`/tms/tp/cp/edit/${cp.id}`)}
+                              onClick={() =>
+                                navigate(`/tms/tp/cp/edit/${cp.id}`)
+                              }
                             >
                               <FaEdit /> Edit
                             </button>{" "}

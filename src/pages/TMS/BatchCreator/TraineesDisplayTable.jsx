@@ -1,3 +1,4 @@
+// src\pages\TMS\BatchCreator\TraineesDisplayTable.jsx
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import ParticipantTableFilters from "./ParticipantsTableFilter"; // Restored original import name
 import { TMS_API } from "../../../api/axios";
@@ -9,6 +10,7 @@ const ParticipantTable = ({
   batchId,
   resumeSelectedIds = [],
   onTraineesLoaded,
+  isResumeMode,
 }) => {
   const [traineesData, setTraineesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -86,8 +88,6 @@ const ParticipantTable = ({
       }
 
       const response = await TMS_API.batchCreator.trainees(params);
-
-      console.log("API Response:", response.data);
 
       let traineesResp = [];
 
@@ -220,6 +220,7 @@ const ParticipantTable = ({
         socialCategories={socialCategories}
         religions={religions}
         ageRanges={ageRanges}
+        isResumeMode={isResumeMode}
       />
 
       <div

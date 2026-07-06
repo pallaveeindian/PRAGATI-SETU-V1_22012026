@@ -52,7 +52,7 @@ function loadJson(key) {
 function saveJson(key, payload) {
   try {
     localStorage.setItem(key, JSON.stringify({ ts: Date.now(), payload }));
-  } catch { }
+  } catch {}
 }
 
 function fmtDate(iso) {
@@ -592,11 +592,16 @@ export default function CpDashboard() {
     if (!centre?.id) return;
 
     setBatchesLoading(true);
+
     try {
-      const resp = await TMS_API.batches.list({
-        centre: centre.id,
+      const params = {
+        centre_id: centre.id,
         page_size: 500,
-      });
+      };
+      const resp = await api.get(
+        `/tms/batches-list/?${new URLSearchParams(params)}`,
+      );
+
       setBatches(resp?.data?.results || []);
     } catch (e) {
       console.error("cp batches fetch failed", e);
@@ -605,7 +610,6 @@ export default function CpDashboard() {
       setBatchesLoading(false);
     }
   }
-
   useEffect(() => {
     if (centre?.id) {
       fetchBatches(false);
@@ -811,7 +815,7 @@ export default function CpDashboard() {
                     onClick={() => {
                       try {
                         localStorage.removeItem(CP_BATCHES_CACHE_KEY);
-                      } catch { }
+                      } catch {}
                       fetchBatches(true);
                     }}
                     disabled={batchesLoading || !hasCentre}
@@ -920,8 +924,8 @@ export default function CpDashboard() {
                     }}
                   >
                     <strong>Note:</strong> You have {ongoingBatches.length}{" "}
-                    ongoing batch(es). Use the View Button to start attendance and
-                    eKYC verification.
+                    ongoing batch(es). Use the View Button to start attendance
+                    and eKYC verification.
                   </div>
                 )}
               </div>
