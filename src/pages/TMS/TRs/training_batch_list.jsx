@@ -144,7 +144,7 @@ export default function TrainingBatchList() {
 
     if (role === "bmmu" && blockId) return { block_id: blockId };
     if (role === "dmmu" && districtId) return { district_id: districtId };
-    if (role === "training_partner") return { created_by: user?.id };
+    if (role === "training_partner") return { partner: tpPartnerId };
     if (role === "dtp")
       return { district_id: dtpDistrictId, partner: dtpPartnerId };
     return {};
