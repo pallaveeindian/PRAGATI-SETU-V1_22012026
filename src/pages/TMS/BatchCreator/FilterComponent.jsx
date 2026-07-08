@@ -1,4 +1,4 @@
-// src\pages\TMS\BatchCreator\FilterComponent.jsx
+// src/pages/TMS/BatchCreator/FilterComponent.jsx
 import React, { useState, useEffect, useMemo, useContext } from "react";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { AuthContext } from "../../../contexts/AuthContext";
@@ -115,7 +115,7 @@ const FilterComponent = ({ filters, handleChange }) => {
     fetchParentPartner();
   }, []);
 
-  // 2. Fetch Training Centers (FIXED Nested Object Mapping logic)
+  // 2. Fetch Training Centers
   useEffect(() => {
     const fetchTrainingCenters = async () => {
       const geoscope = await ensureUserGeoscope();
@@ -132,9 +132,7 @@ const FilterComponent = ({ filters, handleChange }) => {
         const response = await TMS_API.trainingPartnerCentres.list({ params });
         const data = response?.data?.results || response?.data || [];
 
-        // Extra frontend validation - FIXED
         const filteredCenters = data.filter((center) => {
-          // Check for .id FIRST to avoid passing entire object strings to Number() causing NaN
           const district =
             center.district?.id ?? center.district_id ?? center.district;
 
@@ -162,7 +160,7 @@ const FilterComponent = ({ filters, handleChange }) => {
     fetchTrainingCenters();
   }, [filters.districtId, parentPartnerId]);
 
-  // 3. Client-side isolation filter loop map matching selected theme key
+  // 3. Fetch Dependent Plans based on Theme
   useEffect(() => {
     const fetchDependentPlans = async () => {
       if (!filters.trainingThemeId) {
@@ -171,22 +169,13 @@ const FilterComponent = ({ filters, handleChange }) => {
       }
 
       try {
-        const planResponse = await TMS_API.trainingPlans.list({
-          params: {
-            theme_id: filters.trainingThemeId,
-            theme: filters.trainingThemeId,
-            training_theme_id: filters.trainingThemeId,
-            training_theme: filters.trainingThemeId,
-          },
+        // FIX: Pass theme param directly as requested by the backend endpoint
+        const response = await TMS_API.trainingPlans.list({
+          theme: filters.trainingThemeId,
+          page_size: 500, // Ensure we fetch all plans for the dropdown
         });
 
-        if (Array.isArray(planResponse.data)) {
-          setApiPlans(planResponse.data);
-        } else if (Array.isArray(planResponse.data?.results)) {
-          setApiPlans(planResponse.data.results);
-        } else if (Array.isArray(planResponse)) {
-          setApiPlans(planResponse);
-        }
+        setApiPlans(response.data?.results || response.data || []);
       } catch (err) {
         console.error("Failed to load training plans:", err);
         setApiPlans([]);
@@ -260,26 +249,6 @@ const FilterComponent = ({ filters, handleChange }) => {
       handleChange("endDate", "");
     }
   };
-
-  useEffect(() => {
-    if (!filters.trainingThemeId) return;
-
-    const fetchDependentPlans = async () => {
-      try {
-        const response = await TMS_API.trainingPlans.list({
-          params: {
-            theme_id: filters.trainingThemeId,
-          },
-        });
-
-        setApiPlans(response.data.results || response.data || []);
-      } catch (err) {
-        console.error(err);
-      }
-    };
-
-    fetchDependentPlans();
-  }, [filters.trainingThemeId]);
 
   useEffect(() => {
     if (!filters.trainingPlan || apiPlans.length === 0) return;
