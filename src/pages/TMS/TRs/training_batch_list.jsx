@@ -92,14 +92,14 @@ export default function TrainingBatchList() {
   const [dtpPartnerId, setDtpPartnerId] = useState(null);
   const [dtpPartnerName, setDtpPartnerName] = useState("");
 
-  // ⭐ PAGINATION CHANGE
+  //  PAGINATION CHANGE
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
-  // ⭐ PAGINATION CHANGE
+  //  PAGINATION CHANGE
   const totalPages = Math.ceil(batches.length / rowsPerPage);
 
-  // ⭐ PAGINATION CHANGE
+  //  PAGINATION CHANGE
   const paginatedBatches = batches.slice(
     (currentPage - 1) * rowsPerPage,
     currentPage * rowsPerPage,
@@ -160,23 +160,23 @@ export default function TrainingBatchList() {
     const blockId = geo.block_id || safeFirst(geo.blocks);
     const districtId = geo.district_id || safeFirst(geo.districts);
 
-    // 🔒 BMMU → BLOCK-LOCKED
+    //  BMMU → BLOCK-LOCKED
     if (role === "bmmu" && blockId) {
       return { block_id: blockId };
     }
 
-    // 🔒 DMMU → DISTRICT-LOCKED
+    //  DMMU → DISTRICT-LOCKED
     if (role === "dmmu" && districtId) {
       return { district_id: districtId };
     }
 
-    // 🔒 TRAINING PARTNER → SELF-CREATED ONLY
+    //  TRAINING PARTNER → SELF-CREATED ONLY
     if (role === "training_partner") {
       return {
         created_by: user?.id,
       };
     }
-    // 🔒 DISTRICT TRAINING PARTNER
+    //  DISTRICT TRAINING PARTNER
     if (role === "dtp") {
       return {
         district_id: dtpDistrictId,
@@ -249,47 +249,6 @@ export default function TrainingBatchList() {
           }
         }
 
-        // if (role === "dtp") {
-        //   // 1. district geoscope
-        //   const geo = getGeoscope() || {};
-
-
-        //   const districtId =
-        //     geo.district_id ||
-        //     safeFirst(geo.districts);
-
-        //   if (districtId) {
-        //     setDtpDistrictId(String(districtId));
-
-        //     setFilters((f) => ({
-        //       ...f,
-        //       district_id: String(districtId),
-        //       block_id: "",
-        //       aspirational_only: false,
-        //     }));
-        //   }
-
-        //   // 2. fetch parent partner
-        //   const partnerRes = await TMS_API.parentPartner();
-
-        //   const partnerId = partnerRes?.data?.partner_id;
-
-        //   if (partnerId) {
-        //     setDtpPartnerId(String(partnerId));
-
-        //     setFilters((f) => ({
-        //       ...f,
-        //       partner: String(partnerId),
-        //     }));
-
-        //     try {
-        //       const pRes = await TMS_API.trainingPartners.retrieve(partnerId);
-        //       setDtpPartnerName(pRes?.data?.name || "");
-        //     } catch (err) {
-        //       console.error(err);
-        //     }
-        //   }
-        // }
 
         if (role === "dtp") {
           let districtId = null;
@@ -542,7 +501,7 @@ export default function TrainingBatchList() {
     }
   };
 
-  // 🚀 Auto-fetch for BMMU (no geographical filters, block-scoped only)
+  //  Auto-fetch for BMMU (no geographical filters, block-scoped only)
   useEffect(() => {
     if (role === "bmmu") {
       fetchBatches();
@@ -569,7 +528,7 @@ export default function TrainingBatchList() {
   useEffect(() => {
     if (!user?.id || didInitRef.current || isRequestScoped) return;
 
-    // 🚫 BMMU & TP are auto-fetched elsewhere
+    //  BMMU & TP are auto-fetched elsewhere
     // if (role === "bmmu" || role === "training_partner") return;
     if (
       role === "bmmu" ||
@@ -606,16 +565,6 @@ export default function TrainingBatchList() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-wrapper">
-          {/* <TopNav
-          left={
-            <div className="app-title">Pragati Setu — Training Batches</div>
-          }
-        /> */}
-
-          {/* <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div> */}
-
           <main
             style={{
               padding: 18,
@@ -626,16 +575,16 @@ export default function TrainingBatchList() {
               {/* ================= FILTERS ================= */}
 
               {!isRequestScoped && (
-                // ⭐ CHANGE: filter-panel class added
+                //  CHANGE: filter-panel class added
                 <div className="filter-panel">
                   <div>
                     <div
                       style={{
                         display: "flex",
-                        flexWrap: "nowrap", // ✅ force single row
+                        flexWrap: "nowrap", //  force single row
                         gap: 12,
                         alignItems: "center",
-                        whiteSpace: "nowrap", // ✅ prevent breaking
+                        whiteSpace: "nowrap", //  prevent breaking
                       }}
                     >
                       {role === "smmu" && (
@@ -930,7 +879,7 @@ export default function TrainingBatchList() {
 
               {/* ================= TABLE ================= */}
 
-              {/* ⭐ CHANGE: table-wrapper class */}
+              {/*  CHANGE: table-wrapper class */}
               <div className="table-wrapper">
                 <table className="table">
                   <thead>
@@ -961,13 +910,13 @@ export default function TrainingBatchList() {
                       </tr>
                     ) : (
                       // batches.map((b, i) => (
-                      // ⭐ PAGINATION CHANGE
+                      //  PAGINATION CHANGE
                       paginatedBatches.map((b, i) => (
                         <tr key={b.id}>
                           <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
                           <td>{b.code}</td>
 
-                          {/* ⭐ CHANGE: status badge */}
+                          {/*  CHANGE: status badge */}
                           <td>
                             <span
                               className={`status-badge status-${String(
@@ -1089,7 +1038,7 @@ export default function TrainingBatchList() {
                   </tbody>
                 </table>
               </div>
-              {/* ⭐ PAGINATION CHANGE */}
+              {/*  PAGINATION CHANGE */}
               <div className="pagination">
                 <button
                   className="btn-sm btn-flat"
@@ -1139,7 +1088,7 @@ export default function TrainingBatchList() {
   display: flex;
   flex-direction: column;
   width: 100%;
-  min-width: 0; /* 🔥 VERY IMPORTANT */
+  min-width: 0; /*  VERY IMPORTANT */
 }
 
 /* MAIN */
@@ -1149,10 +1098,10 @@ export default function TrainingBatchList() {
   width: 100%;
 }
 
-/* 🔥 THIS WAS YOUR WIDTH ISSUE */
+/*  THIS WAS YOUR WIDTH ISSUE */
 .inner-container {
   width: 100%;
-  max-width: 100%;   /* ❌ remove 1200px restriction */
+  max-width: 100%;   /*  remove 1200px restriction */
   margin: 0;
 }
 

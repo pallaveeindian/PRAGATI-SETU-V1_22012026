@@ -95,8 +95,7 @@ import HomeDashboard from "./pages/StateLoginPortal/Dashboards/HomeDashboard";
 import AssemblerDashboardBatchCreator from "./pages/TMS/BatchCreator/AssemblerDashboardBatchCreator";
 import PreviewBatchCreator from "./pages/TMS/BatchCreator/PreviewBatchCreator"
 import DTPDashboard from "../src/pages/TMS/DTP/DTPDashboard";
-
-
+import PrernaCanteenWrapper from "./pages/PrernaCanteen/PrernaCanteenWrapper.jsx";
 
 export default function App() {
   const { authReady } = useAuth();
@@ -375,11 +374,15 @@ export default function App() {
         <Route element={<ProtectedRoute />}>
           <Route path="/mou-layout" element={<MOULayout />} />
         </Route>
-        <Route
+        {/* <Route
           path="/canteen-form"
           element={<CanteenForm />}
-        />
+        /> */}
 
+        <Route
+          path="/canteen-form"
+          element={<PrernaCanteenWrapper />} // CanteenForm ki jagah ab Wrapper render hoga
+        />
         <Route path="/state-login" element={<StateLogin />} />
         <Route path="/state-dashboard" element={<StateLoginDashboard />} />
         <Route path="/state-home-dashboard" element={<HomeDashboard />} />

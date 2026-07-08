@@ -351,6 +351,11 @@ export default function useUserGeoscope() {
 
             try {
                 const response = await LOOKUP_API.userGeoscopeByUserId(userId);
+                console.log("==================================");
+                console.log("USER ID :", userId);
+                console.log("ROLE ID :", roleId);
+                console.log("GEOSCOPE RESPONSE :", response.data);
+                console.log("==================================");
                 setGeoScope({
                     roleId,
                     ...(response?.data || {})
@@ -385,12 +390,20 @@ export function useCanteenFilters({
     const [blocks, setBlocks] = useState([]);
     const [loadingFilters, setLoadingFilters] = useState(true);
 
-    const roleId = localStorage.getItem("user_role_id") || "";
-    // const canonicalRole = roleId.toLowerCase();
+    // const roleId = localStorage.getItem("user_role_id") || "";
+    // // const canonicalRole = roleId.toLowerCase();
 
-    const isBMM = roleId.includes(1);
-    const isDMM = roleId.includes(2);
-    const isSMM = roleId.includes(3);
+    // const isBMM = roleId.includes(1);
+    // const isDMM = roleId.includes(2);
+    // const isSMM = roleId.includes(3);
+
+    const roleId = Number(localStorage.getItem("user_role_id"));
+
+    const isBMM = roleId === 1;
+    const isDMM = roleId === 2;
+    const isSMM = roleId === 3;
+
+
 
     const safeFirst = (arr) => (Array.isArray(arr) && arr.length ? arr[0] : null);
 

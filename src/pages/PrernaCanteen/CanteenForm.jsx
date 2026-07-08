@@ -7663,8 +7663,10 @@ import React, { useEffect, useState } from "react";
 import { LOOKUP_API, EPSAKHI_API, PRERNA_API } from "../../api/axios";
 import useUserGeoscope, { useCanteenFilters } from "../../Hooks/useUserGeoscope";
 import prernaLogo from '../../assets/prerna.png'
+// import PrernaCanteenTopNav from "../PrernaCanteen/PrernaCanteenTopNav";
+// import PrernaCanteenTabs from "./PrernaCanteenTabs";
 
-export default function CanteenForm() {
+export default function CanteenForm(props) {
     // Geography Dropdown Options State & Pagination Control
     const [shgs, setShgs] = useState([]);
     const [shgPage, setShgPage] = useState(1);
@@ -7690,16 +7692,28 @@ export default function CanteenForm() {
     // Detail Configuration States
     const [canteenType, setCanteenType] = useState("");
     const [otherCanteenType, setOtherCanteenType] = useState("");
-    const [foodType, setFoodType] = useState("");
+    const [foodTypes, setFoodTypes] = useState([]);
     const [otherFoodType, setOtherFoodType] = useState("");
 
     // Model PC Structured States
-    const [aopName, setAopName] = useState("");
-    const [aopMembers, setAopMembers] = useState("");
-    const [accountNo, setAccountNo] = useState("");
-    const [ifsc, setIfsc] = useState("");
-    const [branch, setBranch] = useState("");
-    const [bankName, setBankName] = useState("");
+    // const [aopName, setAopName] = useState("");
+    // const [aopMembers, setAopMembers] = useState("");
+    // const [accountNo, setAccountNo] = useState("");
+    // const [ifsc, setIfsc] = useState("");
+    // const [branch, setBranch] = useState("");
+    // const [bankName, setBankName] = useState("");
+
+    const [modelPCCards, setModelPCCards] = useState([
+        {
+            id: Date.now(),
+            aopName: "",
+            aopMembers: "",
+            accountNo: "",
+            ifsc: "",
+            branch: "",
+            bankName: ""
+        }
+    ]);
 
     // Finance Metrics Configuration States
     const [investment, setInvestment] = useState("");
@@ -7731,6 +7745,9 @@ export default function CanteenForm() {
 
     // 1. Fetch User Scope first
     const { geoScope, loading: geoLoading } = useUserGeoscope();
+    useEffect(() => {
+        console.log("Current GeoScope :", geoScope);
+    }, [geoScope]);
 
     // 2. Feed parameters cleanly down to filter calculations
     const {
@@ -7758,6 +7775,15 @@ export default function CanteenForm() {
 
     const totalIncome = Number(monthlySale || 0);
     const profitLoss = totalIncome - totalExpense;
+    const foodOptions = [
+        "Breakfast",
+        "Lunch",
+        "Dinner",
+        "Tea & Snacks",
+        "Fast Food",
+        "Beverages",
+        "Others"
+    ];
 
     // Debounce processing for SHG search queries
     useEffect(() => {
@@ -7904,6 +7930,19 @@ export default function CanteenForm() {
         const uniqueId = Date.now();
         const activeShgObject = shgs.find(s => (s.code || s.shg_code) === shg);
 
+        // const temporaryMemberItem = {
+        //     id: uniqueId,
+        //     member_code: memberObj.member_code,
+        //     applicant_name: memberObj.applicant_name || memberObj.member_name || "",
+        //     lokos_shg_code: shg,
+        //     lokos_shg_name: activeShgObject ? (activeShgObject.name || activeShgObject.shg_name) : "",
+        //     lokos_clf_code: "",
+        //     clf_name: "Resolving CLF...",
+        //     age: memberObj.age || null,
+        //     gender: memberObj.gender || "Female",
+        //     mobile: memberObj.mobile || "",
+        //     email: memberObj.email || ""
+        // };
         const temporaryMemberItem = {
             id: uniqueId,
             member_code: memberObj.member_code,
@@ -7911,12 +7950,13 @@ export default function CanteenForm() {
             lokos_shg_code: shg,
             lokos_shg_name: activeShgObject ? (activeShgObject.name || activeShgObject.shg_name) : "",
             lokos_clf_code: "",
-            clf_name: "Resolving CLF...",
+            clf_name: "",
             age: memberObj.age || null,
             gender: memberObj.gender || "Female",
             mobile: memberObj.mobile || "",
             email: memberObj.email || ""
         };
+
 
         setSelectedMembers((prev) => [...prev, temporaryMemberItem]);
         setSelectedMember("");
@@ -7929,20 +7969,45 @@ export default function CanteenForm() {
 
             const resolvedClfName = response?.data?.name || response?.data?.clf_name || "CLF Not Found";
             const resolvedClfCode = response?.data?.code || response?.data?.clf_code || "";
+            // if (!resolvedClfCode) {
+            //     setSelectedMembers((prev) =>
+            //         prev.filter((item) => item.id !== uniqueId)
+            //     );
+            //     return;
+            // }
+
+            if (!resolvedClfCode) {
+                return;
+            }
 
             setSelectedMembers((prev) =>
                 prev.map((item) =>
                     item.id === uniqueId ? { ...item, clf_name: resolvedClfName, lokos_clf_code: resolvedClfCode } : item
                 )
             );
-        } catch (err) {
-            console.error("Error resolving individual member CLF context:", err);
-            setSelectedMembers((prev) =>
-                prev.map((item) =>
-                    item.id === uniqueId ? { ...item, clf_name: "Error Resolving" } : item
-                )
-            );
         }
+        // catch (err) {
+        //     console.error("Error resolving individual member CLF context:", err);
+        //     setSelectedMembers((prev) =>
+        //         prev.map((item) =>
+        //             item.id === uniqueId ? { ...item, clf_name: "Error Resolving" } : item
+        //         )
+        //     );
+        // }
+
+        // catch (err) {
+        //     console.error("Error resolving individual member CLF context:", err);
+
+        //     // Remove member if CLF not found
+        //     setSelectedMembers((prev) =>
+        //         prev.filter((item) => item.id !== uniqueId)
+        //     );
+        // }
+
+        catch (err) {
+            console.error("Error resolving individual member CLF context:", err);
+        }
+
     };
 
     const removeMember = (memberCode) => {
@@ -7970,7 +8035,13 @@ export default function CanteenForm() {
 
         // Intercept and resolve custom values for dropdown selectors dynamically
         const finalCanteenTypeValue = canteenType === "Others" ? otherCanteenType : canteenType;
-        const finalFoodTypeValue = foodType === "Others" ? otherFoodType : foodType;
+        // const finalFoodTypeValue = foodType === "Others" ? otherFoodType : foodType;
+        // const finalFoodTypeValue = foodType.map(item =>
+        //     item === "Others" ? otherFoodType : item
+        // );
+        const finalFoodTypeValue = foodTypes.map(item =>
+            item === "Others" ? otherFoodType : item
+        );
 
         try {
             // 1. Structure raw data nodes precisely aligned with server model mapping instructions
@@ -8017,16 +8088,28 @@ export default function CanteenForm() {
                 profit_loss: profitLoss.toString()
             };
 
+            // let modelPcPayload = null;
+            // if (canteenType === "Model PC") {
+            //     modelPcPayload = {
+            //         aop_name: aopName,
+            //         aop_members: aopMembers,
+            //         account_no: accountNo,
+            //         ifsc: ifsc,
+            //         branch: branch,
+            //         bank_name: bankName
+            //     };
+            // }
             let modelPcPayload = null;
-            if (canteenType === "Model PC") {
-                modelPcPayload = {
-                    aop_name: aopName,
-                    aop_members: aopMembers,
-                    account_no: accountNo,
-                    ifsc: ifsc,
-                    branch: branch,
-                    bank_name: bankName
-                };
+
+            if (canteenType === "Model Prerna Canteen") {
+                modelPcPayload = modelPCCards.map(card => ({
+                    aop_name: card.aopName,
+                    aop_members: card.aopMembers,
+                    account_no: card.accountNo,
+                    ifsc: card.ifsc,
+                    branch: card.branch,
+                    bank_name: card.bankName
+                }));
             }
 
             const licensesText = [];
@@ -8110,65 +8193,175 @@ export default function CanteenForm() {
 
     const GlobalLoadingState = geoLoading || filterLoading;
 
+    const addModelPCCard = () => {
+        setModelPCCards(prev => [
+            ...prev,
+            {
+                id: Date.now(),
+                aopName: "",
+                aopMembers: "",
+                accountNo: "",
+                ifsc: "",
+                branch: "",
+                bankName: ""
+            }
+        ]);
+    };
+
+    const removeModelPCCard = (id) => {
+        setModelPCCards(prev => prev.filter(card => card.id !== id));
+    };
+
+    const updateModelPCCard = (id, field, value) => {
+        setModelPCCards(prev =>
+            prev.map(card =>
+                card.id === id
+                    ? { ...card, [field]: value }
+                    : card
+            )
+        );
+    };
     return (
-        <div className="container">
-            <div className="heading-section">
-                <img src={prernaLogo} alt="Prerna Logo" className="logo" />
+        <>
+            {/* <PrernaCanteenTopNav onBackClick={props.onBackClick} /> */}
+            {/* <PrernaCanteenTabs /> */}
+            <div className="container">
+                <div className="heading-section">
+                    <img src={prernaLogo} alt="Prerna Logo" className="logo" />
+                </div>
+                <h1>Prerna Canteen Survey Form</h1>
+
+                {/* Location Details */}
+                <div className="section">
+                    <h2>Location Details {GlobalLoadingState && <span style={{ fontSize: '13px', color: '#3d6ba6', marginLeft: '10px' }}>(Loading regional boundaries...)</span>}</h2>
+
+                    {/* <div className="grid">
+        <div>
+            <label>District</label>
+            <select
+                value={district}
+                onChange={(e) => {
+                    setDistrict(e.target.value);
+                    setBlock("");
+                }}
+                disabled={isBMM || isDMM || GlobalLoadingState}
+            >
+                {!isBMM && !isDMM && <option value="">Select District</option>}
+                {Array.isArray(districts) && districts.map((d) => (
+                    <option key={`district-${d.district_id}`} value={d.district_id}>
+                        {d.district_name_en || d.name}
+                    </option>
+                ))}
+            </select>
+        </div>
+
+        <div>
+            <label>Block</label>
+            <select
+                value={block}
+                onChange={(e) => setBlock(e.target.value)}
+                disabled={isBMM || !district || GlobalLoadingState}
+            >
+                {!isBMM && <option value="">Select Block</option>}
+                {Array.isArray(blocks) && blocks.map((b) => (
+                    <option key={`block-${b.block_id}`} value={b.block_id}>
+                        {b.block_name_en || b.name}
+                    </option>
+                ))}
+            </select>
+        </div>
+
+        <div>
+            <label>SHG</label>
+            <div className="paginated-select-container">
+                <input
+                    type="text"
+                    className="search-input-field"
+                    placeholder="🔍 Type to search SHG..."
+                    value={shgSearchTerm}
+                    onChange={(e) => setShgSearchTerm(e.target.value)}
+                    disabled={!block || GlobalLoadingState}
+                />
+
+                <select
+                    value={shg}
+                    onChange={(e) => setShg(e.target.value)}
+                    disabled={!block || GlobalLoadingState}
+                >
+                    <option value="">
+                        {loadingShgs ? "Loading SHG entries..." : "Select SHG"}
+                    </option>
+                    {Array.isArray(shgs) && shgs.map((s) => (
+                        <option key={`shg-${s.code || s.shg_code}`} value={s.code || s.shg_code}>
+                            {s.name || s.shg_name}
+                        </option>
+                    ))}
+                </select>
+                {block && hasMoreShgs && (
+                    <button
+                        type="button"
+                        className="load-more-btn"
+                        onClick={loadMoreShgs}
+                        disabled={loadingShgs}
+                    >
+                        {loadingShgs ? "Searching..." : "Load More SHGs"}
+                    </button>
+                )}
             </div>
-            <h1>Prerna Canteen Survey Form</h1>
+        </div>
+    </div> */}
 
-            {/* Location Details */}
-            <div className="section">
-                <h2>Location Details {GlobalLoadingState && <span style={{ fontSize: '13px', color: '#3d6ba6', marginLeft: '10px' }}>(Loading regional boundaries...)</span>}</h2>
+                    <div className="grid">
+                        <div>
+                            <label>DISTRICT</label>
+                            <select
+                                value={district}
+                                onChange={(e) => {
+                                    setDistrict(e.target.value);
+                                    setBlock("");
+                                }}
+                                disabled={isBMM || isDMM || GlobalLoadingState}
+                            >
+                                {!isBMM && !isDMM && <option value="">Select District</option>}
+                                {districts?.map((d) => (
+                                    <option key={d.district_id} value={d.district_id}>
+                                        {d.district_name_en || d.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                {/* <div className="grid">
-                    <div>
-                        <label>District</label>
-                        <select
-                            value={district}
-                            onChange={(e) => {
-                                setDistrict(e.target.value);
-                                setBlock("");
-                            }}
-                            disabled={isBMM || isDMM || GlobalLoadingState}
-                        >
-                            {!isBMM && !isDMM && <option value="">Select District</option>}
-                            {Array.isArray(districts) && districts.map((d) => (
-                                <option key={`district-${d.district_id}`} value={d.district_id}>
-                                    {d.district_name_en || d.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
+                        <div>
+                            <label>BLOCK</label>
+                            <select
+                                value={block}
+                                onChange={(e) => setBlock(e.target.value)}
+                                disabled={isBMM || !district || GlobalLoadingState}
+                            >
+                                {!isBMM && <option value="">Select Block</option>}
+                                {blocks?.map((b) => (
+                                    <option key={b.block_id} value={b.block_id}>
+                                        {b.block_name_en || b.name}
+                                    </option>
+                                ))}
+                            </select>
+                        </div>
 
-                    <div>
-                        <label>Block</label>
-                        <select
-                            value={block}
-                            onChange={(e) => setBlock(e.target.value)}
-                            disabled={isBMM || !district || GlobalLoadingState}
-                        >
-                            {!isBMM && <option value="">Select Block</option>}
-                            {Array.isArray(blocks) && blocks.map((b) => (
-                                <option key={`block-${b.block_id}`} value={b.block_id}>
-                                    {b.block_name_en || b.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label>SHG</label>
-                        <div className="paginated-select-container">
+                        <div>
+                            <label>SHG SEARCH</label>
                             <input
                                 type="text"
                                 className="search-input-field"
-                                placeholder="🔍 Type to search SHG..."
+                                placeholder="Type to search SHG..."
                                 value={shgSearchTerm}
                                 onChange={(e) => setShgSearchTerm(e.target.value)}
-                                disabled={!block || GlobalLoadingState}
-                            />
+                                disabled={!block || GlobalLoadingState} />
+                        </div>
+                    </div>
 
+                    <div className="shg-row">
+                        <div className="shg-select-wrapper">
+                            <label>SELECT SHG</label>
                             <select
                                 value={shg}
                                 onChange={(e) => setShg(e.target.value)}
@@ -8177,483 +8370,640 @@ export default function CanteenForm() {
                                 <option value="">
                                     {loadingShgs ? "Loading SHG entries..." : "Select SHG"}
                                 </option>
-                                {Array.isArray(shgs) && shgs.map((s) => (
-                                    <option key={`shg-${s.code || s.shg_code}`} value={s.code || s.shg_code}>
+                                {shgs?.map((s) => (
+                                    <option
+                                        key={s.code || s.shg_code}
+                                        value={s.code || s.shg_code}
+                                    >
                                         {s.name || s.shg_name}
                                     </option>
                                 ))}
                             </select>
-                            {block && hasMoreShgs && (
-                                <button
-                                    type="button"
-                                    className="load-more-btn"
-                                    onClick={loadMoreShgs}
-                                    disabled={loadingShgs}
-                                >
-                                    {loadingShgs ? "Searching..." : "Load More SHGs"}
-                                </button>
-                            )}
-                        </div>
-                    </div>
-                </div> */}
-
-                <div className="grid">
-                    <div>
-                        <label>DISTRICT</label>
-                        <select
-                            value={district}
-                            onChange={(e) => {
-                                setDistrict(e.target.value);
-                                setBlock("");
-                            }}
-                            disabled={isBMM || isDMM || GlobalLoadingState}
-                        >
-                            {!isBMM && !isDMM && <option value="">Select District</option>}
-                            {districts?.map((d) => (
-                                <option key={d.district_id} value={d.district_id}>
-                                    {d.district_name_en || d.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label>BLOCK</label>
-                        <select
-                            value={block}
-                            onChange={(e) => setBlock(e.target.value)}
-                            disabled={isBMM || !district || GlobalLoadingState}
-                        >
-                            {!isBMM && <option value="">Select Block</option>}
-                            {blocks?.map((b) => (
-                                <option key={b.block_id} value={b.block_id}>
-                                    {b.block_name_en || b.name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    <div>
-                        <label>SHG SEARCH</label>
-                        <input
-                            type="text"
-                            className="search-input-field"
-                            placeholder="Type to search SHG..."
-                            value={shgSearchTerm}
-                            onChange={(e) => setShgSearchTerm(e.target.value)}
-                            disabled={!block || GlobalLoadingState}
-                        />
-                    </div>
-                </div>
-
-                <div className="shg-row">
-                    <div className="shg-select-wrapper">
-                        <label>SELECT SHG</label>
-                        <select
-                            value={shg}
-                            onChange={(e) => setShg(e.target.value)}
-                            disabled={!block || GlobalLoadingState}
-                        >
-                            <option value="">
-                                {loadingShgs ? "Loading SHG entries..." : "Select SHG"}
-                            </option>
-                            {shgs?.map((s) => (
-                                <option
-                                    key={s.code || s.shg_code}
-                                    value={s.code || s.shg_code}
-                                >
-                                    {s.name || s.shg_name}
-                                </option>
-                            ))}
-                        </select>
-                    </div>
-
-                    {block && hasMoreShgs && (
-                        <button
-                            type="button"
-                            className="load-more-btn"
-                            onClick={loadMoreShgs}
-                            disabled={loadingShgs}
-                        >
-                            ↻ {loadingShgs ? "Loading..." : "Load more"}
-                        </button>
-                    )}
-                </div>
-
-                {Array.isArray(availableMembers) && availableMembers.length > 0 && (
-                    <>
-                        <div className="memberSection">
-                            <label>SHG Members</label>
-                            <div className="paginated-select-container">
-                                <select
-                                    value={selectedMember}
-                                    onChange={(e) => {
-                                        setSelectedMember(e.target.value);
-                                        addMember(e.target.value);
-                                    }}
-                                >
-                                    <option value="">Select Member (Name - Code)</option>
-                                    {availableMembers.map((member) => (
-                                        <option key={`member-${member.member_code}`} value={member.member_code}>
-                                            {member.applicant_name || member.member_name} ({member.member_code})
-                                        </option>
-                                    ))}
-                                </select>
-                                {hasMoreMembers && (
-                                    <button
-                                        type="button"
-                                        className="load-more-btn"
-                                        onClick={loadMoreMembers}
-                                        disabled={loadingMembers}
-                                    >
-                                        {loadingMembers ? "Loading..." : "Load More Members"}
-                                    </button>
-                                )}
-                            </div>
                         </div>
 
-                        <div className="chips">
-                            {selectedMembers.map((member, idx) => (
-                                <div className="chip" key={`chip-${member.member_code}-${idx}`}>
-                                    <span>{member.applicant_name} ({member.member_code}) - <strong>CLF: {member.clf_name}</strong></span>
-                                    <button type="button" onClick={() => removeMember(member.member_code)}>×</button>
-                                </div>
-                            ))}
-                        </div>
-                    </>
-                )}
-            </div>
-
-            {/* Canteen Details */}
-            {/* <div className="section">
-                <h2>Canteen Details</h2>
-
-                <div>
-                    <label>Type Of Canteen</label>
-                    <select value={canteenType} onChange={(e) => setCanteenType(e.target.value)}>
-                        <option value="">Select</option>
-                        <option>Prerna Canteen</option>
-                        <option>Model PC</option>
-                        <option>Prerna Cafe</option>
-                        <option>Sarvodaya Vidyalaya</option>
-                        <option>Janjatiya</option>
-                        <option>Others</option>
-                    </select>
-                    {canteenType === "Others" && (
-                        <input
-                            type="text"
-                            style={{ marginTop: "10px" }}
-                            placeholder="Please specify custom canteen type..."
-                            value={otherCanteenType}
-                            onChange={(e) => setOtherCanteenType(e.target.value)}
-                        />
-                    )}
-                </div>
-
-                <div className="fieldGroup">
-                    <label>Type Of Food</label>
-                    <select value={foodType} onChange={(e) => setFoodType(e.target.value)}>
-                        <option value="">Select Food Type</option>
-                        <option>Breakfast</option>
-                        <option>Lunch</option>
-                        <option>Dinner</option>
-                        <option>Tea & Snacks</option>
-                        <option>Fast Food</option>
-                        <option>Beverages</option>
-                        <option>Others</option>
-                    </select>
-                    {foodType === "Others" && (
-                        <input
-                            type="text"
-                            style={{ marginTop: "10px" }}
-                            placeholder="Please specify custom food type..."
-                            value={otherFoodType}
-                            onChange={(e) => setOtherFoodType(e.target.value)}
-                        />
-                    )}
-                </div>
-
-                {canteenType === "Model PC" && (
-                    <div className="section">
-                        <h3>Model PC Details</h3>
-                        <div className="grid">
-                            <input placeholder="Name Of AOP" value={aopName} onChange={(e) => setAopName(e.target.value)} />
-                            <input placeholder="No Of Members In AOP" value={aopMembers} onChange={(e) => setAopMembers(e.target.value)} />
-                            <input placeholder="A/C Number" value={accountNo} onChange={(e) => setAccountNo(e.target.value)} />
-                            <input placeholder="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value)} />
-                            <input placeholder="Branch" value={branch} onChange={(e) => setBranch(e.target.value)} />
-                            <input placeholder="Bank Name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
-                        </div>
-                    </div>
-                )}
-            </div> */}
-
-            <div className="section">
-                <h2>Canteen Details</h2>
-
-                <div className="canteen-grid">
-                    <div>
-                        <label>Type Of Canteen</label>
-                        <select
-                            value={canteenType}
-                            onChange={(e) => setCanteenType(e.target.value)}
-                        >
-                            <option value="">Select</option>
-                            <option>Prerna Canteen</option>
-                            <option>Model PC</option>
-                            <option>Prerna Cafe</option>
-                            <option>Sarvodaya Vidyalaya</option>
-                            <option>Janjatiya</option>
-                            <option>Others</option>
-                        </select>
-
-                        {canteenType === "Others" && (
-                            <input
-                                type="text"
-                                style={{ marginTop: "10px" }}
-                                placeholder="Please specify custom canteen type..."
-                                value={otherCanteenType}
-                                onChange={(e) => setOtherCanteenType(e.target.value)}
-                            />
+                        {block && hasMoreShgs && (
+                            <button
+                                type="button"
+                                className="load-more-btn"
+                                onClick={loadMoreShgs}
+                                disabled={loadingShgs}
+                            >
+                                ↻ {loadingShgs ? "Loading..." : "Load more"}
+                            </button>
                         )}
                     </div>
 
-                    <div>
-                        <label>Type Of Food</label>
-                        <select
-                            value={foodType}
-                            onChange={(e) => setFoodType(e.target.value)}
-                        >
-                            <option value="">Select Food Type</option>
-                            <option>Breakfast</option>
-                            <option>Lunch</option>
-                            <option>Dinner</option>
-                            <option>Tea & Snacks</option>
-                            <option>Fast Food</option>
-                            <option>Beverages</option>
-                            <option>Others</option>
-                        </select>
-
-                        {foodType === "Others" && (
-                            <input
-                                type="text"
-                                style={{ marginTop: "10px" }}
-                                placeholder="Please specify custom food type..."
-                                value={otherFoodType}
-                                onChange={(e) => setOtherFoodType(e.target.value)}
-                            />
-                        )}
-                    </div>
-                </div>
-                {canteenType === "Model PC" && (
-                    <div className="section">
-                        <h3>Model PC Details</h3>
-                        <div className="grid">
-                            <input placeholder="Name Of AOP" value={aopName} onChange={(e) => setAopName(e.target.value)} />
-                            <input placeholder="No Of Members In AOP" value={aopMembers} onChange={(e) => setAopMembers(e.target.value)} />
-                            <input placeholder="A/C Number" value={accountNo} onChange={(e) => setAccountNo(e.target.value)} />
-                            <input placeholder="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value)} />
-                            <input placeholder="Branch" value={branch} onChange={(e) => setBranch(e.target.value)} />
-                            <input placeholder="Bank Name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
-                        </div>
-                    </div>
-                )}
-            </div>
-
-
-            {/* Packaged Food Section */}
-            {/* <div className="section">
-                <h2>Are any other packaged food products manufactured by SHGs also being sold at the canteen?</h2>
-                <select value={packedFood} onChange={(e) => setPackedFood(e.target.value)}>
-                    <option value="">Select</option>
-                    <option value="Yes">Yes</option>
-                    <option value="No">No</option>
-                </select> */}
-
-            <div className="two-column-sections">
-
-                <div className="section">
-                    <h2>Are any other packaged food products manufactured by SHGs also being sold at the canteen?</h2>
-
-                    <select value={packedFood} onChange={(e) => setPackedFood(e.target.value)}>
-                        <option value="">Select</option>
-                        <option value="Yes">Yes</option>
-                        <option value="No">No</option>
-                    </select>
-
-                    {/* 
-                {packedFood === "Yes" && (
-                    <div className="productGrid">
-                        {["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen", "Others"].map((item) => (
-                            <label key={item}>
-                                <input type="checkbox" checked={packedProducts.includes(item)} onChange={() => toggleProduct(item)} />
-                                {item}
-                            </label>
-                        ))}
-                    </div>
-                )} */}
-
-                    {packedFood === "Yes" && (
+                    {Array.isArray(availableMembers) && availableMembers.length > 0 && (
                         <>
-                            <div className="productGrid">
-                                {["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen", "Others"].map((item) => {
-                                    // Determine if checked: standard items use .includes(), 
-                                    // "Others" is checked if there's any value in the array that isn't a standard item
-                                    const isChecked = item === "Others"
-                                        ? packedProducts.some(p => !["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"].includes(p))
-                                        : packedProducts.includes(item);
-
-                                    return (
-                                        <label key={item}>
-                                            <input
-                                                type="checkbox"
-                                                checked={isChecked}
-                                                onChange={() => toggleProduct(item)}
-                                            />
-                                            {item}
-                                        </label>
-                                    );
-                                })}
+                            <div className="memberSection">
+                                <label>SHG Members</label>
+                                <div className="paginated-select-container">
+                                    <select
+                                        value={selectedMember}
+                                        onChange={(e) => {
+                                            setSelectedMember(e.target.value);
+                                            addMember(e.target.value);
+                                        }}
+                                    >
+                                        <option value="">Select Member (Name - Code)</option>
+                                        {availableMembers.map((member) => (
+                                            <option key={`member-${member.member_code}`} value={member.member_code}>
+                                                {member.applicant_name || member.member_name} ({member.member_code})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {hasMoreMembers && (
+                                        <button
+                                            type="button"
+                                            className="load-more-btn"
+                                            onClick={loadMoreMembers}
+                                            disabled={loadingMembers}
+                                        >
+                                            {loadingMembers ? "Loading..." : "Load More Members"}
+                                        </button>
+                                    )}
+                                </div>
                             </div>
 
-                            {/* If there's any string in packedProducts that is NOT a standard item,
-          it means the user clicked "Others". We show the typable text input box.
-        */}
-                            {packedProducts.some(p => !["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"].includes(p)) && (
-                                <div style={{ marginTop: "12px" }}>
-                                    <label style={{ fontSize: "13px", fontWeight: "600" }}>Specify Other Product Name</label>
-                                    <input
-                                        type="text"
-                                        placeholder="Type custom product name here..."
-                                        // Find the custom string inside the same packedProducts array to display it
-                                        value={packedProducts.find(p => !["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"].includes(p)) || ""}
-                                        onChange={(e) => {
-                                            const val = e.target.value;
-                                            const standardItems = ["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"];
+                            <div className="chips">
+                                {selectedMembers.map((member, idx) => (
+                                    <div className="chip" key={`chip-${member.member_code}-${idx}`}>
+                                        <span>{member.applicant_name} ({member.member_code}) - <strong>CLF: {member.clf_name}</strong></span>
+                                        <button type="button" onClick={() => removeMember(member.member_code)}>×</button>
+                                    </div>
+                                ))}
+                            </div>
 
-                                            // Update the custom value inside the same array line
-                                            setPackedProducts(prev => {
-                                                const filtered = prev.filter(p => standardItems.includes(p));
-                                                return [...filtered, val]; // keeps standard ones, appends the typed text
-                                            });
-                                        }}
-                                    />
-                                </div>
-                            )}
+
+                            {/* <div className="chips">
+                                {selectedMembers
+                                    .filter(
+                                        (member) =>
+                                            member.lokos_clf_code &&
+                                            member.clf_name &&
+                                            member.clf_name !== "Error Resolving" &&
+                                            member.clf_name !== "CLF Not Found"
+                                    )
+                                    .map((member, idx) => (
+                                        <div className="chip" key={`chip-${member.member_code}-${idx}`}>
+                                            <span>
+                                                {member.applicant_name} ({member.member_code}) -
+                                                <strong> CLF: {member.clf_name}</strong>
+                                            </span>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => removeMember(member.member_code)}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                            </div> */}
                         </>
                     )}
                 </div>
 
+                {/* Canteen Details */}
+                {/* <div className="section">
+        <h2>Canteen Details</h2>
 
-                {/* Training Section */}
+        <div>
+            <label>Type Of Canteen</label>
+            <select value={canteenType} onChange={(e) => setCanteenType(e.target.value)}>
+                <option value="">Select</option>
+                <option>Prerna Canteen</option>
+                <option>Model PC</option>
+                <option>Prerna Cafe</option>
+                <option>Sarvodaya Vidyalaya</option>
+                <option>Janjatiya</option>
+                <option>Others</option>
+            </select>
+            {canteenType === "Others" && (
+                <input
+                    type="text"
+                    style={{ marginTop: "10px" }}
+                    placeholder="Please specify custom canteen type..."
+                    value={otherCanteenType}
+                    onChange={(e) => setOtherCanteenType(e.target.value)}
+                />
+            )}
+        </div>
+
+        <div className="fieldGroup">
+            <label>Type Of Food</label>
+            <select value={foodType} onChange={(e) => setFoodType(e.target.value)}>
+                <option value="">Select Food Type</option>
+                <option>Breakfast</option>
+                <option>Lunch</option>
+                <option>Dinner</option>
+                <option>Tea & Snacks</option>
+                <option>Fast Food</option>
+                <option>Beverages</option>
+                <option>Others</option>
+            </select>
+            {foodType === "Others" && (
+                <input
+                    type="text"
+                    style={{ marginTop: "10px" }}
+                    placeholder="Please specify custom food type..."
+                    value={otherFoodType}
+                    onChange={(e) => setOtherFoodType(e.target.value)}
+                />
+            )}
+        </div>
+
+        {canteenType === "Model PC" && (
+            <div className="section">
+                <h3>Model PC Details</h3>
+                <div className="grid">
+                    <input placeholder="Name Of AOP" value={aopName} onChange={(e) => setAopName(e.target.value)} />
+                    <input placeholder="No Of Members In AOP" value={aopMembers} onChange={(e) => setAopMembers(e.target.value)} />
+                    <input placeholder="A/C Number" value={accountNo} onChange={(e) => setAccountNo(e.target.value)} />
+                    <input placeholder="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value)} />
+                    <input placeholder="Branch" value={branch} onChange={(e) => setBranch(e.target.value)} />
+                    <input placeholder="Bank Name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                </div>
+            </div>
+        )}
+    </div> */}
+
                 <div className="section">
-                    <h2>Have you received any training related to operating or managing the canteen?</h2>
-                    <select value={training} onChange={(e) => setTraining(e.target.value)}>
-                        <option value="">Select</option>
-                        <option>Yes</option>
-                        <option>No</option>
-                    </select>
+                    <h2>Canteen Details</h2>
 
-                    {training === "Yes" && (
-                        <div className="grid" style={{ marginTop: "15px" }}>
-                            <input
-                                placeholder="Training Source"
-                                value={trainingSource}
-                                onChange={(e) => setTrainingSource(e.target.value)}
-                            />
-                            <input
-                                placeholder="Training Amount"
-                                value={trainingAmount}
-                                onChange={(e) => setTrainingAmount(e.target.value)}
-                            />
+                    <div className="canteen-grid">
+                        <div>
+                            <label>Type Of Canteen</label>
+                            <select
+                                value={canteenType}
+                                onChange={(e) => setCanteenType(e.target.value)}
+                            >
+                                <option value="">Select</option>
+                                <option>Prerna Canteen</option>
+                                <option>Model Prerna Canteen</option>
+                                <option>Prerna Cafe</option>
+                                <option>Sarvodaya Vidyalaya</option>
+                                <option>Janjatiya</option>
+                                <option>Others</option>
+                            </select>
+
+                            {canteenType === "Others" && (
+                                <input
+                                    type="text"
+                                    style={{ marginTop: "10px" }}
+                                    placeholder="Please specify custom canteen type..."
+                                    value={otherCanteenType}
+                                    onChange={(e) => setOtherCanteenType(e.target.value)} />
+                            )}
+                        </div>
+
+                        {/* <div>
+                            <label>Type Of Food</label>
+                            <select
+                                value={foodType}
+                                onChange={(e) => setFoodType(e.target.value)}
+                            >
+                                <option value="">Select Food Type</option>
+                                <option>Breakfast</option>
+                                <option>Lunch</option>
+                                <option>Dinner</option>
+                                <option>Tea & Snacks</option>
+                                <option>Fast Food</option>
+                                <option>Beverages</option>
+                                <option>Others</option>
+                            </select>
+
+                            {foodType === "Others" && (
+                                <input
+                                    type="text"
+                                    style={{ marginTop: "10px" }}
+                                    placeholder="Please specify custom food type..."
+                                    value={otherFoodType}
+                                    onChange={(e) => setOtherFoodType(e.target.value)} />
+                            )}
+                        </div> */}
+                        {/* 
+                        <div>
+                            <label>Type Of Food</label>
+
+                            <select
+                                multiple
+                                value={foodType}
+                                onChange={(e) => {
+                                    const selectedOptions = Array.from(
+                                        e.target.selectedOptions,
+                                        option => option.value
+                                    );
+                                    setFoodType(selectedOptions);
+                                }}
+                                style={{ height: "180px" }}
+                            >
+                                <option value="Breakfast">Breakfast</option>
+                                <option value="Lunch">Lunch</option>
+                                <option value="Dinner">Dinner</option>
+                                <option value="Tea & Snacks">Tea & Snacks</option>
+                                <option value="Fast Food">Fast Food</option>
+                                <option value="Beverages">Beverages</option>
+                                <option value="Others">Others</option>
+                            </select>
+
+                            {foodType.includes("Others") && (
+                                <input
+                                    type="text"
+                                    style={{ marginTop: "10px" }}
+                                    placeholder="Please specify custom food type..."
+                                    value={otherFoodType}
+                                    onChange={(e) => setOtherFoodType(e.target.value)}
+                                />
+                            )}
+                        </div> */}
+
+                        <div>
+                            <label>Type Of Food</label>
+
+                            <select
+                                value=""
+                                onChange={(e) => {
+                                    const value = e.target.value;
+
+                                    if (!value) return;
+
+                                    if (!foodTypes.includes(value)) {
+                                        setFoodTypes([...foodTypes, value]);
+                                    }
+
+                                    e.target.value = "";
+                                }}
+                            >
+                                <option value="">Select Food Type</option>
+
+                                {foodOptions
+                                    .filter(option => !foodTypes.includes(option))
+                                    .map(option => (
+                                        <option key={option} value={option}>
+                                            {option}
+                                        </option>
+                                    ))}
+                            </select>
+
+                            {/* Selected Food Types */}
+                            {foodTypes.length > 0 && (
+                                <div
+                                    className="chips"
+                                    style={{
+                                        marginTop: "12px",
+                                        display: "flex",
+                                        flexWrap: "wrap",
+                                        gap: "10px"
+                                    }}
+                                >
+                                    {foodTypes.map((item) => (
+                                        <div
+                                            key={item}
+                                            className="chip"
+                                            style={{
+                                                display: "flex",
+                                                alignItems: "center",
+                                                gap: "8px",
+                                                background: "#2563eb",
+                                                color: "#fff",
+                                                padding: "8px 14px",
+                                                borderRadius: "30px"
+                                            }}
+                                        >
+                                            <span>{item}</span>
+
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setFoodTypes(foodTypes.filter(f => f !== item));
+
+                                                    if (item === "Others") {
+                                                        setOtherFoodType("");
+                                                    }
+                                                }}
+                                                style={{
+                                                    background: "transparent",
+                                                    border: "none",
+                                                    color: "#fff",
+                                                    cursor: "pointer",
+                                                    fontSize: "16px",
+                                                    fontWeight: "bold"
+                                                }}
+                                            >
+                                                ×
+                                            </button>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Others Textbox */}
+                            {foodTypes.includes("Others") && (
+                                <input
+                                    type="text"
+                                    style={{ marginTop: "12px" }}
+                                    placeholder="Please specify custom food type..."
+                                    value={otherFoodType}
+                                    onChange={(e) => setOtherFoodType(e.target.value)}
+                                />
+                            )}
+                        </div>
+
+
+                    </div>
+                    {/* {canteenType === "Model Prerna Canteen" && (
+                        <div className="section">
+                            <h3>Model Prerna Canteen Details</h3>
+                            <div className="grid">
+                                <input placeholder="Name Of AOP" value={aopName} onChange={(e) => setAopName(e.target.value)} />
+                                <input placeholder="No Of Members In AOP" value={aopMembers} onChange={(e) => setAopMembers(e.target.value)} />
+                                <input placeholder="A/C Number" value={accountNo} onChange={(e) => setAccountNo(e.target.value)} />
+                                <input placeholder="IFSC" value={ifsc} onChange={(e) => setIfsc(e.target.value)} />
+                                <input placeholder="Branch" value={branch} onChange={(e) => setBranch(e.target.value)} />
+                                <input placeholder="Bank Name" value={bankName} onChange={(e) => setBankName(e.target.value)} />
+                            </div>
+                        </div>
+                    )} */}
+
+                    {canteenType === "Model Prerna Canteen" && (
+                        <div className="section">
+                            <div className="card-header">
+                                <h3>Model Prerna Canteen Details</h3>
+
+                                <button
+                                    type="button"
+                                    className="add-card-btn"
+                                    onClick={addModelPCCard}
+                                >
+                                    + Add AOP
+                                </button>
+                            </div>
+
+                            {modelPCCards.map((card, index) => (
+                                <div className="model-card" key={card.id}>
+
+                                    <div className="model-card-title">
+                                        <span>AOP #{index + 1}</span>
+
+                                        {modelPCCards.length > 1 && (
+                                            <button
+                                                type="button"
+                                                className="delete-card-btn"
+                                                onClick={() => removeModelPCCard(card.id)}
+                                            >
+                                                ✕
+                                            </button>
+                                        )}
+                                    </div>
+
+                                    <div className="grid">
+
+                                        <input
+                                            placeholder="Name Of AOP"
+                                            value={card.aopName}
+                                            onChange={(e) =>
+                                                updateModelPCCard(card.id, "aopName", e.target.value)
+                                            }
+                                        />
+
+                                        <input
+                                            placeholder="No Of Members In AOP"
+                                            value={card.aopMembers}
+                                            onChange={(e) =>
+                                                updateModelPCCard(card.id, "aopMembers", e.target.value)
+                                            }
+                                        />
+
+                                        <input
+                                            placeholder="A/C Number"
+                                            value={card.accountNo}
+                                            onChange={(e) =>
+                                                updateModelPCCard(card.id, "accountNo", e.target.value)
+                                            }
+                                        />
+
+                                        <input
+                                            placeholder="IFSC"
+                                            value={card.ifsc}
+                                            onChange={(e) =>
+                                                updateModelPCCard(card.id, "ifsc", e.target.value)
+                                            }
+                                        />
+
+                                        <input
+                                            placeholder="Branch"
+                                            value={card.branch}
+                                            onChange={(e) =>
+                                                updateModelPCCard(card.id, "branch", e.target.value)
+                                            }
+                                        />
+
+                                        <input
+                                            placeholder="Bank Name"
+                                            value={card.bankName}
+                                            onChange={(e) =>
+                                                updateModelPCCard(card.id, "bankName", e.target.value)
+                                            }
+                                        />
+
+                                    </div>
+
+                                </div>
+                            ))}
                         </div>
                     )}
                 </div>
-            </div>
 
-            {/* Financial Details */}
-            <div className="section">
-                <h2>Financial Details</h2>
-                <div className="grid">
-                    <div>
-                        <label>Total Investment</label>
-                        <input placeholder="Total Investment" value={investment} onChange={(e) => setInvestment(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Monthly Sale</label>
-                        <input placeholder="Monthly Sale" value={monthlySale} onChange={(e) => setMonthlySale(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Rent</label>
-                        <input placeholder="Rent" value={rent} onChange={(e) => setRent(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Salary</label>
-                        <input placeholder="Salary" value={salary} onChange={(e) => setSalary(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Electricity</label>
-                        <input placeholder="Electricity" value={electricity} onChange={(e) => setElectricity(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Miscellaneous</label>
-                        <input placeholder="Miscellaneous" value={miscellaneous} onChange={(e) => setMiscellaneous(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Other Expense</label>
-                        <input placeholder="Other Expense" value={otherExpense} onChange={(e) => setOtherExpense(e.target.value)} />
-                    </div>
-                    <div>
-                        <label>Total Income (Read Only)</label>
-                        <input value={totalIncome} readOnly placeholder="Total Income" />
-                    </div>
-                    <div>
-                        <label>Total Expense (Read Only)</label>
-                        <input value={totalExpense} readOnly placeholder="Total Expense" />
-                    </div>
-                    <div>
-                        <label>Profit / Loss (Read Only)</label>
-                        <input value={profitLoss} readOnly placeholder="Profit/Loss" />
-                    </div>
-                </div>
-            </div>
 
-            {/* Certificates & Licensing Documentation */}
-            <div className="section">
-                <h2>Certificates & Licensing</h2>
+                {/* Packaged Food Section */}
+                {/* <div className="section">
+        <h2>Are any other packaged food products manufactured by SHGs also being sold at the canteen?</h2>
+        <select value={packedFood} onChange={(e) => setPackedFood(e.target.value)}>
+            <option value="">Select</option>
+            <option value="Yes">Yes</option>
+            <option value="No">No</option>
+        </select> */}
 
-                <div className="uploadBox">
-                    <label htmlFor="fssai-upload" className="upload-card">
-                        <div className="upload-icon">⬆</div>
-                        <div className="upload-title">Upload FSSAI licence</div>
-                        <div className="upload-subtitle">
-                            PDF, JPG or PNG
-                        </div>
+                <div className="two-column-sections">
 
-                        {fssaiFile && (
-                            <div className="file-name">
-                                {fssaiFile.name}
+                    <div className="section">
+                        <h2>Are any other packaged food products manufactured by SHGs also being sold at the canteen?</h2>
+
+                        <select value={packedFood} onChange={(e) => setPackedFood(e.target.value)}>
+                            <option value="">Select</option>
+                            <option value="Yes">Yes</option>
+                            <option value="No">No</option>
+                        </select>
+
+                        {/*
+{packedFood === "Yes" && (
+    <div className="productGrid">
+        {["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen", "Others"].map((item) => (
+            <label key={item}>
+                <input type="checkbox" checked={packedProducts.includes(item)} onChange={() => toggleProduct(item)} />
+                {item}
+            </label>
+        ))}
+    </div>
+)} */}
+
+                        {packedFood === "Yes" && (
+                            <>
+                                <div className="productGrid">
+                                    {["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen", "Others"].map((item) => {
+                                        // Determine if checked: standard items use .includes(), 
+                                        // "Others" is checked if there's any value in the array that isn't a standard item
+                                        const isChecked = item === "Others"
+                                            ? packedProducts.some(p => !["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"].includes(p))
+                                            : packedProducts.includes(item);
+
+                                        return (
+                                            <label key={item}>
+                                                <input
+                                                    type="checkbox"
+                                                    checked={isChecked}
+                                                    onChange={() => toggleProduct(item)} />
+                                                {item}
+                                            </label>
+                                        );
+                                    })}
+                                </div>
+
+                                {/* If there's any string in packedProducts that is NOT a standard item,
+it means the user clicked "Others". We show the typable text input box.
+*/}
+                                {packedProducts.some(p => !["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"].includes(p)) && (
+                                    <div style={{ marginTop: "12px" }}>
+                                        <label style={{ fontSize: "13px", fontWeight: "600" }}>Specify Other Product Name</label>
+                                        <input
+                                            type="text"
+                                            placeholder="Type custom product name here..."
+                                            // Find the custom string inside the same packedProducts array to display it
+                                            value={packedProducts.find(p => !["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"].includes(p)) || ""}
+                                            onChange={(e) => {
+                                                const val = e.target.value;
+                                                const standardItems = ["Spices", "Edible Oil", "Chips", "Papad", "Pickle", "Sweets", "Biscuits", "Namkeen"];
+
+                                                // Update the custom value inside the same array line
+                                                setPackedProducts(prev => {
+                                                    const filtered = prev.filter(p => standardItems.includes(p));
+                                                    return [...filtered, val]; // keeps standard ones, appends the typed text
+                                                });
+                                            }} />
+                                    </div>
+                                )}
+                            </>
+                        )}
+                    </div>
+
+
+                    {/* Training Section */}
+                    <div className="section">
+                        <h2>Have you received any training related to operating or managing the canteen?</h2>
+                        <select value={training} onChange={(e) => setTraining(e.target.value)}>
+                            <option value="">Select</option>
+                            <option>Yes</option>
+                            <option>No</option>
+                        </select>
+
+                        {training === "Yes" && (
+                            <div className="grid" style={{ marginTop: "15px" }}>
+                                <input
+                                    placeholder="Training Source"
+                                    value={trainingSource}
+                                    onChange={(e) => setTrainingSource(e.target.value)} />
+                                <input
+                                    placeholder="Training Amount"
+                                    value={trainingAmount}
+                                    onChange={(e) => setTrainingAmount(e.target.value)} />
                             </div>
                         )}
-                    </label>
-
-                    <input
-                        id="fssai-upload"
-                        type="file"
-                        accept=".pdf,.jpg,.jpeg,.png"
-                        onChange={(e) => setFssaiFile(e.target.files?.[0] || null)}
-                        hidden
-                    />
+                    </div>
                 </div>
-            </div>
 
-            <div className="submit-wrapper">
-                <button className="submitBtn" onClick={submitForm}>
-                    Submit
-                </button>
-            </div>
+                {/* Financial Details */}
+                <div className="section">
+                    <h2>Financial Details</h2>
+                    <div className="grid">
+                        <div>
+                            <label>Total Investment</label>
+                            <input placeholder="Total Investment" value={investment} onChange={(e) => setInvestment(e.target.value)} />
+                        </div>
+                        <div>
+                            <label>Monthly Sale</label>
+                            <input placeholder="Monthly Sale" value={monthlySale} onChange={(e) => setMonthlySale(e.target.value)} />
+                        </div>
+                        <div>
+                            <label>Rent</label>
+                            <input placeholder="Rent" value={rent} onChange={(e) => setRent(e.target.value)} />
+                        </div>
+                        <div>
+                            <label>Salary</label>
+                            <input placeholder="Salary" value={salary} onChange={(e) => setSalary(e.target.value)} />
+                        </div>
+                        <div>
+                            <label>Electricity</label>
+                            <input placeholder="Electricity" value={electricity} onChange={(e) => setElectricity(e.target.value)} />
+                        </div>
+                        <div>
+                            <label>Miscellaneous</label>
+                            <input placeholder="Miscellaneous" value={miscellaneous} onChange={(e) => setMiscellaneous(e.target.value)} />
+                        </div>
+                        <div>
+                            <label>Other Expense</label>
+                            <input placeholder="Other Expense" value={otherExpense} onChange={(e) => setOtherExpense(e.target.value)} />
+                        </div>
+                        <div>
+                            <label>Total Income (Read Only)</label>
+                            <input value={totalIncome} readOnly placeholder="Total Income" />
+                        </div>
+                        <div>
+                            <label>Total Expense (Read Only)</label>
+                            <input value={totalExpense} readOnly placeholder="Total Expense" />
+                        </div>
+                        <div>
+                            <label>Profit / Loss (Read Only)</label>
+                            <input value={profitLoss} readOnly placeholder="Profit/Loss" />
+                        </div>
+                    </div>
+                </div>
 
-            <style>{`
+                {/* Certificates & Licensing Documentation */}
+                <div className="section">
+                    <h2>Certificates & Licensing</h2>
+
+                    <div className="uploadBox">
+                        <label htmlFor="fssai-upload" className="upload-card">
+                            <div className="upload-icon">⬆</div>
+                            <div className="upload-title">Upload FSSAI licence</div>
+                            <div className="upload-subtitle">
+                                PDF, JPG or PNG
+                            </div>
+
+                            {fssaiFile && (
+                                <div className="file-name">
+                                    {fssaiFile.name}
+                                </div>
+                            )}
+                        </label>
+
+                        <input
+                            id="fssai-upload"
+                            type="file"
+                            accept=".pdf,.jpg,.jpeg,.png"
+                            onChange={(e) => setFssaiFile(e.target.files?.[0] || null)}
+                            hidden />
+                    </div>
+                </div>
+
+                <div className="submit-wrapper">
+                    <button className="submitBtn" onClick={submitForm}>
+                        Submit
+                    </button>
+                </div>
+
+                <style>{`
                 .container { max-width: 1400px; margin: 30px auto; padding: 30px; background: #ffffff; border-radius: 18px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); font-family: sans-serif; }
                 h1 { text-align: center; margin-bottom: 30px; color: #1e293b; }
                 .section {
@@ -8765,9 +9115,66 @@ select[disabled] {
     color: #6b7280;
 }
                 .memberSection { margin-top: 25px; }
-                .chips { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 15px; }
-                .chip { display: flex; align-items: center; gap: 8px; background: #2563eb; color: white; border-radius: 50px; padding: 8px 14px; }
-                .chip button { border: none; background: transparent; color: white; cursor: pointer; font-size: 18px; }
+         .chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 14px;
+}
+
+.chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+
+    padding: 6px 12px;
+    border-radius: 20px;
+
+    background: #e8f0ff;
+    border: 1px solid #c7d8ff;
+
+    color: #1d4ed8;
+    font-size: 13px;
+    font-weight: 500;
+
+    transition: all .2s ease;
+}
+
+.chip:hover {
+    background: #dbe8ff;
+    border-color: #aac7ff;
+}
+
+.chip span{
+    white-space: nowrap;
+}
+
+.chip button{
+    width: 18px;
+    height: 18px;
+
+    display:flex;
+    align-items:center;
+    justify-content:center;
+
+    border:none;
+    border-radius:50%;
+
+    background:transparent;
+    color:#2563eb;
+
+    cursor:pointer;
+    font-size:15px;
+    font-weight:700;
+    padding:0;
+
+    transition:.2s;
+}
+
+.chip button:hover{
+    background:#2563eb;
+    color:white;
+}
                 .productGrid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 15px; }
                 .productGrid label { background: #fff; padding: 10px; border: 1px solid #ddd; border-radius: 8px; display: flex; align-items: center; gap: 10px; cursor: pointer; }
                 .productGrid input { width: auto; height: auto; margin: 0; }
@@ -8912,7 +9319,65 @@ select[disabled] {
     flex: 1;
     margin-bottom: 0;
 }
+    .card-header{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+}
+
+.add-card-btn{
+    border:none;
+    background:#16a34a;
+    color:#fff;
+    padding:10px 18px;
+    border-radius:8px;
+    cursor:pointer;
+    font-weight:600;
+    transition:.25s;
+}
+
+.add-card-btn:hover{
+    background:#15803d;
+}
+
+.model-card{
+    background:#fff;
+    border:1px solid #e5e7eb;
+    border-left:5px solid #f59e0b;
+    border-radius:12px;
+    padding:18px;
+    margin-bottom:18px;
+    box-shadow:0 4px 10px rgba(0,0,0,.05);
+}
+
+.model-card-title{
+    display:flex;
+    justify-content:space-between;
+    align-items:center;
+    margin-bottom:18px;
+    font-size:15px;
+    font-weight:700;
+    color:#374151;
+}
+
+.delete-card-btn{
+    width:34px;
+    height:34px;
+    border:none;
+    border-radius:50%;
+    background:#fee2e2;
+    color:#dc2626;
+    cursor:pointer;
+    font-size:18px;
+    transition:.2s;
+}
+
+.delete-card-btn:hover{
+    background:#dc2626;
+    color:#fff;
+}
             `}</style>
-        </div>
+            </div></>
     );
 }
