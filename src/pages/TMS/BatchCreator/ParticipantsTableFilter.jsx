@@ -278,12 +278,23 @@ const ParticipantTableFilters = ({
 
   return (
     <div style={containerStyle}>
-      <div style={gridStyle}>
+      {/* ============================================== */}
+      {/* SECTION 1: BATCH STRUCTURAL SELECTABLES        */}
+      {/* ============================================== */}
+      <h4
+        style={{
+          margin: "0 0 16px 0",
+          color: "#2563eb",
+          borderBottom: "2px solid #e5e7eb",
+          paddingBottom: "8px",
+        }}
+      >
+        Batch Configuration
+      </h4>
+      <div style={{ ...gridStyle, marginBottom: "32px" }}>
         <div>
           <label style={labelStyle}>Batch Type</label>
           <select
-            // SURGICAL FIX: Strictly force the value to "Separate" if resuming,
-            // ignoring any stray state that might have leaked through.
             value={isResumeMode ? "Separate" : filters.batchType || "Separate"}
             disabled={isResumeMode}
             style={{
@@ -303,15 +314,54 @@ const ParticipantTableFilters = ({
             }}
           >
             <option value="Separate">Separate Batch (Single Block)</option>
-
-            {/* SURGICAL FIX: Completely hide the "Combined" option in Resume Mode 
-                so the user knows it's fundamentally not possible to switch right now. */}
             {!isResumeMode && (
               <option value="Combined">Combined Batch (Multiple Blocks)</option>
             )}
           </select>
         </div>
 
+        <div>
+          <label style={labelStyle}>Start Date</label>
+          <input
+            type="date"
+            style={inputStyle}
+            min={getMinStartDate()}
+            max={getMaxStartDate()}
+            value={filters.startDate || ""}
+            onChange={(e) => handleStartDateChange(e.target.value)}
+          />
+        </div>
+
+        <div>
+          <label style={labelStyle}>Calculated End Date</label>
+          <input
+            type="date"
+            style={{
+              ...inputStyle,
+              background: "#f3f4f6",
+              cursor: "not-allowed",
+            }}
+            value={filters.endDate || ""}
+            disabled
+            placeholder="Auto calculated"
+          />
+        </div>
+      </div>
+
+      {/* ============================================== */}
+      {/* SECTION 2: PARTICIPANT QUERY FILTERS           */}
+      {/* ============================================== */}
+      <h4
+        style={{
+          margin: "0 0 16px 0",
+          color: "#2563eb",
+          borderBottom: "2px solid #e5e7eb",
+          paddingBottom: "8px",
+        }}
+      >
+        Participant Trainee Filters
+      </h4>
+      <div style={gridStyle}>
         <div>
           <label style={labelStyle}>
             Select Block {isCombined ? "(Hold Ctrl/Cmd to select multi)" : ""}
@@ -351,69 +401,8 @@ const ParticipantTableFilters = ({
           )}
         </div>
 
-        <div>
-          <label style={labelStyle}>Start Date</label>
-          <input
-            type="date"
-            style={inputStyle}
-            min={getMinStartDate()}
-            max={getMaxStartDate()}
-            value={filters.startDate || ""}
-            onChange={(e) => handleStartDateChange(e.target.value)}
-          />
-        </div>
-
-        <div>
-          <label style={labelStyle}>Calculated End Date</label>
-          <input
-            type="date"
-            style={{
-              ...inputStyle,
-              background: "#f3f4f6",
-              cursor: "not-allowed",
-            }}
-            value={filters.endDate || ""}
-            disabled
-            placeholder="Auto calculated"
-          />
-        </div>
-
         {filters.participantType === "Beneficiary" && (
           <>
-            <div>
-              <label style={labelStyle}>PLD Status</label>
-              <select
-                style={selectStyle}
-                value={filters.pldStatus || ""}
-                onChange={(e) => handleValueChange("pldStatus", e.target.value)}
-              >
-                <option value="">All</option>
-                {pldStatus.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label style={labelStyle}>Social Category</label>
-              <select
-                style={selectStyle}
-                value={filters.socialCategory || ""}
-                onChange={(e) =>
-                  handleValueChange("socialCategory", e.target.value)
-                }
-              >
-                <option value="">All</option>
-                {socialCategories.map((item) => (
-                  <option key={item} value={item}>
-                    {item}
-                  </option>
-                ))}
-              </select>
-            </div>
-
             <div ref={panchayatRef} style={{ position: "relative" }}>
               <label style={labelStyle}>
                 Panchayat ({verifiedPanchayats.length})
@@ -532,17 +521,7 @@ const ParticipantTableFilters = ({
                 ))}
               </select>
             </div>
-            <div>
-              <label style={labelStyle}>Search SHG / Member Code</label>
-              <input
-                style={inputStyle}
-                placeholder="Search Lokos Code..."
-                value={filters.searchValue || ""}
-                onChange={(e) =>
-                  handleValueChange("searchValue", e.target.value)
-                }
-              />
-            </div>
+
             <div>
               <label style={labelStyle}>Age Range</label>
               <select
@@ -560,20 +539,52 @@ const ParticipantTableFilters = ({
             </div>
           </>
         )}
+      </div>
+
+      {/* ============================================== */}
+      {/* SECTION 3: PARTICIPANT SEARCH                  */}
+      {/* ============================================== */}
+
+      <h4
+        style={{
+          margin: "32px 0 16px 0",
+          color: "#2563eb",
+          borderBottom: "2px solid #e5e7eb",
+          paddingBottom: "8px",
+        }}
+      >
+        Search by Training Request ID
+      </h4>
+
+      <div style={gridStyle}>
+        {filters.participantType === "Beneficiary" && (
+          <div>
+            <label style={labelStyle}>
+              Available searches : SHG Code / Member Code / Member Name
+            </label>
+            <input
+              style={inputStyle}
+              placeholder="Search..."
+              value={filters.searchValue || ""}
+              onChange={(e) => handleValueChange("searchValue", e.target.value)}
+            />
+          </div>
+        )}
 
         {filters.participantType === "Trainer" && (
           <div>
-            <label style={labelStyle}>Search Trainer</label>
+            <label style={labelStyle}>
+              Available searches : Mobile No / Full Name / Aadhaar
+            </label>
             <input
               style={inputStyle}
-              placeholder="Search by Mobile No / Full Name"
+              placeholder="Search..."
               value={filters.searchValue || ""}
               onChange={(e) => handleValueChange("searchValue", e.target.value)}
             />
           </div>
         )}
       </div>
-
       {/* FETCH ACTION CONTAINER */}
       <div
         style={{

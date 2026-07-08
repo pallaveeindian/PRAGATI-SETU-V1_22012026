@@ -6,7 +6,7 @@ import FilterComponent from "./FilterComponent";
 import ParticipantTable from "./TraineesDisplayTable";
 import TmsLeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
-import { TMS_API } from "../../../api/axios";
+import api, { TMS_API } from "../../../api/axios";
 import { getUser } from "../../../utils/storage";
 import { useLocation, useNavigate } from "react-router-dom";
 
@@ -75,16 +75,32 @@ const AssemblerDashboardBatchCreator = () => {
   // ACHIEVEMENT CARD DYNAMICS
   // ===========================
   useEffect(() => {
-    if (
-      filters.financialYear &&
-      filters.trainingTheme &&
-      filters.trainingPlan
-    ) {
-      setAchievementData({ achievement: 285, target: 440 });
-    } else {
-      setAchievementData({ achievement: 0, target: 0 });
-    }
-  }, [filters.financialYear, filters.trainingTheme, filters.trainingPlan]);
+    const fetchTargetData = async () => {
+      // The API strictly requires financial_year and training_plan_id
+      if (filters.financialYear && filters.trainingPlan) {
+        try {
+          const response = await api.get("/tms/dtp/target-count/", {
+            params: {
+              financial_year: filters.financialYear,
+              training_plan_id: filters.trainingPlan,
+            },
+          });
+
+          setAchievementData({
+            achievement: response.data.total_achievement_count,
+            target: response.data.total_target_count || 0,
+          });
+        } catch (error) {
+          console.error("Failed to fetch DTP target count:", error);
+          setAchievementData({ achievement: 0, target: 0 });
+        }
+      } else {
+        setAchievementData({ achievement: 0, target: 0 });
+      }
+    };
+
+    fetchTargetData();
+  }, [filters.financialYear, filters.trainingPlan]);
 
   // ===========================
   // PARTICIPANT LIMIT DYNAMICS
@@ -563,22 +579,59 @@ const AssemblerDashboardBatchCreator = () => {
             <div
               style={{
                 display: "flex",
-                justifyContent: "flex-end",
+                justifyContent: "space-between",
+                alignItems: "center",
                 width: "100%",
                 paddingTop: "16px",
                 borderTop: "1px solid #f1f5f9",
               }}
             >
+              {/* SURGICAL FIX: Validation message for participant limits, block selection & start date */}
+              <div
+                style={{
+                  fontSize: "14px",
+                  fontWeight: "600",
+                  color:
+                    participantData.selectedParticipants.length >= 20 &&
+                    participantData.selectedParticipants.length <= 40 &&
+                    (batchType !== "SEPARATE" || filters.block) &&
+                    filters.startDate // <-- Start Date Check added here
+                      ? "#16a34a"
+                      : "#ef4444",
+                }}
+              >
+                {!filters.startDate
+                  ? "⚠ Start Date is required." // <-- Start Date Warning added here
+                  : participantData.selectedParticipants.length < 20
+                    ? "⚠ Minimum 20 participants required to form a batch."
+                    : participantData.selectedParticipants.length > 40
+                      ? "⚠ Maximum 40 participants allowed per batch."
+                      : batchType === "SEPARATE" && !filters.block
+                        ? "⚠ A Block must be selected for a Separate Batch."
+                        : "✓ Configuration is valid."}
+              </div>
+
               <button
                 onClick={() => setIsPreviewOpen(true)}
-                disabled={participantData.selectedParticipants.length === 0}
+                disabled={
+                  participantData.selectedParticipants.length < 20 ||
+                  participantData.selectedParticipants.length > 40 ||
+                  (batchType === "SEPARATE" && !filters.block) ||
+                  !filters.startDate // <-- Disabling condition added here
+                }
                 style={{
                   background:
-                    participantData.selectedParticipants.length === 0
+                    participantData.selectedParticipants.length < 20 ||
+                    participantData.selectedParticipants.length > 40 ||
+                    (batchType === "SEPARATE" && !filters.block) ||
+                    !filters.startDate
                       ? "#cbd5e1"
                       : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                   color:
-                    participantData.selectedParticipants.length === 0
+                    participantData.selectedParticipants.length < 20 ||
+                    participantData.selectedParticipants.length > 40 ||
+                    (batchType === "SEPARATE" && !filters.block) ||
+                    !filters.startDate
                       ? "#94a3b8"
                       : "#ffffff",
                   padding: "12px 32px",
@@ -587,11 +640,17 @@ const AssemblerDashboardBatchCreator = () => {
                   fontWeight: "600",
                   fontSize: "14px",
                   boxShadow:
-                    participantData.selectedParticipants.length === 0
+                    participantData.selectedParticipants.length < 20 ||
+                    participantData.selectedParticipants.length > 40 ||
+                    (batchType === "SEPARATE" && !filters.block) ||
+                    !filters.startDate
                       ? "none"
                       : "0 4px 12px rgba(37, 99, 235, 0.15)",
                   cursor:
-                    participantData.selectedParticipants.length === 0
+                    participantData.selectedParticipants.length < 20 ||
+                    participantData.selectedParticipants.length > 40 ||
+                    (batchType === "SEPARATE" && !filters.block) ||
+                    !filters.startDate
                       ? "not-allowed"
                       : "pointer",
                   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",

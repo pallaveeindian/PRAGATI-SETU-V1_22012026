@@ -794,6 +794,9 @@ export const TMS_API = {
     api.get(
       `/tms/batches/comprehensive-detail/${encodeURIComponent(batchId)}/`,
     ),
+
+  //
+  
 };
 
 // ------------------------

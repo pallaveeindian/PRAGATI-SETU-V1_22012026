@@ -1,4 +1,4 @@
-// src\pages\TMS\BatchCreator\AcheivenmentVsTarget.jsx
+// src/pages/TMS/BatchCreator/AcheivenmentVsTarget.jsx
 import React, { useEffect, useState } from "react";
 
 const AcheivenmentVsTarget = ({ achievement = 0, target = 0 }) => {

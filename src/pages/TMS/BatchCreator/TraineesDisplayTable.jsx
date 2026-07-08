@@ -121,7 +121,7 @@ const ParticipantTable = ({
       fetchTraineesFromAPI();
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [filters.block]);
 
   // Dropdown Lists Extraction
   const genders = useMemo(

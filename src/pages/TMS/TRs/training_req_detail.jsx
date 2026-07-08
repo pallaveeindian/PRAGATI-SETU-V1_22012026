@@ -330,23 +330,14 @@ export default function TrainingRequestDetail() {
         console.warn("Failed to fetch partner", e);
       }
 
-      // 3) participants
+      // 3) participants (Using the newly created comprehensive API)
       setParticipantLoading(true);
       let parts = [];
       try {
-        if ((trObj?.training_type || "").toUpperCase() === "BENEFICIARY") {
-          const pResp = await TMS_API.trainingRequestBeneficiaries.list({
-            training: id,
-            page_size: 500,
-          });
-          parts = pResp?.data?.results || pResp?.data || pResp || [];
-        } else {
-          const pResp = await TMS_API.trainingRequestTrainers.list({
-            training: id,
-            page_size: 500,
-          });
-          parts = pResp?.data?.results || pResp?.data || pResp || [];
-        }
+        const pResp = await api.get(
+          `/tms/tr/${id}/participants/`,
+        );
+        parts = pResp?.data?.results || [];
       } catch (e) {
         console.warn("Failed to fetch participants", e);
         parts = [];
@@ -381,9 +372,11 @@ export default function TrainingRequestDetail() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id, refreshToken]);
 
+  // Pending unassigned participants
   const visibleParticipants = useMemo(() => {
     if (!participants) return [];
     return participants.filter((p) => {
+      if (p.CB_selected) return false; // SURGICAL FIX: Exclude allocated participants from main table
       if (!pldFilter) return true;
       return (
         String((p.pld_status || "").toLowerCase()) ===
@@ -391,6 +384,12 @@ export default function TrainingRequestDetail() {
       );
     });
   }, [participants, pldFilter]);
+
+  // Already assigned (Batched) participants
+  const batchedParticipants = useMemo(() => {
+    if (!participants) return [];
+    return participants.filter((p) => p.CB_selected);
+  }, [participants]);
 
   const totalPages = Math.ceil(visibleParticipants.length / rowsPerPage);
 
@@ -876,6 +875,90 @@ export default function TrainingRequestDetail() {
                       </div>
                     </div>
 
+                    {/* BATCHED PARTICIPANTS DETAILS */}
+                    {batchedParticipants.length > 0 && (
+                      <div
+                        style={{
+                          marginBottom: 14,
+                          marginTop: 24,
+                          borderTop: "2px solid #a7c6ed",
+                          paddingTop: 16,
+                        }}
+                      >
+                        <h4 style={{ color: "#2b4e72", marginBottom: 12 }}>
+                          Batched Participants (Allocated)
+                        </h4>
+                        <div className="table-container">
+                          <table className="training-table">
+                            <thead>
+                              <tr>
+                                {(tr?.training_type || "").toUpperCase() ===
+                                "BENEFICIARY" ? (
+                                  <>
+                                    <th>SHG Code</th>
+                                    <th>Member Code</th>
+                                    <th>Name</th>
+                                  </>
+                                ) : (
+                                  <>
+                                    <th>Trainer ID</th>
+                                    <th>Full Name</th>
+                                    <th>Mobile</th>
+                                  </>
+                                )}
+                                <th>Batch Code</th>
+                                <th>Batch Status</th>
+                                <th>Date</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {batchedParticipants.map((p) => (
+                                <tr key={p.id}>
+                                  {(tr?.training_type || "").toUpperCase() ===
+                                  "BENEFICIARY" ? (
+                                    <>
+                                      <td>{p.lokos_shg_code || "-"}</td>
+                                      <td>{p.lokos_member_code || "-"}</td>
+                                      <td>{p.member_name || "-"}</td>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <td>{p.master_trainer_id || p.id}</td>
+                                      <td>{p.full_name || "-"}</td>
+                                      <td>{p.mobile_no || "-"}</td>
+                                    </>
+                                  )}
+                                  <td
+                                    style={{
+                                      fontWeight: 600,
+                                      color: "#3d6ba6",
+                                    }}
+                                  >
+                                    {p.batch_details?.code || "N/A"}
+                                  </td>
+                                  <td>
+                                    <span
+                                      className="status-badge"
+                                      style={{
+                                        fontSize: 11,
+                                        padding: "3px 6px",
+                                      }}
+                                    >
+                                      {p.batch_details?.status || "N/A"}
+                                    </span>
+                                  </td>
+                                  <td>
+                                    {p.batch_details?.start_date ||
+                                      "N/A"}
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    )}
+
                     {/* MIGRATED / COMBINED DETAILS */}
                     {(migratedLoading || migratedData) && (
                       <div
@@ -1005,61 +1088,7 @@ export default function TrainingRequestDetail() {
                     )}
 
                     {/* ACTION BUTTONS */}
-                    <div style={{ marginTop: 12 }}>
-                      {/* {isDmmu &&
-                        (tr.status || "").toUpperCase() === "PENDING" && (
-                          <div className="action-box">
-                            <strong>Note:</strong> Request is PENDING.
-                            Appropriate authority action required.
-                            <button
-                              className="btn-primary"
-                              onClick={() =>
-                                navigate(`/tms/dmmu/tr-review/${id}`)
-                              }
-                            >
-                              Go to DMMU Review
-                            </button>
-                          </div>
-                        )} */}
-
-                      {/* {isTP &&
-                        (tr.status || "").toUpperCase() === "REJECTED" && (
-                          <div className="action-box">
-                            <strong>Note:</strong> Request is REJECTED.
-                            <button
-                              className="btn-primary"
-                              onClick={() =>
-                                navigate(`/tms/tp/batches/create/${id}`)
-                              }
-                            >
-                              Review Batches
-                            </button>
-                          </div>
-                        )} */}
-
-                      {/* {isTP &&
-                        (tr.status || "").toUpperCase() === "BATCHING" && (
-                          <button
-                            className="btn-primary"
-                            onClick={() =>
-                              navigate(`/tms/tp/batches/create/${id}`)
-                            }
-                          >
-                            Create Batches
-                          </button>
-                        )} */}
-
-                      {["ONGOING", "PENDING", "COMPLETED", "REJECTED"].includes(
-                        (tr.status || "").toUpperCase(),
-                      ) && (
-                        <button
-                          className="btn-outline"
-                          onClick={() => navigate(`/tms/batches-list/${id}`)}
-                        >
-                          View Batches in this Training Request
-                        </button>
-                      )}
-                    </div>
+                    <div style={{ marginTop: 12 }}></div>
                   </>
                 )}
               </div>
