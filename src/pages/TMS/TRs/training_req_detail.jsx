@@ -334,9 +334,7 @@ export default function TrainingRequestDetail() {
       setParticipantLoading(true);
       let parts = [];
       try {
-        const pResp = await api.get(
-          `/tms/tr/${id}/participants/`,
-        );
+        const pResp = await api.get(`/tms/tr/${id}/participants/`);
         parts = pResp?.data?.results || [];
       } catch (e) {
         console.warn("Failed to fetch participants", e);
@@ -757,10 +755,16 @@ export default function TrainingRequestDetail() {
                           </>
                         )}
 
-                        <div style={{ marginLeft: "auto", color: "#2b4e72" }}>
+                        <div
+                          style={{
+                            marginLeft: "auto",
+                            color: "#2b4e72",
+                            fontWeight: 600,
+                          }}
+                        >
                           {participantLoading
                             ? "Loading participants…"
-                            : `${paginatedParticipants.length} shown`}
+                            : `Total Participants: ${visibleParticipants.length} (Showing ${paginatedParticipants.length})`}
                         </div>
                       </div>
 
@@ -778,6 +782,7 @@ export default function TrainingRequestDetail() {
                           <table className="training-table">
                             <thead>
                               <tr>
+                                <th>S.No.</th>
                                 <th>SHG Code</th>
                                 <th>Member Code</th>
                                 <th>Name</th>
@@ -790,8 +795,13 @@ export default function TrainingRequestDetail() {
                             </thead>
 
                             <tbody>
-                              {paginatedParticipants.map((p) => (
+                              {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
+                                  <td>
+                                    {(currentPage - 1) * rowsPerPage +
+                                      index +
+                                      1}
+                                  </td>
                                   <td>{p.lokos_shg_code}</td>
                                   <td>{p.lokos_member_code}</td>
                                   <td>{p.member_name}</td>
@@ -817,6 +827,7 @@ export default function TrainingRequestDetail() {
                           <table className="training-table">
                             <thead>
                               <tr>
+                                <th>S.No.</th>
                                 <th>Trainer ID</th>
                                 <th>Full Name</th>
                                 <th>Mobile</th>
@@ -825,9 +836,16 @@ export default function TrainingRequestDetail() {
                             </thead>
 
                             <tbody>
-                              {visibleParticipants.map((p) => (
+                              {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
-                                  <td>{p.trainer || p.id}</td>
+                                  <td>
+                                    {(currentPage - 1) * rowsPerPage +
+                                      index +
+                                      1}
+                                  </td>
+                                  <td>
+                                    {p.master_trainer_id || p.trainer || p.id}
+                                  </td>
                                   <td>{p.full_name}</td>
                                   <td>{p.mobile_no}</td>
                                   <td>
@@ -948,8 +966,7 @@ export default function TrainingRequestDetail() {
                                     </span>
                                   </td>
                                   <td>
-                                    {p.batch_details?.start_date ||
-                                      "N/A"}
+                                    {p.batch_details?.start_date || "N/A"}
                                   </td>
                                 </tr>
                               ))}
