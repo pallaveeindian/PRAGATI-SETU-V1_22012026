@@ -1,77 +1,52 @@
-// src/pages/LoginComps/ModulesLogin.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { Link } from "react-router-dom";
-
-import tmsLogo from "../../assets/TMS/tms_logo.png";
-import esmLogo from "../../assets/ems_logo.png";
-import ldmsLogo from "../../assets/ldms_logo.png";
+import { MODULES_CONFIG } from "../../config/modulesConfig";
 
 export default function ModulesLogin() {
-  const activeModules = [
-    {
-      id: "tms",
-      logo: tmsLogo,
-      title: "TMS Portal",
-      subtitle: "Training Management System",
-      desc: "Manage training programs, capacity building, and skill development workflows efficiently.",
-      color: "#2a56cf",
-      path: "/module-login?module=tms",
-      level: "All",
-    },
-    {
-      id: "crp",
-      logo: esmLogo,
-      title: "CRP-EP Mapping",
-      subtitle: "Enterprise Tracking",
-      desc: "Create Community Resource Person accounts and map their respective Panchayat coverage for Udhyam Sakhi App survey filling effectively.",
-      color: "#f59e0b",
-      path: "/module-login?module=crp",
-      level: "District",
-    },
-  ];
+  const [currentTime, setCurrentTime] = useState(Date.now());
 
-  const inactiveModules = [
-    {
-      id: "ldms",
-      logo: ldmsLogo,
-      title: "LDMS Portal",
-      subtitle: "Lakhpati Didi",
-      desc: "Lakhpati Didi Management System is currently under development.",
-      color: "#b91c1c",
-      path: "#",
-      level: "All",
-    },
-    {
-      id: "mou",
-      logo: esmLogo,
-      title: "Enterprise MOU",
-      subtitle: "Memorandum of Understanding",
-      desc: "Securely manage and monitor enterprise MOUs and related institutional agreements.",
-      color: "#9333ea",
-      path: "/module-login?module=mou",
-      level: "Block",
-    },
-    {
-      id: "epsms",
-      logo: esmLogo,
-      title: "EPSMS Portal",
-      subtitle: "Enterprise Sakhi Management System",
-      desc: "Securely manage and monitor enterprise Sakhi data submitted by field level CRPs using our Udhyam Sakhi Android App.",
-      color: "#ea6733",
-      path: "/module-login?module=epsms",
-      level: "Block",
-    },
-    {
-      id: "prerna",
-      logo: esmLogo,
-      title: "Prerna Canteen Portal",
-      subtitle: "Portal for Prerna Canteen Management",
-      desc: "Portal for Prerna Canteen Managementis currently under development.",
-      color: "#ea3333",
-      path: "/module-login?module=prerna",
-      level: "Block",
-    },
-  ];
+  // Timer interval to update current time every second
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setCurrentTime(Date.now());
+    }, 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Helper function to format countdown time
+  const formatTime = (ms) => {
+    const totalSeconds = Math.floor(ms / 1000);
+    const hours = Math.floor(totalSeconds / 3600);
+    const minutes = Math.floor((totalSeconds % 3600) / 60);
+    const seconds = totalSeconds % 60;
+
+    const h = hours > 0 ? `${hours}h ` : "";
+    const m = minutes > 0 ? `${minutes}m ` : "";
+    const s = `${seconds}s`;
+    return `${h}${m}${s}`;
+  };
+
+  const activeModules = [];
+  const inactiveModules = [];
+
+  // Dynamically separate modules based on current time
+  MODULES_CONFIG.forEach((mod) => {
+    if (!mod.maintenanceUntil) {
+      activeModules.push(mod);
+    } else if (mod.maintenanceUntil === "permanent") {
+      inactiveModules.push({ ...mod, isPermanent: true });
+    } else {
+      const timeRemaining =
+        new Date(mod.maintenanceUntil).getTime() - currentTime;
+      if (timeRemaining <= 0) {
+        // Maintenance time is over -> switch to active automatically
+        activeModules.push(mod);
+      } else {
+        // Still in maintenance
+        inactiveModules.push({ ...mod, timeRemaining, isPermanent: false });
+      }
+    }
+  });
 
   return (
     <section className="modules-login-wrapper">
@@ -88,74 +63,80 @@ export default function ModulesLogin() {
         </div>
 
         {/* ACTIVE MODULES */}
-        <div className="module-group">
-          <h3 className="group-heading">Active Modules</h3>
-          <div className="cards-grid">
-            {activeModules.map((mod) => (
-              <div
-                key={mod.id}
-                className="module-card active-card"
-                style={{ "--theme-color": mod.color }}
-              >
-                <div className="card-top-bar"></div>
-                <div className="card-content">
-                  <div className="card-icon-wrapper">
-                    <span className="card-icon-letter">
-                      <img
-                        src={mod.logo}
-                        alt={mod.title}
-                        className="card-icon"
-                      />
-                    </span>
+        {activeModules.length > 0 && (
+          <div className="module-group">
+            <h3 className="group-heading">Active Modules</h3>
+            <div className="cards-grid">
+              {activeModules.map((mod) => (
+                <div
+                  key={mod.id}
+                  className="module-card active-card"
+                  style={{ "--theme-color": mod.color }}
+                >
+                  <div className="card-top-bar"></div>
+                  <div className="card-content">
+                    <div className="card-icon-wrapper">
+                      <span className="card-icon-letter">
+                        <img
+                          src={mod.logo}
+                          alt={mod.title}
+                          className="card-icon"
+                        />
+                      </span>
+                    </div>
+                    <h4>{mod.title}</h4>
+                    <h5>{mod.subtitle}</h5>
+                    <p>{mod.desc}</p>
                   </div>
-                  <h4>{mod.title}</h4>
-                  <h5>{mod.subtitle}</h5>
-                  <p>{mod.desc}</p>
+                  <div className="card-footer">
+                    <Link to={mod.path} className="card-btn">
+                      Proceed to Login
+                    </Link>
+                  </div>
                 </div>
-                <div className="card-footer">
-                  <Link to={mod.path} className="card-btn">
-                    Proceed to Login
-                  </Link>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
 
         {/* INACTIVE MODULES */}
-        <div className="module-group inactive-group">
-          <h3 className="group-heading">Inactive / Upcoming Modules</h3>
-          <div className="cards-grid">
-            {inactiveModules.map((mod) => (
-              <div
-                key={mod.id}
-                className="module-card inactive-card"
-                style={{ "--theme-color": mod.color }}
-              >
-                <div className="card-top-bar"></div>
-                <div className="card-content">
-                  <div className="card-icon-wrapper">
-                    <span className="card-icon-letter">
-                      <img
-                        src={mod.logo}
-                        alt={mod.title}
-                        className="card-icon"
-                      />
-                    </span>
+        {inactiveModules.length > 0 && (
+          <div className="module-group inactive-group">
+            <h3 className="group-heading">Inactive / Maintenance Modules</h3>
+            <div className="cards-grid">
+              {inactiveModules.map((mod) => (
+                <div
+                  key={mod.id}
+                  className="module-card inactive-card"
+                  style={{ "--theme-color": mod.color }}
+                >
+                  <div className="card-top-bar"></div>
+                  <div className="card-content">
+                    <div className="card-icon-wrapper">
+                      <span className="card-icon-letter">
+                        <img
+                          src={mod.logo}
+                          alt={mod.title}
+                          className="card-icon"
+                        />
+                      </span>
+                    </div>
+                    <h4>{mod.title}</h4>
+                    <h5>{mod.subtitle}</h5>
+                    <p>{mod.desc}</p>
                   </div>
-                  <h4>{mod.title}</h4>
-                  <h5>{mod.subtitle}</h5>
-                  <p>{mod.desc}</p>
+                  <div className="card-footer">
+                    <button className="card-btn disabled-btn" disabled>
+                      {mod.isPermanent
+                        ? "Currently Unavailable"
+                        : `Maintenance: ${formatTime(mod.timeRemaining)}`}
+                    </button>
+                  </div>
                 </div>
-                <div className="card-footer">
-                  <button className="card-btn disabled-btn" disabled>
-                    Currently Unavailable
-                  </button>
-                </div>
-              </div>
-            ))}
+              ))}
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {/* ================= STYLES ================= */}
@@ -344,6 +325,7 @@ export default function ModulesLogin() {
           background: #cbd5e1;
           color: #64748b;
           cursor: not-allowed;
+          font-weight: bold;
         }
 
         /* RESPONSIVE */

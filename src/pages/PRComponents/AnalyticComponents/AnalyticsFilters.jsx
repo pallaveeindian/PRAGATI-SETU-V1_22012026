@@ -1,3 +1,4 @@
+// src/pages/PRComponents/AnalyticComponents/AnalyticsFilters.jsx
 import React from "react";
 
 // Filtered Role Mapping (Strictly as requested)
@@ -239,33 +240,38 @@ export default function AnalyticsFilters({
 
       {/* --- EXTRA FILTERS ONLY FOR TMS CADRE SELECTION (SOFTWARE) --- */}
       {activeSubTab === "tms_software" && (
-        <div
-          className="filter-group checkbox-group"
-          style={{
-            display: "flex",
-            alignItems: "center",
-            gap: "8px",
-            marginTop: "24px",
-          }}
-        >
-          <input
-            type="checkbox"
-            id="district_wise_cadre_summary"
-            checked={filters.district_wise_cadre_summary === "1"}
-            onChange={(e) =>
-              onFilterChange(
-                "district_wise_cadre_summary",
-                e.target.checked ? "1" : "0",
-              )
+        <div className="filter-group">
+          <label>View Mode</label>
+          <select
+            value={
+              filters.dist_theme_prcnt === "1"
+                ? "theme_prcnt"
+                : filters.dist_trgt_prcnt === "1"
+                  ? "target_prcnt"
+                  : filters.district_wise_cadre_summary === "1"
+                    ? "cadre_summary"
+                    : "detailed"
             }
-            style={{ width: "18px", height: "18px", cursor: "pointer" }}
-          />
-          <label
-            htmlFor="district_wise_cadre_summary"
-            style={{ margin: 0, cursor: "pointer" }}
+            onChange={(e) => {
+              const val = e.target.value;
+              // SURGICAL FIX: Pass an object to update all three flags simultaneously
+              onFilterChange({
+                district_wise_cadre_summary:
+                  val === "cadre_summary" ? "1" : "0",
+                dist_trgt_prcnt: val === "target_prcnt" ? "1" : "0",
+                dist_theme_prcnt: val === "theme_prcnt" ? "1" : "0",
+              });
+            }}
           >
-            View District-Wise Summary
-          </label>
+            <option value="detailed">Detailed Records</option>
+            <option value="cadre_summary">District Wise Cadre Summary</option>
+            <option value="target_prcnt">
+              District Target vs Achievement %
+            </option>
+            <option value="theme_prcnt">
+              District & Theme Target vs Achievement %
+            </option>
+          </select>
         </div>
       )}
 

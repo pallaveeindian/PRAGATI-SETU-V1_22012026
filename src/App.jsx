@@ -1,5 +1,4 @@
-// src/App.jsx
-import React, { useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import {
   Routes,
   Route,
@@ -9,6 +8,9 @@ import {
 import { useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./pages/LanguageContext.jsx";
 import ProtectedRoute from "./routes/ProtectedRoute";
+
+// Configuration for Dynamic Maintenance Control
+import { MODULES_CONFIG } from "./config/modulesConfig";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -48,6 +50,25 @@ export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navType = useNavigationType();
+
+  // Route Blocking & Timer State
+  const [currentTime, setCurrentTime] = useState(Date.now());
+
+  // Update time for real-time route restoration
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+
+  // Check if a module is Active based on config + timer
+  const isModuleActive = (moduleId) => {
+    const mod = MODULES_CONFIG.find((m) => m.id === moduleId);
+    if (!mod) return false;
+    if (!mod.maintenanceUntil) return true;
+    if (mod.maintenanceUntil === "permanent") return false;
+    // Active if the countdown is strictly over
+    return new Date(mod.maintenanceUntil).getTime() <= currentTime;
+  };
 
   // ==========================================
   // SECURITY LOGIC: BROWSER BACK/FORWARD LOGOUT
@@ -98,25 +119,43 @@ export default function App() {
         />
         <Route path="/what's-new" element={<WhatsNew />} />
         <Route path="/public-reports" element={<PublicReports />} />
+        <Route path="/future-updates" element={<SiteDevErrorPage />} />
+
         {/* ----- Login Routes ----- */}
         <Route path="/login" element={<Login />} />
         <Route path="/module-login" element={<LoginParent />} />
-        <Route path="/module-login?module=tms" element={<TmsLogin />} />
-        <Route path="/module-login?module=ldms" element={<LdmsLogin />} />
-        <Route path="/module-login?module=crp-ep" element={<CrpEpLogin />} />
-        <Route path="/module-login?module=mou" element={<MouLogin />} />
 
-        <Route path="/future-updates" element={<SiteDevErrorPage />} />
+        {/* Only render sub-login routes if their module is active */}
+        {isModuleActive("tms") && (
+          <Route path="/module-login?module=tms" element={<TmsLogin />} />
+        )}
+        {isModuleActive("ldms") && (
+          <Route path="/module-login?module=ldms" element={<LdmsLogin />} />
+        )}
+        {isModuleActive("crp") && (
+          <Route path="/module-login?module=crp-ep" element={<CrpEpLogin />} />
+        )}
+        {isModuleActive("mou") && (
+          <Route path="/module-login?module=mou" element={<MouLogin />} />
+        )}
 
         {/* ----- Protected Application Routes ----- */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardHome />} />
 
-          {/* Sub-Software Routing (Delegated to /src/routes/*) */}
-          <Route path="/tms/*" element={<TmsRoutes />} />
-          <Route path="/ldms/*" element={<LdmsRoutes />} />
-          <Route path="/crp-ep/*" element={<CrpEpRoutes />} />
-          <Route path="/mou/*" element={<MouRoutes />} />
+          {/* Sub-Software Routing (Conditionally Mounted) */}
+          {isModuleActive("tms") && (
+            <Route path="/tms/*" element={<TmsRoutes />} />
+          )}
+          {isModuleActive("ldms") && (
+            <Route path="/ldms/*" element={<LdmsRoutes />} />
+          )}
+          {isModuleActive("crp") && (
+            <Route path="/crp-ep/*" element={<CrpEpRoutes />} />
+          )}
+          {isModuleActive("mou") && (
+            <Route path="/mou/*" element={<MouRoutes />} />
+          )}
 
           <Route path="/error" element={<ErrorPage />} />
         </Route>

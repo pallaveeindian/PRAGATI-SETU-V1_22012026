@@ -1,3 +1,4 @@
+// src/pages/PRComponents/AnalyticComponents/AnalyticsTable.jsx
 import React, { useState, useEffect } from "react";
 import ExportButton from "./ExportButton";
 
@@ -571,8 +572,229 @@ export default function AnalyticsTable({
   // ==========================================
   if (activeTab === "tms" && activeSubTab === "tms_software") {
     const isCadreSummaryView = filters?.district_wise_cadre_summary === "1";
+    const isDistTrgtView = filters?.dist_trgt_prcnt === "1";
+    const isDistThemeView = filters?.dist_theme_prcnt === "1";
 
-    if (isCadreSummaryView) {
+    if (isDistTrgtView) {
+      // ----------------------------------------
+      // DISTRICT TARGET VS CADRE PERCENTAGE TABLE
+      // ----------------------------------------
+      const summaryData = cadreData?.district_target_percentage || [];
+      const totalPages = Math.ceil(summaryData.length / ROWS_PER_PAGE);
+      const paginatedData = summaryData.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE,
+      );
+
+      const exportData = summaryData.map((row, idx) => ({
+        sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
+        district: row.district_name_en || "-",
+        total_target: row.total_target,
+        total_cadre: row.total_cadre,
+        percentage: row.percentage + "%",
+      }));
+
+      const exportHeaders = [
+        { label: "S.No.", key: "sno" },
+        { label: "District", key: "district" },
+        { label: "Total Target", key: "total_target" },
+        { label: "Cadre Onboarded", key: "total_cadre" },
+        { label: "Achievement %", key: "percentage" },
+      ];
+
+      return (
+        <div className="analytics-module table-module">
+          <div className="table-header">
+            <h3>District Target vs Cadre Achievement</h3>
+            <ExportButton
+              data={exportData}
+              headers={exportHeaders}
+              filename="District_Target_Percentage.csv"
+            />
+          </div>
+          <div className="table-responsive">
+            <table className="gov-data-table">
+              <thead>
+                <tr>
+                  <th>S.No.</th>
+                  <th>District</th>
+                  <th>Total Target</th>
+                  <th>Cadre Onboarded</th>
+                  <th>Achievement %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="fw-bold">
+                      {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                    </td>
+                    <td>{row.district_name_en || "-"}</td>
+                    <td>{row.total_target}</td>
+                    <td>{row.total_cadre}</td>
+                    <td>
+                      <strong
+                        style={{
+                          color:
+                            row.percentage >= 100
+                              ? "#16a34a"
+                              : row.percentage > 0
+                                ? "#ea580c"
+                                : "#64748b",
+                        }}
+                      >
+                        {row.percentage}%
+                      </strong>
+                    </td>
+                  </tr>
+                ))}
+                {paginatedData.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="5"
+                      style={{ textAlign: "center", padding: "20px" }}
+                    >
+                      No target data found for the selected Financial Year.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Prev
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    } else if (isDistThemeView) {
+      // ----------------------------------------
+      // DISTRICT & THEME PERCENTAGE TABLE
+      // ----------------------------------------
+      const summaryData = cadreData?.district_theme_percentage || [];
+      const totalPages = Math.ceil(summaryData.length / ROWS_PER_PAGE);
+      const paginatedData = summaryData.slice(
+        (currentPage - 1) * ROWS_PER_PAGE,
+        currentPage * ROWS_PER_PAGE,
+      );
+
+      const exportData = summaryData.map((row, idx) => ({
+        sno: (currentPage - 1) * ROWS_PER_PAGE + idx + 1,
+        district: row.district_name_en || "-",
+        theme_name: row.theme_name || "-",
+        theme_target: row.theme_target,
+        total_on_boarded: row.total_on_boarded,
+        percentage: row.percentage + "%",
+      }));
+
+      const exportHeaders = [
+        { label: "S.No.", key: "sno" },
+        { label: "District", key: "district" },
+        { label: "Theme Name", key: "theme_name" },
+        { label: "Theme Target", key: "theme_target" },
+        { label: "Total Onboarded", key: "total_on_boarded" },
+        { label: "Achievement %", key: "percentage" },
+      ];
+
+      return (
+        <div className="analytics-module table-module">
+          <div className="table-header">
+            <h3>District & Theme Target vs Achievement</h3>
+            <ExportButton
+              data={exportData}
+              headers={exportHeaders}
+              filename="District_Theme_Percentage.csv"
+            />
+          </div>
+          <div className="table-responsive">
+            <table className="gov-data-table">
+              <thead>
+                <tr>
+                  <th>S.No.</th>
+                  <th>District</th>
+                  <th>Theme Name</th>
+                  <th>Theme Target</th>
+                  <th>Total Onboarded</th>
+                  <th>Achievement %</th>
+                </tr>
+              </thead>
+              <tbody>
+                {paginatedData.map((row, idx) => (
+                  <tr key={idx}>
+                    <td className="fw-bold">
+                      {(currentPage - 1) * ROWS_PER_PAGE + idx + 1}
+                    </td>
+                    <td>{row.district_name_en || "-"}</td>
+                    <td className="fw-bold">{row.theme_name || "-"}</td>
+                    <td>{row.theme_target}</td>
+                    <td>{row.total_on_boarded}</td>
+                    <td>
+                      <strong
+                        style={{
+                          color:
+                            row.percentage >= 100
+                              ? "#16a34a"
+                              : row.percentage > 0
+                                ? "#ea580c"
+                                : "#64748b",
+                        }}
+                      >
+                        {row.percentage}%
+                      </strong>
+                    </td>
+                  </tr>
+                ))}
+                {paginatedData.length === 0 && (
+                  <tr>
+                    <td
+                      colSpan="6"
+                      style={{ textAlign: "center", padding: "20px" }}
+                    >
+                      No theme target data found for the selected Financial
+                      Year.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+          {totalPages > 1 && (
+            <div className="pagination-controls">
+              <button
+                disabled={currentPage === 1}
+                onClick={() => setCurrentPage((p) => p - 1)}
+              >
+                Prev
+              </button>
+              <span>
+                Page {currentPage} of {totalPages}
+              </span>
+              <button
+                disabled={currentPage === totalPages}
+                onClick={() => setCurrentPage((p) => p + 1)}
+              >
+                Next
+              </button>
+            </div>
+          )}
+        </div>
+      );
+    } else if (isCadreSummaryView) {
       // ----------------------------------------
       // DISTRICT WISE CADRE SUMMARY TABLE
       // ----------------------------------------
@@ -603,7 +825,6 @@ export default function AnalyticsTable({
         <div className="analytics-module table-module">
           <div className="table-header">
             <h3>District Wise Cadre Summary</h3>
-            {/* Financial Year here */}
             <ExportButton
               data={exportData}
               headers={exportHeaders}
@@ -649,7 +870,10 @@ export default function AnalyticsTable({
                 ))}
                 {paginatedData.length === 0 && (
                   <tr>
-                    <td colSpan="4" style={{ textAlign: "center" }}>
+                    <td
+                      colSpan="5"
+                      style={{ textAlign: "center", padding: "20px" }}
+                    >
                       No summary data found.
                     </td>
                   </tr>
@@ -766,7 +990,10 @@ export default function AnalyticsTable({
                 ))}
                 {paginatedData.length === 0 && (
                   <tr>
-                    <td colSpan="7" style={{ textAlign: "center" }}>
+                    <td
+                      colSpan="8"
+                      style={{ textAlign: "center", padding: "20px" }}
+                    >
                       No records found for selected filters.
                     </td>
                   </tr>

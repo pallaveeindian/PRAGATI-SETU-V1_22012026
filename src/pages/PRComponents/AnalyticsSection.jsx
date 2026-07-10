@@ -1,3 +1,4 @@
+// src/pages/PRComponents/AnalyticsSection.jsx
 import React, { useState, useEffect, useCallback } from "react";
 import AnalyticsCharts from "./AnalyticComponents/AnalyticsCharts";
 import AnalyticsFilters from "./AnalyticComponents/AnalyticsFilters";
@@ -27,6 +28,8 @@ export default function AnalyticsSection({ currentReport }) {
     not_logged_in: "0",
     district_wise_summary: "0",
     district_wise_cadre_summary: "0",
+    dist_trgt_prcnt: "0",
+    dist_theme_prcnt: "0",
     passwd_status: "",
     financial_year: "2026-27",
   });
@@ -82,11 +85,15 @@ export default function AnalyticsSection({ currentReport }) {
     fetchBlocks();
   }, [filters.district_id]);
 
-  const handleFilterChange = (key, value) => {
+  const handleFilterChange = (keyOrObj, value) => {
     setFilters((prev) => {
-      const newFilters = { ...prev, [key]: value };
+      // Allow bulk updates by passing an object
+      if (typeof keyOrObj === "object") {
+        return { ...prev, ...keyOrObj };
+      }
+      const newFilters = { ...prev, [keyOrObj]: value };
       // Reset block if district changes
-      if (key === "district_id") newFilters.block_id = "";
+      if (keyOrObj === "district_id") newFilters.block_id = "";
       return newFilters;
     });
   };
@@ -110,6 +117,10 @@ export default function AnalyticsSection({ currentReport }) {
     if (filters.not_logged_in === "1") queryParams.append("not_logged_in", "1");
     if (filters.district_wise_cadre_summary === "1")
       queryParams.append("district_wise_cadre_summary", "1");
+    if (filters.dist_trgt_prcnt === "1")
+      queryParams.append("dist_trgt_prcnt", "1");
+    if (filters.dist_theme_prcnt === "1")
+      queryParams.append("dist_theme_prcnt", "1");
     if (filters.passwd_status)
       queryParams.append("passwd_status", filters.passwd_status);
     if (filters.financial_year)
@@ -159,6 +170,8 @@ export default function AnalyticsSection({ currentReport }) {
     filters.not_logged_in,
     filters.district_wise_summary,
     filters.district_wise_cadre_summary,
+    filters.dist_trgt_prcnt,
+    filters.dist_theme_prcnt,
     filters.passwd_status,
     filters.financial_year,
   ]);
