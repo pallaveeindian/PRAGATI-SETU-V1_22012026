@@ -1,6 +1,7 @@
 import tmsLogo from "../assets/TMS/tms_logo.png";
 import esmLogo from "../assets/ems_logo.png";
 import ldmsLogo from "../assets/ldms_logo.png";
+import prernaLogo from "../assets/prernaHd.png";
 
 export const MODULES_CONFIG = [
   {
@@ -70,5 +71,16 @@ export const MODULES_CONFIG = [
     path: "/module-login?module=prerna",
     level: "Block",
     maintenanceUntil: "permanent",
+  },
+  {
+    id: "admin",
+    logo: prernaLogo,
+    title: "Master Admin",
+    subtitle: "Master Login",
+    desc: "MD - Master Login",
+    color: "#1e8a1ade",
+    path: "/module-login?module=admin",
+    level: "Block",
+    maintenanceUntil: null,
   },
 ];

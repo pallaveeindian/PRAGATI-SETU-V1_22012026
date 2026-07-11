@@ -205,6 +205,16 @@ export default function TopNavigation() {
               </ul>
             </li>
 
+            {/* Grievance Portal
+            <li className="menu-item">
+              <Link
+                to="/register-grievance"
+                style={{ textDecoration: "none", color: "inherit" }}
+              >
+                Grievance Portal
+              </Link>
+            </li> */}
+
             {/* LOGIN BUTTON */}
             <li>
               <LoginButton

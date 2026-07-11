@@ -23,14 +23,18 @@ export default function BatchHeaderActions({
               Batch Code: <strong>{batchCode}</strong>
             </div>
           )}
-
+          <button
+            className="btn-primary"
+            style={{ background: "#2563eb" }}
+            onClick={() => navigate(`/tms/batches/${batchId}/history`)}
+          >
+            🕒 Batch History
+          </button>
           <div className="batch-header-actions">
             {batchStatus === "CLOSED" && (
               <button
                 className="btn-success"
-                onClick={() =>
-                  navigate(`/tms/download-certificate/${batchId}`)
-                }
+                onClick={() => navigate(`/tms/download-certificate/${batchId}`)}
               >
                 📄 Download Certificate
               </button>
@@ -40,10 +44,7 @@ export default function BatchHeaderActions({
               🔄 Refresh
             </button>
 
-            <button
-              className="btn-secondary"
-              onClick={() => navigate(-1)}
-            >
+            <button className="btn-secondary" onClick={() => navigate(-1)}>
               ← Back
             </button>
           </div>

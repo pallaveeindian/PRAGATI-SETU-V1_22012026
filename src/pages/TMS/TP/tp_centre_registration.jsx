@@ -276,8 +276,6 @@ export default function TpCentreRegistration() {
         training_hall_count: Number(centre.training_hall_count),
         training_hall_capacity: Number(centre.training_hall_capacity),
       };
-
-      console.log(centrePayload);
       // 1. Create or Update the main Centre record
       const centreResp = isEdit
         ? await TMS_API.trainingPartnerCentres.update(centreId, centrePayload)

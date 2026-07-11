@@ -438,7 +438,7 @@ export default function TrainingReportManager({ user }) {
                 disabled={role === "dmmu"}
                 className="filter-input-styled"
               >
-                <option value="">Select</option>
+                <option value="">All</option>
                 {lookups.districts?.map((d) => (
                   <option key={d.district_id} value={d.district_id}>
                     {d.district_name_en}
@@ -475,7 +475,7 @@ export default function TrainingReportManager({ user }) {
                 disabled={!filters.district_id}
                 className="filter-input-styled"
               >
-                <option value="">Select</option>
+                <option value="">All</option>
                 {lookups.blocks?.map((b) => (
                   <option key={b.block_id} value={b.block_id}>
                     {b.block_name_en}
@@ -497,7 +497,7 @@ export default function TrainingReportManager({ user }) {
               onChange={handleChange}
               className="filter-input-styled"
             >
-              <option value="">Select</option>
+              <option value="">All</option>
               {lookups.partners?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.name}
@@ -534,7 +534,7 @@ export default function TrainingReportManager({ user }) {
               disabled={!filters.theme_id}
               className="filter-input-styled"
             >
-              <option value="">Select</option>
+              <option value="">All</option>
               {lookups.plans?.map((p) => (
                 <option key={p.id} value={p.id}>
                   {p.training_name}

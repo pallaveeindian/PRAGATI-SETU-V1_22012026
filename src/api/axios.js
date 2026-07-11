@@ -796,7 +796,6 @@ export const TMS_API = {
     ),
 
   //
-  
 };
 
 // ------------------------
@@ -840,8 +839,24 @@ export const LDMS_API = {
 // NEW API add-on Section
 // ------------------------
 
+// Grievance Portal APIs
+export const SUPPORT_API = {
+  createTicket: (data) =>
+    api.post("/support/tickets/create/", data, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  listTickets: () => api.get("/support/tickets/list/"),
+
+  getTicketDetails: (ticketCode) => api.get(`/support/tickets/${ticketCode}/`),
+
+  resolveTicket: (ticketCode, data) =>
+    api.patch(`/support/tickets/resolve/${ticketCode}/`, data),
+};
+
 // ------------------------
 // Default export
 // ------------------------
-
 export default api;

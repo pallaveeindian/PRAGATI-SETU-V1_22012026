@@ -1,9 +1,10 @@
 // src/pages/GovHeader.jsx
 import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { LanguageContext } from "../pages/LanguageContext"; // ⚠️ path check karo
 
 export default function GovHeader({ logo, title, onFontChange }) {
-
+  const navigate = useNavigate();
   const { setLang, lang } = useContext(LanguageContext);
 
   return (
@@ -41,6 +42,16 @@ export default function GovHeader({ logo, title, onFontChange }) {
             style={{ fontWeight: lang === "hi" ? "700" : "500" }}
           >
             हिंदी
+          </button>
+
+          <span className="divider">|</span>
+
+          <button
+            className="lang-btn"
+            onClick={() => navigate("/register-grievance")}
+            style={{ fontWeight: "700" }}
+          >
+            Complaint & Support
           </button>
         </div>
       </div>

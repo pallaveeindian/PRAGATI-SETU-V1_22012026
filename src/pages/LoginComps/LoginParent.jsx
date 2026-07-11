@@ -9,6 +9,7 @@ import TmsLogin from "./TmsLogin";
 import LdmsLogin from "./LdmsLogin";
 import CrpEpLogin from "./CrpEpLogin";
 import MouLogin from "./MouLogin";
+import AdminLogin from "./AdminLogin";
 
 export default function LoginParent() {
   const { loading } = useContext(AuthContext);
@@ -37,6 +38,10 @@ export default function LoginParent() {
     case "mou":
       content = <MouLogin />;
       theme = "purple";
+      break;
+    case "admin":
+      content = <AdminLogin />;
+      theme = "red";
       break;
     default:
       content = <TmsLogin />;

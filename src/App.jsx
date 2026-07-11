@@ -28,12 +28,17 @@ import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
 import PublicReports from "./pages/PublicReports";
 import WhatsNew from "./pages/WhatsNew";
 
+// Grievance Portal
+import RegisterGrievance from "./pages/RegisterGrievance.jsx";
+import GrievancesList from "./pages/Dashboard/GreivancesList.jsx";
+
 // All Login Pages
 import LoginParent from "./pages/LoginComps/LoginParent";
 import TmsLogin from "./pages/LoginComps/TmsLogin";
 import LdmsLogin from "./pages/LoginComps/LdmsLogin";
 import CrpEpLogin from "./pages/LoginComps/CrpEpLogin";
 import MouLogin from "./pages/LoginComps/MouLogin";
+import AdminLogin from "./pages/LoginComps/AdminLogin";
 
 // Dashboard / Error Pages
 import DashboardHome from "./pages/Dashboard/DashboardHome";
@@ -45,6 +50,8 @@ import TmsRoutes from "./routes/TmsRoutes";
 import LdmsRoutes from "./routes/LdmsRoutes";
 import CrpEpRoutes from "./routes/CrpEpRoutes";
 import MouRoutes from "./routes/MouRoutes";
+import SupportRoutes from "./routes/SupportRoutes.jsx";
+import AdminRoutes from "./routes/AdminRoutes.jsx";
 
 export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
@@ -80,8 +87,10 @@ export default function App() {
       location.pathname.startsWith("/dashboard") ||
       location.pathname.startsWith("/tms") ||
       location.pathname.startsWith("/ldms") ||
-      location.pathname.startsWith("/crp-ep") || // Replaced EPSMS with crp-ep
+      location.pathname.startsWith("/crp-ep") ||
       location.pathname.startsWith("/mou") ||
+      location.pathname.startsWith("/support") ||
+      location.pathname.startsWith("/admin") ||
       location.pathname.startsWith("/error");
 
     if (navType === "POP" && !isPortalRoute) {
@@ -121,6 +130,9 @@ export default function App() {
         <Route path="/public-reports" element={<PublicReports />} />
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
 
+        {/* Grievance Portal Routes */}
+        <Route path="/register-grievance" element={<RegisterGrievance />} />
+
         {/* ----- Login Routes ----- */}
         <Route path="/login" element={<Login />} />
         <Route path="/module-login" element={<LoginParent />} />
@@ -155,6 +167,12 @@ export default function App() {
           )}
           {isModuleActive("mou") && (
             <Route path="/mou/*" element={<MouRoutes />} />
+          )}
+          {isModuleActive("support") && (
+            <Route path="/support/*" element={<SupportRoutes />} />
+          )}
+          {isModuleActive("admin") && (
+            <Route path="/admin/*" element={<AdminRoutes />} />
           )}
 
           <Route path="/error" element={<ErrorPage />} />

@@ -65,8 +65,35 @@ export default function TrainingReqListFilter({ user, onApply }) {
           TMS_API.trainingThemes.list({ page_size: 100 }),
         ]);
 
+        const allThemes = themeRes?.data?.results || [];
         setDistricts(districtRes?.data?.results || []);
-        setThemes(themeRes?.data?.results || []);
+
+        if (role === "smmu") {
+          const myTheme = allThemes.find(
+            (t) => Number(t.expert) === Number(user?.id),
+          );
+
+          if (myTheme) {
+            // sirf apni theme dikhao
+            setThemes([myTheme]);
+
+            // auto select
+            setFilters((prev) => ({
+              ...prev,
+              theme_id: String(myTheme.id),
+              training_plan_id: "",
+            }));
+
+            // optional: auto fetch
+            onApply({
+              theme_id: myTheme.id,
+            });
+          } else {
+            setThemes([]);
+          }
+        } else {
+          setThemes(allThemes);
+        }
 
         if (role === "smmu") {
           const [dcRes, mRes] = await Promise.all([
@@ -365,6 +392,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
           <select
             className="filter-input"
             value={filters.theme_id}
+            disabled={role === "smmu"}
             onChange={(e) =>
               setFilters((f) => ({
                 ...f,
@@ -410,11 +438,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             <option value="">Status</option>
             {[
               "BATCHING",
-              "PENDING",
-              "ONGOING",
-              "REVIEW",
               "COMPLETED",
-              "REJECTED",
             ].map((s) => (
               <option key={s} value={s}>
                 {s}

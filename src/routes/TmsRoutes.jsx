@@ -51,6 +51,7 @@ import TrainingReport from "../pages/TMS/TrainingReport/TrainingReport";
 import SmmuTargetAchievement from "../pages/TMS/SMMU/smmu_tp_tva";
 import BmmuTargetAchievement from "../pages/TMS/BMMU/bmmu_tp_tvs";
 import DmmuTargetAchievement from "../pages/TMS/DMMU/dmmu_tp_tvs";
+import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
 
 export default function TmsRoutes() {
   return (
@@ -198,6 +199,10 @@ export default function TmsRoutes() {
         }
       >
         <Route path="batch-detail/:id" element={<TrainingBatchDetail />} />
+        <Route
+          path="batches/:batchId/history"
+          element={<TrainingBatchHistory />}
+        />
       </Route>
     </Routes>
   );

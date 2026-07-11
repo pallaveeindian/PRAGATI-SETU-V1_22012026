@@ -100,6 +100,7 @@ export default function TrainingRequestList() {
   const [refreshToken, setRefreshToken] = useState(0);
   // PAGINATION CHANGE START
   const [currentPage, setCurrentPage] = useState(1);
+  const [themes, setThemes] = useState([]);
   const rowsPerPage = 10;
   // PAGINATION CHANGE END
   const [filters, setFilters] = useState({
@@ -227,6 +228,16 @@ export default function TrainingRequestList() {
       const params = { page_size: 500 };
       const geoscope = await ensureUserGeoscope();
 
+      if (role === "smmu") {
+        const myTheme = themes.find(
+          (t) => Number(t.expert) === Number(user?.id),
+        );
+
+        if (myTheme) {
+          params.theme = myTheme.id;
+        }
+      }
+
       if (role === "bmmu" && geoscope?.blocks?.[0])
         params.block_id = geoscope.blocks[0];
 
@@ -288,6 +299,16 @@ export default function TrainingRequestList() {
       };
 
       const geoscope = await ensureUserGeoscope();
+
+      if (role === "smmu") {
+        const myTheme = themes.find(
+          (t) => Number(t.expert) === Number(user?.id),
+        );
+
+        if (myTheme) {
+          params.theme = myTheme.id;
+        }
+      }
 
       if (role === "bmmu" && geoscope?.blocks?.[0])
         params.block_id = geoscope.blocks[0];
@@ -395,6 +416,42 @@ export default function TrainingRequestList() {
   const renderPartnerName = (id) => partnerMap[id] || id || "-";
   const renderTrainingName = (id) => planMap[id] || id || "-";
 
+  useEffect(() => {
+    async function loadThemes() {
+      try {
+        const tRes = await TMS_API.trainingThemes.list({
+          page_size: 100,
+        });
+
+        const allThemes = tRes?.data?.results || [];
+
+        if (role === "smmu") {
+          const myTheme = allThemes.find(
+            (t) => Number(t.expert) === Number(user?.id),
+          );
+
+          if (myTheme) {
+            setThemes([myTheme]);
+            // auto fetch only this theme
+            fetchRequestsWithFilters({
+              theme: myTheme.id,
+            });
+          } else {
+            setThemes([]);
+          }
+        } else {
+          setThemes(allThemes);
+        }
+      } catch (e) {
+        console.error("Theme load failed", e);
+      }
+    }
+
+    if (user?.id) {
+      loadThemes();
+    }
+  }, [user?.id, role]);
+
   /* ---------------- UI ---------------- */
 
   return (
@@ -432,6 +489,8 @@ export default function TrainingRequestList() {
               <div style={{ marginBottom: 14 }}>
                 <TrainingReqListFilter
                   user={user}
+                  themes={themes}
+                  lockedTheme={role === "smmu"}
                   onApply={fetchRequestsWithFilters}
                 />
               </div>

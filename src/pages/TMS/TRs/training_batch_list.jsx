@@ -166,9 +166,31 @@ export default function TrainingBatchList() {
           LOOKUP_API.districts.list({ page_size: 100 }),
           TMS_API.trainingThemes.list({ page_size: 100 }),
         ]);
-        setDistricts(dRes?.data?.results || []);
-        setThemes(tRes?.data?.results || []);
 
+        const allThemes = tRes?.data?.results || [];
+        setDistricts(dRes?.data?.results || []);
+
+        if (role === "smmu") {
+          const myTheme = allThemes.find(
+            (t) => Number(t.expert) === Number(user?.id),
+          );
+
+          if (myTheme) {
+            // dropdown me sirf meri theme dikhegi
+            setThemes([myTheme]);
+
+            // theme auto select
+            setFilters((prev) => ({
+              ...prev,
+              theme: String(myTheme.id),
+              training_plan: "",
+            }));
+          } else {
+            setThemes([]);
+          }
+        } else {
+          setThemes(allThemes);
+        }
         if (role === "smmu") {
           const [mRes, dcRes] = await Promise.all([
             LOOKUP_API.mandals.list({ page_size: 100 }),
@@ -594,6 +616,8 @@ export default function TrainingBatchList() {
 
                       <select
                         className="input"
+                        value={filters.theme}
+                        disabled={role === "smmu"}
                         onChange={(e) =>
                           setFilters((f) => ({
                             ...f,
