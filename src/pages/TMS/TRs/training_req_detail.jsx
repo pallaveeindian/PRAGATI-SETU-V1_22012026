@@ -514,10 +514,11 @@ export default function TrainingRequestDetail() {
         Address: payload.address || "-",
         Remarks: payload.remarks || "-",
         "Registered On": fmtDate(payload.registered_on),
-        District: locs.districtName || payload.district || "-",
-        Block: locs.blockName || payload.block || "-",
-        Panchayat: locs.panchayatName || payload.panchayat || "-",
-        Village: locs.villageName || payload.village || "-",
+        District: payload.district_name_en || payload.district_id || "-",
+        Block:
+          locs.blockName || payload.block_name_en || payload.block_id || "-",
+        Panchayat: payload.panchayat_name_en || payload.panchayat_id || "-",
+        Village: payload.village_name_english || payload.village_id || "-",
       };
 
       setModalPayload(disp);

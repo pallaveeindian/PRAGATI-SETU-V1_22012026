@@ -40,13 +40,13 @@ export default function CreateTrainingRequest() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [hover, setHover] = useState(null);
 
-  const geoscopeCached = useMemo(() => {
+  const [geoscopeCached, setGeoscopeCached] = useState(() => {
     try {
       return JSON.parse(localStorage.getItem(GEOSCOPE_KEY) || "null");
     } catch (e) {
       return null;
     }
-  }, []);
+  });
 
   // Initialize State Machine Hook
   const trState = useTRState(geoscopeCached);
@@ -88,25 +88,35 @@ export default function CreateTrainingRequest() {
   const [preloading, setPreloading] = useState(false);
   const [preloadErrors, setPreloadErrors] = useState([]);
 
-  // Fallback to API if cache missed for Geoscope
+  // Always ensure Geoscope is fetched properly for user
   useEffect(() => {
-    if ((!trState.blockId || !trState.districtId) && user?.id) {
+    if (user?.id) {
       const fetchGeoscope = async () => {
         try {
           const response = await LOOKUP_API.userGeoscopeByUserId(user.id);
-          const data = response.data;
-          const fetchedBlockId = data?.blocks?.[0] ?? data?.block_id ?? null;
-          const fetchedDistrictId =
-            data?.districts?.[0] ?? data?.district_id ?? null;
-          if (fetchedBlockId) trState.setBlockId(fetchedBlockId);
-          if (fetchedDistrictId) trState.setDistrictId(fetchedDistrictId);
+          const data = response?.data ?? response;
+
+          if (data) {
+            localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(data));
+            setGeoscopeCached(data);
+
+            const fetchedBlockId = data?.blocks?.[0] ?? data?.block_id ?? null;
+            const fetchedDistrictId =
+              data?.districts?.[0] ?? data?.district_id ?? null;
+
+            if (fetchedBlockId && !trState.blockId)
+              trState.setBlockId(fetchedBlockId);
+            if (fetchedDistrictId && !trState.districtId)
+              trState.setDistrictId(fetchedDistrictId);
+          }
         } catch (error) {
-          console.error("Failed to fetch fallback user geoscope:", error);
+          console.error("Failed to fetch user geoscope:", error);
         }
       };
       fetchGeoscope();
     }
-  }, [trState.blockId, trState.districtId, user?.id]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [user?.id]);
 
   async function fetchListOnce(listFn, params = {}) {
     try {
@@ -917,6 +927,9 @@ export default function CreateTrainingRequest() {
                       form={trState.form}
                       setForm={trState.setForm}
                       roleKey={roleKey}
+                      user={user}
+                      geoscopeCached={geoscopeCached}
+                      districtId={trState.districtId}
                       blockId={trState.blockId}
                       setBlockId={trState.setBlockId}
                       blockList={blockList}

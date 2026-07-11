@@ -292,33 +292,41 @@ const ParticipantTableFilters = ({
         Batch Configuration
       </h4>
       <div style={{ ...gridStyle, marginBottom: "32px" }}>
-        <div>
-          <label style={labelStyle}>Batch Type</label>
-          <select
-            value={isResumeMode ? "Separate" : filters.batchType || "Separate"}
-            disabled={isResumeMode}
-            style={{
-              ...selectStyle,
-              background: isResumeMode ? "#f3f4f6" : "#fff",
-              cursor: isResumeMode ? "not-allowed" : "pointer",
-              opacity: isResumeMode ? 0.6 : 1,
-            }}
-            onChange={(e) => {
-              handleValueChange(
-                "block",
-                e.target.value === "Combined" ? [] : "",
-              );
-              handleValueChange("panchayat", "");
-              handleValueChange("village", "");
-              handleValueChange("batchType", e.target.value);
-            }}
-          >
-            <option value="Separate">Separate Batch (Single Block)</option>
-            {!isResumeMode && (
-              <option value="Combined">Combined Batch (Multiple Blocks)</option>
-            )}
-          </select>
-        </div>
+        {filters.participantType !== "Trainer" && (
+          <>
+            <div>
+              <label style={labelStyle}>Batch Type</label>
+              <select
+                value={
+                  isResumeMode ? "Separate" : filters.batchType || "Separate"
+                }
+                disabled={isResumeMode}
+                style={{
+                  ...selectStyle,
+                  background: isResumeMode ? "#f3f4f6" : "#fff",
+                  cursor: isResumeMode ? "not-allowed" : "pointer",
+                  opacity: isResumeMode ? 0.6 : 1,
+                }}
+                onChange={(e) => {
+                  handleValueChange(
+                    "block",
+                    e.target.value === "Combined" ? [] : "",
+                  );
+                  handleValueChange("panchayat", "");
+                  handleValueChange("village", "");
+                  handleValueChange("batchType", e.target.value);
+                }}
+              >
+                <option value="Separate">Separate Batch (Single Block)</option>
+                {!isResumeMode && (
+                  <option value="Combined">
+                    Combined Batch (Multiple Blocks)
+                  </option>
+                )}
+              </select>
+            </div>
+          </>
+        )}
 
         <div>
           <label style={labelStyle}>Start Date</label>
@@ -351,59 +359,65 @@ const ParticipantTableFilters = ({
       {/* ============================================== */}
       {/* SECTION 2: PARTICIPANT QUERY FILTERS           */}
       {/* ============================================== */}
-      <h4
-        style={{
-          margin: "0 0 16px 0",
-          color: "#2563eb",
-          borderBottom: "2px solid #e5e7eb",
-          paddingBottom: "8px",
-        }}
-      >
-        Participant Trainee Filters
-      </h4>
       <div style={gridStyle}>
-        <div>
-          <label style={labelStyle}>
-            Select Block {isCombined ? "(Hold Ctrl/Cmd to select multi)" : ""}
-          </label>
-          {isCombined ? (
-            <select
-              multiple
-              style={{ ...selectStyle, height: "80px", padding: "4px" }}
-              value={Array.isArray(filters.block) ? filters.block : []}
-              onChange={(e) =>
-                handleMultipleSelectChange("block", e.target.options)
-              }
-            >
-              {verifiedBlocks.map((b, idx) => (
-                <option key={idx} value={getBlockValue(b)}>
-                  {getBlockLabel(b)}
-                </option>
-              ))}
-            </select>
-          ) : (
-            <select
-              style={selectStyle}
-              value={typeof filters.block === "string" ? filters.block : ""}
-              onChange={(e) => {
-                handleValueChange("block", e.target.value);
-                handleValueChange("panchayat", "");
-                handleValueChange("village", "");
+        {filters.participantType !== "Trainer" && (
+          <>
+            <h4
+              style={{
+                gridColumn: "1 / -1",
+                margin: "0 0 16px 0",
+                color: "#2563eb",
+                borderBottom: "2px solid #e5e7eb",
+                paddingBottom: "8px",
               }}
             >
-              <option value="">All Blocks</option>
-              {verifiedBlocks.map((b, idx) => (
-                <option key={idx} value={getBlockValue(b)}>
-                  {getBlockLabel(b)}
-                </option>
-              ))}
-            </select>
-          )}
-        </div>
+              Participant Trainee Filters
+            </h4>
+            <div>
+              <label style={labelStyle}>
+                Select Block{" "}
+                {isCombined ? "(Hold Ctrl/Cmd to select multi)" : ""}
+              </label>
+              {isCombined ? (
+                <select
+                  multiple
+                  style={{ ...selectStyle, height: "80px", padding: "4px" }}
+                  value={Array.isArray(filters.block) ? filters.block : []}
+                  onChange={(e) =>
+                    handleMultipleSelectChange("block", e.target.options)
+                  }
+                >
+                  {verifiedBlocks.map((b, idx) => (
+                    <option key={idx} value={getBlockValue(b)}>
+                      {getBlockLabel(b)}
+                    </option>
+                  ))}
+                </select>
+              ) : (
+                <select
+                  style={selectStyle}
+                  value={typeof filters.block === "string" ? filters.block : ""}
+                  onChange={(e) => {
+                    handleValueChange("block", e.target.value);
+                    handleValueChange("panchayat", "");
+                    handleValueChange("village", "");
+                  }}
+                >
+                  <option value="">All Blocks</option>
+                  {verifiedBlocks.map((b, idx) => (
+                    <option key={idx} value={getBlockValue(b)}>
+                      {getBlockLabel(b)}
+                    </option>
+                  ))}
+                </select>
+              )}
+            </div>
+          </>
+        )}
 
         {filters.participantType === "Beneficiary" && (
           <>
-            <div ref={panchayatRef} style={{ position: "relative" }}>
+            {/* <div ref={panchayatRef} style={{ position: "relative" }}>
               <label style={labelStyle}>
                 Panchayat ({verifiedPanchayats.length})
               </label>
@@ -504,9 +518,9 @@ const ParticipantTableFilters = ({
                   })}
                 </div>
               )}
-            </div>
+            </div> */}
 
-            <div>
+            {/* <div>
               <label style={labelStyle}>Village</label>
               <select
                 style={selectStyle}
@@ -520,7 +534,7 @@ const ParticipantTableFilters = ({
                   </option>
                 ))}
               </select>
-            </div>
+            </div> */}
 
             <div>
               <label style={labelStyle}>Age Range</label>

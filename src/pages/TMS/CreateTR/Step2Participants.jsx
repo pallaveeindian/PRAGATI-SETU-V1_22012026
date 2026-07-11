@@ -3,6 +3,7 @@ import React from "react";
 import ShgListTable from "../../Dashboard/ShgListTable";
 import ShgMemberListTable from "../../Dashboard/ShgMemberListTable";
 import MasterTrainerList from "./MasterTrainerList";
+import { LOOKUP_API } from "../../../api/axios";
 
 // Internal Sub-component for SHG Member rendering
 function MemberListArea({
@@ -51,6 +52,9 @@ export default function Step2Participants({
   form,
   setForm,
   roleKey,
+  user,
+  geoscopeCached,
+  districtId,
   blockId,
   setBlockId,
   blockList,
@@ -110,13 +114,13 @@ export default function Step2Participants({
     cursor: "pointer",
   };
 
-  // IMPLEMENTATION OF TR PARTICIPANT MINIMUM LIMIT - 15
+  // IMPLEMENTATION OF TR PARTICIPANT MINIMUM LIMIT - 5
   const currentCount =
     form.training_type === "BENEFICIARY"
       ? selectedBeneficiaries.length
       : selectedTrainerIds.size;
 
-  const hasEnough = currentCount >= 15;
+  const hasEnough = currentCount >= 5;
 
   return (
     <>
@@ -200,10 +204,19 @@ export default function Step2Participants({
           <option value="STATE">State</option>
         </select>
       </div>
-      <h3 style={{ fontSize: 16, color: "#6c757d", marginBottom: 12, textAlign: "center" }}>
-        Please Click SHG List button below to navigate back to SHG List after
-        you have selected the members below,
-      </h3>
+      {form.training_type === "BENEFICIARY" && (
+        <h3
+          style={{
+            fontSize: 16,
+            color: "#6c757d",
+            marginBottom: 12,
+            textAlign: "center",
+          }}
+        >
+          Please Click SHG List button below to navigate back to SHG List after
+          you have selected the members below.
+        </h3>
+      )}
       {form.training_type === "BENEFICIARY" ? (
         <>
           <div style={{ display: "flex", gap: 8, marginBottom: 12 }}>
@@ -433,21 +446,81 @@ export default function Step2Participants({
                       );
                       if (already) return;
 
+                      const applyFallback = (data) => {
+                        let did =
+                          data.district_id ||
+                          data.districtId ||
+                          (data.__raw_upsrlm && data.__raw_upsrlm.district_id);
+                        let bid =
+                          data.block_id ||
+                          data.blockId ||
+                          (data.__raw_upsrlm && data.__raw_upsrlm.block_id);
+                        let changed = false;
+
+                        // Secure fallback identifiers from geoscope cache and state
+                        const actualUserDistrict =
+                          districtId ||
+                          geoscopeCached?.districts?.[0] ||
+                          user?.district_id ||
+                          user?.districtId;
+                        const actualUserBlock =
+                          blockId ||
+                          geoscopeCached?.blocks?.[0] ||
+                          user?.block_id ||
+                          user?.blockId;
+
+                        // Fallback for District
+                        if (!did || did === "-") {
+                          if (
+                            roleKey === "bmmu" ||
+                            user?.role_id == 1 ||
+                            roleKey === "dmmu" ||
+                            user?.role_id == 2
+                          ) {
+                            data.district_id = actualUserDistrict;
+                            changed = true;
+                          }
+                        }
+
+                        // Fallback for Block
+                        if (!bid || bid === "-") {
+                          if (roleKey === "bmmu" || user?.role_id == 1) {
+                            data.block_id = actualUserBlock;
+                            changed = true;
+                          } else if (roleKey === "dmmu" || user?.role_id == 2) {
+                            data.block_id =
+                              selectedBlockForShg?.block_id ||
+                              selectedBlockForShg?.id ||
+                              actualUserBlock;
+                            changed = true;
+                          }
+                        }
+
+                        if (changed) {
+                          console.log(
+                            `Defaulted missing district/block for member ${data.member_code || data.lokos_member_code} to user's ids. District: ${data.district_id}, Block: ${data.block_id}`,
+                          );
+                        }
+
+                        return data;
+                      };
+
                       try {
                         const detail =
                           await fetchMemberDetailBestEffort(member);
-                        const merged = {
+                        let merged = {
                           ...(detail || {}),
                           shg_code: lokos_shg_code,
                           member_code: lokos_member_code,
                         };
-                        addSelectedMember(merged);
+                        addSelectedMember(applyFallback(merged));
                       } catch (e) {
-                        addSelectedMember({
+                        let fallbackMerged = {
                           ...member,
                           shg_code: lokos_shg_code,
                           member_code: lokos_member_code,
-                        });
+                        };
+                        addSelectedMember(applyFallback(fallbackMerged));
                       }
                     }}
                     reloadToken={memberListReloadToken}

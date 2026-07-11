@@ -618,10 +618,10 @@ export default function CpAdPerBatch() {
     e.preventDefault();
     if (!batchId) return;
 
-    if (!csvFile) {
-      alert("CSV upload is mandatory. Please upload the punch machine CSV.");
-      return;
-    }
+    // if (!csvFile) {
+    //   alert("CSV upload is mandatory. Please upload the punch machine CSV.");
+    //   return;
+    // }
     if (!allEkycVerified) {
       alert("EKYC is not complete. Please verify all participants first.");
       return;

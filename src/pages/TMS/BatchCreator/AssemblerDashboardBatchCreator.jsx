@@ -208,7 +208,7 @@ const AssemblerDashboardBatchCreator = () => {
           selectedTrainees.find((t) => t?.block_id)?.block_id ||
           (Array.isArray(filters.block) ? filters.block[0] : filters.block);
 
-        if (!blockId) {
+        if (!blockId && filters.participantType !== "Trainer") {
           alert("Block Id not found.");
           setIsSubmitting(false);
           return;
@@ -223,7 +223,7 @@ const AssemblerDashboardBatchCreator = () => {
         finalPayload = {
           ...basePayload,
           batch_type: "SEPARATE",
-          block_id: Number(blockId),
+          block_id: blockId ? Number(blockId) : null,
           participant_ids: participantIds,
         };
       }
@@ -471,7 +471,7 @@ const AssemblerDashboardBatchCreator = () => {
           <div
             style={{
               display: "grid",
-              gridTemplateColumns: "auto 1fr auto",
+              gridTemplateColumns: "auto 1fr",
               alignItems: "stretch",
               gap: "16px",
               marginBottom: "24px",
@@ -508,10 +508,15 @@ const AssemblerDashboardBatchCreator = () => {
 
             <div
               style={{
+                position: "fixed",
+                top: "80px",
+                right: "40px",
+                zIndex: 900,
                 padding: "12px",
-                backgroundColor: "#f8fafc",
-                borderRadius: "12px",
-                border: "1px solid #e2e8f0",
+                backgroundColor: "#ffffff",
+                borderRadius: "16px",
+                border: "2px solid #2563eb",
+                boxShadow: "0 12px 28px rgba(0,0,0,0.15)",
               }}
             >
               <ParticipantCount
@@ -594,7 +599,9 @@ const AssemblerDashboardBatchCreator = () => {
                   color:
                     participantData.selectedParticipants.length >= 20 &&
                     participantData.selectedParticipants.length <= 40 &&
-                    (batchType !== "SEPARATE" || filters.block) &&
+                    (batchType !== "SEPARATE" ||
+                      filters.participantType === "Trainer" ||
+                      filters.block) &&
                     filters.startDate // <-- Start Date Check added here
                       ? "#16a34a"
                       : "#ef4444",
@@ -606,7 +613,9 @@ const AssemblerDashboardBatchCreator = () => {
                     ? "⚠ Minimum 20 participants required to form a batch."
                     : participantData.selectedParticipants.length > 40
                       ? "⚠ Maximum 40 participants allowed per batch."
-                      : batchType === "SEPARATE" && !filters.block
+                      : batchType === "SEPARATE" &&
+                          filters.participantType !== "Trainer" &&
+                          !filters.block
                         ? "⚠ A Block must be selected for a Separate Batch."
                         : "✓ Configuration is valid."}
               </div>
@@ -616,21 +625,27 @@ const AssemblerDashboardBatchCreator = () => {
                 disabled={
                   participantData.selectedParticipants.length < 20 ||
                   participantData.selectedParticipants.length > 40 ||
-                  (batchType === "SEPARATE" && !filters.block) ||
+                  (batchType === "SEPARATE" &&
+                    filters.participantType !== "Trainer" &&
+                    !filters.block) ||
                   !filters.startDate // <-- Disabling condition added here
                 }
                 style={{
                   background:
                     participantData.selectedParticipants.length < 20 ||
                     participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" && !filters.block) ||
+                    (batchType === "SEPARATE" &&
+                      filters.participantType !== "Trainer" &&
+                      !filters.block) ||
                     !filters.startDate
                       ? "#cbd5e1"
                       : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                   color:
                     participantData.selectedParticipants.length < 20 ||
                     participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" && !filters.block) ||
+                    (batchType === "SEPARATE" &&
+                      filters.participantType !== "Trainer" &&
+                      !filters.block) ||
                     !filters.startDate
                       ? "#94a3b8"
                       : "#ffffff",
@@ -642,14 +657,18 @@ const AssemblerDashboardBatchCreator = () => {
                   boxShadow:
                     participantData.selectedParticipants.length < 20 ||
                     participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" && !filters.block) ||
+                    (batchType === "SEPARATE" &&
+                      filters.participantType !== "Trainer" &&
+                      !filters.block) ||
                     !filters.startDate
                       ? "none"
                       : "0 4px 12px rgba(37, 99, 235, 0.15)",
                   cursor:
                     participantData.selectedParticipants.length < 20 ||
                     participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" && !filters.block) ||
+                    (batchType === "SEPARATE" &&
+                      filters.participantType !== "Trainer" &&
+                      !filters.block) ||
                     !filters.startDate
                       ? "not-allowed"
                       : "pointer",

@@ -4,7 +4,7 @@ import AnalyticsCharts from "./AnalyticComponents/AnalyticsCharts";
 import AnalyticsFilters from "./AnalyticComponents/AnalyticsFilters";
 import AnalyticsTable from "./AnalyticComponents/AnalyticsTable";
 import api from "../../api/axios";
-import { LOOKUP_API } from "../../api/axios";
+import { LOOKUP_API, TMS_API } from "../../api/axios";
 import { filter } from "jszip";
 
 export default function AnalyticsSection({ currentReport }) {
@@ -17,6 +17,8 @@ export default function AnalyticsSection({ currentReport }) {
   // --- State for Lookups & Filters ---
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [trainingPlans, setTrainingPlans] = useState([]);
   const [loading, setLoading] = useState(false);
   const [filters, setFilters] = useState({
     district_id: "",
@@ -32,6 +34,8 @@ export default function AnalyticsSection({ currentReport }) {
     dist_theme_prcnt: "0",
     passwd_status: "",
     financial_year: "2026-27",
+    theme_id: "",
+    plan_id: "",
   });
 
   const activeTab = currentReport?.tab || "overview";
@@ -85,6 +89,45 @@ export default function AnalyticsSection({ currentReport }) {
     fetchBlocks();
   }, [filters.district_id]);
 
+  // --- Fetch Training Themes ---
+  useEffect(() => {
+    const fetchThemes = async () => {
+      try {
+        const res = await api.get("/tms/public/training-themes/", {
+          params: { page_size: 100 },
+        });
+        setThemes(res?.data?.results || res?.data || []);
+      } catch (err) {
+        console.error("Error fetching themes", err);
+        setThemes([]);
+      }
+    };
+    fetchThemes();
+  }, []);
+
+  // --- Fetch Training Plans based on Theme ---
+  useEffect(() => {
+    const fetchPlans = async () => {
+      if (!filters.theme_id) {
+        setTrainingPlans([]);
+        return;
+      }
+      try {
+        const res = await api.get("/tms/public/training-plans/", {
+          params: {
+            theme: filters.theme_id,
+            page_size: 120,
+          },
+        });
+        setTrainingPlans(res?.data?.results || res?.data || []);
+      } catch (err) {
+        console.error("Error fetching training plans", err);
+        setTrainingPlans([]);
+      }
+    };
+    fetchPlans();
+  }, [filters.theme_id]);
+
   const handleFilterChange = (keyOrObj, value) => {
     setFilters((prev) => {
       // Allow bulk updates by passing an object
@@ -125,6 +168,8 @@ export default function AnalyticsSection({ currentReport }) {
       queryParams.append("passwd_status", filters.passwd_status);
     if (filters.financial_year)
       queryParams.append("financial_year", filters.financial_year);
+    if (filters.theme_id) queryParams.append("theme_id", filters.theme_id);
+    if (filters.plan_id) queryParams.append("plan_id", filters.plan_id);
 
     const queryString = queryParams.toString()
       ? `?${queryParams.toString()}`
@@ -174,6 +219,8 @@ export default function AnalyticsSection({ currentReport }) {
     filters.dist_theme_prcnt,
     filters.passwd_status,
     filters.financial_year,
+    filters.theme_id,
+    filters.plan_id,
   ]);
 
   // Fetch data whenever the tab changes
@@ -203,7 +250,9 @@ export default function AnalyticsSection({ currentReport }) {
           filters={filters}
           districts={districts}
           blocks={blocks}
-          passwd_status={filters.passwd_status} // <-- FIXED HERE
+          themes={themes}
+          trainingPlans={trainingPlans}
+          passwd_status={filters.passwd_status}
           onFilterChange={handleFilterChange}
           onApply={fetchReportData}
         />

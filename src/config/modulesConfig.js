@@ -12,7 +12,7 @@ export const MODULES_CONFIG = [
     color: "#2a56cf",
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: "2026-07-11T12:30:00",
+    maintenanceUntil: null,
   },
   {
     id: "crp",

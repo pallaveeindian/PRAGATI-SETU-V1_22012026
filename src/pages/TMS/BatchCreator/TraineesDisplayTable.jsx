@@ -99,6 +99,34 @@ const ParticipantTable = ({
 
       setTraineesData(traineesResp);
 
+      // SURGICAL FIX: Auto-lock the block_id when a search yields results
+      if (filters.searchValue && traineesResp.length > 0) {
+        const firstTrainee = traineesResp[0];
+        const rawBlock =
+          firstTrainee?.block_id ||
+          firstTrainee?.blockId ||
+          firstTrainee?.block ||
+          firstTrainee?.block_code;
+
+        const fetchedBlockId =
+          rawBlock && typeof rawBlock === "object"
+            ? rawBlock.id || rawBlock.block_id
+            : rawBlock;
+
+        if (fetchedBlockId) {
+          const blockToSet = String(fetchedBlockId);
+          const isCombined = filters.batchType === "Combined";
+          const currentBlock = Array.isArray(filters.block)
+            ? String(filters.block[0] || "")
+            : String(filters.block || "");
+
+          // Only trigger state update if the block actually needs to change to avoid infinite loops
+          if (currentBlock !== blockToSet) {
+            handleChange("block", isCombined ? [blockToSet] : blockToSet);
+          }
+        }
+      }
+
       // Parent ko response bhej do (Resume mode ke liye)
       if (typeof onTraineesLoaded === "function") {
         onTraineesLoaded(traineesResp);
@@ -267,7 +295,6 @@ const ParticipantTable = ({
                 </th>
 
                 <th style={thStyle}>S.No</th>
-                <th style={thStyle}>ID</th>
 
                 {filters.participantType?.toUpperCase() === "TRAINER" ? (
                   <>
@@ -282,9 +309,7 @@ const ParticipantTable = ({
                     <th style={thStyle}>Gender</th>
                     <th style={thStyle}>Category</th>
                     <th style={thStyle}>Block</th>
-                    <th style={thStyle}>Panchayat</th>
-                    <th style={thStyle}>Village</th>
-                    <th style={thStyle}>Training Request</th>
+                    <th style={thStyle}>Training Request ID</th>
                   </>
                 )}
               </tr>
@@ -310,13 +335,12 @@ const ParticipantTable = ({
                     </td>
 
                     <td style={tdStyle}>{index + 1}</td>
-                    <td style={tdStyle}>{row.id}</td>
 
                     {filters.participantType?.toUpperCase() === "TRAINER" ? (
                       <>
                         <td style={tdStyle}>{row.full_name || "-"}</td>
                         <td style={tdStyle}>{row.mobile_no || "-"}</td>
-                        <td style={tdStyle}>{row.district || "-"}</td>
+                        <td style={tdStyle}>{row.district_name_en || "-"}</td>
                       </>
                     ) : (
                       <>
@@ -346,10 +370,6 @@ const ParticipantTable = ({
                             row.block_name ||
                             "-"}
                         </td>
-
-                        <td style={tdStyle}>{row.panchayat || "-"}</td>
-
-                        <td style={tdStyle}>{row.village || "-"}</td>
 
                         <td style={tdStyle}>
                           {row.training || row.training_request || "-"}

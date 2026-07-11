@@ -190,7 +190,7 @@ export function PreviewConfirmModal({
             Cancel
           </button>
 
-          {/* NEW: Updated Minimum 15 Warning */}
+          {/* NEW: Updated Minimum 5 Warning */}
           {!hasParticipants && (
             <div
               style={{

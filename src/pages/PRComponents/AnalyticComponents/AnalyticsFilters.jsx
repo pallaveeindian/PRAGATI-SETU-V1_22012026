@@ -17,6 +17,8 @@ export default function AnalyticsFilters({
   filters,
   districts,
   blocks,
+  themes = [],
+  trainingPlans = [],
   passwd_status,
   onFilterChange,
   onApply,
@@ -119,6 +121,48 @@ export default function AnalyticsFilters({
           ))}
         </select>
       </div>
+
+      {/* --- TRAINING THEME & PLAN FILTERS --- */}
+      {(activeTab === "tms" || activeSubTab === "tms_software") && (
+        <>
+          <div className="filter-group">
+            <label>Training Theme</label>
+            <select
+              value={filters.theme_id || ""}
+              onChange={(e) => {
+                // Update theme and reset plan simultaneously
+                onFilterChange({
+                  theme_id: e.target.value,
+                  plan_id: "",
+                });
+              }}
+            >
+              <option value="">-- All Themes --</option>
+              {themes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.theme_name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="filter-group">
+            <label>Training Plan</label>
+            <select
+              value={filters.plan_id || ""}
+              onChange={(e) => onFilterChange("plan_id", e.target.value)}
+              disabled={!filters.theme_id}
+            >
+              <option value="">-- All Plans --</option>
+              {trainingPlans.map((p) => (
+                <option key={p.id} value={p.id}>
+                  {p.training_name}
+                </option>
+              ))}
+            </select>
+          </div>
+        </>
+      )}
 
       {/* --- VIEW MODE (Shared by TMS Login & MOU Analytics) --- */}
       {showViewMode && (
