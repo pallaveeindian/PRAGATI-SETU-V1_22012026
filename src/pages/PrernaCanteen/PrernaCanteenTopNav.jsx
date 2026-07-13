@@ -69,7 +69,7 @@ export default function PrernaCanteenTopNav({ left = null, right = null, onLogou
         };
     }, [auth]);
 
-    // 🌟 डायनेमिक स्कोप लेबल्स को प्रोसेस करना (TMS की तरह परफेक्ट और सटीक)
+
     let scopeLabel = "";
     let scopeStyle = { backgroundColor: "#fffbeb", color: "#b45309", borderColor: "#fde68a" };
 
@@ -124,8 +124,7 @@ export default function PrernaCanteenTopNav({ left = null, right = null, onLogou
         </div>
     );
 
-    /* 🌟 मुख्य सुधार: defaultRight को अब सीधे रेंडर ब्लॉक के अंदर कंडीशनली मैप किया गया है
-       ताकि जैसे ही लोकलस्टोरेज या स्टेट अपडेट हो, स्कोप बदल जाए */
+
     const defaultRight = (
         <div className="pc-flex pc-items-center pc-gap-6">
             <div className="pc-user-info-box">

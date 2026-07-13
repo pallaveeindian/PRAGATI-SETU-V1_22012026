@@ -1,6 +1,6 @@
 import React, { useState } from "react";
 import PrernaCanteenTopNav from "./PrernaCanteenTopNav";
-import RecordedPrernaCanteen from "./RecordedPrernaCanteen";
+import RecordedPrernaCanteens from "./RecordedPrernaCanteens";
 import CanteenForm from "./CanteenForm";
 
 export default function PrernaCanteenTabs({ onBackClick }) {
@@ -10,68 +10,76 @@ export default function PrernaCanteenTabs({ onBackClick }) {
         <>
             <PrernaCanteenTopNav onBackClick={onBackClick} />
 
-            <div className="margintop">
+            <div className="canteen-tabs-container marginTop">
 
-                <div className="d-flex border-bottom mb-4">
-
+                <div className="tabs-header">
                     <button
-                        className={`btn me-2 ${activeTab === "recorded" ? "btn-success" : "btn-light"
-                            }`}
+                        className={`tab-btn ${activeTab === "recorded" ? "active" : ""}`}
                         onClick={() => setActiveTab("recorded")}
                     >
                         Recorded Prerna Canteens
                     </button>
 
                     <button
-                        className={`btn ${activeTab === "record" ? "btn-success" : "btn-light"
-                            }`}
+                        className={`tab-btn ${activeTab === "record" ? "active" : ""}`}
                         onClick={() => setActiveTab("record")}
                     >
                         Record a Canteen
                     </button>
-
                 </div>
 
-                {activeTab === "recorded" ? (
-                    <RecordedPrernaCanteen />
-                ) : (
-                    <CanteenForm />
-                )}
+                <div className="tab-content">
+                    {activeTab === "recorded" ? (
+                        <RecordedPrernaCanteens />
+                    ) : (
+                        <CanteenForm />
+                    )}
+                </div>
 
             </div>
 
             <style>{`
-                .canteen-tabs-container{
-                    width:100%;
-                    padding:20px;
-                    background:#f8fafc;
-                    min-height:100vh;
+                .canteen-tabs-container {
+                    width: 100%;
+                    padding: 0 20px 20px 20px; /* Adjusted padding */
+                    min-height: 100vh;
                 }
-.marginTop{
-margin-top: 3px;
-}
-                .tabs-header{
-                    display:flex;
-                    gap:10px;
-                    margin-bottom:20px;
-                    border-bottom:2px solid #e5e7eb;
+                
+                .marginTop {
+                    margin-top: 25px; /* Added distinct margin-top */
                 }
-
-                .tab-btn{
-                    border:none;
-                    outline:none;
-                    cursor:pointer;
-                    padding:12px 25px;
-                    font-size:15px;
-                    font-weight:600;
-                    background:#e5e7eb;
-                    color:#374151;
-                    border-radius:8px 8px 0 0;
+                
+                .tabs-header {
+                    display: flex;
+                    gap: 12px;
+                    margin-bottom: 25px;
+                    border-bottom: 2px solid #e2e8f0; /* Clean bottom line spanning the container */
                 }
 
-                .tab-btn.active{
-                    background:#15803d;
-                    color:#fff;
+                .tab-btn {
+                    border: none;
+                    outline: none;
+                    cursor: pointer;
+                    padding: 12px 28px;
+                    font-size: 15px;
+                    font-weight: 600;
+                    background: #f1f5f9; /* Light gray for inactive state */
+                    color: #475569;
+                    border-radius: 6px 6px 0 0;
+                    transition: all 0.2s ease-in-out; /* Smooth transition for hover */
+                }
+
+                /* Hover Effect */
+                .tab-btn:hover {
+                    background: #e2e8f0;
+                    color: #0f172a;
+                }
+
+                /* Active State Styling */
+                .tab-btn.active {
+                    background: #940a0a; /* Dark blue matching your layout screenshots */
+                    color: #ffffff;
+                    box-shadow: 0 -3px 6px #940a0a(0,0,0,0.1);
                 }
             `}</style>
         </>

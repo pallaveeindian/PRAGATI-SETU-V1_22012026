@@ -7729,9 +7729,15 @@ export default function CanteenForm(props) {
     const [packedProducts, setPackedProducts] = useState([]);
     const [training, setTraining] = useState("");
     const [trainingSource, setTrainingSource] = useState("");
-    const [trainingAmount, setTrainingAmount] = useState("");
-    const [fssaiFile, setFssaiFile] = useState(null);
+    // const [trainingAmount, setTrainingAmount] = useState("");
 
+    const [trainingDuration, setTrainingDuration] = useState("");
+    const [otherTrainingSource, setOtherTrainingSource] = useState("");
+    const [fssaiFile, setFssaiFile] = useState(null);
+    const [venue, setVenue] = useState("");
+    const [completeAddress, setCompleteAddress] = useState("");
+    const [frontPhotos, setFrontPhotos] = useState([]);
+    const [internalPhotos, setInternalPhotos] = useState([]);
     // Helper utility to capture custom data layout format from your backend metadata payload
     const extractListing = (response) => {
         if (!response) return [];
@@ -8071,8 +8077,19 @@ export default function CanteenForm(props) {
                 sells_other_shg_packaged_food: packedFood,
                 has_canteen_management_training: training,
                 packaged_products_list: packedProducts,
-                training_source: training === "Yes" ? trainingSource : "",
-                training_amount: training === "Yes" ? trainingAmount : ""
+                // training_source: training === "Yes" ? trainingSource : "",
+                // training_amount: training === "Yes" ? trainingAmount : ""
+                training_source:
+                    training === "Yes"
+                        ? trainingSource === "Others"
+                            ? otherTrainingSource
+                            : trainingSource
+                        : "",
+
+                training_duration:
+                    training === "Yes"
+                        ? trainingDuration
+                        : "",
             };
 
             const financePayload = {
@@ -8151,6 +8168,16 @@ export default function CanteenForm(props) {
                 formData.append("license_file_0", fssaiFile);
             }
 
+            // photo internal front
+            frontPhotos.forEach((file, index) => {
+                formData.append(`front_photo_${index}`, file);
+            });
+
+            internalPhotos.forEach((file, index) => {
+                formData.append(`internal_photo_${index}`, file);
+            });
+
+
             // =======================================================
             // DISPLAY FINALIZED FORMDATA ENTRIES FOR INSPECTION
             // =======================================================
@@ -8221,14 +8248,50 @@ export default function CanteenForm(props) {
             )
         );
     };
+    const handleFrontPhotos = (e) => {
+        const selectedFiles = Array.from(e.target.files);
+
+        setFrontPhotos((prev) => {
+            const updated = [...prev, ...selectedFiles];
+
+            if (updated.length > 4) {
+                alert("Maximum 4 front photos allowed.");
+            }
+
+            return updated.slice(0, 4);
+        });
+
+        // Allow selecting the same file again
+        e.target.value = null;
+    };
+    const handleInternalPhotos = (e) => {
+        const selectedFiles = Array.from(e.target.files);
+
+        setInternalPhotos((prev) => {
+            const updated = [...prev, ...selectedFiles];
+
+            if (updated.length > 4) {
+                alert("Maximum 4 internal photos allowed.");
+            }
+
+            return updated.slice(0, 4);
+        });
+
+        e.target.value = null;
+    };
+    const removeFrontPhoto = (index) => {
+        setFrontPhotos((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const removeInternalPhoto = (index) => {
+        setInternalPhotos((prev) => prev.filter((_, i) => i !== index));
+    };
     return (
         <>
             {/* <PrernaCanteenTopNav onBackClick={props.onBackClick} /> */}
             {/* <PrernaCanteenTabs /> */}
             <div className="container">
-                <div className="heading-section">
-                    <img src={prernaLogo} alt="Prerna Logo" className="logo" />
-                </div>
+
                 <h1>Prerna Canteen Survey Form</h1>
 
                 {/* Location Details */}
@@ -8709,8 +8772,46 @@ export default function CanteenForm(props) {
                                 />
                             )}
                         </div>
+                        <div>
+                            <label>Venue List</label>
+                            <select
+                                value={venue}
+                                onChange={(e) => setVenue(e.target.value)}
+                            >
+                                <option value="">Select Venue</option>
+                                <option value="District Panchayat Office">
+                                    District Panchayat Office
+                                </option>
+                                <option value="Collectorate Campus">
+                                    Collectorate Campus
+                                </option>
+                                <option value="Community Health Centre">
+                                    Community Health Centre
+                                </option>
+                                <option value="Government Polytechnic">
+                                    Government Polytechnic
+                                </option>
+                                <option value="Railway Station">
+                                    Railway Station
+                                </option>
+                                <option value="Bus Stand">
+                                    Bus Stand
+                                </option>
+                                <option value="University Campus">
+                                    University Campus
+                                </option>
+                            </select>
+                        </div>
 
-
+                        <div>
+                            <label>Complete Address</label>
+                            <input
+                                type="text"
+                                placeholder="Enter Complete Address"
+                                value={completeAddress}
+                                onChange={(e) => setCompleteAddress(e.target.value)}
+                            />
+                        </div>
                     </div>
                     {/* {canteenType === "Model Prerna Canteen" && (
                         <div className="section">
@@ -8908,16 +9009,58 @@ it means the user clicked "Others". We show the typable text input box.
                         </select>
 
                         {training === "Yes" && (
-                            <div className="grid" style={{ marginTop: "15px" }}>
-                                <input
-                                    placeholder="Training Source"
-                                    value={trainingSource}
-                                    onChange={(e) => setTrainingSource(e.target.value)} />
-                                <input
-                                    placeholder="Training Amount"
-                                    value={trainingAmount}
-                                    onChange={(e) => setTrainingAmount(e.target.value)} />
-                            </div>
+                            <>
+                                <div
+                                    style={{
+                                        display: "grid",
+                                        gridTemplateColumns: "1fr 1fr",
+                                        gap: "16px",
+                                        marginTop: "15px",
+                                    }}
+                                >
+                                    <div>
+                                        <select
+                                            value={trainingSource}
+                                            onChange={(e) => {
+                                                setTrainingSource(e.target.value);
+
+                                                if (e.target.value !== "Others") {
+                                                    setOtherTrainingSource("");
+                                                }
+                                            }}
+                                        >
+                                            <option value="">Training Source</option>
+                                            <option value="NRLM">NRLM</option>
+                                            <option value="RSETI">RSETI</option>
+                                            <option value="NABARD">NABARD</option>
+                                            <option value="UPSDM">UPSDM</option>
+                                            <option value="Others">Others</option>
+                                        </select>
+                                    </div>
+
+                                    <div>
+                                        <input
+                                            type="text"
+                                            placeholder="Training Duration"
+                                            value={trainingDuration}
+                                            onChange={(e) => setTrainingDuration(e.target.value)}
+                                        />
+                                    </div>
+                                </div>
+
+                                {trainingSource === "Others" && (
+                                    <div style={{ marginTop: "16px" }}>
+                                        <input
+                                            type="text"
+                                            placeholder="Specify Training Source"
+                                            value={otherTrainingSource}
+                                            onChange={(e) =>
+                                                setOtherTrainingSource(e.target.value)
+                                            }
+                                        />
+                                    </div>
+                                )}
+                            </>
                         )}
                     </div>
                 </div>
@@ -8966,6 +9109,82 @@ it means the user clicked "Others". We show the typable text input box.
                             <label>Profit / Loss (Read Only)</label>
                             <input value={profitLoss} readOnly placeholder="Profit/Loss" />
                         </div>
+                    </div>
+                </div>
+
+                <div className="section">
+                    <h2>Canteen Photos</h2>
+
+                    <div className="grid"
+                        style={{
+                            display: "grid",
+                            gridTemplateColumns: "1fr 1fr",
+                            gap: "20px",
+                            alignItems: "start",
+                        }}>
+
+                        {/* Front Photos */}
+                        <div>
+                            <label>Canteen Front Photos (Maximum 4)</label>
+
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleFrontPhotos}
+                            />
+
+                            <div className="photo-preview-container">
+                                {frontPhotos.map((file, index) => (
+                                    <div className="photo-card" key={`${file.name}-${index}`}>
+                                        <img
+                                            src={URL.createObjectURL(file)}
+                                            alt={file.name}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            className="remove-photo"
+                                            onClick={() => removeFrontPhoto(index)}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
+                        {/* Internal Photos */}
+                        <div>
+                            <label>Canteen Internal Photos (Maximum 4)</label>
+
+                            <input
+                                type="file"
+                                accept="image/*"
+                                multiple
+                                onChange={handleInternalPhotos}
+                            />
+
+                            <div className="photo-preview-container">
+                                {internalPhotos.map((file, index) => (
+                                    <div className="photo-card" key={`${file.name}-${index}`}>
+                                        <img
+                                            src={URL.createObjectURL(file)}
+                                            alt={file.name}
+                                        />
+
+                                        <button
+                                            type="button"
+                                            className="remove-photo"
+                                            onClick={() => removeInternalPhoto(index)}
+                                        >
+                                            ✕
+                                        </button>
+                                    </div>
+                                ))}
+                            </div>
+                        </div>
+
                     </div>
                 </div>
 
@@ -9376,6 +9595,86 @@ select[disabled] {
 .delete-card-btn:hover{
     background:#dc2626;
     color:#fff;
+}
+
+.photo-preview-container{
+    display:flex;
+    flex-wrap:wrap;
+    gap:12px;
+    margin-top:15px;
+}
+
+.photo-card{
+    width:120px;
+    height:120px;
+    border:1px solid #ddd;
+    border-radius:10px;
+    overflow:hidden;
+    position:relative;
+    background:#fff;
+}
+
+.photo-card img{
+    width:100%;
+    height:100%;
+    object-fit:cover;
+}
+
+.remove-photo{
+    position:absolute;
+    top:5px;
+    right:5px;
+    width:24px;
+    height:24px;
+    border:none;
+    border-radius:50%;
+    background:#ef4444;
+    color:#fff;
+    cursor:pointer;
+    font-size:14px;
+    font-weight:bold;
+}
+
+.remove-photo:hover{
+    background:#dc2626;
+}
+
+.photo-preview-container {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+    margin-top: 12px;
+}
+
+.photo-card {
+    width: 110px;
+    height: 110px;
+    position: relative;
+    border-radius: 8px;
+    overflow: hidden;
+    border: 1px solid #ddd;
+}
+
+.photo-card img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.remove-photo {
+    position: absolute;
+    top: 4px;
+    right: 4px;
+    width: 24px;
+    height: 24px;
+    border: none;
+    border-radius: 50%;
+    background: #ef4444;
+    color: #fff;
+    cursor: pointer;
+    font-size: 16px;
+    line-height: 24px;
+    padding: 0;
 }
             `}</style>
             </div></>
