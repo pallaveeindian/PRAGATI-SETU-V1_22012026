@@ -8,7 +8,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { SUPPORT_API } from "../../api/axios";
 import { AuthContext } from "../../contexts/AuthContext";
-
+import AdminHeader from "../AdminPages/AdminHeader";
 export default function AdminGreivancesList() {
   const { user } = useContext(AuthContext);
   const [tickets, setTickets] = useState([]);
@@ -18,6 +18,9 @@ export default function AdminGreivancesList() {
   const [open, setOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [pmuResponse, setPmuResponse] = useState("");
+  const ITEMS_PER_PAGE = 15;
+  const [currentPage, setCurrentPage] = useState(1);
+  const [statusFilter, setStatusFilter] = useState("all");
 
   useEffect(() => {
     loadTickets();
@@ -37,17 +40,58 @@ export default function AdminGreivancesList() {
     }
   };
 
+  // const searchTicket = () => {
+  //   if (!ticketCode) {
+  //     setFilteredTickets(tickets);
+  //     return;
+  //   }
+  //   setFilteredTickets(
+  //     tickets.filter((x) =>
+  //       x.ticket_code.toLowerCase().includes(ticketCode.toLowerCase()),
+  //     ),
+  //   );
+  // };
+
+  // const searchTicket = () => {
+  //   setCurrentPage(1);
+
+  //   if (!ticketCode) {
+  //     setFilteredTickets(tickets);
+  //     return;
+  //   }
+
+  //   setFilteredTickets(
+  //     tickets.filter((x) =>
+  //       x.ticket_code.toLowerCase().includes(ticketCode.toLowerCase())
+  //     )
+  //   );
+  // };
+
   const searchTicket = () => {
-    if (!ticketCode) {
-      setFilteredTickets(tickets);
-      return;
-    }
-    setFilteredTickets(
-      tickets.filter((x) =>
+    setCurrentPage(1);
+
+    let data = [...tickets];
+
+    // Ticket Number Filter
+    if (ticketCode.trim()) {
+      data = data.filter((x) =>
         x.ticket_code.toLowerCase().includes(ticketCode.toLowerCase()),
-      ),
-    );
+      );
+    }
+
+    // Status Filter
+    if (statusFilter !== "all") {
+      data = data.filter((x) =>
+        statusFilter === "pending" ? !x.is_solved : x.is_solved,
+      );
+    }
+
+    setFilteredTickets(data);
   };
+
+  useEffect(() => {
+    searchTicket();
+  }, [statusFilter]);
 
   const handleView = async (code) => {
     try {
@@ -91,9 +135,17 @@ export default function AdminGreivancesList() {
       alert("Failed to resolve ticket.");
     }
   };
+  const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
+
+  const paginatedTickets = filteredTickets.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
   return (
-    <div className="grievances-page">
-      <style>{`
+    <>
+      <AdminHeader />
+      <div className="grievances-page">
+        <style>{`
         .grievances-page { padding: 2rem; min-height: 100vh; background: #f8fafc; font-family: sans-serif; }
         .card { background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
         .search-section { display: flex; gap: 1rem; margin-bottom: 2rem; }
@@ -126,206 +178,335 @@ export default function AdminGreivancesList() {
         .btn-resolve { padding: 0.75rem 2rem; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
         
         .error-placeholder { width: 100px; height: 75px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: bold; border-radius: 4px; }
+        .pagination{
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    gap:8px;
+    margin-top:20px;
+    flex-wrap:wrap;
+}
+
+.pagination button{
+    min-width:38px;
+    height:38px;
+    border:1px solid #d1d5db;
+    background:#fff;
+    color:#334155;
+    border-radius:8px;
+    cursor:pointer;
+    transition:.2s;
+    font-weight:600;
+}
+
+.pagination button:hover:not(:disabled){
+    background:#2563eb;
+    color:#fff;
+    border-color:#2563eb;
+}
+
+.pagination button.active{
+    background:#2563eb;
+    color:#fff;
+    border-color:#2563eb;
+}
+
+.pagination button:disabled{
+    opacity:.5;
+    cursor:not-allowed;
+}
+.search-section {
+  display: flex;
+  gap: 1rem;
+  margin-bottom: 2rem;
+}
+
+.search-input,
+.status-select {
+  flex: 1;
+  padding: 0.75rem 1rem;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  font-size: 14px;
+  outline: none;
+  box-sizing: border-box;
+}
+
+.search-input:focus,
+.status-select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+}
+
+.btn-search {
+  min-width: 140px;
+  padding: 0.75rem 2rem;
+  background: #2563eb;
+  color: #fff;
+  border: none;
+  border-radius: 8px;
+  cursor: pointer;
+  font-weight: 600;
+}
       `}</style>
 
-      <div className="card">
-        <div className="search-section">
+        <div className="card">
+          {/* <div className="search-section">
           <input
             className="search-input"
             placeholder="Search Ticket Number..."
             value={ticketCode}
-            onChange={(e) => setTicketCode(e.target.value)}
-          />
+            onChange={(e) => setTicketCode(e.target.value)} />
           <button className="btn-search" onClick={searchTicket}>
             Search
           </button>
-        </div>
+        </div> */}
 
-        <table>
-          <thead>
-            <tr>
-              <th>Sr No.</th>
-              <th>Ticket No.</th>
-              <th>Username</th>
-              <th>District</th>
-              <th>Block</th>
-              <th>Status</th>
-              <th>Created Date</th>
-              <th>Action</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTickets.map((ticket, i) => (
-              <tr key={ticket.id}>
-                <td>{i + 1}</td>
-                <td>{ticket.ticket_code}</td>
-                <td>{ticket.ticket_body?.username || "N/A"}</td>
-                <td>
-                  {ticket.ticket_body?.district_obj?.district_name_en || "N/A"}
-                </td>
-                <td>{ticket.ticket_body?.block_obj?.block_name_en || "N/A"}</td>
-                <td>
-                  <span
-                    className={
-                      ticket.is_solved ? "chip-solved" : "chip-pending"
-                    }
-                  >
-                    {ticket.is_solved ? "Solved" : "Pending"}
-                  </span>
-                </td>
-                <td>{new Date(ticket.created_at).toLocaleDateString()}</td>
-                <td>
-                  <button
-                    onClick={() => handleView(ticket.ticket_code)}
-                    style={{
-                      background: "none",
-                      border: "none",
-                      color: "#2563eb",
-                      cursor: "pointer",
-                    }}
-                  >
-                    <FontAwesomeIcon icon={faEye} /> View
-                  </button>
-                </td>
+          <div className="search-section">
+            <input
+              className="search-input"
+              placeholder="Search Ticket Number..."
+              value={ticketCode}
+              onChange={(e) => setTicketCode(e.target.value)}
+            />
+
+            <select
+              className="status-select"
+              value={statusFilter}
+              onChange={(e) => setStatusFilter(e.target.value)}
+            >
+              <option value="all">All Status</option>
+              <option value="pending">Pending</option>
+              <option value="solved">Solved</option>
+            </select>
+
+            <button className="btn-search" onClick={searchTicket}>
+              Search
+            </button>
+          </div>
+
+          <table>
+            <thead>
+              <tr>
+                <th>Sr No.</th>
+                <th>Ticket No.</th>
+                <th>Username</th>
+                <th>District</th>
+                <th>Block</th>
+                <th>Status</th>
+                <th>Created Date</th>
+                <th>Action</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
+            </thead>
+            <tbody>
+              {/* {filteredTickets.map((ticket, i) => ( */}
+              {paginatedTickets.map((ticket, i) => (
+                <tr key={ticket.id}>
+                  {/* <td>{i + 1}</td> */}
+                  <td>{(currentPage - 1) * ITEMS_PER_PAGE + i + 1}</td>
+                  <td>{ticket.ticket_code}</td>
+                  <td>{ticket.ticket_body?.username || "N/A"}</td>
+                  <td>
+                    {ticket.ticket_body?.district_obj?.district_name_en ||
+                      "N/A"}
+                  </td>
+                  <td>
+                    {ticket.ticket_body?.block_obj?.block_name_en || "N/A"}
+                  </td>
+                  <td>
+                    <span
+                      className={
+                        ticket.is_solved ? "chip-solved" : "chip-pending"
+                      }
+                    >
+                      {ticket.is_solved ? "Solved" : "Pending"}
+                    </span>
+                  </td>
+                  <td>{new Date(ticket.created_at).toLocaleDateString()}</td>
+                  <td>
+                    <button
+                      onClick={() => handleView(ticket.ticket_code)}
+                      style={{
+                        background: "none",
+                        border: "none",
+                        color: "#2563eb",
+                        cursor: "pointer",
+                      }}
+                    >
+                      <FontAwesomeIcon icon={faEye} /> View
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <div className="pagination">
+            <button
+              onClick={() => setCurrentPage((p) => p - 1)}
+              disabled={currentPage === 1}
+            >
+              Previous
+            </button>
 
-      {open && selectedTicket && (
-        <div className="modal-overlay">
-          <div className="modal">
-            <div className="modal-header">
-              <h3 style={{ margin: 0 }}>Ticket Overview</h3>
+            {Array.from({ length: totalPages }, (_, i) => (
               <button
-                onClick={() => setOpen(false)}
-                style={{
-                  border: "none",
-                  background: "none",
-                  cursor: "pointer",
-                }}
+                key={i}
+                className={currentPage === i + 1 ? "active" : ""}
+                onClick={() => setCurrentPage(i + 1)}
               >
-                <FontAwesomeIcon icon={faTimes} />
+                {i + 1}
               </button>
-            </div>
+            ))}
 
-            <div className="grid-info">
-              <div className="info-box">
-                <div className="info-title">Ticket Information</div>
-                <div className="info-row">
-                  <span>Ticket Number</span> <b>{selectedTicket.ticket_code}</b>
-                </div>
-                <div className="info-row">
-                  <span>Status</span>{" "}
-                  <span
-                    className={
-                      selectedTicket.is_solved ? "chip-solved" : "chip-pending"
-                    }
-                  >
-                    {selectedTicket.is_solved ? "Solved" : "Pending"}
-                  </span>
-                </div>
-                <div className="info-row">
-                  <span>Created On</span>{" "}
-                  {new Date(selectedTicket.created_at).toLocaleString("en-GB", {
-                    day: "2-digit",
-                    month: "short",
-                    year: "numeric",
-                    hour: "2-digit",
-                    minute: "2-digit",
-                  })}
-                </div>
-              </div>
-
-              <div className="info-box">
-                <div className="info-title">User Information</div>
-                <div className="info-row">
-                  <span>Username</span>{" "}
-                  <b>{selectedTicket.ticket_body?.username || "N/A"}</b>
-                </div>
-                <div className="info-row">
-                  <span>Mobile No</span>{" "}
-                  {selectedTicket.ticket_body?.mobile_no || "N/A"}
-                </div>
-                <div className="info-row">
-                  <span>District</span>{" "}
-                  {selectedTicket.ticket_body?.district_obj?.district_name_en ||
-                    "N/A"}
-                </div>
-                <div className="info-row">
-                  <span>Block</span>{" "}
-                  {selectedTicket.ticket_body?.block_obj?.block_name_en ||
-                    "N/A"}
-                </div>
-              </div>
-            </div>
-
-            <div className="section-label">Problem Description</div>
-            <div className="box-container" style={{ background: "#f8fafc" }}>
-              {selectedTicket.ticket_body?.problem_message ||
-                "No description provided."}
-            </div>
-
-            <div className="section-label">Attached Screenshots</div>
-            <div className="box-container">
-              {selectedTicket.ticket_media &&
-              selectedTicket.ticket_media.length > 0 ? (
-                selectedTicket.ticket_media.map((img, i) => (
-                  <img
-                    key={i}
-                    src={img.screenshot}
-                    alt="Screenshot"
-                    style={{
-                      width: "100px",
-                      height: "75px",
-                      objectFit: "cover",
-                    }}
-                  />
-                ))
-              ) : (
-                <div className="error-placeholder">Error</div>
-              )}
-            </div>
-
-            {isPMUUser ? (
-              <>
-                <div className="section-label">PMU Response</div>
-                <textarea
-                  className="textarea-response"
-                  placeholder="Enter official resolution or troubleshooting steps here..."
-                  value={pmuResponse}
-                  onChange={(e) => setPmuResponse(e.target.value)}
-                />
-              </>
-            ) : (
-              selectedTicket?.pmu_response && (
-                <>
-                  <div className="section-label">PMU Response</div>
-                  <div
-                    className="box-container"
-                    style={{ background: "#f8fafc", whiteSpace: "pre-wrap" }}
-                  >
-                    {selectedTicket.pmu_response}
-                  </div>
-                </>
-              )
-            )}
-
-            <div className="footer-actions">
-              <button className="btn-cancel" onClick={() => setOpen(false)}>
-                Cancel
-              </button>
-
-              {isPMUUser && (
-                <button className="btn-resolve" onClick={handleResolve}>
-                  Resolve Ticket
-                </button>
-              )}
-            </div>
+            <button
+              onClick={() => setCurrentPage((p) => p + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+            >
+              Next
+            </button>
           </div>
         </div>
-      )}
-    </div>
+
+        {open && selectedTicket && (
+          <div className="modal-overlay">
+            <div className="modal">
+              <div className="modal-header">
+                <h3 style={{ margin: 0 }}>Ticket Overview</h3>
+                <button
+                  onClick={() => setOpen(false)}
+                  style={{
+                    border: "none",
+                    background: "none",
+                    cursor: "pointer",
+                  }}
+                >
+                  <FontAwesomeIcon icon={faTimes} />
+                </button>
+              </div>
+
+              <div className="grid-info">
+                <div className="info-box">
+                  <div className="info-title">Ticket Information</div>
+                  <div className="info-row">
+                    <span>Ticket Number</span>{" "}
+                    <b>{selectedTicket.ticket_code}</b>
+                  </div>
+                  <div className="info-row">
+                    <span>Status</span>{" "}
+                    <span
+                      className={
+                        selectedTicket.is_solved
+                          ? "chip-solved"
+                          : "chip-pending"
+                      }
+                    >
+                      {selectedTicket.is_solved ? "Solved" : "Pending"}
+                    </span>
+                  </div>
+                  <div className="info-row">
+                    <span>Created On</span>{" "}
+                    {new Date(selectedTicket.created_at).toLocaleString(
+                      "en-GB",
+                      {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      },
+                    )}
+                  </div>
+                </div>
+
+                <div className="info-box">
+                  <div className="info-title">User Information</div>
+                  <div className="info-row">
+                    <span>Username</span>{" "}
+                    <b>{selectedTicket.ticket_body?.username || "N/A"}</b>
+                  </div>
+                  <div className="info-row">
+                    <span>Mobile No</span>{" "}
+                    {selectedTicket.ticket_body?.mobile_no || "N/A"}
+                  </div>
+                  <div className="info-row">
+                    <span>District</span>{" "}
+                    {selectedTicket.ticket_body?.district_obj
+                      ?.district_name_en || "N/A"}
+                  </div>
+                  <div className="info-row">
+                    <span>Block</span>{" "}
+                    {selectedTicket.ticket_body?.block_obj?.block_name_en ||
+                      "N/A"}
+                  </div>
+                </div>
+              </div>
+
+              <div className="section-label">Problem Description</div>
+              <div className="box-container" style={{ background: "#f8fafc" }}>
+                {selectedTicket.ticket_body?.problem_message ||
+                  "No description provided."}
+              </div>
+
+              <div className="section-label">Attached Screenshots</div>
+              <div className="box-container">
+                {selectedTicket.ticket_media &&
+                selectedTicket.ticket_media.length > 0 ? (
+                  selectedTicket.ticket_media.map((img, i) => (
+                    <img
+                      key={i}
+                      src={img.screenshot}
+                      alt="Screenshot"
+                      style={{
+                        width: "100px",
+                        height: "75px",
+                        objectFit: "cover",
+                      }}
+                    />
+                  ))
+                ) : (
+                  <div className="error-placeholder">Error</div>
+                )}
+              </div>
+
+              {isPMUUser ? (
+                <>
+                  <div className="section-label">PMU Response</div>
+                  <textarea
+                    className="textarea-response"
+                    placeholder="Enter official resolution or troubleshooting steps here..."
+                    value={pmuResponse}
+                    onChange={(e) => setPmuResponse(e.target.value)}
+                  />
+                </>
+              ) : (
+                selectedTicket?.pmu_response && (
+                  <>
+                    <div className="section-label">PMU Response</div>
+                    <div
+                      className="box-container"
+                      style={{ background: "#f8fafc", whiteSpace: "pre-wrap" }}
+                    >
+                      {selectedTicket.pmu_response}
+                    </div>
+                  </>
+                )
+              )}
+
+              <div className="footer-actions">
+                <button className="btn-cancel" onClick={() => setOpen(false)}>
+                  Cancel
+                </button>
+
+                {isPMUUser && (
+                  <button className="btn-resolve" onClick={handleResolve}>
+                    Resolve Ticket
+                  </button>
+                )}
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
+    </>
   );
 }

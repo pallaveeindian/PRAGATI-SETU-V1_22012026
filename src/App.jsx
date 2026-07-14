@@ -150,6 +150,12 @@ export default function App() {
         {isModuleActive("mou") && (
           <Route path="/module-login?module=mou" element={<MouLogin />} />
         )}
+        {isModuleActive("pmuadmin") && (
+          <Route
+            path="/module-login?module=pmuadmin"
+            element={<AdminLogin />}
+          />
+        )}
 
         {/* ----- Protected Application Routes ----- */}
         <Route element={<ProtectedRoute />}>

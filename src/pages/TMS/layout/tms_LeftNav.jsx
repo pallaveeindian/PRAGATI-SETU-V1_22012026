@@ -61,6 +61,11 @@ const MENU = {
       ],
     },
     { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
+    },
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
@@ -96,6 +101,11 @@ const MENU = {
       label: "User Management",
       to: "/tms/dmmu/bmmu-users",
       icon: FaUsers,
+    },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
     },
   ],
   smmu: [
@@ -149,6 +159,11 @@ const MENU = {
       to: "/tms/smmu/dmmu-users",
       icon: FaUsers,
     },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
+    },
   ],
   training_partner: [
     {
@@ -191,6 +206,11 @@ const MENU = {
       label: "User Management",
       to: "/tms/tp/users",
       icon: FaUsers,
+    },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
     },
   ],
   dtp: [
@@ -251,12 +271,22 @@ const MENU = {
         },
       ],
     },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
+    },
   ],
   master_trainer: [
     {
       label: "Dashboard",
       to: "/tms/mt/dashboard",
       icon: FaTachometerAlt,
+    },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
     },
   ],
   tp_contact_person: [
@@ -276,6 +306,11 @@ const MENU = {
         },
       ],
     },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
+    },
   ],
   state_admin: [
     {
@@ -283,12 +318,22 @@ const MENU = {
       to: "/tms/state-admin/dashboard",
       icon: FaTachometerAlt,
     },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
+    },
   ],
   pmu_admin: [
     {
       label: "Dashboard",
       to: "/tms/pmu-admin/dashboard",
       icon: FaTachometerAlt,
+    },
+    {
+      label: "Grievances",
+      to: "/admin/grievances",
+      icon: FaHandsHelping,
     },
   ],
 };

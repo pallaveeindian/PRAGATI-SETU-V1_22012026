@@ -2,10 +2,15 @@
 import React, { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { LOOKUP_API, SUPPORT_API } from "../api/axios";
+import img1 from "../assets/LoginThemes/FARMLH.jpg";
+import img2 from "../assets/LoginThemes/MFIF.jpg";
+import img3 from "../assets/LoginThemes/NON-FARM.jpg";
+import img4 from "../assets/LoginThemes/SISD.jpg";
+import img5 from "../assets/LoginThemes/TNCB.jpg";
 
 export default function RegisterGrievance() {
   const navigate = useNavigate();
-
+  const slides = [img1, img2, img3, img4, img5];
   const [form, setForm] = useState({
     district: "",
     block: "",
@@ -131,7 +136,16 @@ export default function RegisterGrievance() {
 
       console.log("District Response", res.data);
 
-      setDistricts(res.data.results || res.data);
+      // setDistricts(res.data.results || res.data);
+      const districtData = Array.isArray(res.data.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+      console.log("District Data:", districtData);
+
+      setDistricts(districtData);
     } catch (err) {
       console.error(err);
     }
@@ -157,14 +171,35 @@ export default function RegisterGrievance() {
 
       console.log("Block Response", res.data);
 
-      setBlocks(res.data.results || res.data);
+      // setBlocks(res.data.results || res.data);
+      const blockData = Array.isArray(res.data.results)
+        ? res.data.results
+        : Array.isArray(res.data)
+          ? res.data
+          : [];
+
+      setBlocks(blockData);
     } catch (err) {
       console.error(err);
     }
   };
+  const [currentSlide, setCurrentSlide] = useState(0);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setCurrentSlide((prev) => (prev + 1) % slides.length);
+    }, 4000); // every 4 sec
+
+    return () => clearInterval(interval);
+  }, []);
 
   return (
-    <div className="grievance-page">
+    <div
+      className="grievance-page"
+      style={{
+        backgroundImage: `url(${slides[currentSlide]})`,
+      }}
+    >
       <form className="grievance-card" onSubmit={handleSubmit}>
         <h2>Register Grievance</h2>
 
@@ -173,11 +208,18 @@ export default function RegisterGrievance() {
         <select value={form.district} onChange={handleDistrictChange} required>
           <option value="">Select District</option>
 
-          {districts.map((district) => (
+          {/* {districts.map((district) => (
             <option key={district.id} value={district.district_id}>
               {district.district_name_en}
             </option>
-          ))}
+          ))} */}
+
+          {Array.isArray(districts) &&
+            districts.map((district) => (
+              <option key={district.district_id} value={district.district_id}>
+                {district.district_name_en}
+              </option>
+            ))}
         </select>
 
         <label className="block-label">Block</label>
@@ -305,11 +347,7 @@ export default function RegisterGrievance() {
           </div>
         )}
 
-        <button
-          type="button"
-          className="backBtn"
-          onClick={() => navigate("/login")}
-        >
+        <button type="button" className="backBtn" onClick={() => navigate("/")}>
           Back to Login
         </button>
       </form>
@@ -470,6 +508,48 @@ export default function RegisterGrievance() {
 
     font-size:12px;
 
+}
+    .grievance-page{
+    min-height:100vh;
+    display:flex;
+    justify-content:center;
+    align-items:center;
+    position:relative;
+    overflow:hidden;
+
+    background-size:cover;
+    background-position:center;
+    background-repeat:no-repeat;
+
+    transition:background-image .8s ease-in-out;
+}
+
+.grievance-page::before{
+
+    content:"";
+    position:absolute;
+    inset:0;
+
+    backdrop-filter:blur(8px);
+    -webkit-backdrop-filter:blur(8px);
+
+    background:rgba(0,0,0,.35);
+}
+
+.grievance-card{
+
+    position:relative;
+    z-index:2;
+
+    width:600px;
+
+    background:rgba(255,255,255,.92);
+
+    backdrop-filter:blur(10px);
+
+    border-radius:16px;
+
+    box-shadow:0 15px 45px rgba(0,0,0,.25);
 }
 `}</style>
     </div>

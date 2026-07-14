@@ -2,6 +2,7 @@ import tmsLogo from "../assets/TMS/tms_logo.png";
 import esmLogo from "../assets/ems_logo.png";
 import ldmsLogo from "../assets/ldms_logo.png";
 import prernaLogo from "../assets/prernaHd.png";
+import BDOLogo from "../assets/BDOLogo.png";
 
 export const MODULES_CONFIG = [
   {
@@ -24,7 +25,7 @@ export const MODULES_CONFIG = [
     color: "#f59e0b",
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: null, // Active
+    maintenanceUntil: "2026-07-15T11:00:00", // Active
   },
   {
     id: "ldms",
@@ -73,7 +74,18 @@ export const MODULES_CONFIG = [
     maintenanceUntil: "permanent",
   },
   {
-    id: "admin",
+    id: "pmuadmin",
+    logo: BDOLogo,
+    title: "PMU-IT Admin",
+    subtitle: "PMU Login",
+    desc: "PMU - IT Login",
+    color: "#1a218ade",
+    path: "/module-login?module=pmuadmin",
+    level: "Block",
+    maintenanceUntil: null,
+  },
+  {
+    id: "masteradmin",
     logo: prernaLogo,
     title: "Master Admin",
     subtitle: "Master Login",
@@ -81,6 +93,6 @@ export const MODULES_CONFIG = [
     color: "#1e8a1ade",
     path: "/module-login?module=admin",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "permanent",
   },
 ];

@@ -7,7 +7,7 @@ import AdminGreivancesList from "../pages/AdminPages/AdminGreivancesList";
 export default function AdminRoutes() {
   return (
     <Routes>
-      <Route element={<ProtectedRoute allowedRoles={[9]} />}>
+      <Route element={<ProtectedRoute />}>
         <Route path="/grievances" element={<AdminGreivancesList />} />
       </Route>
     </Routes>

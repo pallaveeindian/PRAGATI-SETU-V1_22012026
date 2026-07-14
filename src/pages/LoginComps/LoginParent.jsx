@@ -39,9 +39,9 @@ export default function LoginParent() {
       content = <MouLogin />;
       theme = "purple";
       break;
-    case "admin":
+    case "pmuadmin":
       content = <AdminLogin />;
-      theme = "red";
+      theme = "blue";
       break;
     default:
       content = <TmsLogin />;

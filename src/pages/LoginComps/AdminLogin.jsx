@@ -6,8 +6,9 @@ import { useNavigate } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import { AUTH_API } from "../../api/axios";
 import { getUser } from "../../utils/storage";
-import prernaLogo from "../../assets/prernaHd.png";
+import prernaLogo from "../../assets/BDOLogo.png";
 import { getCanonicalRole } from "../../utils/roleUtils";
+import AdminHeader from "../AdminPages/AdminHeader";
 
 export default function AdminLogin() {
   const { login } = useContext(AuthContext);
