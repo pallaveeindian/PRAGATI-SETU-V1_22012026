@@ -26,6 +26,13 @@ export default function CRPTable({ filters }) {
   };
 
   useEffect(() => {
+    // SURGICAL FIX: Strictly prevent API call if district is missing.
+    // Clears the table data instead of fetching the entire unrestricted database.
+    if (!filters || !filters.district) {
+      setData([]);
+      return;
+    }
+
     async function load() {
       setLoading(true);
       setCurrentPage(1);

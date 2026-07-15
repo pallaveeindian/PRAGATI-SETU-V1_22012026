@@ -124,13 +124,13 @@ export default function CRPFilters({ onFetch }) {
   /* FETCH */
 
   function handleFetch() {
-    const filters = {
-      district: district || null,
-      block: block || null,
-      panchayat: panchayat || null,
-    };
+    // SURGICAL FIX: Strip nulls so Axios builds a clean URL (e.g., ?district=31012)
+    const validFilters = {};
+    if (district) validFilters.district = district;
+    if (block) validFilters.block = block;
+    if (panchayat) validFilters.panchayat = panchayat;
 
-    if (onFetch) onFetch(filters);
+    if (onFetch) onFetch(validFilters);
   }
 
   useEffect(() => {

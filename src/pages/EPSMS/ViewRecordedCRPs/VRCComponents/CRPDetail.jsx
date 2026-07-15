@@ -506,6 +506,18 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
                 </button>
               )}
             </div>
+            <div
+              className="right-actions"
+              style={{ display: "flex", gap: "10px" }}
+            >
+              <button
+                className="btn-update"
+                onClick={handleUpdate}
+                disabled={assigning}
+              >
+                {assigning ? "Updating..." : "Update Allocation"}
+              </button>
+            </div>
           </div>
         </div>
       </div>

@@ -25,7 +25,7 @@ export const MODULES_CONFIG = [
     color: "#f59e0b",
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: "2026-07-15T11:00:00", // Active
+    maintenanceUntil: null, // Active
   },
   {
     id: "ldms",
