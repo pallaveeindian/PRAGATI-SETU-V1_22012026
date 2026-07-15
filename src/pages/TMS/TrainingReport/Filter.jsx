@@ -66,35 +66,6 @@ export default function TrainingReportManager({ user }) {
     return Array.isArray(data) ? data : [];
   };
 
-  // ================= 3. INITIAL LOAD =================
-  // useEffect(() => {
-  //     (async () => {
-  //         try {
-  //             const [distRes, themeRes, partnerRes] = await Promise.all([
-  //                 LOOKUP_API.districts.list({ page_size: 500 }),
-  //                 TMS_API.trainingThemes.list({ page_size: 200 }),
-  //                 TMS_API.trainingPartners.list({ page_size: 200 })
-  //             ]);
-
-  //             let mandals = [], categories = [];
-  //             if (role === "smmu") {
-  //                 const [mRes, cRes] = await Promise.all([
-  //                     LOOKUP_API.mandals.list({ page_size: 500 }),
-  //                     LOOKUP_API.district_categories.list()
-  //                 ]);
-  //                 mandals = extractData(mRes);
-  //                 categories = extractData(cRes);
-  //             }
-
-  //             setLookups(prev => ({
-  //                 ...prev,
-  //                 districts: extractData(distRes),
-  //                 themes: extractData(themeRes),
-  //                 partners: extractData(partnerRes),
-  //                 mandals,
-  //                 categories
-  //             }));
-
   useEffect(() => {
     (async () => {
       try {
@@ -115,29 +86,6 @@ export default function TrainingReportManager({ user }) {
       }
     })();
   }, []);
-
-  // useEffect(() => {
-  //     const geo = getGeoscope() || {};
-
-  //     const districtId =
-  //         geo.district_id || safeFirst(geo.districts);
-
-  //     const blockId =
-  //         geo.block_id || safeFirst(geo.blocks);
-
-  //     if (!["dmmu", "smmu", "bmmu"].includes(role)) return;
-
-  //     setFilters(f => ({
-  //         ...f,
-  //         district_id: districtId || "",
-  //         block_id: blockId || "",
-  //         aspirational_only: false
-  //     }));
-  // }, [role]);
-
-  // ================= 4. CASCADING SELECTORS =================
-
-  // Blocks & Mandals based on District
 
   /* ================= AUTO PREFILL (DISTRICT + BLOCK) ================= */
   useEffect(() => {
@@ -230,46 +178,6 @@ export default function TrainingReportManager({ user }) {
       .then((r) => setLookups((p) => ({ ...p, plans: extractData(r) })));
   }, [filters.theme_id]);
 
-  // ================= 5. EVENT HANDLERS =================
-  // const handleChange = (e) => {
-  //     const { name, value, type, checked } = e.target;
-  //     const val = type === 'checkbox' ? checked : value;
-
-  //     setFilters(prev => ({ ...prev, [name]: val }));
-
-  //     // Reset children logic
-  //     if (name === "district_id") setFilters(f => ({ ...f, block_id: "", mandal_id: "", panchayat_id: "", village_id: "" }));
-  //     if (name === "block_id") setFilters(f => ({ ...f, panchayat_id: "", village_id: "" }));
-  //     if (name === "theme_id") setFilters(f => ({ ...f, training_plan_id: "" }));
-  // };
-
-  // const handleChange = (e) => {
-  //     const { name, value, type, checked } = e.target;
-  //     const val = type === 'checkbox' ? checked : value;
-
-  //     setFilters(prev => {
-  //         let updated = { ...prev, [name]: val };
-
-  //         if (name === "district_id") {
-  //             updated.block_id = "";
-  //             updated.mandal_id = "";
-  //             updated.panchayat_id = "";
-  //             updated.village_id = "";
-  //         }
-
-  //         if (name === "block_id") {
-  //             updated.panchayat_id = "";
-  //             updated.village_id = "";
-  //         }
-
-  //         if (name === "theme_id") {
-  //             updated.training_plan_id = "";
-  //         }
-
-  //         return updated;
-  //     });
-  // };
-
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
     const val = type === "checkbox" ? checked : value;
@@ -291,57 +199,7 @@ export default function TrainingReportManager({ user }) {
     });
   };
 
-  // const fetchReport = async (isExport = false) => {
-  //     if (isExport) setExporting(true); else setLoading(true);
-  //     try {
-  //         // const params = Object.fromEntries(
-  //         //     Object.entries(filters).filter(([_, v]) => v !== "" && v !== null && v !== false)
-  //         // );
-  //         let params = Object.fromEntries(
-  //             Object.entries(filters).filter(([_, v]) => v !== "" && v !== null && v !== false)
-  //         );
-
-  //         // 🔥 IMPORTANT MAPPING (NO FILTER REMOVED)
-  //         if (params.status) {
-  //             params.batch_status = params.status;
-  //             delete params.status;
-  //         }
-  //         // if (isExport) {
-  //         //     params.export = "excel";
-  //         //     const response = await api.get(TMS_API.trainingReports.list, { params, responseType: 'blob' });
-  //         //     saveAs(response.data, `Training_Report_${filters.training_type}_${new Date().toISOString().split('T')[0]}.xlsx`);
-  //         // } else {
-  //         //     const res = await TMS_API.trainingReports.list(params);
-  //         //     setReportData(Array.isArray(res.data) ? res.data : []);
-  //         // }
-  //         if (isExport) {
-  //             params.export = "excel";
-
-  //             const response = await TMS_API.trainingReports.list(params, {
-  //                 responseType: "blob",
-  //             });
-
-  //             saveAs(
-  //                 response.data,
-  //                 `Training_Report_${filters.training_type}_${new Date()
-  //                     .toISOString()
-  //                     .split("T")[0]}.xlsx`
-  //             );
-  //         } else {
-  //             const res = await TMS_API.trainingReports.list(params);
-  //             setReportData(Array.isArray(res.data) ? res.data : []);
-  //         }
-  //     } catch (err) {
-  //         console.error("API Error", err);
-  //     } finally {
-  //         setLoading(false);
-  //         setExporting(false);
-  //     }
-  // };
-
   // ================= 6. RENDER =================
-
-  // ... inside TrainingReportManager component
 
   const fetchReport = async (isExport = false) => {
     // 1. STOPS SEARCH IF MANDATORY TYPE IS MISSING
@@ -597,27 +455,6 @@ export default function TrainingReportManager({ user }) {
           </button>
         </div>
       </div>
-
-      {/* <div className="table-container">
-                <table className="report-table">
-                    <thead>
-                        <tr>
-                            {reportData.length > 0 ? (
-                                Object.keys(reportData[0]).map(key => <th key={key}>{key}</th>)
-                            ) : (
-                                <th style={{ textAlign: 'center' }}>No results to display.</th>
-                            )}
-                        </tr>
-                    </thead>
-                    <tbody>
-                        {reportData.map((row, index) => (
-                            <tr key={index}>
-                                {Object.values(row).map((val, i) => <td key={i}>{val ?? "-"}</td>)}
-                            </tr>
-                        ))}
-                    </tbody>
-                </table>
-            </div> */}
 
       <div className="table-container">
         <table className="report-table">

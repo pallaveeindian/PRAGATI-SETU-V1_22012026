@@ -798,7 +798,42 @@ export const TMS_API = {
       `/tms/batches/comprehensive-detail/${encodeURIComponent(batchId)}/`,
     ),
 
-  //
+  // ------------------------------------
+  // Master Trainer Management V2
+  // ------------------------------------
+  mtV2: {
+    // List Master Trainers (with filters: mandal, district, theme, designation, etc.)
+    list: (params) => api.get("/tms/mt-list/", { params }),
+
+    // Get single Master Trainer comprehensive details
+    detail: (trainerId) =>
+      api.get(`/tms/mt-detail/${encodeURIComponent(trainerId)}/`),
+
+    // OneSHOT Create Master Trainer & MasterUser
+    create: (data) => api.post("/tms/mt-create/", data),
+
+    // OneSHOT Update Master Trainer (and optionally username/password reset)
+    update: (trainerId, data) =>
+      api.put(`/tms/mt/${encodeURIComponent(trainerId)}/update/`, data),
+
+    // Delete Master Trainer, MasterUser, and Certificates
+    destroy: (trainerId) =>
+      api.delete(`/tms/mt/${encodeURIComponent(trainerId)}/delete/`),
+
+    // Bulk Upload Certificates (FormData required)
+    uploadCertificates: (trainerId, data, config = {}) =>
+      api.post(
+        `/tms/mt/${encodeURIComponent(trainerId)}/certificates/upload/`,
+        data,
+        config,
+      ),
+
+    // Delete specific Certificate
+    deleteCertificate: (trainerId, certId) =>
+      api.delete(
+        `/tms/mt/${encodeURIComponent(trainerId)}/certificates/${encodeURIComponent(certId)}/delete/`,
+      ),
+  },
 };
 
 // ------------------------

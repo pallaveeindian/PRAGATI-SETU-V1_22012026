@@ -52,6 +52,11 @@ import SmmuTargetAchievement from "../pages/TMS/SMMU/smmu_tp_tva";
 import BmmuTargetAchievement from "../pages/TMS/BMMU/bmmu_tp_tvs";
 import DmmuTargetAchievement from "../pages/TMS/DMMU/dmmu_tp_tvs";
 import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
+// Master Trainer Management V2
+import {
+  MTDirectoryConductor,
+  MTPendingApprovalsConductor,
+} from "../pages/TMS/MTManagementV2";
 
 export default function TmsRoutes() {
   return (
@@ -82,6 +87,12 @@ export default function TmsRoutes() {
           path="smmu/dmmu-users"
           element={<UserMgmnt targetRole="dmmu" />}
         />
+        {/* MT Management V2 (SMMU has full access and approvals) */}
+        <Route path="smmu/master-trainers" element={<MTDirectoryConductor />} />
+        <Route
+          path="smmu/master-trainers/approvals"
+          element={<MTPendingApprovalsConductor />}
+        />
       </Route>
 
       {/* DMMU Routes */}
@@ -95,6 +106,8 @@ export default function TmsRoutes() {
           path="dmmu/bmmu-users"
           element={<UserMgmnt targetRole="bmmu" />}
         />
+        {/* MT Management V2 (DMMU is geoscope locked by the component automatically) */}
+        <Route path="dmmu/master-trainers" element={<MTDirectoryConductor />} />
       </Route>
 
       {/* BMMU Routes */}

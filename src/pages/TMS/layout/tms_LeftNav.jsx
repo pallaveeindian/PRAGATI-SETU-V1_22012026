@@ -69,7 +69,11 @@ const MENU = {
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
-
+    {
+      label: "Master Trainer DB",
+      to: "/tms/dmmu/master-trainers",
+      icon: FaBuilding,
+    },
     {
       label: "Create Training Request",
       to: "/tms/create-training-request",
@@ -128,6 +132,22 @@ const MENU = {
         {
           label: "Add New Module",
           to: "/tms/smmu/create-training-plan",
+          icon: FaBook,
+        },
+      ],
+    },
+    {
+      label: "Master Trainer DB",
+      icon: FaBuilding,
+      children: [
+        {
+          label: "All Trainer list",
+          to: "/tms/smmu/master-trainers",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Pending Certificate Approval",
+          to: "/tms/smmu/master-trainers/approvals",
           icon: FaBook,
         },
       ],

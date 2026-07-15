@@ -2,6 +2,7 @@
 import React, { useEffect, useState, useContext } from "react";
 import { LOOKUP_API, EPSAKHI_API } from "../../../../api/axios";
 import { AuthContext } from "../../../../contexts/AuthContext";
+import ReactDOM from "react-dom";
 import {
   FaCheckCircle,
   FaTimes,
@@ -294,14 +295,21 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
       setDeleting(false);
     }
   }
-  return (
+  useEffect(() => {
+    document.body.style.overflow = "hidden";
+
+    return () => {
+      document.body.style.overflow = "";
+    };
+  }, []);
+  return ReactDOM.createPortal(
     <div className="crp-modal-overlay">
       <div className="crp-modal-container">
         {/* HEADER */}
         <div className="crp-modal-header">
           <h2>CRP Details</h2>
           <button className="btn-close-green" onClick={onClose}>
-            <FaTimes />
+            X
           </button>
         </div>
 
@@ -521,6 +529,7 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
           </div>
         </div>
       </div>
+
       {actionModal && (
         <div className="crp-modal-overlay nested">
           <div className="action-card">
@@ -621,43 +630,69 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
 
       <style>{`
   /* OVERLAY & CONTAINER */
-  .crp-modal-overlay {
-    position: fixed; inset: 0;
-    background: rgba(0, 0, 0, 0.5);
-    display: flex; justify-content: center; align-items: center;
-    z-index: 1000;
-    padding: 20px;
-    pointer-events: auto;
-  }
+.crp-modal-overlay {
+  position: fixed !important;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 999999 !important; /* Itna high rakhein ki koi overflow ise na rok sake */
+    background: rgba(0,0,0,0.5);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+
+  
+}
   .crp-modal-overlay.nested { z-index: 1010; backdrop-filter: blur(2px); }
   
-  .crp-modal-container {
+.crp-modal-container {
     background: #fff;
-    width: 100%; max-width: 750px;
-    border-radius: 8px;
+
+    width: 100%;
+    max-width: 750px;
+
+    height: 85vh;
+    max-height: 85vh;
+
+    border-radius: 10px;
+
+    display: flex;
+    flex-direction: column;
+
     overflow: hidden;
-    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
-    display: flex; flex-direction: column;
-    max-height: 90vh;
-    cursor: default; /* Prevents cursor jump */
-  }
+
+    box-shadow: 0 12px 30px rgba(0,0,0,.25);
+
+    transform: translateZ(0);
+    backface-visibility: hidden;
+    will-change: transform;
+}
 
   /* HEADER - Explicitly stabilized */
  /* HEADER - Fixed Stability */
-  .crp-modal-header {
-    background-color: #d15829; 
-    padding: 16px 20px;
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center;
-    /* Force this area to be a solid block */
-    cursor: default !important; 
-    user-select: none;
-    position: relative;
-    z-index: 10;
-    /* This prevents the browser from thinking the mouse is leaving the header */
-    pointer-events: auto; 
-  }
+.crp-modal-header{
+
+    background:#d15829;
+
+    color:white;
+
+    padding:16px 20px;
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    flex-shrink:0;
+
+    position:sticky;
+
+    top:0;
+
+    z-index:20;
+}
 
   .crp-modal-header h2 {
     color: #fff; 
@@ -688,7 +723,20 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
   .btn-close-green:hover { background-color: #15801c; }
 
   /* BODY */
-  .crp-details-body { padding: 20px; overflow-y: auto; }
+ .crp-details-body{
+
+    flex:1;
+
+    overflow-y:auto;
+
+    overflow-x:hidden;
+
+    min-height:0;
+
+    padding:20px;
+
+    scrollbar-gutter:stable;
+}
 
   .info-grid {
     display: grid;
@@ -720,7 +768,20 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
   .filter-group select:focus, .search-input:focus { border-color: #d15829; }
   
   .panchayat-selection-area { background: #f9fafb; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; }
-  .panchayat-list-box { max-height: 200px; overflow-y: auto; margin-top: 12px; padding-right: 6px; }
+ .panchayat-list-box{
+
+    height:220px;
+
+    overflow-y:auto;
+
+    overflow-x:hidden;
+
+    margin-top:12px;
+
+    padding-right:6px;
+
+    scrollbar-gutter:stable;
+}
   .panchayat-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 10px; }
   .p-item {
     background: #fff; border: 1px solid #d1d5db; border-radius: 6px; padding: 10px;
@@ -735,7 +796,24 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
   .is-assigned { background: #fee2e2; border-color: #ef4444; }
   
   /* FOOTER ACTIONS */
-  .modal-actions-footer { display: flex; justify-content: space-between; align-items: center; padding-top: 16px; }
+  .modal-actions-footer{
+
+    display:flex;
+
+    justify-content:space-between;
+
+    align-items:center;
+
+    margin-top:auto;
+
+    padding-top:16px;
+
+    background:#fff;
+
+    position:sticky;
+
+    bottom:0;
+}
   .btn-update, .btn-delete, .btn-primary, .btn-secondary, .btn-add {
     padding: 10px 20px; border-radius: 6px; font-size: 14px; font-weight: 600; cursor: pointer; border: none;
   }
@@ -749,6 +827,7 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
   .spin { animation: spin 1s linear infinite; }
   @keyframes spin { 100% { transform: rotate(360deg); } }
 `}</style>
-    </div>
+    </div>,
+    document.body,
   );
 }
