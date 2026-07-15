@@ -1,154 +1,202 @@
+// src/pages/EPSMS/ViewRecordedCRPs/VRCComponents/CRPTable.jsx
 import React, { useEffect, useState } from "react";
 import { EPSAKHI_API } from "../../../../api/axios";
 import {
-    FaUser,
-    FaPhoneAlt,
-    FaMapMarkedAlt,
-    FaMap,
-    FaLocationArrow,
-    FaSpinner,
-    FaMapMarkerAlt,
+  FaUser,
+  FaPhoneAlt,
+  FaMapMarkedAlt,
+  FaMap,
+  FaLocationArrow,
+  FaSpinner,
+  FaMapMarkerAlt,
 } from "react-icons/fa";
-
+import CRPDetails from "./CRPDetail";
 export default function CRPTable({ filters }) {
-    const [data, setData] = useState([]);
-    const [loading, setLoading] = useState(false);
-    const [currentPage, setCurrentPage] = useState(1);
-    const itemsPerPage = 50;
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(false);
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 50;
+  const [selectedCRP, setSelectedCRP] = useState(null);
+  const [showModal, setShowModal] = useState(false);
+  const [refreshTrigger, setRefreshTrigger] = useState(0);
 
-    useEffect(() => {
-        async function load() {
-            setLoading(true);
-            setCurrentPage(1);
+  const handleView = (crp) => {
+    setSelectedCRP(crp);
+    setShowModal(true);
+  };
 
-            try {
-                const res = await EPSAKHI_API.crpPanchList({
-                    ...filters,
-                    page_size: 1000,
-                });
+  useEffect(() => {
+    async function load() {
+      setLoading(true);
+      setCurrentPage(1);
 
-                const payload = res.data?.data ? res.data.data : res.data;
-                const results = Array.isArray(payload)
-                    ? payload
-                    : payload?.results || [];
+      try {
+        const res = await EPSAKHI_API.crpPanchList({
+          ...filters,
+          page_size: 1000,
+        });
 
-                results.sort((a, b) =>
-                    (a.district_name_en || "").localeCompare(b.district_name_en || ""),
-                );
+        const payload = res.data?.data ? res.data.data : res.data;
+        const results = Array.isArray(payload)
+          ? payload
+          : payload?.results || [];
 
-                setData(results);
-            } catch (err) {
-                console.error(err);
-            }
+        results.sort((a, b) =>
+          (a.district_name_en || "").localeCompare(b.district_name_en || ""),
+        );
 
-            setLoading(false);
-        }
+        setData(results);
+      } catch (err) {
+        console.error(err);
+      }
 
-        load();
-    }, [filters]);
+      setLoading(false);
+    }
 
-    const totalPages = Math.ceil(data.length / itemsPerPage);
+    load();
+  }, [filters, refreshTrigger]);
 
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    const currentData = data.slice(startIndex, startIndex + itemsPerPage);
+  const totalPages = Math.ceil(data.length / itemsPerPage);
 
-    return (
-        <div className="crp-table-wrapper">
-            {/* LOADER */}
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const currentData = data.slice(startIndex, startIndex + itemsPerPage);
 
-            {loading && (
-                <div className="table-loader">
-                    <FaSpinner className="spin" /> Loading CRPs...
-                </div>
-            )}
+  return (
+    <div className="crp-table-wrapper">
+      {/* LOADER */}
 
-            {!loading && data.length === 0 && (
-                <div className="table-empty">
-                    <FaMapMarkerAlt />
-                    No CRPs found for selected filters
-                </div>
-            )}
+      {loading && (
+        <div className="table-loader">
+          <FaSpinner className="spin" /> Loading CRPs...
+        </div>
+      )}
 
-            {!loading && data.length > 0 && (
-                <table className="crp-table">
-                    <thead>
-                        <tr>
-                            <th>#</th>
-                            <th>
-                                <FaUser /> Name
-                            </th>
-                            <th>
-                                <FaPhoneAlt /> Mobile
-                            </th>
-                            <th>
-                                <FaMapMarkedAlt /> District
-                            </th>
-                            <th>
-                                <FaMap /> Block
-                            </th>
-                            <th>
-                                <FaLocationArrow /> Panchayat
-                            </th>
-                            <th>
-                                <FaMapMarkerAlt /> Allocated Panchayats
-                            </th>
-                        </tr>
-                    </thead>
+      {!loading && data.length === 0 && (
+        <div className="table-empty">
+          <FaMapMarkerAlt />
+          No CRPs found for selected filters
+        </div>
+      )}
 
-                    <tbody>
-                        {currentData.map((crp, index) => {
-                            const allocated = crp.allocated_panchayats || [];
+      {!loading && data.length > 0 && (
+        <table className="crp-table">
+          <thead>
+            <tr>
+              <th>#</th>
+              <th>
+                <FaUser /> Name
+              </th>
+              <th>
+                <FaPhoneAlt /> Mobile
+              </th>
+              <th>
+                <FaMapMarkedAlt /> District
+              </th>
+              <th>
+                <FaMap /> Block
+              </th>
+              <th>
+                <FaLocationArrow /> Panchayat
+              </th>
+              <th>
+                <FaMapMarkerAlt /> Allocated Panchayats
+              </th>
+            </tr>
+          </thead>
 
-                            return (
-                                <tr key={crp.id}>
-                                    <td data-label="S.No">{startIndex + index + 1}</td>
+          <tbody>
+            {currentData.map((crp, index) => {
+              const allocated = crp.allocated_panchayats || [];
 
-                                    <td data-label="Name">{crp.name}</td>
+              return (
+                <tr key={crp.id}>
+                  <td data-label="S.No">{startIndex + index + 1}</td>
 
-                                    <td data-label="Mobile">{crp.mobile_number}</td>
+                  <td data-label="Name">{crp.name}</td>
 
-                                    <td data-label="District">{crp.district_name_en}</td>
+                  <td data-label="Mobile">{crp.mobile_number}</td>
 
-                                    <td data-label="Block">{crp.block_name_en}</td>
+                  <td data-label="District">{crp.district_name_en}</td>
 
-                                    <td data-label="Panchayat">{crp.panchayat_name_en}</td>
+                  <td data-label="Block">{crp.block_name_en}</td>
 
-                                    <td data-label="Allocated Panchayats">
-                                        <div className="panch-badges">
-                                            {allocated.map((p) => (
-                                                <span key={p.panchayat_id} className="panch-badge">
-                                                    {p.panchayat_name_en}
-                                                </span>
-                                            ))}
-                                        </div>
-                                    </td>
-                                </tr>
-                            );
-                        })}
-                    </tbody>
-                </table>
-            )}
-            <div className="pagination">
-                <button
-                    disabled={currentPage === 1}
-                    onClick={() => setCurrentPage((p) => p - 1)}
-                >
-                    Prev
-                </button>
+                  <td data-label="Panchayat">{crp.panchayat_name_en}</td>
 
-                <span>
-                    Page {currentPage} / {totalPages}
-                </span>
+                  <td data-label="Allocated Panchayats">
+                    <div className="panch-badges">
+                      {allocated.map((p) => (
+                        <span key={p.panchayat_id} className="panch-badge">
+                          {p.panchayat_name_en}
+                        </span>
+                      ))}
+                    </div>
+                  </td>
+                  <td data-label="Action">
+                    <button
+                      className="view-btn"
+                      // ⭐ CHANGE 3: Fixed the payload passed to handleView.
+                      // Changed from `onClick={() => handleView({ crp: crp })}`
+                      // to `onClick={() => handleView(crp)}` so the data isn't accidentally nested.
+                      onClick={() => handleView(crp)}
+                    >
+                      View
+                    </button>
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      )}
+      <div className="pagination">
+        <button
+          disabled={currentPage === 1}
+          onClick={() => setCurrentPage((p) => p - 1)}
+        >
+          Prev
+        </button>
 
-                <button
-                    disabled={currentPage === totalPages}
-                    onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                    Next
-                </button>
-            </div>
-            <style>{`
+        <span>
+          Page {currentPage} / {totalPages}
+        </span>
 
+        <button
+          disabled={currentPage === totalPages}
+          onClick={() => setCurrentPage((p) => p + 1)}
+        >
+          Next
+        </button>
+        {showModal && (
+          <CRPDetails
+            crpData={selectedCRP}
+            onClose={() => {
+              setShowModal(false);
+              setSelectedCRP(null);
+            }}
+            onRefresh={() => {
+              // ⭐ CHANGE 5: Updated the refreshTrigger state.
+              // When the modal calls onRefresh() after a successful update/delete,
+              // this triggers the table to re-fetch its data.
+              setRefreshTrigger((prev) => prev + 1);
+            }}
+          />
+        )}
+      </div>
+      <style>{`
+.view-btn{
+    background:var(--epsms-green);
+    color:#fff;
+    border:none;
+    border-radius:6px;
+    padding:6px 14px;
+    cursor:pointer;
+    font-weight:600;
+    transition:.3s;
+}
+
+.view-btn:hover{
+    background:var(--epsms-red);
+}
       .crp-table-wrapper{
         width:100%;
         overflow-x:auto;
@@ -347,6 +395,6 @@ export default function CRPTable({ filters }) {
       }
 
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

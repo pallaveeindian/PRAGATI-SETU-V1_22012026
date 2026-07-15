@@ -770,9 +770,10 @@ export default function CreateTrainingRequest() {
       trState.selectedPlan.name ||
       `Plan ${trState.selectedPlan.id}`);
   const hasParticipants =
+    // MINIMUM LIMIT ADJUSTMENT HERE ALSO!
     trState.form.training_type === "BENEFICIARY"
-      ? trState.selectedBeneficiaries.length >= 15
-      : trState.selectedTrainersMap.size >= 15;
+      ? trState.selectedBeneficiaries.length >= 5
+      : trState.selectedTrainersMap.size >= 5;
 
   const cardStyle = {
     background: "#fff",

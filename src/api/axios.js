@@ -490,6 +490,9 @@ export const EPSAKHI_API = {
 
   // ✅ ADDED from source: CRP Panchayat bulk operations
   crpPanchayatBulk: (data) => api.post("/epsakhi/crp-panchayat-bulk/", data),
+  // ✅ NEW integration Panchayat deletion API
+  mappedCrpBulkDelete: (data) =>
+    api.post("/epsakhi/mapped-crp-bulk-delete/", data),
 
   // BeneficiaryRecorded + related enterprise forms
   beneficiaryRecorded: makeCrud("/epsakhi/beneficiary-recorded/"),

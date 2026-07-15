@@ -20,10 +20,12 @@ const TrainerRow = React.memo(function TrainerRow({
         <input type="checkbox" checked={!!isSelected} onChange={handleChange} />
       </td>
       <td>{row.full_name || row.name || "-"}</td>
-      <td>{row.designation || "-"}</td>
-      <td>{row.block_name_en || "-"}</td>
+      <td>
+        {row.designation || "-"}-{row.theme_name || "N/A"}
+      </td>
       <td>{row.district_name_en || "-"}</td>
       <td>{row.mobile_no || "-"}</td>
+      <td>{row.induction ? "Yes" : "No"}</td>
     </tr>
   );
 });
@@ -73,10 +75,11 @@ export default React.memo(function MasterTrainerList({
         return false;
 
       if (s.length > 0) {
-        const hay = `${t.full_name || t.name || ""} 
-          ${t.mobile_no || ""} 
-          ${t.TH_urid || ""} 
-          ${t.block_name_en || ""} 
+        const hay = `${t.full_name || t.name || ""}
+          ${t.mobile_no || ""}
+          ${t.TH_urid || ""}
+          ${t.theme_name || ""}
+          ${t.block_name_en || ""}
           ${t.district_name_en || ""}`.toLowerCase();
         if (!hay.includes(s)) return false;
       }
@@ -142,8 +145,8 @@ export default React.memo(function MasterTrainerList({
           }}
         />
         <p style={{ marginLeft: 10, fontSize: 12, color: "#6c757d" }}>
-          You can search for trainers by name, mobile, empanelled block or
-          district.
+          You can search for trainers by name, mobile, theme, empanelled block
+          or district.
         </p>
         <select
           className="input"
@@ -174,9 +177,9 @@ export default React.memo(function MasterTrainerList({
                   <th></th>
                   <th>Name</th>
                   <th>Designation</th>
-                  <th>Block</th>
                   <th>District</th>
                   <th>Mobile</th>
+                  <th>Induction</th>
                 </tr>
               </thead>
               <tbody>

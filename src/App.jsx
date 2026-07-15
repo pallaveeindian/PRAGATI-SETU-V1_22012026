@@ -177,7 +177,7 @@ export default function App() {
           {isModuleActive("support") && (
             <Route path="/support/*" element={<SupportRoutes />} />
           )}
-          {isModuleActive("admin") && (
+          {isModuleActive("pmuadmin") && (
             <Route path="/admin/*" element={<AdminRoutes />} />
           )}
 
