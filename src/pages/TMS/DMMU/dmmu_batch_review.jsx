@@ -127,15 +127,22 @@ export default function DmmuBatchReview() {
     loadBatch();
   }, [batchId]);
 
-  /* ---------------- fetch master trainers ---------------- */
+  /* ---------------- fetch master trainers (Backend Search) ---------------- */
   useEffect(() => {
     const fetchMTs = async () => {
       setMtLoading(true);
       try {
-        const response = await TMS_API.masterTrainers.list({
+        // SURGICAL FIX: Pass search string to the backend to search the whole database
+        const params = {
           page: mtPage,
           page_size: mtPageSize,
-        });
+        };
+
+        if (mtSearch.trim()) {
+          params.search = mtSearch.trim();
+        }
+
+        const response = await TMS_API.masterTrainers.list(params);
         setMtList(response?.data?.results || []);
         setMtTotal(response?.data?.count || 0);
       } catch (err) {
@@ -144,19 +151,22 @@ export default function DmmuBatchReview() {
         setMtLoading(false);
       }
     };
-    fetchMTs();
-  }, [mtPage, mtPageSize]);
 
-  // Frontend Search Filter
-  const filteredMtList = useMemo(() => {
-    if (!mtSearch.trim()) return mtList;
-    const q = mtSearch.toLowerCase();
-    return mtList.filter((mt) => {
-      const name = (mt.full_name || "").toLowerCase();
-      const mobile = (mt.mobile_no || "").toLowerCase();
-      return name.includes(q) || mobile.includes(q);
-    });
-  }, [mtList, mtSearch]);
+    // SURGICAL FIX: Debounce the API call by 400ms so it doesn't spam the server while typing
+    const timeoutId = setTimeout(() => {
+      fetchMTs();
+    }, 400);
+
+    return () => clearTimeout(timeoutId);
+  }, [mtPage, mtPageSize, mtSearch]);
+
+  // SURGICAL FIX: Reset to page 1 whenever the search query changes
+  useEffect(() => {
+    setMtPage(1);
+  }, [mtSearch]);
+
+  // We now rely on the backend for searching, so we just map the fetched list directly
+  const filteredMtList = mtList;
 
   const mtTotalPages = Math.max(1, Math.ceil(mtTotal / mtPageSize));
 
@@ -693,7 +703,7 @@ export default function DmmuBatchReview() {
                                     border: "1px solid #cbd5e1",
                                   }}
                                 >
-                                  {mt.designation || "N/A"}
+                                  {mt.designation || "N/A"}-{mt.theme_name || "N/A"}
                                 </span>
                               </td>
                             </tr>

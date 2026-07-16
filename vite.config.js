@@ -46,8 +46,8 @@ export default defineConfig({
 //   server: {
 //     proxy: {
 //       "/api": {
-//         // target: "http://72.61.255.170:8080",
-//         target: "http://upsrlmtms.upsdc.gov.in",
+//         target: "http://72.61.255.170:8080",
+//         // target: "http://upsrlmtms.upsdc.gov.in",
 //         changeOrigin: true,
 //         secure: false,
 //       },

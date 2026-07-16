@@ -67,10 +67,8 @@ const ParticipantTableFilters = ({
           districtId &&
           typeof LOOKUP_API.blocksByDistrict === "function"
         ) {
-          const response = await LOOKUP_API.blocksByDistrict(districtId, {
-            params: {
-              page_size: 5000,
-            },
+          const response = await LOOKUP_API.FULLblocksByDistrict(districtId, {
+            page_size: 5000,
           });
           const rawData = response?.data?.results || response?.data || [];
 

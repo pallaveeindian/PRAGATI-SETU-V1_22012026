@@ -150,6 +150,7 @@ export default function RegisterGrievance() {
       console.error(err);
     }
   };
+
   const handleDistrictChange = async (e) => {
     const districtId = e.target.value;
 
@@ -164,23 +165,19 @@ export default function RegisterGrievance() {
     if (!districtId) return;
 
     try {
-      const res = await LOOKUP_API.blocks.list({
-        district: districtId,
-        page_size: 500,
+      const response = await LOOKUP_API.FULLblocksByDistrict(districtId, {
+        page_size: 5000,
       });
 
-      console.log("Block Response", res.data);
+      console.log("Blocks API Response:", response.data);
 
-      // setBlocks(res.data.results || res.data);
-      const blockData = Array.isArray(res.data.results)
-        ? res.data.results
-        : Array.isArray(res.data)
-          ? res.data
-          : [];
+      const blockData = response?.data?.results || response?.data || [];
 
       setBlocks(blockData);
     } catch (err) {
-      console.error(err);
+      console.error("Error loading blocks:", err);
+
+      alert("ब्लॉक लोड करने में समस्या आई, कृपया पुनः प्रयास करें।");
     }
   };
   const [currentSlide, setCurrentSlide] = useState(0);
@@ -208,12 +205,6 @@ export default function RegisterGrievance() {
         <select value={form.district} onChange={handleDistrictChange} required>
           <option value="">Select District</option>
 
-          {/* {districts.map((district) => (
-            <option key={district.id} value={district.district_id}>
-              {district.district_name_en}
-            </option>
-          ))} */}
-
           {Array.isArray(districts) &&
             districts.map((district) => (
               <option key={district.district_id} value={district.district_id}>
@@ -223,7 +214,6 @@ export default function RegisterGrievance() {
         </select>
 
         <label className="block-label">Block</label>
-
         <select
           value={form.block}
           onChange={(e) =>
@@ -238,7 +228,7 @@ export default function RegisterGrievance() {
           <option value="">Select Block</option>
 
           {blocks.map((block) => (
-            <option key={block.id} value={block.block_id}>
+            <option key={block.block_id} value={block.block_id}>
               {block.block_name_en}
             </option>
           ))}
