@@ -56,6 +56,7 @@ export default function MTPendingApprovalsConductor() {
     rowsPerPage,
     filters,
     setFilters,
+    lockedTheme, // <-- SURGICAL ADDITION: Extract the locked theme
     triggerRefresh,
   } = useMTList({ pending_tot_approvals: true });
 
@@ -171,6 +172,7 @@ export default function MTPendingApprovalsConductor() {
                 setFilters={setFilters}
                 targetRole="smmu"
                 lockedDistrict={null}
+                lockedTheme={lockedTheme}
               />
 
               {/* DATA TABLE */}
@@ -188,6 +190,8 @@ export default function MTPendingApprovalsConductor() {
                   onViewClick={(trainer) => setViewTrainer(trainer)}
                   onEditClick={handleOpenEdit}
                   onCertificatesClick={(trainer) => setCertTrainer(trainer)}
+                  isSMMU={!isDMMU}
+                  lockedTheme={lockedTheme}
                 />
               </div>
             </div>
@@ -206,8 +210,10 @@ export default function MTPendingApprovalsConductor() {
         trainerId={formTrainerId}
         onClose={handleCloseForm}
         onSuccessRefresh={handleSuccessRefresh}
-        isDMMU={false} // Always SMMU in this view
+        isDMMU={false}
+        isSMMU={true}
         lockedDistrict={null}
+        lockedTheme={lockedTheme} // <-- SURGICAL ADDITION
       />
 
       {/* 2. Certificate Management Modal (Strictly Approval Mode) */}

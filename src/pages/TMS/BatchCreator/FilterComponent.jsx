@@ -126,10 +126,10 @@ const FilterComponent = ({ filters, handleChange }) => {
       }
       try {
         const params = {
-          district_id: Number(filters.districtId),
-          partner_id: Number(parentPartnerId),
+          district: Number(filters.districtId),
+          partner: Number(parentPartnerId),
         };
-        const response = await TMS_API.trainingPartnerCentres.list({ params });
+        const response = await TMS_API.trainingPartnerCentres.list(params);
         const data = response?.data?.results || response?.data || [];
 
         const filteredCenters = data.filter((center) => {

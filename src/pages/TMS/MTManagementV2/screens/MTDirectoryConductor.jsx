@@ -41,6 +41,7 @@ export default function MTDirectoryConductor() {
     setFilters,
     isDMMU,
     lockedDistrict,
+    lockedTheme,
     triggerRefresh,
   } = useMTList();
 
@@ -121,6 +122,7 @@ export default function MTDirectoryConductor() {
                 setFilters={setFilters}
                 targetRole={isDMMU ? "dmmu" : "smmu"}
                 lockedDistrict={lockedDistrict}
+                lockedTheme={lockedTheme}
               />
 
               {/* DATA TABLE */}
@@ -135,6 +137,8 @@ export default function MTDirectoryConductor() {
                   onViewClick={(trainer) => setViewTrainer(trainer)}
                   onEditClick={handleOpenEdit}
                   onCertificatesClick={(trainer) => setCertTrainer(trainer)}
+                  isSMMU={!isDMMU}
+                  lockedTheme={lockedTheme}
                 />
               </div>
             </div>
@@ -154,7 +158,9 @@ export default function MTDirectoryConductor() {
         onClose={handleCloseForm}
         onSuccessRefresh={handleSuccessRefresh}
         isDMMU={isDMMU}
+        isSMMU={!isDMMU}
         lockedDistrict={lockedDistrict}
+        lockedTheme={lockedTheme}
       />
 
       {/* 2. Certificate Management Modal */}

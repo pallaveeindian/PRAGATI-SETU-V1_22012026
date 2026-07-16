@@ -45,11 +45,13 @@ const INITIAL_FORM_STATE = {
 
 export default function MTFormModal({
   open,
-  trainerId, // If null, it's a Create operation
+  trainerId,
   onClose,
   onSuccessRefresh,
   isDMMU,
+  isSMMU,
   lockedDistrict,
+  lockedTheme,
 }) {
   const isUpdate = Boolean(trainerId);
 
@@ -154,6 +156,7 @@ export default function MTFormModal({
       setFormData({
         ...INITIAL_FORM_STATE,
         empanel_district: isDMMU ? lockedDistrict : "",
+        theme: isSMMU ? lockedTheme : "",
       });
     }
 
@@ -162,7 +165,15 @@ export default function MTFormModal({
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [open, isUpdate, trainerId, isDMMU, lockedDistrict, clearError]);
+  }, [
+    open,
+    isUpdate,
+    trainerId,
+    isDMMU,
+    lockedDistrict,
+    lockedTheme,
+    clearError,
+  ]);
 
   // 7. Auto-scroll to top on validation or API error
   useEffect(() => {
@@ -195,6 +206,9 @@ export default function MTFormModal({
     let payload = { ...formData };
     if (isDMMU && lockedDistrict) {
       payload.empanel_district = lockedDistrict;
+    }
+    if (isSMMU && lockedTheme) {
+      payload.theme = lockedTheme;
     }
 
     // SURGICAL FIX: Calculate dirty fields (Only send what changed)

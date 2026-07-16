@@ -33,46 +33,59 @@ export function useMTList(initialFilters = {}) {
 
   // Pagination & Filter State
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 50; // Standardized per backend configuration
+  const rowsPerPage = 20; // Standardized per backend configuration
 
   const [filters, setFilters] = useState({
     mandal: "",
     district_category: "",
     district: "",
-    theme: "",
     designation: "",
     gender: "",
     smmu_recommended: "",
     search: "",
+    theme: "",
     ...initialFilters,
   });
 
+  const [lockedTheme, setLockedTheme] = useState(null);
+
   // --------------------------------------------------------
-  // 2. Geoscope Resolution (DMMU Security Barrier)
+  // 2. Geoscope & Theme Resolution (Security Barrier)
   // --------------------------------------------------------
   useEffect(() => {
     if (!user?.id) return;
 
     async function resolveScope() {
-      if (isDMMU) {
-        try {
+      try {
+        if (isDMMU) {
+          // DMMU District Resolution
           const geoRes = await LOOKUP_API.userGeoscopeByUserId(user.id);
           const districtId =
             geoRes?.data?.districts?.[0] ?? geoRes?.data?.district ?? null;
 
           if (districtId) {
             setLockedDistrict(String(districtId));
-            // Force the filter state to the locked district immediately
             setFilters((prev) => ({ ...prev, district: String(districtId) }));
           }
-        } catch (err) {
-          console.error("Failed to fetch DMMU geoscope mapping:", err);
-        } finally {
-          setScopeLoading(false); // Unblock fetching
+        } else {
+          // SURGICAL ADDITION: SMMU Thematic Expert Resolution
+          const themeRes = await TMS_API.trainingThemes.list();
+          const allThemes = themeRes?.data?.results || themeRes?.data || [];
+
+          // Check if this SMMU user is listed as the expert on any theme
+          const userTheme = allThemes.find(
+            (t) => String(t.expert) === String(user.id),
+          );
+
+          if (userTheme) {
+            setLockedTheme(String(userTheme.id));
+            setFilters((prev) => ({ ...prev, theme: String(userTheme.id) }));
+          }
         }
-      } else {
-        // SMMU users don't need geoscope resolution
-        setScopeLoading(false);
+      } catch (err) {
+        console.error("Failed to resolve user scope:", err);
+      } finally {
+        setScopeLoading(false); // Unblock fetching
       }
     }
 
@@ -106,9 +119,13 @@ export function useMTList(initialFilters = {}) {
         });
 
         // STRICT SECURITY OVERRIDE:
-        // Even if a malicious request alters the filter state, we forcefully overwrite it
+        // Forcefully lock parameters if the user is restricted by role or expertise
         if (isDMMU && lockedDistrict) {
           params.district = lockedDistrict;
+        }
+        // SURGICAL ADDITION: Lock theme if SMMU is an expert
+        if (lockedTheme) {
+          params.theme = lockedTheme;
         }
 
         const response = await TMS_API.mtV2.list(params);
@@ -166,6 +183,7 @@ export function useMTList(initialFilters = {}) {
     // RBAC Context for UI rendering
     isDMMU,
     lockedDistrict,
+    lockedTheme,
 
     // Actions
     triggerRefresh,

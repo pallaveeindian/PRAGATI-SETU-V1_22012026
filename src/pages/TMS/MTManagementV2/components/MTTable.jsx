@@ -7,6 +7,7 @@ import {
   FaCheckCircle,
   FaTimesCircle,
 } from "react-icons/fa";
+import MTExport from "./MTExport";
 
 export default function MTTable({
   trainers,
@@ -18,6 +19,8 @@ export default function MTTable({
   onViewClick,
   onEditClick,
   onCertificatesClick,
+  isSMMU,
+  lockedTheme,
 }) {
   // Helper to render a boolean TOT status badge
   const renderTotBadge = (label, value) => {
@@ -39,14 +42,29 @@ export default function MTTable({
 
   return (
     <div className="nic-table-wrapper">
+      <div
+        style={{
+          display: "flex",
+          justifyContent: "flex-end",
+          padding: "12px 16px",
+          borderBottom: "1px solid #e2e8f0",
+        }}
+      >
+        <MTExport
+          trainers={trainers}
+          isSMMU={isSMMU}
+          lockedTheme={lockedTheme}
+        />
+      </div>
+
       <div className="nic-table-responsive">
         <table className="nic-table">
           <thead>
             <tr>
               <th style={{ width: "60px", textAlign: "center" }}>S.No.</th>
               <th style={{ width: "220px" }}>Identity & Contact</th>
-              <th style={{ width: "180px" }}>District & Designation</th>
-              <th style={{ width: "160px" }}>Primary Theme</th>
+              <th style={{ width: "180px" }}>District</th>
+              <th style={{ width: "160px" }}>Theme & Designation</th>
               <th style={{ minWidth: "280px" }}>Certifications (TOTs)</th>
               <th style={{ width: "260px", textAlign: "center" }}>Actions</th>
             </tr>
@@ -95,14 +113,12 @@ export default function MTTable({
                     <td>
                       <div className="nic-cell-stack">
                         <strong>{trainer.district_name_en || "N/A"}</strong>
-                        <span className="nic-badge badge-neutral">
-                          {trainer.designation || "N/A"}
-                        </span>
                       </div>
                     </td>
 
                     <td>
                       <span style={{ fontWeight: "600", color: "#334155" }}>
+                        {trainer.designation || "N/A"}-
                         {trainer.theme_name || "Unassigned"}
                       </span>
                     </td>
@@ -404,6 +420,27 @@ export default function MTTable({
           font-weight: bold;
           padding: 0 4px;
         }
+        .nic-btn-export {
+          background-color: #16a34a;
+          color: #ffffff;
+          border: 1px solid #15803d;
+          padding: 8px 16px;
+          border-radius: 4px;
+          font-size: 13px;
+          font-weight: 600;
+          cursor: pointer;
+          display: inline-flex;
+          align-items: center;
+          transition: all 0.2s;
+        }
+        .nic-btn-export:hover:not(:disabled) {
+          background-color: #15803d;
+          box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);
+        }
+        .nic-btn-export:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }  
       `}</style>
     </div>
   );

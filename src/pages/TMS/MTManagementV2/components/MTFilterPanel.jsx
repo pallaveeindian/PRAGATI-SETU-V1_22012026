@@ -8,6 +8,7 @@ export default function MTFilterPanel({
   setFilters,
   targetRole, // Expected "dmmu" or "smmu"
   lockedDistrict, // Passed down from useMTList if DMMU
+  lockedTheme, // Passed down from useMTList if SMMU
 }) {
   const isDMMU = targetRole === "dmmu";
   const isSMMU = targetRole === "smmu";
@@ -61,7 +62,7 @@ export default function MTFilterPanel({
       mandal: "",
       district_category: "",
       district: isDMMU ? lockedDistrict || "" : "",
-      theme: "",
+      theme: isSMMU ? lockedTheme || "" : "",
       designation: "",
       gender: "",
       smmu_recommended: "",
@@ -192,6 +193,17 @@ export default function MTFilterPanel({
         <div className="nic-form-group">
           <label className="nic-label" htmlFor="theme">
             Theme
+            {/* SURGICAL ADDITION: Show lock icon if SMMU is restricted to a specific theme */}
+            {isSMMU && lockedTheme && (
+              <FaLock
+                style={{
+                  marginLeft: "6px",
+                  color: "#ef4444",
+                  fontSize: "11px",
+                }}
+                title="Locked to your assigned thematic expertise"
+              />
+            )}
           </label>
           <select
             id="theme"
@@ -199,8 +211,11 @@ export default function MTFilterPanel({
             className="nic-select"
             value={filters.theme}
             onChange={handleFilterChange}
+            disabled={isSMMU && Boolean(lockedTheme)} // SURGICAL ADDITION: Disable the dropdown
           >
-            <option value="">All Themes</option>
+            <option value="">
+              {isSMMU && lockedTheme ? "Resolving Theme..." : "All Themes"}
+            </option>
             {themes.map((t) => (
               <option key={t.id} value={t.id}>
                 {t.theme_name}
