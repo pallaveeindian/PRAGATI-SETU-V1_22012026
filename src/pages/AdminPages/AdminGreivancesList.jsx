@@ -21,6 +21,7 @@ export default function AdminGreivancesList() {
   const ITEMS_PER_PAGE = 15;
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
     loadTickets();
@@ -39,34 +40,6 @@ export default function AdminGreivancesList() {
       setLoading(false);
     }
   };
-
-  // const searchTicket = () => {
-  //   if (!ticketCode) {
-  //     setFilteredTickets(tickets);
-  //     return;
-  //   }
-  //   setFilteredTickets(
-  //     tickets.filter((x) =>
-  //       x.ticket_code.toLowerCase().includes(ticketCode.toLowerCase()),
-  //     ),
-  //   );
-  // };
-
-  // const searchTicket = () => {
-  //   setCurrentPage(1);
-
-  //   if (!ticketCode) {
-  //     setFilteredTickets(tickets);
-  //     return;
-  //   }
-
-  //   setFilteredTickets(
-  //     tickets.filter((x) =>
-  //       x.ticket_code.toLowerCase().includes(ticketCode.toLowerCase())
-  //     )
-  //   );
-  // };
-
   const searchTicket = () => {
     setCurrentPage(1);
 
@@ -179,89 +152,117 @@ export default function AdminGreivancesList() {
         
         .error-placeholder { width: 100px; height: 75px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: bold; border-radius: 4px; }
         .pagination{
-    display:flex;
-    justify-content:center;
-    align-items:center;
-    gap:8px;
-    margin-top:20px;
-    flex-wrap:wrap;
-}
+            display:flex;
+            justify-content:center;
+            align-items:center;
+            gap:8px;
+            margin-top:20px;
+            flex-wrap:wrap;
+        }
 
-.pagination button{
-    min-width:38px;
-    height:38px;
-    border:1px solid #d1d5db;
-    background:#fff;
-    color:#334155;
-    border-radius:8px;
-    cursor:pointer;
-    transition:.2s;
-    font-weight:600;
-}
+        .pagination button{
+            min-width:38px;
+            height:38px;
+            border:1px solid #d1d5db;
+            background:#fff;
+            color:#334155;
+            border-radius:8px;
+            cursor:pointer;
+            transition:.2s;
+            font-weight:600;
+        }
 
-.pagination button:hover:not(:disabled){
-    background:#2563eb;
-    color:#fff;
-    border-color:#2563eb;
-}
+        .pagination button:hover:not(:disabled){
+            background:#2563eb;
+            color:#fff;
+            border-color:#2563eb;
+        }
 
-.pagination button.active{
-    background:#2563eb;
-    color:#fff;
-    border-color:#2563eb;
-}
+        .pagination button.active{
+            background:#2563eb;
+            color:#fff;
+            border-color:#2563eb;
+        }
 
-.pagination button:disabled{
-    opacity:.5;
-    cursor:not-allowed;
-}
-.search-section {
-  display: flex;
-  gap: 1rem;
-  margin-bottom: 2rem;
-}
+        .pagination button:disabled{
+            opacity:.5;
+            cursor:not-allowed;
+        }
+        .search-section {
+          display: flex;
+          gap: 1rem;
+          margin-bottom: 2rem;
+        }
 
-.search-input,
-.status-select {
-  flex: 1;
-  padding: 0.75rem 1rem;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  font-size: 14px;
-  outline: none;
-  box-sizing: border-box;
-}
+        .search-input,
+        .status-select {
+          flex: 1;
+          padding: 0.75rem 1rem;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+          font-size: 14px;
+          outline: none;
+          box-sizing: border-box;
+        }
 
-.search-input:focus,
-.status-select:focus {
-  border-color: #2563eb;
-  box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-}
+        .search-input:focus,
+        .status-select:focus {
+          border-color: #2563eb;
+          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
 
-.btn-search {
-  min-width: 140px;
-  padding: 0.75rem 2rem;
-  background: #2563eb;
-  color: #fff;
-  border: none;
-  border-radius: 8px;
-  cursor: pointer;
-  font-weight: 600;
-}
+        .btn-search {
+          min-width: 140px;
+          padding: 0.75rem 2rem;
+          background: #2563eb;
+          color: #fff;
+          border: none;
+          border-radius: 8px;
+          cursor: pointer;
+          font-weight: 600;
+        }
+
+
+        .image-preview-overlay{
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,.85);
+          display:flex;
+          justify-content:center;
+          align-items:center;
+          z-index:99999;
+        }
+
+        .image-preview-box{
+          position:relative;
+          max-width:90vw;
+          max-height:90vh;
+        }
+
+        .image-preview-box img{
+          max-width:90vw;
+          max-height:90vh;
+          object-fit:contain;
+          border-radius:8px;
+          background:#fff;
+        }
+
+        .image-preview-close{
+          position:absolute;
+          top:-15px;
+          right:-15px;
+          width:38px;
+          height:38px;
+          border:none;
+          border-radius:50%;
+          
+          cursor:pointer;
+          font-size:18px;
+          font-weight:bold;
+        
+        }
       `}</style>
-
         <div className="card">
-          {/* <div className="search-section">
-          <input
-            className="search-input"
-            placeholder="Search Ticket Number..."
-            value={ticketCode}
-            onChange={(e) => setTicketCode(e.target.value)} />
-          <button className="btn-search" onClick={searchTicket}>
-            Search
-          </button>
-        </div> */}
-
           <div className="search-section">
             <input
               className="search-input"
@@ -456,10 +457,13 @@ export default function AdminGreivancesList() {
                       key={i}
                       src={img.screenshot}
                       alt="Screenshot"
+                      onClick={() => setPreviewImage(img.screenshot)}
                       style={{
                         width: "100px",
                         height: "75px",
                         objectFit: "cover",
+                        cursor: "pointer",
+                        borderRadius: "6px",
                       }}
                     />
                   ))
@@ -503,6 +507,26 @@ export default function AdminGreivancesList() {
                   </button>
                 )}
               </div>
+            </div>
+          </div>
+        )}
+        {previewImage && (
+          <div
+            className="image-preview-overlay"
+            onClick={() => setPreviewImage(null)}
+          >
+            <div
+              className="image-preview-box"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <button
+                className="image-preview-close"
+                onClick={() => setPreviewImage(null)}
+              >
+                ✕
+              </button>
+
+              <img src={previewImage} alt="Preview" />
             </div>
           </div>
         )}
