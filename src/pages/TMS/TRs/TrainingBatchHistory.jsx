@@ -5,10 +5,10 @@ import { useParams, useNavigate } from "react-router-dom";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
-import api from "../../../api/axios";
+import api, { TMS_API } from "../../../api/axios";
 
 export default function TrainingBatchHistory() {
-  const { id: batchId } = useParams();
+  const { batchId } = useParams();
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(true);
@@ -58,86 +58,25 @@ export default function TrainingBatchHistory() {
       try {
         setLoading(true);
         // 1. Fetch Batch Details for Code and Blocks (Coverage)
-        const batchResp = await api.get(`/tms/batches/${batchId}/detail/`);
+        const batchResp = await TMS_API.batchDetailV2(batchId);
         setBatchCode(batchResp?.data?.code || "");
+        const combinedBatchDetails =
+          batchResp?.data?.combined_batch_details || [];
 
-        // API से ब्लॉक्स का डेटा निकालने की कोशिश (उदा. blocks array या single block)
-        const blocks =
-          batchResp?.data?.blocks || batchResp?.data?.request?.blocks || [];
-        setBatchBlocks(Array.isArray(blocks) ? blocks : blocks ? [blocks] : []);
+        const blocks = combinedBatchDetails
+          .map((item) => item.block)
+          .filter(Boolean);
+
+        setBatchBlocks(blocks);
 
         // 2. Fetch Batch History Timeline
         const historyResp = await api.get(`/tms/batches/${batchId}/history/`);
         let data = historyResp?.data?.results || historyResp?.data || [];
 
-        // यदि बैकएंड से कोई डेटा प्राप्त नहीं होता है, तो सुझाई गई संरचना के अनुसार प्रोफेशनल डमी लॉग डेटा डालें
-        if (!data || data.length === 0) {
-          data = [
-            {
-              id: 1,
-              status: "CLOSED",
-              remark:
-                "Training successfully completed. Batch closure requested and approved by DMMU.",
-              created_at: new Date(
-                Date.now() - 2 * 24 * 60 * 60 * 1000,
-              ).toISOString(), // 2 दिन पहले
-            },
-            {
-              id: 2,
-              status: "ONGOING",
-              remark:
-                "Mid-batch review checked. Attendance logs are up to date, training running smoothly.",
-              created_at: new Date(
-                Date.now() - 5 * 24 * 60 * 60 * 1000,
-              ).toISOString(), // 5 दिन पहले
-            },
-            {
-              id: 3,
-              status: "APPROVED",
-              remark:
-                "Batch allocation approved by SMMU authority. Master trainers assigned to target blocks.",
-              created_at: new Date(
-                Date.now() - 10 * 24 * 60 * 60 * 1000,
-              ).toISOString(), // 10 दिन पहले
-            },
-            {
-              id: 4,
-              status: "CREATED",
-              remark:
-                "Initial batch created with reference training plan. Assessment forms initialized.",
-              created_at: new Date(
-                Date.now() - 12 * 24 * 60 * 60 * 1000,
-              ).toISOString(), // 12 दिन पहले
-            },
-          ];
-        }
-
         data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setHistoryData(data);
       } catch (error) {
         console.error("Failed to fetch batch history:", error);
-
-        // एरर या कैच ब्लॉक होने की स्थिति में भी फॉलबैक के लिए डमी डेटा सेट करें ताकि UI कभी खाली न दिखे
-        setHistoryData([
-          {
-            id: 1,
-            status: "CLOSED",
-            remark: "Training successfully completed. All assessment verified.",
-            created_at: new Date().toISOString(),
-          },
-          {
-            id: 2,
-            status: "ONGOING",
-            remark: "Batch ongoing, regular classroom sessions logs verified.",
-            created_at: new Date(Date.now() - 86400000).toISOString(),
-          },
-          {
-            id: 3,
-            status: "CREATED",
-            remark: "Batch initialized into the Pragati Setu system.",
-            created_at: new Date(Date.now() - 172800000).toISOString(),
-          },
-        ]);
       } finally {
         setLoading(false);
       }
@@ -151,8 +90,6 @@ export default function TrainingBatchHistory() {
       // यदि कंबाइंड/मल्टीपल ब्लॉक्स हैं तो उन्हें कॉमा से अलग करके दिखाएं
       return batchBlocks.map((b) => b.block_name_en || b.name || b).join(", ");
     }
-    // यदि कोई सेपरेट या स्पेसिफिक ब्लॉक नहीं मिला, तो डिफ़ॉल्ट रूप से 11 ब्लॉक्स दिखाएं
-    return "11 Blocks (Separate)";
   };
 
   return (
@@ -242,10 +179,10 @@ export default function TrainingBatchHistory() {
                               {log.status}
                             </span>
                           </div>
-                          {log.remark ? (
+                          {log.remarks ? (
                             <div className="panel-body">
                               <p className="remark-text">
-                                <strong>Remark:</strong> {log.remark}
+                                <strong>Remark:</strong> {log.remarks}
                               </p>
                             </div>
                           ) : (

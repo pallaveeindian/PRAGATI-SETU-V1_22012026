@@ -1,4 +1,4 @@
-// src/pages/TMS/BatchCreator/TrainingBatchList.jsx
+// src/pages/TMS/TRs/TrainingBatchList.jsx
 import React, { useContext, useEffect, useState, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "../layout/header";
@@ -10,6 +10,7 @@ import {
   getCanonicalRole,
   ROLE_WELCOME_MESSAGES,
 } from "../../../utils/roleUtils";
+import BatchListExport from "./BatchListExport";
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
@@ -715,6 +716,18 @@ export default function TrainingBatchList() {
                 </div>
               )}
 
+              {/* SURGICAL ADDITION: Export Button Container */}
+              <div
+                style={{
+                  display: "flex",
+                  justifyContent: "flex-end",
+                  marginBottom: "12px",
+                  width: "100%",
+                }}
+              >
+                <BatchListExport batches={visibleBatches} />
+              </div>
+
               <div className="table-wrapper">
                 <table className="table">
                   <thead>
@@ -928,7 +941,6 @@ export default function TrainingBatchList() {
 
 /* FILTER PANEL */
 .filter-panel {
-  position: sticky;
   top: 0;
   z-index: 100;
   background: #fff;
@@ -937,16 +949,9 @@ export default function TrainingBatchList() {
 
   border: 1px solid #dbe4ef;
   border-radius: 8px;
-
-  display: flex;
-  align-items: center;
-
-  overflow-x: auto;
-  overflow-y: hidden;
-
-  white-space: nowrap;
-
   box-shadow: 0 2px 6px rgba(0,0,0,.06);
+  
+  /* SURGICAL FIX: Removed overflow and white-space locks so it can wrap naturally */
 }
 .filter-panel label{
     font-size:12px;
@@ -956,8 +961,8 @@ export default function TrainingBatchList() {
     display:flex;
     align-items:center;
     gap:8px;
-    flex-wrap:nowrap;
-    width:max-content;
+    flex-wrap:wrap; /* SURGICAL FIX: Forces overflowing elements down to the next row */
+    width:100%;     /* SURGICAL FIX: Keeps container constrained to screen width */
 }
 .input{
     height:32px;
@@ -969,14 +974,6 @@ export default function TrainingBatchList() {
 .filter-panel input[type="checkbox"]{
     width:14px;
     height:14px;
-}    
-.filter-panel::-webkit-scrollbar{
-    height:5px;
-}
-
-.filter-panel::-webkit-scrollbar-thumb{
-    background:#cbd5e1;
-    border-radius:20px;
 }    
 .input:focus {
   outline: none;
@@ -1003,9 +1000,10 @@ export default function TrainingBatchList() {
   box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
 }
 .fetch-btn{
-    margin-left:auto;
-    white-space:nowrap;
-}  
+    white-space: nowrap;
+    margin-left: auto;
+    margin-right: auto;
+}
 .btn-primary:hover {
   transform: translateY(-1px);
   box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);

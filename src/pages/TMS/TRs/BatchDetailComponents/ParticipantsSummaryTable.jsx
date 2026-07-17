@@ -52,6 +52,8 @@ export default function ParticipantsSummaryTable({
               <th className="thStyle">Name</th>
               <th className="thStyle">Mobile</th>
               <th className="thStyle">Gender</th>
+              <th className="thStyle">District</th>
+              <th className="thStyle">Block</th>
               <th className="thStyle">Attendance</th>
               <th className="thStyle">Status</th>
 
@@ -116,6 +118,10 @@ export default function ParticipantsSummaryTable({
                     </td>
 
                     <td className="tdStyle">{p.gender || "-"}</td>
+
+                    <td className="tdStyle">{p.district_name_en || "-"}</td>
+
+                    <td className="tdStyle">{p.block_name_en || "-"}</td>
 
                     <td className="tdStyle">
                       {attSummary ? (

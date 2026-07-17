@@ -1,7 +1,6 @@
 // src/pages/TMS/TRs/training_req_list.jsx
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
-// import TopNav from "../layout/tms_TopNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
@@ -9,8 +8,7 @@ import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 import TrainingReqListFilter from "./training_req_list_filters";
-
-import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
+import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils";
 
 const CACHE_KEY = "tms_training_requests_cache_v1";
 const USER_MAP_KEY = "tms_user_map_v1";
@@ -234,7 +232,7 @@ export default function TrainingRequestList() {
         );
 
         if (myTheme) {
-          params.theme = myTheme.id;
+          params.theme_id = myTheme.id;
         }
       }
 
@@ -306,7 +304,7 @@ export default function TrainingRequestList() {
         );
 
         if (myTheme) {
-          params.theme = myTheme.id;
+          params.theme_id = myTheme.id;
         }
       }
 
@@ -434,7 +432,7 @@ export default function TrainingRequestList() {
             setThemes([myTheme]);
             // auto fetch only this theme
             fetchRequestsWithFilters({
-              theme: myTheme.id,
+              theme_id: myTheme.id,
             });
           } else {
             setThemes([]);

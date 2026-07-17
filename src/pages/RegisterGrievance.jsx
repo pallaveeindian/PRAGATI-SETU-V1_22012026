@@ -222,7 +222,6 @@ export default function RegisterGrievance() {
               block: e.target.value,
             }))
           }
-          required
           disabled={!form.district}
         >
           <option value="">Select Block</option>

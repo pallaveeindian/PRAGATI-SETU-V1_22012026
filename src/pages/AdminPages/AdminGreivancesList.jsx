@@ -475,6 +475,40 @@ export default function AdminGreivancesList() {
               {isPMUUser ? (
                 <>
                   <div className="section-label">PMU Response</div>
+                  <div
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    <button
+                      type="button"
+                      onClick={() =>
+                        setPmuResponse(`Dear User,
+ 
+ 
+ 
+Thank you.
+ 
+Regards,
+Pragati Setu Grievance Portal`)
+                      }
+                      style={{
+                        background: "#2563eb",
+                        color: "#fff",
+                        border: "none",
+                        padding: "8px 14px",
+                        borderRadius: "6px",
+                        cursor: "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Type Response
+                    </button>
+                  </div>
+
                   <textarea
                     className="textarea-response"
                     placeholder="Enter official resolution or troubleshooting steps here..."

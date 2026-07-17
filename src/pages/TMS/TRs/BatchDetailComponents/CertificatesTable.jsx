@@ -27,19 +27,47 @@ export default function CertificatesTable({ batchCertificates = [] }) {
         <table className="table table-compact cert-table">
           <thead>
             <tr>
-              <th className="thStyle">Issue Code</th>
+              <th className="thStyle">Issued to</th>
               <th className="thStyle">Issued On</th>
-              <th className="thStyle">Attendance Rate</th>
+              <th className="thStyle">Issue Code</th>
+              <th className="thStyle">District</th>
+              <th className="thStyle">Block</th>
             </tr>
           </thead>
           <tbody>
             {batchCertificates.map((cert) => (
-              <tr key={cert.id}>
+              <tr
+                key={cert.id}
+                style={{ cursor: "pointer" }}
+                onClick={() =>
+                  window.open(
+                    `/api/v1/public/tms-certificate/download/?issue_code=${encodeURIComponent(
+                      cert.issue_code,
+                    )}`,
+                    "_blank",
+                  )
+                }
+              >
+                <td className="table-cell">
+                  {cert.tr_beneficiary?.member_name ||
+                    cert.tr_trainer?.full_name ||
+                    "-"}
+                </td>
+                <td className="table-cell">{fmtDate(cert.issued_on)}</td>
                 <td className="table-cell table-cell-bold highlight">
                   {cert.issue_code || "-"}
                 </td>
-                <td className="table-cell">{fmtDate(cert.issued_on)}</td>
-                <td className="table-cell">{cert.attendance_rate || "-"}</td>
+                <td className="table-cell">
+                  {cert.tr_beneficiary?.district_name_en ||
+                    cert.tr_trainer?.district_name_en ||
+                    "-"}
+                </td>
+                <td className="table-cell">
+                  {" "}
+                  {cert.tr_beneficiary?.block_name_en ||
+                    cert.tr_trainer?.block_name_en ||
+                    "-"}
+                </td>
               </tr>
             ))}
           </tbody>
@@ -72,6 +100,10 @@ export default function CertificatesTable({ batchCertificates = [] }) {
           position: sticky;
           top: 0;
           z-index: 1;
+        }
+        .cert-table tbody tr {
+          cursor: pointer;
+          transition: background 0.2s ease;
         }
         .thStyle {
           padding: 10px 12px;
