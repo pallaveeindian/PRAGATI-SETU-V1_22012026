@@ -11,12 +11,43 @@ export default function Step1PlanSelection({
   setForm,
   form,
   districtId,
+  setDistrictId,
+  districts,
   user,
   geoscopeCached,
   preloadThemes,
   partners,
   goToNext,
 }) {
+  const isSMMU =
+    user?.role_id == 3 || String(user?.role).toLowerCase().includes("smmu");
+  const [smmuPlans, setSmmuPlans] = useState([]);
+  const [smmuLoading, setSmmuLoading] = useState(false);
+
+  // SURGICAL ADDITION: Fetch plans dynamically strictly for the SMMU's assigned theme
+  useEffect(() => {
+    if (isSMMU && form.financial_year) {
+      const myTheme = (preloadThemes || []).find(
+        (t) => Number(t.expert) === Number(user?.id),
+      );
+      if (myTheme) {
+        setSmmuLoading(true);
+        TMS_API.trainingPlans
+          .list({ theme: myTheme.id, limit: 500 })
+          .then((res) => {
+            const data = res?.data?.results || res?.data || [];
+            setSmmuPlans(data);
+          })
+          .catch((err) => console.error("Failed to load SMMU plans", err))
+          .finally(() => setSmmuLoading(false));
+      }
+    } else {
+      setSmmuPlans([]);
+    }
+  }, [isSMMU, form.financial_year, preloadThemes, user?.id]);
+
+  const displayPlans = isSMMU ? smmuPlans : plans;
+
   const selectedPlanTitle =
     selectedPlan &&
     (selectedPlan.training_name ||
@@ -168,16 +199,19 @@ export default function Step1PlanSelection({
             marginBottom: 6,
           }}
         >
-          Training Plan (allowed for your role)
+          {isSMMU
+            ? "Training Plan (Locked to your Theme)"
+            : "Training Plan (allowed for your role)"}
         </label>
 
         <select
-          disabled={!form.financial_year}
+          disabled={!form.financial_year || smmuLoading}
           value={selectedPlan?.id || ""}
           onChange={(e) => {
             const id = e.target.value;
-            const pl = plans.find((p) => String(p.id) === String(id));
+            const pl = displayPlans.find((p) => String(p.id) === String(id));
             handlePlanSelect(pl || null);
+            if (isSMMU) setDistrictId(null); // Reset district when plan changes for SMMU
           }}
           style={{
             width: "100%",
@@ -191,8 +225,10 @@ export default function Step1PlanSelection({
             background: "#fff",
           }}
         >
-          <option value="">-- select training plan --</option>
-          {plans.map((p) => {
+          <option value="">
+            {smmuLoading ? "Loading plans..." : "-- select training plan --"}
+          </option>
+          {displayPlans.map((p) => {
             const title =
               p.training_name ||
               p.training_plan_name ||
@@ -208,6 +244,57 @@ export default function Step1PlanSelection({
           })}
         </select>
       </div>
+
+      {/* SURGICAL ADDITION: Mandatory District Dropdown for SMMU */}
+      {isSMMU && selectedPlan && (
+        <div style={{ marginBottom: 12 }}>
+          <label style={{ display: "block", fontWeight: 700, marginBottom: 6 }}>
+            Target District <span style={{ color: "red" }}>*</span>
+          </label>
+          <select
+            value={districtId || ""}
+            onChange={(e) => {
+              const newDist = e.target.value ? Number(e.target.value) : null;
+              setDistrictId(newDist);
+              setAutoPartnerAssigned(false);
+              setForm((f) => ({ ...f, partner: "" }));
+
+              if (newDist && selectedPlan) {
+                TMS_API.trainingPartnerByTarget({
+                  district_id: newDist,
+                  financial_year: form.financial_year,
+                  training_plan_id: selectedPlan.id,
+                })
+                  .then((res) => {
+                    const data = res?.data ?? res;
+                    if (Array.isArray(data) && data.length > 0 && data[0].id) {
+                      setForm((f) => ({ ...f, partner: String(data[0].id) }));
+                      setAutoPartnerAssigned(true);
+                    }
+                  })
+                  .catch(() => setAutoPartnerAssigned(false));
+              }
+            }}
+            style={{
+              width: "100%",
+              maxWidth: "100%",
+              padding: "10px",
+              borderRadius: "6px",
+              border: "2px solid #3d6ba6",
+              outline: "none",
+              fontSize: "14px",
+              background: "#fff",
+            }}
+          >
+            <option value="">-- select district --</option>
+            {(districts || []).map((d) => (
+              <option key={d.district_id} value={d.district_id}>
+                {d.district_name_en}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
 
       {selectedPlan ? (
         <div
@@ -255,7 +342,7 @@ export default function Step1PlanSelection({
           className="btnPrimaryHover"
           style={btnPrimary}
           onClick={goToNext}
-          disabled={!selectedPlan}
+          disabled={!selectedPlan || (isSMMU && !districtId)}
         >
           Next
         </button>

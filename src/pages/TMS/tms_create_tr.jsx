@@ -916,6 +916,8 @@ export default function CreateTrainingRequest() {
                       setForm={trState.setForm}
                       form={trState.form}
                       districtId={trState.districtId}
+                      setDistrictId={trState.setDistrictId} 
+                      districts={districts} 
                       user={user}
                       geoscopeCached={geoscopeCached}
                       preloadThemes={preloadThemes}

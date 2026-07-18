@@ -122,6 +122,14 @@ export default function Step2Participants({
 
   const hasEnough = currentCount >= 5;
 
+  // SURGICAL ADDITION: Force 'TRAINER' as the only type for SMMU users
+  React.useEffect(() => {
+    if (roleKey === "smmu" && form.training_type !== "TRAINER") {
+      setForm((f) => ({ ...f, training_type: "TRAINER" }));
+      fetchMasterTrainersByDistrict(true);
+    }
+  }, [roleKey, form.training_type, setForm, fetchMasterTrainersByDistrict]);
+
   return (
     <>
       <div
@@ -187,9 +195,16 @@ export default function Step2Participants({
               fetchMasterTrainersByDistrict(true);
             }
           }}
-          style={{ outline: "2px solid #3d6ba6" }}
+          disabled={roleKey === "smmu"} // SURGICAL ADDITION: Lock for SMMU
+          style={{
+            outline: "2px solid #3d6ba6",
+            background: roleKey === "smmu" ? "#e2e8f0" : "#fff",
+            cursor: roleKey === "smmu" ? "not-allowed" : "pointer",
+          }}
         >
-          <option value="BENEFICIARY">Beneficiary</option>
+          {roleKey !== "smmu" && (
+            <option value="BENEFICIARY">Beneficiary</option>
+          )}
           <option value="TRAINER">Master Trainer</option>
         </select>
 

@@ -114,7 +114,6 @@ const MENU = {
   ],
   smmu: [
     { label: "Dashboard", to: "/tms/smmu/dashboard", icon: FaTachometerAlt },
-
     {
       label: "Target Assignment",
       to: "/tms/smmu/partner-targets",
@@ -151,6 +150,11 @@ const MENU = {
           icon: FaBook,
         },
       ],
+    },
+    {
+      label: "Create Training Request",
+      to: "/tms/create-training-request",
+      icon: FaBook,
     },
     {
       label: "Training Requests",
