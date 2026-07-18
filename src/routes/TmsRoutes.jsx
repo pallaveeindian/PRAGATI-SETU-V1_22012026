@@ -99,8 +99,6 @@ export default function TmsRoutes() {
       <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
         <Route path="dmmu/dashboard" element={<DmmuTmsDashboard />} />
         <Route path="dmmu/tr-review/:id" element={<DmmuTrReview />} />
-        <Route path="dmmu/batch-review/:id" element={<DmmuBatchReview />} />
-        <Route path="dmmu/tr-closure/:id" element={<DmmuRequestClosure />} />
         <Route path="dmmu/tp-TvA" element={<DmmuTargetAchievement />} />
         <Route
           path="dmmu/bmmu-users"
@@ -194,6 +192,12 @@ export default function TmsRoutes() {
         <Route path="tr-detail/:id" element={<TrainingRequestDetail />} />
         <Route path="batches-list/" element={<TrainingBatchList />} />
         <Route path="batches-list/:id/" element={<TrainingBatchList />} />
+      </Route>
+
+      {/* Batch Review and Closure */}
+      <Route element={<ProtectedRoute allowedRoles={["smmu", "dmmu"]} />}>
+        <Route path="dmmu/batch-review/:id" element={<DmmuBatchReview />} />
+        <Route path="dmmu/tr-closure/:id" element={<DmmuRequestClosure />} />
       </Route>
 
       {/* Batch Detail Permissions */}

@@ -106,6 +106,7 @@ export default function TrainingBatchList() {
     aspirational_only: false,
     centre_id: "",
     partner: "",
+    level: "",
     status: "",
     training_type: "",
     batch_type: "",
@@ -657,6 +658,20 @@ export default function TrainingBatchList() {
                       <select
                         className="input"
                         onChange={(e) =>
+                          setFilters((f) => ({ ...f, level: e.target.value }))
+                        }
+                      >
+                        <option value="">Level</option>
+                        {["BLOCK", "DISTRICT", "STATE"].map((s) => (
+                          <option key={s} value={s}>
+                            {s}
+                          </option>
+                        ))}
+                      </select>
+
+                      <select
+                        className="input"
+                        onChange={(e) =>
                           setFilters((f) => ({ ...f, status: e.target.value }))
                         }
                       >
@@ -738,6 +753,7 @@ export default function TrainingBatchList() {
                       <th>Participant</th>
                       <th>Start</th>
                       <th>End</th>
+                      <th>Level</th>
                       <th>Type</th>
                       <th>Centre</th>
                       <th>Partner</th>
@@ -784,6 +800,7 @@ export default function TrainingBatchList() {
                           <td>{b.participant_type}</td>
                           <td>{b.start_date}</td>
                           <td>{b.end_date}</td>
+                          <td>{b.level}</td>
                           <td>{b.batch_type}</td>
                           <td>{renderCentreName(b.centre)}</td>
                           <td>{b.centre?.partner?.name || "-"}</td>
@@ -821,7 +838,10 @@ export default function TrainingBatchList() {
                                   Resume
                                 </button>
                               )}
-                            {["dmmu"].includes(role) &&
+                            {((role === "dmmu" &&
+                              String(b.level).toUpperCase() !== "STATE") ||
+                              (role === "smmu" &&
+                                String(b.level).toUpperCase() === "STATE")) &&
                               String(b.status).toUpperCase() === "PENDING" && (
                                 <button
                                   className="btn-sm btn-action-resume"
@@ -858,25 +878,29 @@ export default function TrainingBatchList() {
                               )}
                             {["bmmu", "dmmu", "smmu"].includes(role) && (
                               <>
-                                {String(b.status).toUpperCase() ===
-                                  "REVIEW" && (
-                                  <button
-                                    className="btn-sm btn-flat"
-                                    onClick={() =>
-                                      role === "dmmu"
-                                        ? navigate(
-                                            `/tms/dmmu/tr-closure/${b.id}`,
-                                          )
-                                        : navigate(
-                                            `/tms/batch-certificate/${b.id}`,
-                                          )
-                                    }
-                                  >
-                                    {role === "dmmu"
-                                      ? "Closure"
-                                      : "Certificate"}
-                                  </button>
-                                )}
+                                {(role === "dmmu" &&
+                                  String(b.level).toUpperCase() !== "STATE") ||
+                                  (role === "smmu" &&
+                                    String(b.level).toUpperCase() === "STATE" &&
+                                    String(b.status).toUpperCase() ===
+                                      "REVIEW" && (
+                                      <button
+                                        className="btn-sm btn-flat"
+                                        onClick={() =>
+                                          role === "dmmu" || role === "smmu"
+                                            ? navigate(
+                                                `/tms/dmmu/tr-closure/${b.id}`,
+                                              )
+                                            : navigate(
+                                                `/tms/batch-certificate/${b.id}`,
+                                              )
+                                        }
+                                      >
+                                        {role === "dmmu" || role === "smmu"
+                                          ? "Closure"
+                                          : "Certificate"}
+                                      </button>
+                                    ))}
                                 {String(b.status).toUpperCase() ===
                                   "CLOSED" && (
                                   <button

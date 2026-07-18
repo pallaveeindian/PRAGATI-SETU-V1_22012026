@@ -69,11 +69,11 @@ const MENU = {
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
-    {
-      label: "Master Trainer DB",
-      to: "/tms/dmmu/master-trainers",
-      icon: FaBuilding,
-    },
+    // {
+    //   label: "Master Trainer DB",
+    //   to: "/tms/dmmu/master-trainers",
+    //   icon: FaBuilding,
+    // },
     {
       label: "Create Training Request",
       to: "/tms/create-training-request",

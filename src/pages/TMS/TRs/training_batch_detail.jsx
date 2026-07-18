@@ -114,6 +114,7 @@ export default function TrainingBatchDetail() {
     } else if (isTrainerTraining) {
       participants = (batchData.trainer_participations || []).map((tp) => ({
         ...(tp.trainer || {}),
+        ...(tp.trainer?.trainer || {}), // Flatten inner trainer fields
         attendance_summary: tp.attendance_summary,
         participation_id: tp.id,
         total_cost: costsMap[tp.id],

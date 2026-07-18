@@ -182,27 +182,21 @@ export default function DmmuBatchReview() {
     // Check Availability
     setMtCheckingId(trainer.id);
     try {
-      const resp = await TMS_API.batchMasterTrainers.list({
-        master_trainer: trainer.id,
-        status: "UNAVAILABLE",
-      });
-      const trResp = await TMS_API.trTrainers.list({
-        trainer: trainer.id,
-      });
+      // SURGICAL FIX: Use the new dedicated availability endpoint
+      const response = await api.get(`/tms/mt/${trainer.id}/availability/`);
+      const { is_available, busy_reason } = response.data;
+      console.log(response.data);
 
-      const busy =
-        (resp?.data?.results || []).length > 0 ||
-        (trResp?.data?.results || []).length > 0;
-
-      if (busy) {
+      if (!is_available) {
         alert(
-          `Master Trainer ${trainer.full_name} is currently UNAVAILABLE (busy in another ongoing batch/request).`,
+          `Master Trainer ${trainer.full_name} is UNAVAILABLE:\n\n${busy_reason}`,
         );
         return;
       }
 
       setMtSelections((prev) => [...prev, trainer]);
     } catch (err) {
+      console.error("Trainer availability check failed:", err);
       alert("Unable to verify trainer availability. Please try again.");
     } finally {
       setMtCheckingId(null);
@@ -703,7 +697,8 @@ export default function DmmuBatchReview() {
                                     border: "1px solid #cbd5e1",
                                   }}
                                 >
-                                  {mt.designation || "N/A"}-{mt.theme_name || "N/A"}
+                                  {mt.designation || "N/A"}-
+                                  {mt.theme_name || "N/A"}
                                 </span>
                               </td>
                             </tr>

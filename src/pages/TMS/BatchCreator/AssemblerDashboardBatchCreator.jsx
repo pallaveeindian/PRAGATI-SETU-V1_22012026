@@ -17,6 +17,7 @@ const AssemblerDashboardBatchCreator = () => {
     trainingPlan: "",
     trainingPlanDays: "",
     participantType: "",
+    level: "BLOCK",
     gender: "",
     designation: "",
     religion: "",
@@ -138,8 +139,8 @@ const AssemblerDashboardBatchCreator = () => {
             40;
 
           const fallbackBlock = Array.isArray(filters.block)
-            ? filters.block[0] || 313581
-            : filters.block || 313581;
+            ? filters.block[0]
+            : filters.block;
 
           return {
             id: item.id || item.participant_id || item.participantId,
@@ -150,8 +151,8 @@ const AssemblerDashboardBatchCreator = () => {
           };
         } else {
           const fallbackBlock = Array.isArray(filters.block)
-            ? filters.block[0] || 313581
-            : filters.block || 313581;
+            ? filters.block[0]
+            : filters.block;
 
           return {
             id: item,
@@ -185,6 +186,7 @@ const AssemblerDashboardBatchCreator = () => {
         participant_type:
           filters.participantType?.toUpperCase() || "BENEFICIARY",
         batch_type: resolvedBatchType === "COMBINED" ? "COMBINED" : "SEPARATE",
+        level: filters.level || "BLOCK",
         training_plan_id: Number(filters.trainingPlan) || 5,
         district_tp_user_id: user?.id || 1050,
         centre_id: Number(filters.trainingCenter),
@@ -244,12 +246,12 @@ const AssemblerDashboardBatchCreator = () => {
 
           if (!id) return;
 
-          if ((!blockId || blockId === 313581) && filterBlockArray.length > 0) {
+          if ((!blockId) && filterBlockArray.length > 0) {
             blockId = filterBlockArray[idx % filterBlockArray.length];
           }
 
           if (!blockId) {
-            blockId = filterBlockArray[0] || 313581;
+            blockId = filterBlockArray[0];
           }
 
           if (!blockGroupMap[blockId]) {
@@ -342,6 +344,7 @@ const AssemblerDashboardBatchCreator = () => {
         ...prev,
 
         batchType: "Separate",
+        level: data?.level || "BLOCK", // <-- SURGICAL ADDITION
 
         financialYear: data?.financial_year || "",
 
@@ -499,11 +502,55 @@ const AssemblerDashboardBatchCreator = () => {
                 borderRadius: "12px",
                 border: "1px solid #e2e8f0",
                 display: "flex",
-                alignItems: "center",
+                flexDirection: "column",
+                alignItems: "flex-start",
                 gap: "12px",
               }}
             >
               <FilterComponent filters={filters} handleChange={handleChange} />
+
+              {/* SURGICAL ADDITION: Level Selector exclusively for Trainers */}
+              {filters.participantType === "Trainer" && (
+                <div
+                  style={{
+                    display: "flex",
+                    alignItems: "center",
+                    gap: "10px",
+                    marginTop: "8px",
+                    width: "100%",
+                  }}
+                >
+                  <label
+                    style={{
+                      fontWeight: 600,
+                      color: "#334155",
+                      fontSize: "14px",
+                      minWidth: "120px",
+                    }}
+                  >
+                    Batch Level <span style={{ color: "#ef4444" }}>*</span>
+                  </label>
+                  <select
+                    value={filters.level}
+                    onChange={(e) => handleChange("level", e.target.value)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                      outline: "none",
+                      fontSize: "14px",
+                      color: "#0f172a",
+                      backgroundColor: "#fff",
+                      flex: 1,
+                      maxWidth: "200px",
+                    }}
+                  >
+                    <option value="BLOCK">Block Level</option>
+                    <option value="DISTRICT">District Level</option>
+                    <option value="STATE">State Level</option>
+                  </select>
+                </div>
+              )}
             </div>
 
             <div

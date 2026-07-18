@@ -543,6 +543,7 @@ export default function TrainingRequestList() {
                         <th>ID</th>
                         <th>Theme</th>
                         <th>Plan</th>
+                        <th>Level</th>
                         <th>Status</th>
                         <th>Partner</th>
                         <th>District</th>
@@ -570,6 +571,7 @@ export default function TrainingRequestList() {
                             <td>{r.id}</td>
                             <td>{r.theme_name}</td>
                             <td>{r.training_plan_name}</td>
+                            <td>{r.level}</td>
                             <td>{r.status}</td>
                             <td>{r.partner_name}</td>
                             <td>{r.district_name}</td>

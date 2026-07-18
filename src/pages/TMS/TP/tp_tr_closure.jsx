@@ -282,7 +282,7 @@ export default function TpTrainingRequestClosure() {
 
     for (const p of successfulParticipants) {
       const c = costs[p.id] || {};
-      if (c.hra === "" || c.ta_da === "") {
+      if (c.ta_da === "") {
         setSubmitError(
           "Please fill in TA and DA for every participant before submitting.",
         );
@@ -503,7 +503,7 @@ export default function TpTrainingRequestClosure() {
               {submitSuccess && (
                 <div className="alert alert-success">
                   Batch closure submitted successfully! The batch is now under
-                  DMMU review.
+                  review.
                 </div>
               )}
 
@@ -829,7 +829,6 @@ export default function TpTrainingRequestClosure() {
                           <th>Participant Name</th>
                           <th>Attendance %</th>
                           <th>TA (₹)</th>
-                          <th>DA (₹)</th>
                           <th>Row Total (₹)</th>
                         </tr>
                       </thead>
@@ -874,23 +873,6 @@ export default function TpTrainingRequestClosure() {
                               ) : (
                                 /* ── EDITABLE (Unlocks if Rejected) ── */
                                 <>
-                                  <td>
-                                    <input
-                                      className="cost-input"
-                                      type="number"
-                                      min="0"
-                                      step="0.01"
-                                      placeholder="0.00"
-                                      value={c.hra}
-                                      onChange={(e) =>
-                                        handleCostChange(
-                                          p.id,
-                                          "hra",
-                                          e.target.value,
-                                        )
-                                      }
-                                    />
-                                  </td>
                                   <td>
                                     <input
                                       className="cost-input"

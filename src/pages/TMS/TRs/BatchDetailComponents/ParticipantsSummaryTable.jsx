@@ -145,8 +145,8 @@ export default function ParticipantsSummaryTable({
                             Successful
                           </span>
                         ) : (
-                          <span style={{ color: "#d97706", fontWeight: 600 }}>
-                            In Progress
+                          <span style={{ color: "#d90606", fontWeight: 600 }}>
+                            Not Elligible
                           </span>
                         )
                       ) : (
@@ -156,7 +156,10 @@ export default function ParticipantsSummaryTable({
 
                     {isTrainerTraining ? (
                       <>
-                        <td className="tdStyle">{p.designation || "-"}</td>
+                        <td className="tdStyle">
+                          {p.designation || "-"} -{" "}
+                          {p.theme?.theme_name || "N/A"}
+                        </td>
                         <td
                           className={`table-cell-bold ${
                             p.is_replaced ? "replaced-yes" : "replaced-no"

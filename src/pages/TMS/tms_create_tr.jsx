@@ -54,6 +54,7 @@ export default function CreateTrainingRequest() {
   // Local Controller State
   const [blockList, setBlockList] = useState([]);
   const [blockLoading, setBlockLoading] = useState(false);
+  const [districts, setDistricts] = useState([]);
   const [allowedTrainingIds, setAllowedTrainingIds] = useState([]);
   const [plans, setPlans] = useState([]);
   const [partners, setPartners] = useState([]);
@@ -87,6 +88,16 @@ export default function CreateTrainingRequest() {
   const [preloadReloadToken, setPreloadReloadToken] = useState(0);
   const [preloading, setPreloading] = useState(false);
   const [preloadErrors, setPreloadErrors] = useState([]);
+
+  // SURGICAL ADDITION: Fetch all districts so SMMU can select them in Step 1
+  useEffect(() => {
+    LOOKUP_API.districts
+      .list({ page_size: 100 })
+      .then((res) => {
+        setDistricts(res?.data?.results || res?.data || []);
+      })
+      .catch((err) => console.error("Failed to fetch districts:", err));
+  }, []);
 
   // Always ensure Geoscope is fetched properly for user
   useEffect(() => {
@@ -916,8 +927,8 @@ export default function CreateTrainingRequest() {
                       setForm={trState.setForm}
                       form={trState.form}
                       districtId={trState.districtId}
-                      setDistrictId={trState.setDistrictId} 
-                      districts={districts} 
+                      setDistrictId={trState.setDistrictId}
+                      districts={districts}
                       user={user}
                       geoscopeCached={geoscopeCached}
                       preloadThemes={preloadThemes}
@@ -954,6 +965,9 @@ export default function CreateTrainingRequest() {
                       selectedMemberCodesSet={trState.selectedMemberCodesSet}
                       selectedBeneficiaries={trState.selectedBeneficiaries}
                       addSelectedMember={trState.addSelectedMember}
+                      removeSelectedBeneficiary={
+                        trState.removeSelectedBeneficiary
+                      }
                       hover={hover}
                       setHover={setHover}
                       goToPrev={trState.goToPrev}

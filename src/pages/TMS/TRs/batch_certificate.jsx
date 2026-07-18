@@ -107,9 +107,11 @@ export default function BatchCertificate() {
   const isDMMU = role === "dmmu";
   const isSMMU = role === "smmu";
   const isBatchClosed = batchDetail?.status === "CLOSED";
+  const isStateBatch = String(batchDetail?.level).toUpperCase() === "STATE";
 
   // SURGICAL FIX: ONLY DMMU can generate the certificate.
-  const canGenerate = isBatchClosed && isDMMU;
+  const canGenerate =
+    isBatchClosed && ((isStateBatch && isSMMU) || (!isStateBatch && isDMMU));
 
   /* ---------------- fetchers ---------------- */
 
@@ -267,7 +269,7 @@ export default function BatchCertificate() {
 
       // SURGICAL FIX: DMMU Uploads initial DMM_SIGNED. SMMU countersigns. BMMU does nothing.
       if (isDMMU) newStatus = "DMM_SIGNED";
-      else if (isSMMU && oldStatus === "DMM_SIGNED") newStatus = "SMM_SIGNED";
+      else if (isSMMU) newStatus = "SMM_SIGNED";
 
       formData.append("status", newStatus);
 
@@ -324,9 +326,10 @@ export default function BatchCertificate() {
       : null;
 
     // SURGICAL FIX: Upload capabilities
-    const canUpload =
-      (isDMMU && (status === "DRAFT" || status === "BMM_SIGNED")) ||
-      (isSMMU && status === "DMM_SIGNED");
+    const canUpload = isStateBatch
+      ? isSMMU && (status === "DRAFT" || status === "BMM_SIGNED")
+      : (isDMMU && (status === "DRAFT" || status === "BMM_SIGNED")) ||
+        (isSMMU && status === "DMM_SIGNED");
 
     // SURGICAL FIX: Viewing capabilities (BMMU restricted until DMM/SMM signs)
     let canView = !!fileUrl;
@@ -345,7 +348,7 @@ export default function BatchCertificate() {
         </thead>
         <tbody>
           <tr>
-            <td>{status === "DRAFT" ? "Pending DMMU Signature" : status}</td>
+            <td>{status === "DRAFT" ? "Pending Signature" : status}</td>
             <td>
               {canView ? (
                 <button

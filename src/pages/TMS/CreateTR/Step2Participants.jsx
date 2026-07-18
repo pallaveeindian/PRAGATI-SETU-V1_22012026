@@ -72,6 +72,7 @@ export default function Step2Participants({
   selectedMemberCodesSet,
   selectedBeneficiaries,
   addSelectedMember,
+  removeSelectedBeneficiary,
   fetchMemberDetailBestEffort,
   hover,
   setHover,
@@ -122,13 +123,26 @@ export default function Step2Participants({
 
   const hasEnough = currentCount >= 5;
 
-  // SURGICAL ADDITION: Force 'TRAINER' as the only type for SMMU users
   React.useEffect(() => {
-    if (roleKey === "smmu" && form.training_type !== "TRAINER") {
-      setForm((f) => ({ ...f, training_type: "TRAINER" }));
-      fetchMasterTrainersByDistrict(true);
+    if (roleKey === "smmu") {
+      // Switch from default Beneficiary to Trainer
+      if (form.training_type === "BENEFICIARY") {
+        setForm((f) => ({ ...f, training_type: "TRAINER" }));
+      }
+      // Force fetch trainers by default on component mount
+      fetchMasterTrainersByDistrict(false);
     }
-  }, [roleKey, form.training_type, setForm, fetchMasterTrainersByDistrict]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  React.useEffect(() => {
+    if (roleKey === "smmu" && form.level !== "STATE") {
+      setForm((f) => ({
+        ...f,
+        level: "STATE",
+      }));
+    }
+  }, [roleKey, form.level, setForm]);
 
   return (
     <>
@@ -143,7 +157,7 @@ export default function Step2Participants({
         <div>
           <h3 style={headerGradient}>2 — Select Participants</h3>
           <div className="muted">
-            Choose beneficiaries (SHGs) or trainers depending on selection.
+            Choose Participants depending on selection.
           </div>
         </div>
         <div style={{ display: "flex", alignItems: "center", gap: 12 }}>
@@ -186,16 +200,42 @@ export default function Step2Participants({
         }}
       >
         <label style={{ fontWeight: 700 }}>Applicable For</label>
+
         <select
           value={form.training_type}
           onChange={(e) => {
             const val = e.target.value;
             setForm((f) => ({ ...f, training_type: val }));
-            if (val === "TRAINER") {
+
+            if (val === "TRAINER" || val === "STAFF") {
               fetchMasterTrainersByDistrict(true);
             }
           }}
-          disabled={roleKey === "smmu"} // SURGICAL ADDITION: Lock for SMMU
+          style={{
+            outline: "2px solid #3d6ba6",
+          }}
+        >
+          {roleKey === "smmu" ? (
+            <>
+              <option value="TRAINER">Master Trainer</option>
+              <option value="STAFF">Staff List</option>
+            </>
+          ) : (
+            <>
+              <option value="BENEFICIARY">Beneficiary</option>
+              <option value="TRAINER">Master Trainer</option>
+            </>
+          )}
+        </select>
+
+        <label style={{ fontWeight: 700, marginLeft: 12 }}>Level</label>
+
+        <select
+          value={roleKey === "smmu" ? "STATE" : form.level}
+          onChange={(e) =>
+            roleKey !== "smmu" && setForm({ ...form, level: e.target.value })
+          }
+          disabled={roleKey === "smmu"}
           style={{
             outline: "2px solid #3d6ba6",
             background: roleKey === "smmu" ? "#e2e8f0" : "#fff",
@@ -203,19 +243,12 @@ export default function Step2Participants({
           }}
         >
           {roleKey !== "smmu" && (
-            <option value="BENEFICIARY">Beneficiary</option>
+            <>
+              <option value="BLOCK">Block</option>
+              <option value="DISTRICT">District</option>
+            </>
           )}
-          <option value="TRAINER">Master Trainer</option>
-        </select>
 
-        <label style={{ fontWeight: 700, marginLeft: 12 }}>Level</label>
-        <select
-          value={form.level}
-          onChange={(e) => setForm({ ...form, level: e.target.value })}
-          style={{ outline: "2px solid #3d6ba6" }}
-        >
-          <option value="BLOCK">Block</option>
-          <option value="DISTRICT">District</option>
           <option value="STATE">State</option>
         </select>
       </div>
@@ -451,7 +484,16 @@ export default function Step2Participants({
                         member.memberCode ||
                         member.id;
 
-                      if (!checked) return;
+                      // SURGICAL FIX: Properly process the uncheck event
+                      if (!checked) {
+                        if (typeof removeSelectedBeneficiary === "function") {
+                          removeSelectedBeneficiary(
+                            lokos_member_code,
+                            lokos_shg_code,
+                          );
+                        }
+                        return;
+                      }
 
                       const already = selectedBeneficiaries.some(
                         (p) =>
@@ -546,7 +588,7 @@ export default function Step2Participants({
             </div>
           )}
         </>
-      ) : (
+      ) : form.training_type === "TRAINER" ? (
         <div>
           <MasterTrainerList
             onToggleTrainer={onToggleTrainer}
@@ -556,7 +598,12 @@ export default function Step2Participants({
             onRequestReload={() => fetchMasterTrainersByDistrict(true)}
           />
         </div>
-      )}
+      ) : form.training_type === "STAFF" ? (
+        <div className="muted" style={{ padding: 20 }}>
+          {/* SURGICAL ADDITION: Placeholder for STAFF selection view */}
+          Staff selection will be available once the Staff data is integrated.
+        </div>
+      ) : null}
     </>
   );
 }
