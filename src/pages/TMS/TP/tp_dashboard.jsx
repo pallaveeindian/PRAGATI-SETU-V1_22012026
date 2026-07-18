@@ -1,47 +1,19 @@
-import React, { useContext, useEffect, useState, useRef } from "react";
-// import TopNav from "../layout/tms_TopNav";
+// src/pages/TMS/TP/tp_dashboard.jsx
+import React, { useContext, useEffect, useState } from "react";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API } from "../../../api/axios";
+import api from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
-import TPStatCard from "./components/TPStatCard";
-import TPLeftPanel from "./components/TPLeftPanel";
-import TPRightPanel from "./components/TPRightPanel";
 import "../../../tp_styles.css";
 
-import { FaBuilding, FaUsers, FaClock, FaLayerGroup } from "react-icons/fa";
+import DashKPI from "./components/DashKPI";
+import DashThemeChart from "./components/DashThemeChart";
+import UPMapWrapper from "./components/UPMap";
+
 /* ===================================================== */
-
-const TP_SELF_PARTNER_KEY = "tp_self_partner_id";
-
-/* ---------------- partner resolver ---------------- */
-
-async function resolveTrainingPartnerIdForUser(userId) {
-  if (!userId) return null;
-
-  try {
-    const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
-    if (cached) return Number(cached);
-  } catch { }
-
-  try {
-    const resp = await TMS_API.trainingPartners.list({
-      search: userId,
-      fields: "id",
-    });
-    const pid = resp?.data?.results?.[0]?.id || null;
-
-    if (pid) {
-      localStorage.setItem(TP_SELF_PARTNER_KEY, String(pid));
-    }
-    return pid;
-  } catch {
-    return null;
-  }
-}
-
+/* MAIN DASHBOARD COMPONENT                              */
 /* ===================================================== */
 
 export default function TpDashboard() {
@@ -49,72 +21,42 @@ export default function TpDashboard() {
   const role = getCanonicalRole(user || {});
 
   const [navCollapsed, setNavCollapsed] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
 
-  const [partnerId, setPartnerId] = useState(null);
+  // State for Financial Year (Defaulting to upcoming/current)
+  const [financialYear, setFinancialYear] = useState("2026-27");
 
-  const [counts, setCounts] = useState({
-    centres: 0,
-    contactPersons: 0,
-    batches: 0,
-    pendingRequests: 0,
-  });
+  // SURGICAL ADDITION: State for District Metric Selection
+  const [selectedDistrictMetric, setSelectedDistrictMetric] = useState(
+    "district_tp_performance",
+  );
 
-  const didInitRef = useRef(false);
-
-  /* ===================================================== */
-  /* ---------------- resolve TP + fetch counts ---------------- */
-
+  // State for the Unified API Data
+  const [dashboardData, setDashboardData] = useState(null);
+  /* ---------------- Fetch Unified Metrics ---------------- */
   useEffect(() => {
-    if (role !== "training_partner" || !user?.id || didInitRef.current) return;
+    if (role !== "training_partner" || !user?.id) return;
 
-    didInitRef.current = true;
-
-    (async () => {
+    const fetchDashboardMetrics = async () => {
       setLoading(true);
-
-      const pid = await resolveTrainingPartnerIdForUser(user.id);
-      if (!pid) {
-        setLoading(false);
-        return;
-      }
-
-      setPartnerId(pid);
+      setError(null);
 
       try {
-        const [centresRes, cpRes, batchesRes, pendingReqRes] =
-          await Promise.all([
-            TMS_API.trainingPartnerCentres.list({
-              partner: pid,
-              page_size: 1,
-            }),
-            TMS_API.trainingPartnerContactPersons.list({
-              page_size: 1,
-            }),
-            TMS_API.batches.list({
-              partner_id: pid,
-              page_size: 1,
-            }),
-            TMS_API.trainingRequests.list({
-              partner_id: pid,
-              status: "BATCHING",
-              page_size: 1,
-            }),
-          ]);
-
-        setCounts({
-          centres: centresRes?.data?.count || 0,
-          contactPersons: cpRes?.data?.count || 0,
-          batches: batchesRes?.data?.count || 0,
-          pendingRequests: pendingReqRes?.data?.count || 0,
+        const response = await api.get("/tms/tp/dashboard-metrics/", {
+          params: { financial_year: financialYear },
         });
-      } catch (e) {
-        console.error("TP dashboard load failed", e);
+        setDashboardData(response.data);
+      } catch (err) {
+        console.error("Failed to load TP dashboard metrics:", err);
+        setError("Failed to load dashboard metrics. Please try again.");
       } finally {
         setLoading(false);
       }
-    })();
-  }, [role, user?.id]);
+    };
+
+    fetchDashboardMetrics();
+  }, [role, user?.id, financialYear]);
 
   /* ===================================================== */
 
@@ -127,88 +69,259 @@ export default function TpDashboard() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav /> */}
+          <main className="tp-page tp-dashboard">
+            {/* TOP CONTROLS & HEADER */}
+            <div className="dashboard-top-section">
+              {/* Financial Year Selector (Top Left) */}
+              <div className="fy-selector-wrapper">
+                <label htmlFor="fy-select" className="fy-label">
+                  Financial Year:
+                </label>
+                <select
+                  id="fy-select"
+                  className="fy-select"
+                  value={financialYear}
+                  onChange={(e) => setFinancialYear(e.target.value)}
+                >
+                  <option value="2024-25">2024-25</option>
+                  <option value="2025-26">2025-26</option>
+                  <option value="2026-27">2026-27</option>
+                  <option value="2027-28">2027-28</option>
+                </select>
+              </div>
 
-          <div className="tp-page tp-dashboard">
-            <h2 className="tp-title">Training Partner Dashboard</h2>
-            <div className="tp-subtitle">
-              Overview of training centres, TCs, requests and batches.
+              {/* Big Clean Partner Name Heading */}
+              {/* {dashboardData?.training_partner_name && !loading && (
+                <div className="partner-heading-container">
+                  <h1 className="partner-main-heading">
+                    {dashboardData.training_partner_name}
+                  </h1>
+                  <div className="partner-sub-heading">
+                    Executive Performance Dashboard
+                  </div>
+                </div>
+              )} */}
             </div>
-            {loading ? (
-              <div className="muted">Loading dashboard…</div>
-            ) : (
-              <>
-                {/* ===== TOP KPI CARDS ===== */}
 
-                <div className="tp-stat-grid">
-                  <TPStatCard
-                    title="Training Centres"
-                    value={counts.centres}
-                    icon={<FaBuilding />}
-                  />
+            {/* DASHBOARD CONTENT */}
+            {error ? (
+              <div className="alert-danger">{error}</div>
+            ) : loading ? (
+              <div className="loading-state">
+                <div className="spinner"></div>
+                <p>Compiling metrics for {financialYear}...</p>
+              </div>
+            ) : dashboardData ? (
+              <div className="dashboard-content-grid">
+                {/* 1. KPI Cards */}
+                <DashKPI data={dashboardData.kpi_card_info} />
+                {/* 2. District Analytics Dropdown & Map Layout */}
+                <div
+                  className="district-metric-section"
+                  style={{
+                    background: "#fff",
+                    padding: "24px",
+                    borderRadius: "16px",
+                    border: "1px solid #f1f5f9",
+                    boxShadow: "0 4px 6px -1px rgba(0, 0, 0, 0.02)",
+                  }}
+                >
+                  <div
+                    className="fy-selector-wrapper"
+                    style={{
+                      marginBottom: "20px",
+                      boxShadow: "none",
+                      border: "1px solid #cbd5e1",
+                    }}
+                  >
+                    <label htmlFor="metric-select" className="fy-label">
+                      District Analytics View:
+                    </label>
+                    <select
+                      id="metric-select"
+                      className="fy-select"
+                      value={selectedDistrictMetric}
+                      onChange={(e) =>
+                        setSelectedDistrictMetric(e.target.value)
+                      }
+                    >
+                      <option value="district_tp_performance">
+                        TP Performance Ranking
+                      </option>
+                      <option value="district_wise_metrics">
+                        Targets vs Achieved Batches
+                      </option>
+                      <option value="district_wise_centres">
+                        Registered Training Centres
+                      </option>
+                    </select>
+                  </div>
 
-                  <TPStatCard
-                    title="TC IDs"
-                    value={counts.contactPersons}
-                    icon={<FaUsers />}
-                  />
-
-                  <TPStatCard
-                    title="Pending Requests"
-                    value={counts.pendingRequests}
-                    icon={<FaClock />}
-                  />
-
-                  <TPStatCard
-                    title="Batches"
-                    value={counts.batches}
-                    icon={<FaLayerGroup />}
+                  <UPMapWrapper
+                    metricType={selectedDistrictMetric}
+                    data={dashboardData[selectedDistrictMetric]}
                   />
                 </div>
 
-                {/* ===== LOWER PANELS ===== */}
-
-                <div className="tp-bottom-grid">
-                  <TPLeftPanel />
-                  <TPRightPanel />
-                </div>
-              </>
-            )}{" "}
-          </div>
+                {/* 3. Theme Wise Metrics */}
+                <DashThemeChart data={dashboardData.theme_wise_metrics} />
+              </div>
+            ) : null}
+          </main>
           <Footer />
         </div>
       </div>
-      <style>{`.content-area {
-  display: flex;
-  flex: 1;
-  min-height: 0;
-}
 
-/* SIDEBAR FIX */
-.tms-leftnav {
-  flex-shrink: 0;
-}
+      <style>{`
+        .content-area {
+          display: flex;
+          flex: 1;
+          min-height: 0;
+          background: #f4f7fb;
+        }
+        .tms-leftnav {
+          flex-shrink: 0;
+        }
+        .main-area {
+          display: flex;
+          flex-direction: column;
+          flex: 1;
+          min-width: 0;
+        }
+        .tp-page {
+          flex: 1;
+          padding: 24px 32px;
+          overflow-y: auto;
+        }
+        footer {
+          flex-shrink: 0;
+          margin-top: auto;
+        }
 
-/* MAIN RIGHT SIDE */
-.main-area {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
-}
+        /* Dashboard Specific Styles */
+        .dashboard-top-section {
+          margin-bottom: 32px;
+        }
+        
+        .fy-selector-wrapper {
+          display: flex;
+          align-items: center;
+          gap: 12px;
+          margin-bottom: 24px;
+          background: #fff;
+          padding: 10px 16px;
+          border-radius: 8px;
+          border: 1px solid #e5e7eb;
+          width: fit-content;
+          box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .fy-label {
+          font-weight: 600;
+          color: #4b5563;
+          font-size: 14px;
+        }
+        .fy-select {
+          padding: 6px 12px;
+          border-radius: 6px;
+          border: 1px solid #d1d5db;
+          font-size: 14px;
+          font-weight: 600;
+          color: #1f2937;
+          outline: none;
+          background: #f9fafb;
+          cursor: pointer;
+        }
+        .fy-select:focus {
+          border-color: #3b82f6;
+          box-shadow: 0 0 0 2px rgba(59, 130, 246, 0.2);
+        }
 
-/* PAGE CONTENT SHOULD TAKE AVAILABLE SPACE */
-.tp-page {
-  flex: 1;
-  padding: 16px;
-}
+        .partner-heading-container {
+          border-left: 5px solid #2563eb;
+          padding-left: 16px;
+        }
+        .partner-main-heading {
+          font-size: 32px;
+          font-weight: 800;
+          color: #111827;
+          margin: 0 0 8px 0;
+          line-height: 1.2;
+          font-family: 'Inter', system-ui, sans-serif;
+          letter-spacing: -0.02em;
+        }
+        .partner-sub-heading {
+          font-size: 16px;
+          font-weight: 500;
+          color: #6b7280;
+          text-transform: uppercase;
+          letter-spacing: 0.05em;
+        }
 
-/* FOOTER ALWAYS AT BOTTOM */
-footer {
-  flex-shrink: 0;
-  margin-top: auto;
-}
-`}</style>
+        .dashboard-content-grid {
+          display: flex;
+          flex-direction: column;
+          gap: 24px;
+        }
+
+        /* Placeholder Styles */
+        .placeholder-box {
+          background: #ffffff;
+          border: 1px dashed #cbd5e1;
+          border-radius: 12px;
+          padding: 24px;
+          box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
+        }
+        .placeholder-box h4 {
+          margin: 0 0 8px 0;
+          color: #1e293b;
+          font-size: 18px;
+        }
+        .placeholder-box .muted {
+          color: #64748b;
+          font-size: 14px;
+          margin-bottom: 16px;
+        }
+        .data-dump {
+          background: #1e293b;
+          color: #a5b4fc;
+          padding: 16px;
+          border-radius: 8px;
+          font-size: 12px;
+          overflow-x: auto;
+          margin: 0;
+        }
+
+        /* Utils */
+        .alert-danger {
+          background: #fef2f2;
+          border: 1px solid #f87171;
+          color: #b91c1c;
+          padding: 16px;
+          border-radius: 8px;
+          font-weight: 500;
+        }
+        .loading-state {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+          justify-content: center;
+          padding: 48px;
+          color: #6b7280;
+          font-weight: 500;
+        }
+        .spinner {
+          width: 32px;
+          height: 32px;
+          border: 3px solid #e5e7eb;
+          border-top-color: #3b82f6;
+          border-radius: 50%;
+          animation: spin 1s linear infinite;
+          margin-bottom: 16px;
+        }
+        @keyframes spin {
+          to { transform: rotate(360deg); }
+        }
+      `}</style>
     </div>
   );
 }
