@@ -73,6 +73,16 @@ export default function TrainingBatchHistory() {
         const historyResp = await api.get(`/tms/batches/${batchId}/history/`);
         let data = historyResp?.data?.results || historyResp?.data || [];
 
+        // SURGICAL ADDITION: Inject base creation log using batch details
+        if (batchResp?.data?.created_at) {
+          data.push({
+            id: "initial_creation_event",
+            status: "CREATED",
+            remarks: "Batch succesfully created and sent to Approval authority",
+            created_at: batchResp.data.created_at,
+          });
+        }
+
         data.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
         setHistoryData(data);
       } catch (error) {

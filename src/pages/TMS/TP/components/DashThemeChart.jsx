@@ -1,332 +1,470 @@
 // src/pages/TMS/TP/components/DashThemeChart.jsx
-import React, { useState } from "react";
+import React from "react";
+import { styled } from "@mui/material/styles";
+import Box from "@mui/material/Box";
+import Typography from "@mui/material/Typography";
+import { BarChart } from "@mui/x-charts/BarChart";
+import { useAnimate, useAnimateBar } from "@mui/x-charts/hooks";
+import { interpolateObject } from "@mui/x-charts-vendor/d3-interpolate";
 
-export default function DashThemeChart({ data }) {
-  const [hoveredIdx, setHoveredIdx] = useState(null);
+/* ====================================================================
+    CUSTOM RENDERERS (Matches Reference EXACTLY)
+    ==================================================================== */
 
-  // Fallback if data is missing or empty
-  const chartData = data && data.length > 0 ? data : [];
+// Custom animated label that sits at the base (left side) of the horizontal bar
+const Text = styled("text")(({ theme }) => ({
+  ...theme?.typography?.body2,
+  stroke: "none",
+  fill: "#ffffff", // White text inside the dark blue bar
+  transition: "opacity 0.2s ease-in, fill 0.2s ease-in",
+  textAnchor: "start",
+  dominantBaseline: "central",
+  pointerEvents: "none",
+  fontWeight: 600,
+  fontFamily: "'Inter', system-ui, sans-serif",
+  fontSize: 12,
+}));
 
-  // Calculate the maximum Y value to scale the heights
-  // We stack assigned_targets + achieved_batches
-  const maxVal = chartData.reduce(
-    (max, item) => Math.max(max, item.assigned_targets + item.achieved_batches),
-    1, // Default to 1 to prevent division by zero
+function BarLabelAtBase(props) {
+  const {
+    seriesId,
+    dataIndex,
+    color,
+    isFaded,
+    isHighlighted,
+    classes,
+    xOrigin,
+    yOrigin,
+    x,
+    y,
+    width,
+    height,
+    layout,
+    skipAnimation,
+    ...otherProps
+  } = props;
+
+  // We ONLY want to label the foreground (Achieved/Created) layer
+  if (seriesId !== "achieved" || !otherProps.children) return null;
+
+  const animatedProps = useAnimate(
+    { x: xOrigin + 8, y: y + height / 2 },
+    {
+      initialProps: { x: xOrigin, y: y + height / 2 },
+      createInterpolator: interpolateObject,
+      transformProps: (p) => p,
+      applyProps: (element, p) => {
+        element.setAttribute("x", p.x.toString());
+        element.setAttribute("y", p.y.toString());
+      },
+      skip: skipAnimation,
+    },
   );
 
-  // Generate 5 grid lines for the background
-  const gridLines = [4, 3, 2, 1, 0];
+  return <Text {...otherProps} {...animatedProps} />;
+}
+
+// Custom Bar shape to add rounded corners and hover effects
+export function CustomBarElement(props) {
+  const {
+    ownerState,
+    skipAnimation,
+    id,
+    dataIndex,
+    xOrigin,
+    yOrigin,
+    seriesId,
+    ...other
+  } = props;
+
+  const animatedProps = useAnimateBar(props);
+  // Apply a distinct stripe pattern to the remaining targets background
+  const fill =
+    seriesId === "remaining" ? "url(#remaining-stripe-pattern)" : props.color;
+
+  return (
+    <rect
+      {...other}
+      {...animatedProps}
+      fill={fill}
+      rx={4} // Gentle rounding
+      style={{
+        filter: ownerState.isHighlighted ? "brightness(1.1)" : "none",
+        opacity: ownerState.isFaded ? 0.3 : 1,
+        transition: "opacity 0.2s ease, filter 0.2s ease",
+        cursor: "pointer",
+      }}
+    />
+  );
+}
+
+/* ====================================================================
+   MAIN COMPONENT
+   ==================================================================== */
+
+export default function DashThemeChart({ data, batchesFilter }) {
+  // Determine dynamic labeling based on the batchesFilter prop
+  const isCreated = batchesFilter === "created";
+  const achievedLabel = isCreated ? "Created Batches" : "Achieved Batches";
+
+  // Process data for the overlapping illusion
+  // By stacking 'achieved' and 'remaining', the total bar visually represents 'assigned'
+  const chartData =
+    data && data.length > 0
+      ? data.map((d) => ({
+          ...d,
+          // Calculate the empty space left in the target
+          remaining_targets: Math.max(
+            0,
+            d.assigned_targets - d.achieved_batches,
+          ),
+        }))
+      : [];
 
   if (!chartData.length) {
     return (
-      <div className="theme-chart-card empty-state">
-        <p className="muted">No theme metrics available for this selection.</p>
-      </div>
+      <Box
+        sx={{
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          minHeight: 300,
+          border: "1px dashed #cbd5e1",
+          borderRadius: "16px",
+          bgcolor: "#fff",
+        }}
+      >
+        <Typography sx={{ color: "#64748b", fontSize: "14px" }}>
+          No theme metrics available for this selection.
+        </Typography>
+      </Box>
     );
   }
 
   return (
-    <div className="theme-chart-card">
-      {/* Header matching the image layout */}
-      <div className="chart-header">
-        <h3 className="chart-title">Theme Metrics Overview</h3>
-        <div className="header-options">
-          <span className="dot"></span>
-          <span className="dot"></span>
-          <span className="dot"></span>
-        </div>
+    <div className="theme-chart-container">
+      {/* CHART SECTION */}
+      <Box
+        sx={{
+          width: "100%",
+          background: "#ffffff",
+          p: 3,
+          mb: 3,
+        }}
+      >
+        <Box
+          sx={{
+            display: "flex",
+            justifyContent: "space-between",
+            alignItems: "center",
+            mb: 1,
+          }}
+        >
+          <Typography
+            sx={{
+              fontSize: "18px",
+              fontWeight: 700,
+              color: "#002073",
+              fontFamily: "Inter, system-ui, sans-serif",
+            }}
+          >
+            Theme Metrics Overview
+          </Typography>
+          <Box sx={{ display: "flex", gap: "3px" }}>
+            <Box
+              sx={{
+                width: 4,
+                height: 4,
+                bgcolor: "#94a3b8",
+                borderRadius: "50%",
+              }}
+            />
+            <Box
+              sx={{
+                width: 4,
+                height: 4,
+                bgcolor: "#94a3b8",
+                borderRadius: "50%",
+              }}
+            />
+            <Box
+              sx={{
+                width: 4,
+                height: 4,
+                bgcolor: "#94a3b8",
+                borderRadius: "50%",
+              }}
+            />
+          </Box>
+        </Box>
+
+        <BarChart
+          height={350}
+          dataset={chartData}
+          layout="horizontal"
+          margin={{ top: 40, right: 30, bottom: 20 }}
+          yAxis={[
+            {
+              scaleType: "band",
+              dataKey: "theme_name",
+              width: "auto",
+              tickLabelStyle: {
+                fill: "#0f172a",
+                fontFamily: "Inter",
+                fontWeight: 600,
+                fontSize: 13,
+              },
+            },
+          ]}
+          xAxis={[
+            {
+              tickLabelStyle: {
+                fill: "#64748b",
+                fontFamily: "Inter",
+                fontSize: 12,
+              },
+            },
+          ]}
+          series={[
+            {
+              id: "achieved",
+              dataKey: "achieved_batches",
+              stack: "total",
+              label: achievedLabel,
+              color: "#002073", // TMS Dark Blue foreground
+              barLabel: (v) => `${v.value}`, // Value shown inside the base of the bar
+            },
+            {
+              id: "remaining",
+              dataKey: "remaining_targets",
+              stack: "total",
+              label: "Unachieved Targets",
+              color: "#0092E0", // Light slate background
+            },
+          ]}
+          slots={{
+            bar: CustomBarElement,
+            barLabel: BarLabelAtBase, // Injects the custom internal label
+          }}
+          slotProps={{
+            legend: {
+              direction: "row",
+              position: { vertical: "top", horizontal: "right" },
+              labelStyle: {
+                fontFamily: "Inter",
+                fontWeight: 500,
+                fill: "#475569",
+                fontSize: 13,
+              },
+              itemMarkWidth: 10,
+              itemMarkHeight: 10,
+            },
+            tooltip: { trigger: "item" },
+          }}
+          sx={{
+            "& .MuiChartsAxis-line": { stroke: "#cbd5e1" },
+            "& .MuiChartsAxis-tick": { stroke: "#cbd5e1" },
+          }}
+        >
+          {/* Subtle diagonal stripe pattern for the background 'Remaining' layer */}
+          <defs>
+            <pattern
+              id="remaining-stripe-pattern"
+              width="6"
+              height="6"
+              patternTransform="rotate(45)"
+              patternUnits="userSpaceOnUse"
+            >
+              <rect width="6" height="6" fill="#0092E0" />
+            </pattern>
+          </defs>
+        </BarChart>
+      </Box>
+
+      {/* TABLE SECTION */}
+      <div className="tms-theme-table-wrapper">
+        <table className="tms-theme-table">
+          <thead>
+            <tr>
+              <th>Theme Name</th>
+              <th className="num-col">Assigned Targets</th>
+              {/* Dynamic Header based on Filter */}
+              <th className="num-col">{achievedLabel}</th>
+              <th className="num-col">Completion</th>
+            </tr>
+          </thead>
+          <tbody>
+            {chartData.map((row, i) => {
+              const completionRate =
+                row.assigned_targets > 0
+                  ? Math.round(
+                      (row.achieved_batches / row.assigned_targets) * 100,
+                    )
+                  : 0;
+
+              return (
+                <tr key={i}>
+                  <td className="theme-name-cell">
+                    <span className="theme-dot"></span>
+                    {row.theme_name}
+                  </td>
+                  <td className="num-col font-medium">
+                    {row.assigned_targets.toLocaleString()}
+                  </td>
+                  <td className="num-col font-medium text-blue">
+                    {row.achieved_batches.toLocaleString()}
+                  </td>
+                  <td className="num-col">
+                    <div className="progress-cell">
+                      <span className="progress-text">{completionRate}%</span>
+                      <div className="progress-bar-bg">
+                        <div
+                          className="progress-bar-fill"
+                          style={{ width: `${Math.min(completionRate, 100)}%` }}
+                        ></div>
+                      </div>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
+            {/* Totals Row */}
+            <tr className="totals-row">
+              <td>
+                <strong>Total Overview</strong>
+              </td>
+              <td className="num-col font-bold">
+                {chartData
+                  .reduce((acc, curr) => acc + curr.assigned_targets, 0)
+                  .toLocaleString()}
+              </td>
+              <td className="num-col font-bold text-blue">
+                {chartData
+                  .reduce((acc, curr) => acc + curr.achieved_batches, 0)
+                  .toLocaleString()}
+              </td>
+              <td className="num-col">—</td>
+            </tr>
+          </tbody>
+        </table>
       </div>
 
-      <div className="chart-body">
-        {/* Background Dashed Grid Lines */}
-        <div className="grid-lines-container">
-          {gridLines.map((lineIdx) => (
-            <div key={lineIdx} className="grid-line" />
-          ))}
-        </div>
-
-        {/* Bars Container */}
-        <div className="bars-container">
-          {chartData.map((item, idx) => {
-            const isHovered = hoveredIdx === idx;
-
-            // Calculate percentage heights (leaving a little room at the top so bars don't touch the ceiling)
-            const scalingFactor = 85;
-            const topHeight = (item.assigned_targets / maxVal) * scalingFactor;
-            const bottomHeight =
-              (item.achieved_batches / maxVal) * scalingFactor;
-
-            return (
-              <div
-                className="bar-column"
-                key={idx}
-                onMouseEnter={() => setHoveredIdx(idx)}
-                onMouseLeave={() => setHoveredIdx(null)}
-              >
-                {/* Custom Tooltip matching the image */}
-                {isHovered && (
-                  <div className="chart-tooltip">
-                    <div className="tooltip-title">{item.theme_name}</div>
-                    <div className="tooltip-row">
-                      <div className="tooltip-pill top-pill"></div>
-                      <span className="tooltip-label">Targets</span>
-                      <span className="tooltip-value">
-                        {item.assigned_targets.toLocaleString()}
-                      </span>
-                    </div>
-                    <div className="tooltip-row">
-                      <div className="tooltip-pill bottom-pill"></div>
-                      <span className="tooltip-label">Achieved</span>
-                      <span className="tooltip-value">
-                        {item.achieved_batches.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                )}
-
-                {/* Stacked Bar with Gap */}
-                <div className="stacked-bar">
-                  {item.assigned_targets > 0 && (
-                    <div
-                      className={`bar-segment top-segment ${isHovered ? "hovered" : ""}`}
-                      style={{ height: `${topHeight}%` }}
-                    ></div>
-                  )}
-                  {item.achieved_batches > 0 && (
-                    <div
-                      className={`bar-segment bottom-segment ${isHovered ? "hovered" : ""}`}
-                      style={{ height: `${bottomHeight}%` }}
-                    ></div>
-                  )}
-                </div>
-
-                {/* X-Axis Label */}
-                <div
-                  className={`x-axis-label ${isHovered ? "hovered-label" : ""}`}
-                >
-                  {item.theme_name}
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Scoped CSS for the exact image reproduction */}
       <style>{`
-        .theme-chart-card {
-          background: #ffffff;
-          border: 1px solid #f1f5f9;
-          border-radius: 16px;
-          padding: 24px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+        .theme-chart-container {
+          display: flex;
+          flex-direction: column;
           width: 100%;
           font-family: 'Inter', system-ui, sans-serif;
         }
 
-        .empty-state {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          min-height: 300px;
-          border: 1px dashed #cbd5e1;
-        }
-
-        .chart-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 32px;
-        }
-
-        .chart-title {
-          font-size: 16px;
-          font-weight: 700;
-          color: #0f172a;
-          margin: 0;
-        }
-
-        .header-options {
-          display: flex;
-          gap: 3px;
-          cursor: pointer;
-          padding: 4px 8px;
-        }
-
-        .dot {
-          width: 4px;
-          height: 4px;
-          background-color: #94a3b8;
-          border-radius: 50%;
-        }
-
-        .chart-body {
-          position: relative;
-          height: 260px;
+        .tms-theme-table-wrapper {
           width: 100%;
-          display: flex;
-          align-items: flex-end;
-          padding-bottom: 30px; /* Space for X labels */
-        }
-
-        .grid-lines-container {
-          position: absolute;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 30px;
-          display: flex;
-          flex-direction: column;
-          justify-content: space-between;
-          z-index: 1;
-        }
-
-        .grid-line {
-          height: 1px;
-          width: 100%;
-          border-top: 1px dashed #e2e8f0;
-        }
-
-        .bars-container {
-          position: relative;
-          z-index: 2;
-          display: flex;
-          justify-content: space-around;
-          align-items: flex-end;
-          width: 100%;
-          height: 100%;
-          padding: 0 16px;
-        }
-
-        .bar-column {
-          position: relative;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          justify-content: flex-end;
-          height: 100%;
-          width: 60px;
-          cursor: pointer;
-        }
-
-        .stacked-bar {
-          display: flex;
-          flex-direction: column;
-          justify-content: flex-end;
-          width: 36px;
-          height: 100%;
-          gap: 4px; /* The pill gap shown in the image */
-          margin-bottom: 12px;
-        }
-
-        .bar-segment {
-          width: 100%;
-          border-radius: 6px;
-          background-color: #e2e8f0; /* Default gray for inactive */
-          transition: all 0.2s ease;
-        }
-
-        /* Hover States for TMS Blue Theme */
-        .top-segment.hovered {
-          background-color: #93c5fd; /* Light Blue */
-        }
-
-        .bottom-segment.hovered {
-          background-color: #3b82f6; /* Primary Blue */
-          /* Diagonal Stripes exactly like the orange one in the image */
-          background-image: repeating-linear-gradient(
-            -45deg,
-            rgba(255, 255, 255, 0.15),
-            rgba(255, 255, 255, 0.15) 5px,
-            transparent 5px,
-            transparent 10px
-          );
-        }
-
-        .x-axis-label {
-          font-size: 13px;
-          font-weight: 500;
-          color: #64748b;
-          text-align: center;
-          white-space: nowrap;
-          transition: color 0.2s ease;
-        }
-
-        .x-axis-label.hovered-label {
-          color: #0f172a;
-          font-weight: 700;
-        }
-
-        /* Custom Hover Tooltip */
-        .chart-tooltip {
-          position: absolute;
-          top: -10px;
-          left: 50%;
-          transform: translate(-30%, -100%);
           background: #ffffff;
-          border: 1px solid #e2e8f0;
-          border-radius: 10px;
-          padding: 12px 16px;
-          box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
-          z-index: 100;
-          min-width: 160px;
-          pointer-events: none;
-          animation: slideUpFade 0.2s ease forwards;
+          padding: 14px 20px;
+          overflow: hidden;
+          border-radius: 12px;
         }
 
-        @keyframes slideUpFade {
-          0% { opacity: 0; transform: translate(-30%, -90%); }
-          100% { opacity: 1; transform: translate(-30%, -100%); }
+        .tms-theme-table {
+          width: 100%;
+          border-collapse: collapse;
+          border: 2px solid #002073;
+          text-align: left;
         }
 
-        .tooltip-title {
+        .tms-theme-table th {
+          background-color: #002073; /* TMS Primary Blue */
+          color: #ffffff;
+          font-weight: 600;
           font-size: 13px;
-          font-weight: 700;
-          color: #1e293b;
-          margin-bottom: 8px;
+          padding: 14px 20px;
+          letter-spacing: 0.02em;
+          text-transform: uppercase;
         }
 
-        .tooltip-row {
+        .tms-theme-table td {
+          padding: 14px 20px;
+          font-size: 14px;
+          color: #334155;
+          vertical-align: middle;
+        }
+
+        .tms-theme-table tbody tr {
+          transition: background-color 0.2s ease;
+        }
+
+        .tms-theme-table tbody tr:hover:not(.totals-row) {
+          background-color: #eff6ff;
+        }
+
+        .theme-name-cell {
           display: flex;
           align-items: center;
-          margin-bottom: 6px;
-          font-size: 13px;
-        }
-        .tooltip-row:last-child {
-          margin-bottom: 0;
-        }
-
-        .tooltip-pill {
-          width: 8px;
-          height: 14px;
-          border-radius: 4px;
-          margin-right: 8px;
-        }
-
-        .top-pill {
-          background-color: #93c5fd;
-        }
-
-        .bottom-pill {
-          background-color: #3b82f6;
-          background-image: repeating-linear-gradient(
-            -45deg,
-            rgba(255, 255, 255, 0.2),
-            rgba(255, 255, 255, 0.2) 3px,
-            transparent 3px,
-            transparent 6px
-          );
-        }
-
-        .tooltip-label {
-          color: #64748b;
-          flex: 1;
-        }
-
-        .tooltip-value {
+          gap: 10px;
           font-weight: 600;
+          color: #0f172a !important;
+        }
+
+        .theme-dot {
+          width: 8px;
+          height: 8px;
+          background-color: #002073;
+          border-radius: 50%;
+          display: inline-block;
+        }
+
+        .num-col {
+          text-align: right;
+        }
+
+        .font-medium {
+          font-weight: 500;
+        }
+        
+        .font-bold {
+          font-weight: 700;
+        }
+
+        .text-blue {
+          color: #002073 !important;
+        }
+
+        .progress-cell {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 12px;
+        }
+
+        .progress-text {
+          font-weight: 600;
+          font-size: 13px;
+          color: #475569;
+          min-width: 35px;
+        }
+
+        .progress-bar-bg {
+          width: 80px;
+          height: 6px;
+          background-color: #e2e8f0;
+          border-radius: 999px;
+          overflow: hidden;
+        }
+
+        .progress-bar-fill {
+          height: 100%;
+          background-color: #22c55e; /* Green for completion */
+          border-radius: 999px;
+          transition: width 0.5s ease-out;
+        }
+
+        .totals-row {
+          background-color: #f8fafc;
+        }
+
+        .totals-row td {
           color: #0f172a;
-          margin-left: 12px;
+          border-bottom: none;
         }
       `}</style>
     </div>

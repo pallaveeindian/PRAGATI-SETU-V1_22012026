@@ -1,6 +1,6 @@
 // src/pages/LDMS/UP Map/UPMap.jsx
 import React, { useState, useRef, useEffect } from "react";
-import "./UPMap.css";
+import "./TMSUPMap.css";
 
 const districts = [
   { id: 31311, name: "AGRA" },
@@ -433,7 +433,7 @@ export default function UPMap({ onHover, onDistrictSelect }) {
             d={districtPaths[d.id]}
             data-id={d.id}
             data-name={d.name}
-            className={`district-shape d${i + 1}`}
+            className={`district-shape tmsd${i + 1}`}
             onMouseEnter={(e) => onHover?.(e.target.dataset)}
             onClick={() => onDistrictSelect?.(d.id)}
             onMouseLeave={() => onHover?.(null)}

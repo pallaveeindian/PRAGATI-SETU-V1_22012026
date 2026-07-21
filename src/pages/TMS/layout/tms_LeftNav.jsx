@@ -578,288 +578,6 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
         <button className="tms-toggle" onClick={onToggle}>
           {collapsed ? "→" : "←"}
         </button>
-
-        {/* STYLES */}
-        <style>{`
-.tms-leftnav {
-  width: 220px;
-  background: linear-gradient(
-    180deg,
-    #002073 0%,
-    #0167b6 52%,
-    #0093e1 100%
-  );
-  border-right: 1px solid #e5e7eb;
-  display: flex;
-  flex-direction: column;
-  transition: width 0.25s ease;
-  overflow: hidden;
-}
-
-.tms-leftnav.collapsed {
-  width: 64px;
-}
-
-.user-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: linear-gradient(135deg, #ff8c00, #ff5e00);
-  color: white;
-  border: none;
-  border-radius: 20px;
-  padding: 6px 10px;
-  cursor: pointer;
-  font-size: 12px;
-  font-weight: 600;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  width: 100%;          /* fit inside sidebar */
-  max-width: 100%;
-  overflow: hidden;
-  margin: 6px 0;        /* remove side overflow */
-}
-
-.username-text {
-  flex: 1;
-  min-width: 0;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;  /* ... */
-}
-
-.avatar {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: white;
-  color: #ff5e00;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 700;
-  flex-shrink: 0;
-}
-
-.user-wrapper {
-  position: relative;
-  width: 100%;
-}
-
-.user-popup {
-  position: absolute;
-  top: 110%;
-  left: 0;
-  right: 0;
-  background: white;
-  color: #002073;
-  padding: 10px;
-  border-radius: 8px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
-  z-index: 2000;
-}
-
-/* Logo */
-.tms-logo {
-  height: 56px;
-  display: flex;
-  align-items: center; 
-  justify-content: center;
-  gap: 10px;
-  border-bottom: 1px solid #e5e7eb;
-  cursor: pointer;
-  font-weight: 700;
-  font-size: 14px; 
-  color: #061b46;
-  padding: 0 8px; 
-}
-
-.tms-logo img {
-  height: 42px; 
-  width: auto;
-}
-
-.logo-text {
-  transition: opacity 0.2s ease, transform 0.2s ease;
-  align-self: center;
-  line-height: 1.2;
-}
-
-.tms-leftnav.collapsed .logo-text {
-  display: none;
-}
-
-/* Nav */
-.tms-nav {
-  flex: 1;
-  padding: 12px 6px; 
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  overflow-y: auto;
-  scrollbar-width: thin; 
-}
-
-/* scrollbar */
-.tms-nav::-webkit-scrollbar {
-  width: 6px;
-}
-.tms-nav::-webkit-scrollbar-thumb {
-  background: #cbd5e1;
-  border-radius: 6px;
-}
-
-.tms-nav-item {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  border-radius: 8px;
-  text-decoration: none;
-  color: #ffffff;
-  font-size: 14px;
-  transition: all 0.2s ease; 
-  white-space: nowrap;
-  cursor: pointer; 
-}
-
-.tms-nav-item .dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: #061b46;
-  flex-shrink: 0;
-}
-
-/* Label animation */
-.nav-label {
-  display: flex; 
-  align-items: center;
-  width: 100%;
-  transition: opacity 0.2s ease, transform 0.2s ease;
-}
-
-.tms-leftnav.collapsed .nav-label {
-  opacity: 0;
-  width: 0;
-  overflow: hidden;
-  margin: 0;
-  padding: 0;
-  pointer-events: none;
-}
-
-.tms-nav-item:hover {
-  background: #e8f0f8; 
-  color: #002073;
-}
-
-.tms-nav-item.active {
-  background: #0093e1;
-  color: #ffffff;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
-}
-
-.tms-nav-item.active .dot {
-  background: #ffffff;
-}
-
-/* Toggle */
-.tms-toggle {
-  height: 40px;
-  width: 100%;             /* IMPORTANT */
-  border: none;
-  background: #002073;
-  border-top: 1px solid #e5e7eb;
-  cursor: pointer;
-  font-size: 14px;
-  color: #fff;
-  transition: background 0.2s ease;
-  display: flex;           /* center alignment */
-  align-items: center;
-  justify-content: center;
-}
-
-.tms-toggle:hover {
-  background: #0a2a6b; 
-}
-
-.nav-icon {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 20px;
-  color:  #ffffff;
-  transition: color 0.2s ease;
-}
-
-.tms-nav-item:hover .nav-icon {
-  color: #002073;
-}
-
-.tms-nav-item.active .nav-icon {
-  color: #ffffff;
-}
-
-/* Center icon when collapsed */
-.tms-leftnav.collapsed .tms-nav-item {
-  justify-content: center;
-  padding: 10px 0;
-  gap: 0;
-}
-
-.tms-leftnav.collapsed .nav-icon {
-  margin: 0 auto;
-}
-
-.tms-leftnav.collapsed .tms-logo {
-  justify-content: center;
-  padding: 0;
-}
-
-.tms-leftnav.collapsed .tms-logo img {
-  margin: 0 auto;
-  display: block;
-}
-
-/* SUBMENU */
-.tms-submenu {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-  margin-left: 32px; 
-  margin-top: 2px;
-
-}
-
-.tms-submenu-item {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  padding: 6px 10px;
-  font-size: 13px;
-  border-radius: 6px;
-  text-decoration: none;
-  color: #ffffff;
-  transition: all 0.2s ease; 
-}
-
-.tms-submenu-item:hover {
-  background: #f1f5f9; 
-color: #002073;
-  
-}
-
-.tms-submenu-item.active {
-  background:  #0093e1;
-  color: white;
-}
-
-.tms-submenu-item .dot {
-  width: 5px;
-  height: 5px;
-  background: currentColor;
-  border-radius: 50%;
-}
-`}</style>
       </aside>
       {mobileOpen && (
         <div
@@ -867,56 +585,354 @@ color: #002073;
           onClick={() => setMobileOpen(false)}
         />
       )}
+      {/* STYLES */}
       <style>{`
-/* MOBILE BURGER */
-.tms-mobile-burger {
-  display: none;
-  position: fixed;
-  top: 10px;
-  left: 10px;
-  z-index: 1200;
-  background: #061b46;
-  color: white;
-  border: none;
-  padding: 8px 10px;
-  font-size: 18px;
-  border-radius: 6px;
-  cursor: pointer;
-}
+          .tms-leftnav {
+            width: 220px;
+            height: 100vh; 
+            position: sticky; 
+            top: 0; 
+            align-self: flex-start; 
+            background: linear-gradient(
+              180deg,
+              #002073 0%,
+              #0167b6 52%,
+              #0093e1 100%
+            );
+            display: flex;
+            flex-direction: column;
+            transition: width 0.25s ease;
+            z-index: 1000;
+          }
 
-/* MOBILE OVERLAY */
-.tms-mobile-overlay {
-  position: fixed;
-  inset: 0;
-  background: rgba(0,0,0,0.4); 
-  z-index: 1100;
-}
+          .tms-leftnav.collapsed {
+            width: 64px;
+          }
 
-/* MOBILE RESPONSIVE */
-@media (max-width: 768px) {
+          .user-btn {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: linear-gradient(135deg, #ff8c00, #ff5e00);
+            color: white;
+            border: none;
+            border-radius: 20px;
+            padding: 6px 10px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 100%;
+            overflow: hidden;
+            margin: 6px 0;
+          }
 
-  .tms-mobile-burger {
-    display: block;
-  }
+          .username-text {
+            flex: 1;
+            min-width: 0;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+          }
 
-  .tms-leftnav {
-    position: fixed;
-    top: 0;
-    left: -240px;
-    width: 240px;
-    height: 100dvh;
-    background: #ffffff;
-    z-index: 1201;
-    transition: left 0.3s ease;
-    box-shadow: 2px 0 12px rgba(0,0,0,0.2); 
-  }
+          .avatar {
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            background: white;
+            color: #ff5e00;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            flex-shrink: 0;
+          }
 
-  .tms-leftnav.mobile-open {
-    left: 0;
-  }
+          .user-wrapper {
+            position: relative;
+            width: 100%;
+            padding: 0 6px;
+            flex-shrink: 0; /* Prevents user section from shrinking */
+          }
 
-}
-`}</style>
+          .user-popup {
+            position: absolute;
+            top: 110%;
+            left: 0;
+            right: 0;
+            background: white;
+            color: #002073;
+            padding: 10px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+            z-index: 2000;
+          }
+
+          /* Logo */
+          .tms-logo {
+            height: 56px;
+            display: flex;
+            align-items: center; 
+            justify-content: center;
+            gap: 10px;
+            border-bottom: 1px solid #e5e7eb;
+            cursor: pointer;
+            font-weight: 700;
+            font-size: 14px; 
+            color: #061b46;
+            padding: 0 8px; 
+            flex-shrink: 0; /* Prevents logo from shrinking */
+          }
+
+          .tms-logo img {
+            height: 42px; 
+            width: auto;
+          }
+
+          .logo-text {
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            align-self: center;
+            line-height: 1.2;
+          }
+
+          .tms-leftnav.collapsed .logo-text {
+            display: none;
+          }
+
+          /* Nav */
+          .tms-nav {
+            flex: 1 1 auto; /* CRITICAL: Allows nav to fill space and scroll internally */
+            padding: 12px 6px; 
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            overflow-y: auto; /* Forces scrollbar within this container only */
+            scrollbar-width: thin; 
+          }
+
+          /* scrollbar */
+          .tms-nav::-webkit-scrollbar {
+            width: 6px;
+          }
+          .tms-nav::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 6px;
+          }
+
+          .tms-nav-item {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            padding: 10px 12px;
+            border-radius: 8px;
+            text-decoration: none;
+            color: #ffffff;
+            font-size: 14px;
+            transition: all 0.2s ease; 
+            white-space: nowrap;
+            cursor: pointer; 
+            flex-shrink: 0;
+          }
+
+          .tms-nav-item .dot {
+            width: 6px;
+            height: 6px;
+            border-radius: 50%;
+            background: #061b46;
+            flex-shrink: 0;
+          }
+
+          /* Label animation */
+          .nav-label {
+            display: flex; 
+            align-items: center;
+            width: 100%;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+          }
+
+          .tms-leftnav.collapsed .nav-label {
+            opacity: 0;
+            width: 0;
+            overflow: hidden;
+            margin: 0;
+            padding: 0;
+            pointer-events: none;
+          }
+
+          .tms-nav-item:hover {
+            background: #e8f0f8; 
+            color: #002073;
+          }
+
+          .tms-nav-item.active {
+            background: #0093e1;
+            color: #ffffff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
+          }
+
+          .tms-nav-item.active .dot {
+            background: #ffffff;
+          }
+
+          /* Toggle */
+          .tms-toggle {
+            width: 100%;
+            height: 40px;
+            flex-shrink: 0; /* CRITICAL: Prevents the button from being squished */
+            margin-top: auto; /* Pushes button strictly to the bottom */
+            border: none;
+            border-top: 1px solid rgba(255, 255, 255, 0.12);
+            background: #002073;
+            color: #fff;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            z-index: 10;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+            transition: background-color 0.25s ease, transform 0.15s ease;
+          }
+
+          .tms-toggle:hover {
+            background: #0a2a6b;
+          }
+
+          .tms-toggle:active {
+            transform: scale(0.98);
+          }
+
+          .tms-toggle:focus-visible {
+            outline: 2px solid #60a5fa;
+            outline-offset: -2px;
+          }
+
+          .nav-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-width: 20px;
+            color:  #ffffff;
+            transition: color 0.2s ease;
+          }
+
+          .tms-nav-item:hover .nav-icon {
+            color: #002073;
+          }
+
+          .tms-nav-item.active .nav-icon {
+            color: #ffffff;
+          }
+
+          /* Center icon when collapsed */
+          .tms-leftnav.collapsed .tms-nav-item {
+            justify-content: center;
+            padding: 10px 0;
+            gap: 0;
+          }
+
+          .tms-leftnav.collapsed .nav-icon {
+            margin: 0 auto;
+          }
+
+          .tms-leftnav.collapsed .tms-logo {
+            justify-content: center;
+            padding: 0;
+          }
+
+          .tms-leftnav.collapsed .tms-logo img {
+            margin: 0 auto;
+            display: block;
+          }
+
+          /* SUBMENU */
+          .tms-submenu {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            margin-left: 32px; 
+            margin-top: 2px;
+          }
+
+          .tms-submenu-item {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            padding: 6px 10px;
+            font-size: 13px;
+            border-radius: 6px;
+            text-decoration: none;
+            color: #ffffff;
+            transition: all 0.2s ease; 
+            flex-shrink: 0;
+          }
+
+          .tms-submenu-item:hover {
+            background: #f1f5f9; 
+            color: #002073;
+          }
+
+          .tms-submenu-item.active {
+            background:  #0093e1;
+            color: white;
+          }
+
+          .tms-submenu-item .dot {
+            width: 5px;
+            height: 5px;
+            background: currentColor;
+            border-radius: 50%;
+          }
+
+          /* MOBILE BURGER */
+          .tms-mobile-burger {
+            display: none;
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            z-index: 1200;
+            background: #061b46;
+            color: white;
+            border: none;
+            padding: 8px 10px;
+            font-size: 18px;
+            border-radius: 6px;
+            cursor: pointer;
+          }
+
+          /* MOBILE OVERLAY */
+          .tms-mobile-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(0,0,0,0.4); 
+            z-index: 1100;
+          }
+
+          /* MOBILE RESPONSIVE */
+          @media (max-width: 768px) {
+            .tms-mobile-burger {
+              display: block;
+            }
+
+            .tms-leftnav {
+              position: fixed;
+              top: 0;
+              left: -240px;
+              width: 240px;
+              height: 100dvh;
+              background: linear-gradient(180deg, #002073 0%, #0167b6 52%, #0093e1 100%);
+              z-index: 1201;
+              transition: left 0.3s ease;
+              box-shadow: 2px 0 12px rgba(0,0,0,0.2); 
+            }
+
+            .tms-leftnav.mobile-open {
+              left: 0;
+            }
+          }
+        `}</style>
     </>
   );
 }

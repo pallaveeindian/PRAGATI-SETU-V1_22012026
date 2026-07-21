@@ -301,7 +301,6 @@ textarea {
 
 /* Main area when left nav present */
 .main-area {
-  border-left: 1px solid #eef2f7;
   flex: 1;
   display: flex;
   flex-direction: column;

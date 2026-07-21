@@ -62,7 +62,7 @@ export default function DashKPI({ data }) {
       trendSuffix: "successfully",
     },
     {
-      title: "Participants Allotted",
+      title: "Participants Onboarded",
       value: total_participants_allotted.toLocaleString(),
       icon: <FaUsers />,
       iconBg: "#f3e8ff", // Soft Purple
@@ -71,7 +71,7 @@ export default function DashKPI({ data }) {
       trendSuffix: "across all batches",
     },
     {
-      title: "Participants Trained",
+      title: "Participants Allotted",
       value: total_participants_trained.toLocaleString(),
       icon: <FaUserGraduate />,
       iconBg: "#ccfbf1", // Soft Mint/Green
@@ -112,27 +112,31 @@ export default function DashKPI({ data }) {
 
       <style>{`
         .kpi-dashboard-wrapper {
+          padding: 12px;
           width: 100%;
-          margin-bottom: 32px;
         }
 
+        /* Switched to flex to force a single row that shrinks dynamically */
         .kpi-grid {
-          display: grid;
-          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-          gap: 20px;
+          display: flex;
+          flex-direction: row;
+          flex-wrap: nowrap;
+          gap: 12px;
           width: 100%;
         }
 
-        /* Card exactly matching the uploaded image */
+        /* Cards scaled down, forced to share equal width and shrink */
         .kpi-card {
           background: #ffffff;
-          border: 1px solid #f1f5f9;
-          border-radius: 16px;
-          padding: 20px;
-          box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
+          border: 3px solid #00217442;
+          border-radius: 12px;
+          padding: 14px;
+          box-shadow: 5px 4px 6px -1px rgba(0, 0, 0, 0.02), 0 2px 4px -1px rgba(0, 0, 0, 0.02);
           display: flex;
           flex-direction: column;
           transition: transform 0.2s ease, box-shadow 0.2s ease;
+          flex: 1 1 0;
+          min-width: 0; /* Prevents text overflow from breaking the flex container */
         }
 
         .kpi-card:hover {
@@ -143,47 +147,59 @@ export default function DashKPI({ data }) {
         .kpi-header {
           display: flex;
           align-items: center;
-          gap: 12px;
-          margin-bottom: 20px;
+          gap: 10px;
+          margin-bottom: 12px;
         }
 
+        /* Shrunk icon box */
         .kpi-icon-box {
-          width: 42px;
-          height: 42px;
-          border-radius: 10px;
+          width: 32px;
+          height: 32px;
+          border-radius: 8px;
           display: flex;
           align-items: center;
           justify-content: center;
-          font-size: 18px;
+          font-size: 14px;
+          flex-shrink: 0;
         }
 
+        /* Scaled down text with truncation to prevent wrapping */
         .kpi-title {
-          font-size: 15px;
-          font-weight: 500;
+          font-size: 12px;
+          font-weight: 600;
           color: #64748b; /* Slate 500 */
           font-family: 'Inter', system-ui, sans-serif;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
+        /* Scaled down numbers */
         .kpi-value {
-          font-size: 32px;
+          font-size: 22px;
           font-weight: 800;
           color: #0f172a; /* Slate 900 */
           letter-spacing: -0.02em;
-          margin-bottom: 20px;
+          margin-bottom: 12px;
           font-family: 'Inter', system-ui, sans-serif;
         }
 
+        /* Trend row scaling and truncation */
         .kpi-trend-row {
           display: flex;
           align-items: center;
-          gap: 6px;
-          font-size: 13px;
+          gap: 4px;
+          font-size: 11px;
           font-family: 'Inter', system-ui, sans-serif;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
         }
 
         .kpi-trend-icon {
           color: #22c55e; /* Green 500 */
-          font-size: 11px;
+          font-size: 10px;
+          flex-shrink: 0;
         }
 
         .kpi-trend-highlight {
@@ -194,6 +210,13 @@ export default function DashKPI({ data }) {
         .kpi-trend-suffix {
           color: #94a3b8; /* Slate 400 */
           font-weight: 500;
+        }
+
+        /* Hide the entire KPI section on Mobile */
+        @media (max-width: 768px) {
+          .kpi-dashboard-wrapper {
+            display: none;
+          }
         }
       `}</style>
     </div>

@@ -1,0 +1,134 @@
+.up-map {
+  background: transparent;
+  height: 100%;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  display: flex;
+  margin-bottom: 5%;
+  overflow: visible;
+}
+
+.state-outline {
+  fill: none;
+  stroke: #000;
+  stroke-width: 3;
+}
+
+.district-shape {
+  stroke: #1e1e1e;
+  stroke-width: 1.2;
+  vector-effect: non-scaling-stroke;
+  cursor: pointer;
+  will-change: transform, filter;
+
+  transform-box: fill-box;
+  transform-origin: center;
+
+  transition:
+    fill 0.2s ease,
+    stroke 0.2s ease,
+    stroke-width 0.15s ease,
+    filter 0.2s ease,
+    transform 0.15s ease;
+}
+
+.district-shape.active {
+  stroke: #000;
+  stroke-width: 3;
+  filter: brightness(1.2);
+}
+
+/* Hover effect */
+.district-shape:hover {
+  stroke: #000;
+  stroke-width: 2.2;
+  filter: brightness(1.15) drop-shadow(0 0 2px rgba(0, 0, 0, 0.4));
+  transform: scale(1.02);
+  pointer-events: auto;
+}
+
+/* Distinct, muted map palette (no gradient) */
+.tmsd1 { fill: #0f172a; }
+.tmsd2 { fill: #172554; }
+.tmsd3 { fill: #1e3a8a; }
+.tmsd4 { fill: #1d4ed8; }
+.tmsd5 { fill: #2563eb; }
+.tmsd6 { fill: #3b82f6; }
+.tmsd7 { fill: #60a5fa; }
+.tmsd8 { fill: #93c5fd; }
+.tmsd9 { fill: #bfdbfe; }
+.tmsd10 { fill: #dbeafe; }
+.tmsd11 { fill: #1e40af; }
+.tmsd12 { fill: #1d4ed8; }
+.tmsd13 { fill: #2563eb; }
+.tmsd14 { fill: #3b82f6; }
+.tmsd15 { fill: #0c1b4d; }
+.tmsd16 { fill: #102a66; }
+.tmsd17 { fill: #14357d; }
+.tmsd18 { fill: #184496; }
+.tmsd19 { fill: #1d52b0; }
+.tmsd20 { fill: #2563eb; }
+.tmsd21 { fill: #2f74f0; }
+.tmsd22 { fill: #3a86f6; }
+.tmsd23 { fill: #4895ef; }
+.tmsd24 { fill: #56a3f8; }
+.tmsd25 { fill: #60a5fa; }
+.tmsd26 { fill: #74b4fb; }
+.tmsd27 { fill: #93c5fd; }
+.tmsd28 { fill: #a9d3fe; }
+.tmsd29 { fill: #bfdbfe; }
+.tmsd30 { fill: #dbeafe; }
+.tmsd31 { fill: #082f49; }
+.tmsd32 { fill: #0c4a6e; }
+.tmsd33 { fill: #075985; }
+.tmsd34 { fill: #0369a1; }
+.tmsd35 { fill: #0284c7; }
+.tmsd36 { fill: #0ea5e9; }
+.tmsd37 { fill: #38bdf8; }
+.tmsd38 { fill: #7dd3fc; }
+.tmsd39 { fill: #bae6fd; }
+.tmsd40 { fill: #e0f2fe; }
+.tmsd41 { fill: #172554; }
+.tmsd42 { fill: #1e3a8a; }
+.tmsd43 { fill: #1e40af; }
+.tmsd44 { fill: #1d4ed8; }
+.tmsd45 { fill: #2563eb; }
+.tmsd46 { fill: #3b82f6; }
+.tmsd47 { fill: #60a5fa; }
+.tmsd48 { fill: #93c5fd; }
+.tmsd49 { fill: #bfdbfe; }
+.tmsd50 { fill: #dbeafe; }
+.tmsd51 { fill: #083344; }
+.tmsd52 { fill: #0f4c5c; }
+.tmsd53 { fill: #155e75; }
+.tmsd54 { fill: #0e7490; }
+.tmsd55 { fill: #0891b2; }
+.tmsd56 { fill: #06b6d4; }
+.tmsd57 { fill: #22d3ee; }
+.tmsd58 { fill: #67e8f9; }
+.tmsd59 { fill: #a5f3fc; }
+.tmsd60 { fill: #cffafe; }
+.tmsd61 { fill: #020617; }
+.tmsd62 { fill: #0f172a; }
+.tmsd63 { fill: #172554; }
+.tmsd64 { fill: #1e3a8a; }
+.tmsd65 { fill: #1e40af; }
+.tmsd66 { fill: #1d4ed8; }
+.tmsd67 { fill: #2563eb; }
+.tmsd68 { fill: #3b82f6; }
+.tmsd69 { fill: #60a5fa; }
+.tmsd70 { fill: #93c5fd; }
+.tmsd71 { fill: #bfdbfe; }
+.tmsd72 { fill: #dbeafe; }
+.tmsd73 { fill: #e0f2fe; }
+.tmsd74 { fill: #eff6ff; }
+.tmsd75 { fill: #f8fbff; }
+
+.district-label {
+  font-size: 5px;
+  font-weight: 600;
+  fill: #374151;
+  pointer-events: none;
+  user-select: none;
+}
