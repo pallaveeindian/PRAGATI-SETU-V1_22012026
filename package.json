@@ -37,6 +37,8 @@
     "react-leaflet": "^5.0.0",
     "react-router-dom": "^7.9.5",
     "recharts": "^3.6.0",
+    "styled-components": "^6.4.4",
+    "xlsx": "^0.18.5",
     "yup": "^1.7.1"
   },
   "devDependencies": {

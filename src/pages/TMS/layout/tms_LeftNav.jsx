@@ -495,10 +495,10 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
           {showUserPopup && (
             <div className="user-popup" onClick={(e) => e.stopPropagation()}>
               <div style={{ fontWeight: "bold" }}>{username}</div>
-              {/* 👈 NEW: Show Org Name in the popup dropdown */}
+              {/*  NEW: Show Org Name in the popup dropdown */}
               {orgName && (
                 <div
-                  style={{ fontSize: "12px", marginTop: "4px", color: "#666" }}
+                  style={{ fontSize: "20px", marginTop: "4px", color: "#666" }}
                 >
                   {orgName}
                 </div>
@@ -578,6 +578,288 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
         <button className="tms-toggle" onClick={onToggle}>
           {collapsed ? "→" : "←"}
         </button>
+
+        {/* STYLES */}
+        <style>{`
+.tms-leftnav {
+  width: 220px;
+  background: linear-gradient(
+    180deg,
+    #002073 0%,
+    #0167b6 52%,
+    #0093e1 100%
+  );
+  border-right: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  transition: width 0.25s ease;
+  overflow: hidden;
+}
+
+.tms-leftnav.collapsed {
+  width: 64px;
+}
+
+.user-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: linear-gradient(135deg, #ff8c00, #ff5e00);
+  color: white;
+  border: none;
+  border-radius: 20px;
+  padding: 6px 10px;
+  cursor: pointer;
+  font-size: 17px;
+  font-weight: 600;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  width: 100%;          /* fit inside sidebar */
+  max-width: 100%;
+  overflow: hidden;
+  margin: 6px 0;        /* remove side overflow */
+}
+
+.username-text {
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;  /* ... */
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: white;
+  color: #ff5e00;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  flex-shrink: 0;
+}
+
+.user-wrapper {
+  position: relative;
+  width: 100%;
+}
+
+.user-popup {
+  position: absolute;
+  top: 110%;
+  left: 0;
+  right: 0;
+  background: white;
+  color: #002073;
+  padding: 10px;
+  border-radius: 8px;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+  z-index: 2000;
+}
+
+/* Logo */
+.tms-logo {
+  height: 56px;
+  display: flex;
+  align-items: center; 
+  justify-content: center;
+  gap: 10px;
+  border-bottom: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-weight: 700;
+  font-size: 14px; 
+  color: #061b46;
+  padding: 0 8px; 
+}
+
+.tms-logo img {
+  height: 42px; 
+  width: auto;
+}
+
+.logo-text {
+  transition: opacity 0.2s ease, transform 0.2s ease;
+  align-self: center;
+  line-height: 1.2;
+}
+
+.tms-leftnav.collapsed .logo-text {
+  display: none;
+}
+
+/* Nav */
+.tms-nav {
+  flex: 1;
+  padding: 12px 6px; 
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  overflow-y: auto;
+  scrollbar-width: thin; 
+}
+
+/* scrollbar */
+.tms-nav::-webkit-scrollbar {
+  width: 6px;
+}
+.tms-nav::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 6px;
+}
+
+.tms-nav-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  text-decoration: none;
+  color: #ffffff;
+  font-size: 14px;
+  transition: all 0.2s ease; 
+  white-space: nowrap;
+  cursor: pointer; 
+}
+
+.tms-nav-item .dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: #061b46;
+  flex-shrink: 0;
+}
+
+/* Label animation */
+.nav-label {
+  display: flex; 
+  align-items: center;
+  width: 100%;
+  transition: opacity 0.2s ease, transform 0.2s ease;
+}
+
+.tms-leftnav.collapsed .nav-label {
+  opacity: 0;
+  width: 0;
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  pointer-events: none;
+}
+
+.tms-nav-item:hover {
+  background: #e8f0f8; 
+  color: #002073;
+}
+
+.tms-nav-item.active {
+  background: #0093e1;
+  color: #ffffff;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.15); 
+}
+
+.tms-nav-item.active .dot {
+  background: #ffffff;
+}
+
+/* Toggle */
+.tms-toggle {
+  height: 40px;
+  width: 100%;             /* IMPORTANT */
+  border: none;
+  background: #002073;
+  border-top: 1px solid #e5e7eb;
+  cursor: pointer;
+  font-size: 14px;
+  color: #fff;
+  transition: background 0.2s ease;
+  display: flex;           /* center alignment */
+  align-items: center;
+  justify-content: center;
+}
+
+.tms-toggle:hover {
+  background: #0a2a6b; 
+}
+
+.nav-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 20px;
+  color:  #ffffff;
+  transition: color 0.2s ease;
+}
+
+.tms-nav-item:hover .nav-icon {
+  color: #002073;
+}
+
+.tms-nav-item.active .nav-icon {
+  color: #ffffff;
+}
+
+/* Center icon when collapsed */
+.tms-leftnav.collapsed .tms-nav-item {
+  justify-content: center;
+  padding: 10px 0;
+  gap: 0;
+}
+
+.tms-leftnav.collapsed .nav-icon {
+  margin: 0 auto;
+}
+
+.tms-leftnav.collapsed .tms-logo {
+  justify-content: center;
+  padding: 0;
+}
+
+.tms-leftnav.collapsed .tms-logo img {
+  margin: 0 auto;
+  display: block;
+}
+
+/* SUBMENU */
+.tms-submenu {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-left: 32px; 
+  margin-top: 2px;
+
+}
+
+.tms-submenu-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 10px;
+  font-size: 13px;
+  border-radius: 6px;
+  text-decoration: none;
+  color: #ffffff;
+  transition: all 0.2s ease; 
+}
+
+.tms-submenu-item:hover {
+  background: #f1f5f9; 
+color: #002073;
+  
+}
+
+.tms-submenu-item.active {
+  background:  #0093e1;
+  color: white;
+}
+
+.tms-submenu-item .dot {
+  width: 5px;
+  height: 5px;
+  background: currentColor;
+  border-radius: 50%;
+}
+`}</style>
       </aside>
       {mobileOpen && (
         <div

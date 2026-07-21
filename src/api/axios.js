@@ -487,12 +487,19 @@ export const EPSAKHI_API = {
 
   // ✅ ADDED from source: CRP List with panchayats (fixes CRPTable.jsx error)
   crpPanchList: (params) => api.get(`/epsakhi/crp-panch-list/`, { params }),
+  mappedCrpList: (params) => api.get(`/epsakhi/mapped-crp-list/`, { params }),
+  deletePanchayats: (data) =>
+    api.post(`/epsakhi/mapped-crp-bulk-delete/`, data),
 
   // ✅ ADDED from source: CRP Panchayat bulk operations
   crpPanchayatBulk: (data) => api.post("/epsakhi/crp-panchayat-bulk/", data),
   // ✅ NEW integration Panchayat deletion API
   mappedCrpBulkDelete: (data) =>
     api.post("/epsakhi/mapped-crp-bulk-delete/", data),
+  //kushwaha change
+  mappedCrpListDetail: (dmmuId, params) =>
+    api.get(`/epsakhi/mcl/${encodeURIComponent(dmmuId)}/detail/`, { params }),
+  //
 
   // BeneficiaryRecorded + related enterprise forms
   beneficiaryRecorded: makeCrud("/epsakhi/beneficiary-recorded/"),

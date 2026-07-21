@@ -10,7 +10,7 @@ import LdmsLogin from "./LdmsLogin";
 import CrpEpLogin from "./CrpEpLogin";
 import MouLogin from "./MouLogin";
 import AdminLogin from "./AdminLogin";
-
+import EPSMSLogin from "./EPSMSLogin";
 export default function LoginParent() {
   const { loading } = useContext(AuthContext);
   const [searchParams] = useSearchParams();
@@ -38,6 +38,10 @@ export default function LoginParent() {
     case "mou":
       content = <MouLogin />;
       theme = "purple";
+      break;
+    case "epsms":
+      content = <EPSMSLogin />;
+      theme = "orange";
       break;
     case "pmuadmin":
       content = <AdminLogin />;
@@ -327,6 +331,18 @@ export default function LoginParent() {
       @media (max-width: 520px) {
         .login-form { width: 92%; padding: 24px 20px; }
       }
+        /* --- ORANGE THEME (EPSMS) --- */
+      .theme-orange.login-page {
+        background: linear-gradient(135deg, #f59e0b 30%, #f97316 70%);
+      }
+      .theme-orange .login-form {
+        border-radius: 40px 10px 40px 10px;
+        box-shadow: 0 15px 35px rgba(22, 101, 52, 0.4);
+      }
+      .theme-orange .log-in { background: #f59e0b; border-radius: 20px 5px 20px 5px; }
+      .theme-orange .log-in:hover { background: #f59e0b; transform: translateY(2px); }
+      .theme-orange .form-input { border-radius: 10px 4px 10px 4px; }
+      .theme-orange .form-input:focus { border-color: #f59e0b; }
       `}</style>
     </div>
   );

@@ -60,7 +60,7 @@ export const MODULES_CONFIG = [
     color: "#ea6733",
     path: "/module-login?module=epsms",
     level: "Block",
-    maintenanceUntil: "permanent",
+    maintenanceUntil: null,
   },
   {
     id: "prerna",

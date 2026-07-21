@@ -15,6 +15,7 @@ import {
   FaPrint,
   FaDownload,
 } from "react-icons/fa";
+import Pagination from "./Pagination";
 
 /* ---------------- cache keys ---------------- */
 
@@ -60,7 +61,7 @@ function saveCache(payload) {
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch {}
+  } catch { }
 }
 
 /* ---------------- partner resolver ---------------- */
@@ -71,7 +72,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch {}
+  } catch { }
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -374,6 +375,9 @@ export default function TpCentreList() {
 
   const [viewOpen, setViewOpen] = useState(false);
   const [viewData, setViewData] = useState(null);
+  const ITEMS_PER_PAGE = 15;
+
+  const [currentPage, setCurrentPage] = useState(1);
 
   async function ensureUserGeoscope(userId) {
     try {
@@ -381,7 +385,7 @@ export default function TpCentreList() {
         localStorage.getItem("ps_user_geoscope") || "null",
       );
       if (cached) return cached;
-    } catch {}
+    } catch { }
 
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(userId);
@@ -389,7 +393,7 @@ export default function TpCentreList() {
         localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
         return resp.data;
       }
-    } catch {}
+    } catch { }
     return null;
   }
 
@@ -445,6 +449,11 @@ export default function TpCentreList() {
       ),
     [centres, search],
   );
+  const paginatedCentres = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+
+    return filtered.slice(start, start + ITEMS_PER_PAGE);
+  }, [filtered, currentPage]);
 
   return (
     <div className="app-shell">
@@ -469,7 +478,11 @@ export default function TpCentreList() {
                     <input
                       placeholder="Search centre name..."
                       value={search}
-                      onChange={(e) => setSearch(e.target.value)}
+                      // onChange={(e) => setSearch(e.target.value)}
+                      onChange={(e) => {
+                        setSearch(e.target.value);
+                        setCurrentPage(1);
+                      }}
                     />
                   </div>
 
@@ -514,7 +527,7 @@ export default function TpCentreList() {
                       <td colSpan={5}>No centres found</td>
                     </tr>
                   ) : (
-                    filtered.map((c) => (
+                    paginatedCentres.map((c) => (
                       <tr key={c.id}>
                         <td>{c.serial_number}</td>
                         <td>{c.venue_name}</td>
@@ -544,6 +557,12 @@ export default function TpCentreList() {
                   )}
                 </tbody>
               </table>
+              <Pagination
+                currentPage={currentPage}
+                totalItems={filtered.length}
+                itemsPerPage={ITEMS_PER_PAGE}
+                onPageChange={setCurrentPage}
+              />
             </div>
           </main>
           <Footer />

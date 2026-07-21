@@ -39,6 +39,7 @@ import LdmsLogin from "./pages/LoginComps/LdmsLogin";
 import CrpEpLogin from "./pages/LoginComps/CrpEpLogin";
 import MouLogin from "./pages/LoginComps/MouLogin";
 import AdminLogin from "./pages/LoginComps/AdminLogin";
+import EPSMSLogin from "./pages/LoginComps/EPSMSLogin.jsx";
 
 // Dashboard / Error Pages
 import DashboardHome from "./pages/Dashboard/DashboardHome";
@@ -52,6 +53,7 @@ import CrpEpRoutes from "./routes/CrpEpRoutes";
 import MouRoutes from "./routes/MouRoutes";
 import SupportRoutes from "./routes/SupportRoutes.jsx";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
+import EPSMSRoutes from "./routes/EPSMSRoutes.jsx";
 
 export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
@@ -91,6 +93,7 @@ export default function App() {
       location.pathname.startsWith("/mou") ||
       location.pathname.startsWith("/support") ||
       location.pathname.startsWith("/admin") ||
+      location.pathname.startsWith("/epsms") ||
       location.pathname.startsWith("/error");
 
     if (navType === "POP" && !isPortalRoute) {
@@ -150,6 +153,9 @@ export default function App() {
         {isModuleActive("mou") && (
           <Route path="/module-login?module=mou" element={<MouLogin />} />
         )}
+        {isModuleActive("epsms") && (
+          <Route path="/module-login?module=epsms" element={<EPSMSLogin />} />
+        )}
         {isModuleActive("pmuadmin") && (
           <Route
             path="/module-login?module=pmuadmin"
@@ -173,6 +179,9 @@ export default function App() {
           )}
           {isModuleActive("mou") && (
             <Route path="/mou/*" element={<MouRoutes />} />
+          )}
+          {isModuleActive("epsms") && (
+            <Route path="/epsms/*" element={<EPSMSRoutes />} />
           )}
           {isModuleActive("support") && (
             <Route path="/support/*" element={<SupportRoutes />} />

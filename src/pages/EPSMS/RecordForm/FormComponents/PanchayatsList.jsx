@@ -1,5 +1,5 @@
 // src/pages/EPSMS/RecordForm/FormComponents/PanchayatsList.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react"; //kushwaha changes
 import { LOOKUP_API, EPSAKHI_API } from "../../../../api/axios";
 import {
   FaCheckCircle,
@@ -11,8 +11,9 @@ import {
   FaIdCard,
   FaSyncAlt,
 } from "react-icons/fa";
-
+import { AuthContext } from "../../../../contexts/AuthContext" //kushwaha changes
 export default function PanchayatsList({ crpData, blockId }) {
+  const { user } = useContext(AuthContext); //kushwaha changes
   const [panchayats, setPanchayats] = useState([]);
   const [selected, setSelected] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -54,7 +55,7 @@ export default function PanchayatsList({ crpData, blockId }) {
             const exists = (r.data?.results || r.data || []).length > 0;
 
             if (exists) assignedMap[p.id || p.panchayat_id] = true;
-          } catch (e) {}
+          } catch (e) { }
         }),
       );
 
@@ -119,9 +120,9 @@ export default function PanchayatsList({ crpData, blockId }) {
         crp_id: crpData.crp.master_user_id || crpData.crp.master_user?.id,
         allocated_panchayats: selected.map((x) => x.id || x.panchayat_id),
       };
-
-      await EPSAKHI_API.crpPanchayatBulk(payload);
-
+      // Kushwaha changes
+      await EPSAKHI_API.crpPanchayatBulk({ ...payload, created_by: user?.id });
+      //
       setModalState("success");
     } catch (err) {
       console.error(err);

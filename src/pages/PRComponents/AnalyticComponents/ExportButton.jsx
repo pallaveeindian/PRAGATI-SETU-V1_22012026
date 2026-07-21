@@ -1,37 +1,130 @@
 // src/pages/PRComponents/AnalyticComponents/ExportButton.jsx
 import React from "react";
+import ExcelJS from "exceljs";
+import { saveAs } from "file-saver";
 
 export default function ExportButton({ data, headers, filename }) {
-  const handleExport = () => {
+  // const handleExport = () => {
+  //   if (!data || data.length === 0) return;
+
+  //   // 1. Create CSV header row
+  //   const csvRows = [headers.map((h) => `"${h.label}"`).join(",")];
+
+  //   // 2. Create CSV data rows
+  //   for (const row of data) {
+  //     const values = headers.map((header) => {
+  //       const val = row[header.key];
+  //       // Escape quotes to prevent CSV breaking
+  //       const escaped = ("" + (val ?? "")).replace(/"/g, '""');
+  //       return `"${escaped}"`;
+  //     });
+  //     csvRows.push(values.join(","));
+  //   }
+
+  //   // 3. Generate Blob and trigger download
+  //   const csvString = csvRows.join("\n");
+  //   const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
+  //   const url = URL.createObjectURL(blob);
+
+  //   const link = document.createElement("a");
+  //   link.href = url;
+  //   link.setAttribute("download", filename || "export_data.csv");
+  //   document.body.appendChild(link);
+  //   link.click();
+  //   document.body.removeChild(link);
+  // };
+  const handleExport = async () => {
     if (!data || data.length === 0) return;
 
-    // 1. Create CSV header row
-    const csvRows = [headers.map((h) => `"${h.label}"`).join(",")];
+    try {
+      const workbook = new ExcelJS.Workbook();
+      const worksheet = workbook.addWorksheet("Report");
 
-    // 2. Create CSV data rows
-    for (const row of data) {
-      const values = headers.map((header) => {
-        const val = row[header.key];
-        // Escape quotes to prevent CSV breaking
-        const escaped = ("" + (val ?? "")).replace(/"/g, '""');
-        return `"${escaped}"`;
+      // ===== Title =====
+      const title = worksheet.addRow(["PRAGATI SETU REPORT"]);
+      worksheet.mergeCells(1, 1, 1, headers.length);
+
+      title.getCell(1).fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FF0F3057" },
+      };
+
+      title.getCell(1).font = {
+        bold: true,
+        size: 14,
+        color: { argb: "FFFFFFFF" },
+      };
+
+      title.getCell(1).alignment = {
+        horizontal: "center",
+        vertical: "middle",
+      };
+
+      title.height = 30;
+
+      // ===== Header =====
+      const headerRow = worksheet.addRow(headers.map((h) => h.label));
+
+      const lightBlueFill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: "FFC6D9F1" },
+      };
+
+      const thinBorder = {
+        top: { style: "thin" },
+        left: { style: "thin" },
+        right: { style: "thin" },
+        bottom: { style: "thin" },
+      };
+
+      headerRow.eachCell((cell) => {
+        cell.fill = lightBlueFill;
+        cell.font = { bold: true };
+        cell.border = thinBorder;
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+        };
       });
-      csvRows.push(values.join(","));
+
+      // ===== Column Width =====
+      worksheet.columns = headers.map((h) => ({
+        key: h.key,
+        width: Math.max(h.label.length + 8, 18),
+      }));
+
+      // ===== Data =====
+      data.forEach((item) => {
+        const row = worksheet.addRow(
+          headers.map((h) => item[h.key] ?? "")
+        );
+
+        row.eachCell((cell) => {
+          cell.border = thinBorder;
+          cell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+          };
+        });
+      });
+
+      // ===== Download =====
+      const buffer = await workbook.xlsx.writeBuffer();
+
+      saveAs(
+        new Blob([buffer], {
+          type:
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        }),
+        filename?.replace(".csv", ".xlsx") || "Report.xlsx"
+      );
+    } catch (err) {
+      console.error(err);
+      alert("Failed to export Excel.");
     }
-
-    // 3. Generate Blob and trigger download
-    const csvString = csvRows.join("\n");
-    const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-    const url = URL.createObjectURL(blob);
-
-    const link = document.createElement("a");
-    link.href = url;
-    link.setAttribute("download", filename || "export_data.csv");
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
   };
-
   return (
     <button className="btn-export" onClick={handleExport}>
       <div className="btn-export-content">
@@ -48,7 +141,7 @@ export default function ExportButton({ data, headers, filename }) {
 
         {/* TEXT LAYER */}
         <div className="btn-export-text-wrap">
-          <span className="btn-export-text">Export CSV</span>
+          <span className="btn-export-text">Export Excel</span>
         </div>
       </div>
     </button>
