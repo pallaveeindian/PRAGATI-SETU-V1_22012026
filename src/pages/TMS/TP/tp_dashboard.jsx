@@ -130,7 +130,10 @@ export default function TpDashboard() {
                 </div>
 
                 {/* 1. KPI Cards */}
-                <DashKPI data={dashboardData.kpi_card_info} />
+                <DashKPI
+                  data={dashboardData.kpi_card_info}
+                  batchesFilter={batchesFilter}
+                />
                 {/* 2. District Analytics Dropdown & Map Layout */}
                 <div
                   className="district-metric-section"

@@ -182,15 +182,35 @@ export default function DmmuBatchReview() {
     // Check Availability
     setMtCheckingId(trainer.id);
     try {
-      // SURGICAL FIX: Use the new dedicated availability endpoint
-      const response = await api.get(`/tms/mt/${trainer.id}/availability/`);
-      const { is_available, busy_reason } = response.data;
-      console.log(response.data);
+      // SURGICAL FIX: Pass the current batch's end_date to the availability check API
+      const endDateParam = batch?.end_date ? `?end_date=${batch.end_date}` : "";
+      const response = await api.get(
+        `/tms/mt/${trainer.id}/availability/${endDateParam}`,
+      );
+
+      const {
+        is_available,
+        busy_reason,
+        busy_type,
+        training_request_id,
+        district_name_en,
+        block_name_en,
+      } = response.data;
+
+      console.log("Availability Response:", response.data);
 
       if (!is_available) {
-        alert(
-          `Master Trainer ${trainer.full_name} is UNAVAILABLE:\n\n${busy_reason}`,
-        );
+        let alertMessage = `Master Trainer ${trainer.full_name} is UNAVAILABLE:\n\n${busy_reason}`;
+
+        // Append TR details if they are busy in the BATCHING phase
+        if (busy_type === "TRAINING_REQUEST") {
+          alertMessage += `\n\nTraining Request Details:`;
+          alertMessage += `\n• ID: ${training_request_id || "N/A"}`;
+          alertMessage += `\n• District: ${district_name_en || "N/A"}`;
+          alertMessage += `\n• Block: ${block_name_en || "N/A"}`;
+        }
+
+        alert(alertMessage);
         return;
       }
 

@@ -5,6 +5,8 @@ import prernaLogo from "../assets/prernaHd.png";
 import BDOLogo from "../assets/BDOLogo.png";
 
 export const MODULES_CONFIG = [
+  // 2026-07-23T13:00:00
+
   {
     id: "tms",
     logo: tmsLogo,
@@ -14,7 +16,7 @@ export const MODULES_CONFIG = [
     color: "#2a56cf",
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-07-22T15:30:00",
   },
   {
     id: "crp",
@@ -25,7 +27,7 @@ export const MODULES_CONFIG = [
     color: "#f59e0b",
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: null, // Active
+    maintenanceUntil: null,
   },
   {
     id: "ldms",

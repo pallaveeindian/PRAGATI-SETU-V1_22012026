@@ -10,7 +10,7 @@ import {
   FaArrowUp,
 } from "react-icons/fa";
 
-export default function DashKPI({ data }) {
+export default function DashKPI({ data, batchesFilter }) {
   if (!data) return null;
 
   // Destructure with fallbacks to 0
@@ -71,12 +71,15 @@ export default function DashKPI({ data }) {
       trendSuffix: "across all batches",
     },
     {
-      title: "Participants Allotted",
+      title:
+        batchesFilter === "closed"
+          ? "Trained Participants"
+          : "Participants Enrolled in Batches",
       value: total_participants_trained.toLocaleString(),
       icon: <FaUserGraduate />,
       iconBg: "#ccfbf1", // Soft Mint/Green
       iconColor: "#14b8a6", // Teal
-      trendText: "Certified",
+      trendText: batchesFilter === "closed" ? "Certified" : "Future",
       trendSuffix: "graduates",
     },
   ];

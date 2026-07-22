@@ -11,6 +11,7 @@ import { LanguageContext } from "./LanguageContext";
 import TRCreationGuide from "../assets/UserManuals/TRCreationGuide.pdf";
 import CRPEPMappingFormGuide from "../assets/UserManuals/CRPEPMappingFormGuide.pdf";
 import MOUGuide from "../assets/UserManuals/MOUGuide.pdf";
+import UdhyamSakhiAppTutorial from "../assets/UserManuals/UdhyamSakhiAppTutorial.pdf";
 
 export default function UserManual() {
   const { lang } = useContext(LanguageContext);
@@ -51,6 +52,12 @@ export default function UserManual() {
           desc: "Complete step-by-step SHG-MOU Registration process on the Enterprise MOU portal.",
           file: MOUGuide,
         },
+        {
+          id: 4,
+          name: "CRP-EP App Recording Tutorial",
+          desc: "Complete step-by-step Udhyam Sakhi App enterprise recording process.",
+          file: UdhyamSakhiAppTutorial,
+        },
       ],
       download: "Download PDF",
     },
@@ -78,6 +85,12 @@ export default function UserManual() {
           name: "SHG-MOU पंजीकरण",
           desc: "एंटरप्राइज MOU पोर्टल पर संपूर्ण चरण-दर-चरण SHG-MOU पंजीकरण प्रक्रिया।",
           file: MOUGuide,
+        },
+        {
+          id: 4,
+          name: "सीआरपी एंटरप्राइज रिकॉर्डिंग ट्यूटोरियल",
+          desc: "उद्यम सखी ऐप में एंटरप्राइज रिकॉर्डिंग की संपूर्ण चरण-दर-चरण प्रक्रिया।",
+          file: UdhyamSakhiAppTutorial,
         },
       ],
       download: "PDF डाउनलोड करें",

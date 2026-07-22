@@ -277,7 +277,7 @@ const GraphDashboard = ({ onShowMappedCrpList }) => {
         </AnimatedCard>
       </div>
 
-      <div
+      {/* <div
         style={{
           marginTop: "15px",
           textAlign: "right",
@@ -286,7 +286,7 @@ const GraphDashboard = ({ onShowMappedCrpList }) => {
         }}
       >
         Auto Refresh: Every 30 Seconds
-      </div>
+      </div> */}
     </div>
   );
 };

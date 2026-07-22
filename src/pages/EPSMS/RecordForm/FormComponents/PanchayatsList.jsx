@@ -80,8 +80,8 @@ export default function PanchayatsList({ crpData, blockId }) {
     const exists = selected.find((x) => (x.id || x.panchayat_id) === id);
 
     // ❌ Block if already 5
-    if (!exists && selected.length >= 5) {
-      alert("❌ Maximum 5 Panchayats allowed");
+    if (!exists && selected.length >= 50) {
+      alert("❌ Maximum 50 Panchayats allowed");
       return;
     }
 
@@ -106,8 +106,8 @@ export default function PanchayatsList({ crpData, blockId }) {
     }
 
     // ❌ MAX safety (extra safety)
-    if (selected.length > 5) {
-      alert("❌ Maximum 5 Panchayats allowed");
+    if (selected.length > 50) {
+      alert("❌ Maximum 50 Panchayats allowed");
       return;
     }
 
@@ -215,7 +215,7 @@ export default function PanchayatsList({ crpData, blockId }) {
                   : isAssigned
                     ? "Already assigned to another CRP"
                     : isDisabled
-                      ? "Maximum 5 Panchayats allowed"
+                      ? "Maximum 50 Panchayats allowed"
                       : ""
               }
             >
@@ -231,7 +231,7 @@ export default function PanchayatsList({ crpData, blockId }) {
       </div>
 
       <div style={{ marginTop: "10px", fontWeight: "600" }}>
-        Selected: {selected.length} / 5 (Min 2 required)
+        Selected: {selected.length} / 50 (Min 2 required)
       </div>
 
       {/* SECTION 4 SELECTED */}
@@ -240,7 +240,7 @@ export default function PanchayatsList({ crpData, blockId }) {
       <div className="selected-badges">
         {selected.length === 0 && (
           <div style={{ fontSize: "14px", color: "#64748b" }}>
-            No panchayats selected yet. Select 2 to 5 panchayats.
+            No panchayats selected yet. Select 2 to 50 panchayats.
           </div>
         )}
         {selected.map((p) => (
