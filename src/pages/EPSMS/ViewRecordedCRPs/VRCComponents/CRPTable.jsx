@@ -39,6 +39,7 @@ export default function CRPTable({ filters, itemsPerPage = 15, }) {
       try {
         const res = await EPSAKHI_API.crpPanchList({
           ...filters,
+          limit:1000,
           page_size: 1000,
         });
 
