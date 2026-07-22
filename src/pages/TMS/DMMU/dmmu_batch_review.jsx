@@ -182,12 +182,19 @@ export default function DmmuBatchReview() {
     // Check Availability
     setMtCheckingId(trainer.id);
     try {
-      // SURGICAL FIX: Pass the current batch's end_date to the availability check API
-      const endDateParam = batch?.end_date ? `?end_date=${batch.end_date}` : "";
-      const response = await api.get(
-        `/tms/mt/${trainer.id}/availability/${endDateParam}`,
-      );
+      // SURGICAL FIX: Build precise query params for both start and end dates
+      const queryParams = new URLSearchParams();
+      if (batch?.start_date) queryParams.append("start_date", batch.start_date);
+      if (batch?.end_date) queryParams.append("end_date", batch.end_date);
 
+      const queryString = queryParams.toString()
+        ? `?${queryParams.toString()}`
+        : "";
+
+      // Call the strict overlap-checking API
+      const response = await api.get(
+        `/tms/mt/${trainer.id}/availability/${queryString}`,
+      );
       const {
         is_available,
         busy_reason,
