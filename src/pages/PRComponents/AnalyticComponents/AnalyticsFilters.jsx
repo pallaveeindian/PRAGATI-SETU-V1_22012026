@@ -24,10 +24,10 @@ export default function AnalyticsFilters({
   onApply,
 }) {
   // Helper booleans for routing filters
-  const isMouAnalytics =
-    activeTab === "mou_analytics" || activeSubTab === "mou_analytics";
+  const isMouAnalytics = activeTab === "mou_analytics" || activeSubTab === "mou_analytics";
   const isTmsTraining = activeTab === "tms" && activeSubTab === "tms_training";
-  const showViewMode = isTmsTraining || isMouAnalytics; // Both APIs support district_wise_summary
+  const isTmsSoftware = activeTab === "tms" && activeSubTab === "tms_software";
+  const showViewMode = isTmsTraining || isMouAnalytics; 
 
   // ==========================================
   // 1. HIDE FILTERS COMPLETELY FOR DEMOGRAPHICS
@@ -45,27 +45,10 @@ export default function AnalyticsFilters({
         className="analytics-module filters-module overview-info-bar"
         style={{ background: "transparent", padding: 0, boxShadow: "none" }}
       >
-        <div
-          style={{
-            background: "#eff6ff",
-            color: "#1e3a8a",
-            padding: "10px 16px",
-            borderRadius: "8px",
-            fontSize: "14px",
-          }}
-        >
+        <div style={{ background: "#eff6ff", color: "#1e3a8a", padding: "10px 16px", borderRadius: "8px", fontSize: "14px" }}>
           <strong>Data Context:</strong> Live Global Platform Snapshot
         </div>
-        <div
-          style={{
-            background: "#ffffff",
-            color: "#334155",
-            border: "1px solid #cbd5e1",
-            padding: "10px 16px",
-            borderRadius: "8px",
-            fontSize: "14px",
-          }}
-        >
+        <div style={{ background: "#ffffff", color: "#334155", border: "1px solid #cbd5e1", padding: "10px 16px", borderRadius: "8px", fontSize: "14px", marginTop: "10px" }}>
           <strong>Scope:</strong> State of Uttar Pradesh
         </div>
       </div>
@@ -76,48 +59,36 @@ export default function AnalyticsFilters({
   // 3. SHOW DROPDOWNS FOR EVERYTHING ELSE
   // ==========================================
   return (
-    <div className="analytics-module filters-module">
-      {/* --- NEW FINANCIAL YEAR FILTER --- */}
+    <div 
+      className="analytics-module filters-module"
+      style={{ display: 'flex', alignItems: 'flex-end', gap: '15px', flexWrap: 'wrap', marginBottom: '20px' }}
+    >
+      {/* --- STANDARD GEOGRAPHY FILTERS --- */}
       <div className="filter-group">
         <label>Financial Year</label>
-        <select
-          value={filters.financial_year || ""}
-          onChange={(e) => onFilterChange("financial_year", e.target.value)}
-        >
+        <select value={filters.financial_year || ""} onChange={(e) => onFilterChange("financial_year", e.target.value)}>
           <option value="">-- All Years --</option>
           <option value="2025-26">2025-26</option>
           <option value="2026-27">2026-27</option>
         </select>
       </div>
 
-      {/* --- STANDARD GEOGRAPHY FILTERS --- */}
       <div className="filter-group">
         <label>District</label>
-        <select
-          value={filters.district_id || ""}
-          onChange={(e) => onFilterChange("district_id", e.target.value)}
-        >
+        <select value={filters.district_id || ""} onChange={(e) => onFilterChange("district_id", e.target.value)}>
           <option value="">-- All Districts --</option>
           {districts.map((d) => (
-            <option key={d.district_id} value={d.district_id}>
-              {d.district_name_en}
-            </option>
+            <option key={d.district_id} value={d.district_id}>{d.district_name_en}</option>
           ))}
         </select>
       </div>
 
       <div className="filter-group">
         <label>Block</label>
-        <select
-          value={filters.block_id || ""}
-          onChange={(e) => onFilterChange("block_id", e.target.value)}
-          disabled={!filters.district_id}
-        >
+        <select value={filters.block_id || ""} onChange={(e) => onFilterChange("block_id", e.target.value)} disabled={!filters.district_id}>
           <option value="">-- All Blocks --</option>
           {blocks.map((b) => (
-            <option key={b.block_id} value={b.block_id}>
-              {b.block_name_en}
-            </option>
+            <option key={b.block_id} value={b.block_id}>{b.block_name_en}</option>
           ))}
         </select>
       </div>
@@ -129,71 +100,75 @@ export default function AnalyticsFilters({
             <label>Training Theme</label>
             <select
               value={filters.theme_id || ""}
-              onChange={(e) => {
-                // Update theme and reset plan simultaneously
-                onFilterChange({
-                  theme_id: e.target.value,
-                  plan_id: "",
-                });
-              }}
+              onChange={(e) => onFilterChange({ theme_id: e.target.value, plan_id: "" })}
             >
               <option value="">-- All Themes --</option>
               {themes.map((t) => (
-                <option key={t.id} value={t.id}>
-                  {t.theme_name}
-                </option>
+                <option key={t.id} value={t.id}>{t.theme_name}</option>
               ))}
             </select>
           </div>
 
           <div className="filter-group">
             <label>Training Plan</label>
-            <select
-              value={filters.plan_id || ""}
-              onChange={(e) => onFilterChange("plan_id", e.target.value)}
-              disabled={!filters.theme_id}
-            >
+            <select value={filters.plan_id || ""} onChange={(e) => onFilterChange("plan_id", e.target.value)} disabled={!filters.theme_id}>
               <option value="">-- All Plans --</option>
               {trainingPlans.map((p) => (
-                <option key={p.id} value={p.id}>
-                  {p.training_name}
-                </option>
+                <option key={p.id} value={p.id}>{p.training_name}</option>
               ))}
             </select>
           </div>
         </>
       )}
 
-      {/* --- VIEW MODE (Shared by TMS Login & MOU Analytics) --- */}
-      {showViewMode && (
+      {/* --- VIEW MODE (2-Options for TMS Login & MOU Analytics) --- */}
+      {showViewMode && !isTmsSoftware && (
         <div className="filter-group">
           <label>View Mode</label>
-          <select
-            value={filters.district_wise_summary || "0"}
-            onChange={(e) =>
-              onFilterChange("district_wise_summary", e.target.value)
-            }
-          >
+          <select value={filters.district_wise_summary || "0"} onChange={(e) => onFilterChange("district_wise_summary", e.target.value)}>
             <option value="0">Detailed Records</option>
             <option value="1">District Wise Block Count</option>
           </select>
         </div>
       )}
 
-      {/* --- EXTRA FILTERS ONLY FOR TMS LOGIN STATUS --- */}
+      {/* --- VIEW MODE (4-Options for TMS Software Only) --- */}
+      {isTmsSoftware && (
+        <div className="filter-group">
+          <label>View Mode</label>
+          <select
+            value={
+              filters.dist_theme_prcnt === "1" ? "theme_prcnt" :
+              filters.dist_trgt_prcnt === "1" ? "target_prcnt" :
+              filters.district_wise_cadre_summary === "1" ? "cadre_summary" : "detailed"
+            }
+            onChange={(e) => {
+              const val = e.target.value;
+              onFilterChange({
+                district_wise_cadre_summary: val === "cadre_summary" ? "1" : "0",
+                dist_trgt_prcnt: val === "target_prcnt" ? "1" : "0",
+                dist_theme_prcnt: val === "theme_prcnt" ? "1" : "0",
+              });
+            }}
+          >
+            <option value="detailed">Detailed Records</option>
+            <option value="cadre_summary">District Wise Cadre Summary</option>
+            <option value="target_prcnt">District Target vs Achievement %</option>
+            <option value="theme_prcnt">District & Theme Target vs Achievement %</option>
+          </select>
+        </div>
+      )}
+
+      {/* --- EXTRA FILTERS ONLY FOR TMS LOGIN STATUS (Training) --- */}
       {isTmsTraining && (
         <>
-          {/* Login Status Filter */}
           <div className="filter-group">
             <label>Login Status</label>
             <select
               value={filters.not_logged_in || "0"}
               onChange={(e) => {
                 onFilterChange("not_logged_in", e.target.value);
-                // Reset password status if switching to Not Logged In
-                if (e.target.value === "1") {
-                  onFilterChange("passwd_status", "");
-                }
+                if (e.target.value === "1") onFilterChange("passwd_status", "");
               }}
             >
               <option value="0">Logged In Users</option>
@@ -201,16 +176,10 @@ export default function AnalyticsFilters({
             </select>
           </div>
 
-          {/* Password Status (Only show if looking at Logged In Users) */}
           {filters.not_logged_in !== "1" && (
             <div className="filter-group">
               <label>Password Status</label>
-              <select
-                value={filters.passwd_status || ""}
-                onChange={(e) =>
-                  onFilterChange("passwd_status", e.target.value)
-                }
-              >
+              <select value={filters.passwd_status || ""} onChange={(e) => onFilterChange("passwd_status", e.target.value)}>
                 <option value="">-- All --</option>
                 <option value="Pending Change">Pending Change</option>
                 <option value="Changed">Changed</option>
@@ -218,23 +187,21 @@ export default function AnalyticsFilters({
             </div>
           )}
 
-          {/* Role Dropdown */}
           <div className="filter-group">
             <label>Role / Cadre</label>
-            <select
-              value={filters.role_name || ""}
-              onChange={(e) => onFilterChange("role_name", e.target.value)}
-            >
+            <select value={filters.role_name || ""} onChange={(e) => onFilterChange("role_name", e.target.value)}>
               <option value="">-- All Roles --</option>
               {ALLOWED_ROLES.map((role) => (
-                <option key={role.value} value={role.value}>
-                  {role.label}
-                </option>
+                <option key={role.value} value={role.value}>{role.label}</option>
               ))}
             </select>
           </div>
+        </>
+      )}
 
-          {/* Exact Date */}
+      {/* --- SHARED DATE FILTERS (For Both Login Status & Software) --- */}
+      {(isTmsTraining || isTmsSoftware) && (
+        <>
           <div className="filter-group">
             <label>Exact Date</label>
             <input
@@ -243,7 +210,6 @@ export default function AnalyticsFilters({
               value={filters.date || ""}
               onChange={(e) => {
                 onFilterChange("date", e.target.value);
-                // UX logic: Clear range if user selects exact date
                 if (e.target.value) {
                   onFilterChange("start_date", "");
                   onFilterChange("end_date", "");
@@ -252,7 +218,6 @@ export default function AnalyticsFilters({
             />
           </div>
 
-          {/* Date Range: Start */}
           <div className="filter-group">
             <label>From Date</label>
             <input
@@ -261,12 +226,11 @@ export default function AnalyticsFilters({
               value={filters.start_date || ""}
               onChange={(e) => {
                 onFilterChange("start_date", e.target.value);
-                if (e.target.value) onFilterChange("date", ""); // Clear exact date
+                if (e.target.value) onFilterChange("date", "");
               }}
             />
           </div>
 
-          {/* Date Range: End */}
           <div className="filter-group">
             <label>To Date</label>
             <input
@@ -275,55 +239,23 @@ export default function AnalyticsFilters({
               value={filters.end_date || ""}
               onChange={(e) => {
                 onFilterChange("end_date", e.target.value);
-                if (e.target.value) onFilterChange("date", ""); // Clear exact date
+                if (e.target.value) onFilterChange("date", "");
               }}
             />
           </div>
         </>
       )}
 
-      {/* --- EXTRA FILTERS ONLY FOR TMS CADRE SELECTION (SOFTWARE) --- */}
-      {activeSubTab === "tms_software" && (
-        <div className="filter-group">
-          <label>View Mode</label>
-          <select
-            value={
-              filters.dist_theme_prcnt === "1"
-                ? "theme_prcnt"
-                : filters.dist_trgt_prcnt === "1"
-                  ? "target_prcnt"
-                  : filters.district_wise_cadre_summary === "1"
-                    ? "cadre_summary"
-                    : "detailed"
-            }
-            onChange={(e) => {
-              const val = e.target.value;
-              // SURGICAL FIX: Pass an object to update all three flags simultaneously
-              onFilterChange({
-                district_wise_cadre_summary:
-                  val === "cadre_summary" ? "1" : "0",
-                dist_trgt_prcnt: val === "target_prcnt" ? "1" : "0",
-                dist_theme_prcnt: val === "theme_prcnt" ? "1" : "0",
-              });
-            }}
-          >
-            <option value="detailed">Detailed Records</option>
-            <option value="cadre_summary">District Wise Cadre Summary</option>
-            <option value="target_prcnt">
-              District Target vs Achievement %
-            </option>
-            <option value="theme_prcnt">
-              District & Theme Target vs Achievement %
-            </option>
-          </select>
-        </div>
-      )}
-
-      <button className="btn-apply-filters" onClick={onApply}>
+      {/* --- SINGLE APPLY BUTTON --- */}
+      <button
+        className="btn-apply-filters"
+        onClick={onApply}
+        style={{ height: 'max-content', padding: '10px 20px' }}
+      >
         Apply Filters
       </button>
 
-      {/* Inline styles for the native HTML date inputs to match your theme */}
+      {/* Inline styles for the native HTML date inputs */}
       <style>{`
         .date-input {
           padding: 10px 14px;
@@ -334,6 +266,7 @@ export default function AnalyticsFilters({
           background: #ffffff;
           outline: none;
           font-family: inherit;
+          min-width: 140px;
         }
         .date-input:focus {
           border-color: #ff7a00;
