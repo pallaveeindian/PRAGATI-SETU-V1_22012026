@@ -539,31 +539,83 @@ export default function TrainingRequestDetail() {
     await openParticipantModal("Beneficiary Detail", p);
   }
 
-  async function onViewTrainer(p) {
-    const trainerId = p.trainer || p.id;
-    try {
-      const resp = await TMS_API.masterTrainers.retrieve(trainerId);
-      const payload = resp?.data ?? resp ?? null;
+  async function onViewParticipant(p, type) {
+    if (type === "TRAINER") {
+      const trainerId = p.master_trainer_id || p.trainer || p.id;
+      try {
+        const resp = await TMS_API.masterTrainers.retrieve(trainerId);
+        const payload = resp?.data ?? resp ?? null;
 
-      // Format trainer display fields: id, full_name, mobile_no, aadhaar_no, remarks, registered_on
-      const disp = {
-        "Trainer ID": payload?.id ?? trainerId,
-        "Full Name": payload?.full_name ?? payload?.name ?? "-",
-        Mobile: payload?.mobile_no ?? "-",
-        Aadhaar: payload?.aadhaar_no ?? "-",
-        Remarks: payload?.remarks ?? "-",
-        "Registered On": fmtDate(payload?.registered_on),
-      };
-      openParticipantModal("Trainer Detail", disp);
-    } catch (e) {
-      // fallback to showing the row data
-      const disp = {
-        "Trainer ID": p.trainer || p.id,
-        "Full Name": p.full_name || "-",
-        Mobile: p.mobile_no || "-",
-        "Registered On": fmtDate(p.registered_on),
-      };
-      openParticipantModal("Trainer Detail", disp);
+        const disp = {
+          "Trainer ID": payload?.id ?? trainerId,
+          "Full Name": payload?.full_name ?? payload?.name ?? "-",
+          Mobile: payload?.mobile_no ?? "-",
+          Aadhaar: payload?.aadhaar_no ?? "-",
+          Remarks: payload?.remarks ?? "-",
+          "Registered On": fmtDate(payload?.registered_on),
+        };
+        openParticipantModal("Trainer Detail", disp);
+      } catch (e) {
+        const disp = {
+          "Trainer ID": trainerId,
+          "Full Name": p.full_name || "-",
+          Mobile: p.mobile_no || "-",
+          "Registered On": fmtDate(p.registered_on),
+        };
+        openParticipantModal("Trainer Detail", disp);
+      }
+    } else if (type === "STAFF") {
+      const employeeId = p.employee_id || p.staff || p.id;
+
+      try {
+        const resp = await TMS_API.staff.retrieve(employeeId);
+        const payload = resp?.data ?? resp ?? {};
+
+        const disp = {
+          "Employee ID": payload?.employee_id ?? employeeId,
+          "Full Name": payload?.full_name ?? "-",
+          Designation: payload?.designation ?? "-",
+          Theme: payload?.theme_name ?? "-",
+          District:
+            payload?.district_name_en ??
+            payload?.district_name ??
+            staffDistrictFallback ??
+            "-",
+          Block: payload?.block_name_en ?? payload?.block_name ?? "-",
+          Mobile: payload?.mobile ?? "-",
+          Email: payload?.email ?? "-",
+          Gender: payload?.gender ?? "-",
+          "Social Category": payload?.social_category ?? "-",
+          Remarks: payload?.remarks ?? "-",
+          "Registered On": fmtDate(payload?.registered_on),
+        };
+
+        openParticipantModal("Staff Detail", disp);
+      } catch (e) {
+        const staffDistrictFallback =
+          p.district_name_en ||
+          p.district_name ||
+          p.district_id ||
+          trLocNames?.district ||
+          tr?.district ||
+          "-";
+
+        const disp = {
+          "Employee ID": employeeId,
+          "Full Name": p.full_name || "-",
+          Designation: p.designation || "-",
+          Theme: p.theme_name || "-",
+          District: staffDistrictFallback,
+          Block: p.block_name_en || p.block_name || p.block_id || "-",
+          Mobile: p.mobile || "-",
+          Email: p.email || "-",
+          Gender: p.gender || "-",
+          "Social Category": p.social_category || "-",
+          "Registered On": fmtDate(p.registered_on),
+        };
+
+        openParticipantModal("Staff Detail", disp);
+      }
     }
   }
 
@@ -794,7 +846,6 @@ export default function TrainingRequestDetail() {
                                 <th>View</th>
                               </tr>
                             </thead>
-
                             <tbody>
                               {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
@@ -823,7 +874,8 @@ export default function TrainingRequestDetail() {
                             </tbody>
                           </table>
                         </div>
-                      ) : (
+                      ) : (tr.training_type || "").toUpperCase() ===
+                        "TRAINER" ? (
                         <div className="table-container">
                           <table className="training-table">
                             <thead>
@@ -835,7 +887,6 @@ export default function TrainingRequestDetail() {
                                 <th>View</th>
                               </tr>
                             </thead>
-
                             <tbody>
                               {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
@@ -852,7 +903,54 @@ export default function TrainingRequestDetail() {
                                   <td>
                                     <button
                                       className="view-btn"
-                                      onClick={() => onViewTrainer(p)}
+                                      onClick={() =>
+                                        onViewParticipant(p, "TRAINER")
+                                      }
+                                    >
+                                      View
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        // SURGICAL ADDITION: STAFF Table Layout
+                        <div className="table-container">
+                          <table className="training-table">
+                            <thead>
+                              <tr>
+                                <th>S.No.</th>
+                                <th>Employee ID</th>
+                                <th>Name</th>
+                                <th>Designation</th>
+                                <th>Theme</th>
+                                <th>District</th>
+                                <th>View</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paginatedParticipants.map((p, index) => (
+                                <tr key={p.id}>
+                                  <td>
+                                    {(currentPage - 1) * rowsPerPage +
+                                      index +
+                                      1}
+                                  </td>
+                                  <td>{p.employee_id || "-"}</td>
+                                  <td>{p.full_name || "-"}</td>
+                                  <td>{p.designation || "-"}</td>
+                                  <td>{p.theme_name || "-"}</td>
+                                  <td>
+                                    {p.district_name_en || p.district_id || "-"}
+                                  </td>
+                                  <td>
+                                    <button
+                                      className="view-btn"
+                                      onClick={() =>
+                                        onViewParticipant(p, "STAFF")
+                                      }
                                     >
                                       View
                                     </button>
@@ -918,11 +1016,18 @@ export default function TrainingRequestDetail() {
                                     <th>Member Code</th>
                                     <th>Name</th>
                                   </>
-                                ) : (
+                                ) : (tr?.training_type || "").toUpperCase() ===
+                                  "TRAINER" ? (
                                   <>
                                     <th>Trainer ID</th>
                                     <th>Full Name</th>
                                     <th>Mobile</th>
+                                  </>
+                                ) : (
+                                  <>
+                                    <th>Employee ID</th>
+                                    <th>Name</th>
+                                    <th>Designation</th>
                                   </>
                                 )}
                                 <th>Batch Code</th>
@@ -941,10 +1046,18 @@ export default function TrainingRequestDetail() {
                                       <td>{p.member_name || "-"}</td>
                                     </>
                                   ) : (
+                                      tr?.training_type || ""
+                                    ).toUpperCase() === "TRAINER" ? (
                                     <>
                                       <td>{p.master_trainer_id || p.id}</td>
                                       <td>{p.full_name || "-"}</td>
                                       <td>{p.mobile_no || "-"}</td>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <td>{p.employee_id || "-"}</td>
+                                      <td>{p.full_name || "-"}</td>
+                                      <td>{p.designation || "-"}</td>
                                     </>
                                   )}
                                   <td

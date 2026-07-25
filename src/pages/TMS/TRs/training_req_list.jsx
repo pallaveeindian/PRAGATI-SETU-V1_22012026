@@ -9,6 +9,7 @@ import { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 import TrainingReqListFilter from "./training_req_list_filters";
 import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils";
+import TRListExport from "./TRListExport";
 
 const CACHE_KEY = "tms_training_requests_cache_v1";
 const USER_MAP_KEY = "tms_user_map_v1";
@@ -94,7 +95,8 @@ export default function TrainingRequestList() {
   const navigate = useNavigate();
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [requests, setRequests] = useState(() => loadCache()?.payload || []);
+  const [requests, setRequests] = useState([]);
+  const [totalCount, setTotalCount] = useState(0); // SURGICAL ADDITION: Track total API count
   const [refreshToken, setRefreshToken] = useState(0);
   // PAGINATION CHANGE START
   const [currentPage, setCurrentPage] = useState(1);
@@ -105,6 +107,7 @@ export default function TrainingRequestList() {
     status: "",
     level: "",
     training_type: "",
+    financial_year: "2026-27",
   });
 
   const [userMap, setUserMap] = useState(() => loadMap(USER_MAP_KEY));
@@ -223,7 +226,10 @@ export default function TrainingRequestList() {
 
     setLoading(true);
     try {
-      const params = { page_size: 500 };
+      const params = {
+        limit: rowsPerPage,
+        offset: (currentPage - 1) * rowsPerPage,
+      };
       const geoscope = await ensureUserGeoscope();
 
       if (role === "smmu") {
@@ -265,6 +271,7 @@ export default function TrainingRequestList() {
       const resp = await TMS_API.trainingRequestsList.list(params);
       const items = resp?.data?.results || [];
 
+      setTotalCount(resp?.data?.count || 0);
       setRequests(items);
       saveCache(items, { userId: user.id, role });
       await fetchAndStoreLookupMaps(items);
@@ -276,19 +283,20 @@ export default function TrainingRequestList() {
     }
   }
 
-  useEffect(() => {
-    fetchRequests(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshToken]);
-
   /* training req list */
-  async function fetchRequestsWithFilters(appliedFilters = {}) {
+  async function fetchRequestsWithFilters(
+    appliedFilters = {},
+    overridePage = null,
+  ) {
     if (!user?.id) return;
+
+    const targetPage = overridePage !== null ? overridePage : currentPage;
 
     setLoading(true);
     try {
       let params = {
-        page_size: 500,
+        limit: rowsPerPage,
+        offset: (targetPage - 1) * rowsPerPage,
         ...Object.fromEntries(
           Object.entries(appliedFilters).filter(
             ([, v]) => v !== "" && v !== false,
@@ -334,10 +342,10 @@ export default function TrainingRequestList() {
         params.partner_id = partnerId;
       }
 
-      // ✅ theme_id now passes straight through
       const resp = await TMS_API.trainingRequestsList.list(params);
       const items = resp?.data?.results || [];
 
+      setTotalCount(resp?.data?.count || 0); // SURGICAL ADDITION
       setRequests(items);
       await fetchAndStoreLookupMaps(items);
     } catch (e) {
@@ -348,44 +356,47 @@ export default function TrainingRequestList() {
     }
   }
 
-  /* ---------------- filtered view ---------------- */
+  // Trigger API call when page or refresh token changes
+  useEffect(() => {
+    fetchRequestsWithFilters(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshToken, currentPage]);
 
-  // const filtered = useMemo(() => {
-  //   return requests.filter((r) => {
-  //     if (filters.status && r.status !== filters.status) return false;
-  //     if (filters.level && r.level !== filters.level) return false;
-  //     if (filters.training_type && r.training_type !== filters.training_type)
-  //       return false;
-  //     return true;
-  //   });
-  // }, [requests, filters]);
+  /* ---------------- pagination helper ---------------- */
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
 
-  const filtered = useMemo(() => {
-    const result = requests.filter((r) => {
-      if (filters.status && r.status !== filters.status) return false;
-      if (filters.level && r.level !== filters.level) return false;
-      if (filters.training_type && r.training_type !== filters.training_type)
-        return false;
-      return true;
-    });
-
-    // PAGINATION CHANGE
-    setCurrentPage(1);
-
-    return result;
-  }, [requests, filters]);
-
-  // PAGINATION CHANGE START
-
-  const totalPages = Math.ceil(filtered.length / rowsPerPage);
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    return filtered.slice(start, end);
-  }, [filtered, currentPage]);
-
-  // PAGINATION CHANGE END
+  // Generates array: [1, 2, 3, '...', 1245]
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 7) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 4) {
+        pages.push(1, 2, 3, 4, 5, "...", totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(
+          1,
+          "...",
+          totalPages - 4,
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1,
+          totalPages,
+        );
+      } else {
+        pages.push(
+          1,
+          "...",
+          currentPage - 1,
+          currentPage,
+          currentPage + 1,
+          "...",
+          totalPages,
+        );
+      }
+    }
+    return pages;
+  };
 
   /* ---------------- TR Deletion Handler Actions ---------------- */
   const handleDeleteRequest = async (requestId) => {
@@ -479,8 +490,8 @@ export default function TrainingRequestList() {
 
             <div
               style={{
-                maxWidth: 1200,
-                margin: "20px auto",
+                width: "100%",
+                margin: "10px 0", // SURGICAL FIX: Removes auto-margins to stretch component fully to left/right bounds
               }}
             >
               {/* FILTER */}
@@ -489,7 +500,11 @@ export default function TrainingRequestList() {
                   user={user}
                   themes={themes}
                   lockedTheme={role === "smmu"}
-                  onApply={fetchRequestsWithFilters}
+                  onApply={(newFilters) => {
+                    setFilters(newFilters);
+                    setCurrentPage(1); // Reset page to 1 on new filter
+                    fetchRequestsWithFilters(newFilters, 1);
+                  }}
                 />
               </div>
 
@@ -507,7 +522,11 @@ export default function TrainingRequestList() {
                   Training Requests
                 </h2>
 
-                <div style={{ marginLeft: "auto" }}>
+                <div
+                  style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
+                >
+                  <TRListExport requests={requests} />
+
                   <button
                     className="btnPrimary"
                     onClick={() => {
@@ -533,14 +552,14 @@ export default function TrainingRequestList() {
               >
                 <div
                   style={{
-                    maxHeight: 520,
+                    maxHeight: "100%",
                     overflow: "auto",
                   }}
                 >
                   <table className="training-table">
                     <thead>
                       <tr>
-                        <th>ID</th>
+                        <th>S.No.</th>
                         <th>Theme</th>
                         <th>Plan</th>
                         <th>Level</th>
@@ -550,25 +569,26 @@ export default function TrainingRequestList() {
                         <th>Block</th>
                         <th>Participant Count</th>
                         <th>Financial Year</th>
+                        <th>Training Request ID</th>
                         <th>Actions</th>
-                        <th />
                       </tr>
                     </thead>
 
                     <tbody>
                       {loading ? (
                         <tr>
-                          <td colSpan={10}>Loading…</td>
+                          <td colSpan={12}>Loading…</td>
                         </tr>
-                      ) : filtered.length === 0 ? (
+                      ) : requests.length === 0 ? (
                         <tr>
-                          <td colSpan={10}>No training requests</td>
+                          <td colSpan={12}>No training requests</td>
                         </tr>
                       ) : (
-                        // filtered.map((r) => (
-                        paginatedData.map((r) => (
+                        requests.map((r, index) => (
                           <tr key={r.id}>
-                            <td>{r.id}</td>
+                            <td>
+                              {(currentPage - 1) * rowsPerPage + index + 1}
+                            </td>{" "}
                             <td>{r.theme_name}</td>
                             <td>{r.training_plan_name}</td>
                             <td>{r.level}</td>
@@ -579,6 +599,9 @@ export default function TrainingRequestList() {
                             <td>{r.participant_count}</td>
                             <td>{r.financial_year}</td>
                             <td>
+                              <strong>{r.id}</strong>
+                            </td>
+                            <td>
                               <div style={{ display: "flex", gap: "6px" }}>
                                 <button
                                   className="btnView"
@@ -588,14 +611,17 @@ export default function TrainingRequestList() {
                                 >
                                   View
                                 </button>
-                                {role === "dmmu" && r.status === "BATCHING" && (
-                                  <button
-                                    className="btnDelete"
-                                    onClick={() => handleDeleteRequest(r.id)}
-                                  >
-                                    Delete
-                                  </button>
-                                )}
+                                {((role === "dmmu" && r.level !== "STATE") ||
+                                  role === "smmu") &&
+                                  r.status === "BATCHING" && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteRequest(r.id)}
+                                      style={{ flex: 1 }}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
                               </div>
                             </td>
                           </tr>
@@ -610,10 +636,10 @@ export default function TrainingRequestList() {
                   <div className="mobile-card-list">
                     {loading ? (
                       <div className="mobile-card">Loading…</div>
-                    ) : filtered.length === 0 ? (
+                    ) : requests.length === 0 ? (
                       <div className="mobile-card">No training requests</div>
                     ) : (
-                      paginatedData.map((r) => (
+                      requests.map((r, index) => (
                         <div key={r.id} className="mobile-card">
                           <div>
                             <strong>ID:</strong> {r.id}
@@ -657,15 +683,17 @@ export default function TrainingRequestList() {
                             >
                               View
                             </button>
-                            {role === "dmmu" && r.status === "BATCHING" && (
-                              <button
-                                className="btnDelete"
-                                onClick={() => handleDeleteRequest(r.id)}
-                                style={{ flex: 1 }}
-                              >
-                                Delete
-                              </button>
-                            )}
+                            {((role === "dmmu" && r.level !== "STATE") ||
+                              role === "smmu") &&
+                              r.status === "BATCHING" && (
+                                <button
+                                  className="btnDelete"
+                                  onClick={() => handleDeleteRequest(r.id)}
+                                  style={{ flex: 1 }}
+                                >
+                                  Delete
+                                </button>
+                              )}
                           </div>
                         </div>
                       ))
@@ -693,13 +721,19 @@ export default function TrainingRequestList() {
                         Prev
                       </button>
 
-                      {[...Array(totalPages)].map((_, i) => (
+                      {getPageNumbers().map((num, i) => (
                         <button
                           key={i}
-                          className={`btnPage ${currentPage === i + 1 ? "activePage" : ""}`}
-                          onClick={() => setCurrentPage(i + 1)}
+                          className={`btnPage ${currentPage === num ? "activePage" : ""}`}
+                          onClick={() =>
+                            typeof num === "number" && setCurrentPage(num)
+                          }
+                          disabled={num === "..."}
+                          style={{
+                            cursor: num === "..." ? "default" : "pointer",
+                          }}
                         >
-                          {i + 1}
+                          {num}
                         </button>
                       ))}
 

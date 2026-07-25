@@ -970,11 +970,11 @@ export default function TrainingBatchList() {
   background: #fff;
   padding: 8px 12px;
   margin-bottom: 12px;
-
+  
   border: 1px solid #dbe4ef;
   border-radius: 8px;
   box-shadow: 0 2px 6px rgba(0,0,0,.06);
-  
+
   /* SURGICAL FIX: Removed overflow and white-space locks so it can wrap naturally */
 }
 .filter-panel label{
@@ -985,7 +985,6 @@ export default function TrainingBatchList() {
     display:flex;
     align-items:center;
     gap:8px;
-    flex-wrap:wrap; /* SURGICAL FIX: Forces overflowing elements down to the next row */
     width:100%;     /* SURGICAL FIX: Keeps container constrained to screen width */
 }
 .input{

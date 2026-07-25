@@ -57,12 +57,7 @@ export function PreviewConfirmModal({
               }}
             >
               {Object.entries(previewPayload || {})
-                .filter(
-                  ([key]) =>
-                    key !== "block" &&
-                    key !== "created_by" &&
-                    key !== "district",
-                )
+                .filter(([key]) => key !== "block" && key !== "created_by")
                 .map(([key, value]) => {
                   if (key === "training_plan") value = selectedPlanTitle || "-";
                   if (key === "partner") value = partnerName || value || "-";
@@ -121,9 +116,12 @@ export function PreviewConfirmModal({
                   <tr>
                     <th>Name</th>
                     <th>
+                      {/* SURGICAL ADDITION: Support for STAFF Employee ID */}
                       {trainingType === "BENEFICIARY"
                         ? "Member Code"
-                        : "Designation"}
+                        : trainingType === "STAFF"
+                          ? "Employee ID"
+                          : "Designation"}
                     </th>
                   </tr>
                 </thead>
@@ -132,9 +130,12 @@ export function PreviewConfirmModal({
                     <tr key={i}>
                       <td>{p.member_name || p.full_name || p.name || "—"}</td>
                       <td>
+                        {/* SURGICAL ADDITION: Value mapping for STAFF */}
                         {trainingType === "BENEFICIARY"
                           ? p.lokos_member_code
-                          : p.designation || "—"}
+                          : trainingType === "STAFF"
+                            ? p.employee_id || "—"
+                            : p.designation || "—"}
                       </td>
                     </tr>
                   ))}
@@ -190,7 +191,6 @@ export function PreviewConfirmModal({
             Cancel
           </button>
 
-          {/* NEW: Updated Minimum 5 Warning */}
           {!hasParticipants && (
             <div
               style={{

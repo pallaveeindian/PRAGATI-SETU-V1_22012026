@@ -3,6 +3,7 @@ import React from "react";
 import ShgListTable from "../../Dashboard/ShgListTable";
 import ShgMemberListTable from "../../Dashboard/ShgMemberListTable";
 import MasterTrainerList from "./MasterTrainerList";
+import StaffList from "./StaffList";
 import { LOOKUP_API } from "../../../api/axios";
 
 // Internal Sub-component for SHG Member rendering
@@ -83,6 +84,8 @@ export default function Step2Participants({
   preloadReloadToken,
   selectedTrainerIds,
   onToggleTrainer,
+  onToggleStaff,
+  selectedStaffIds,
 }) {
   const headerGradient = {
     background: "linear-gradient(90deg, #e4ecf5, #a7c6ed)",
@@ -115,13 +118,15 @@ export default function Step2Participants({
     cursor: "pointer",
   };
 
-  // IMPLEMENTATION OF TR PARTICIPANT MINIMUM LIMIT - 5
+  // IMPLEMENTATION OF TR PARTICIPANT MINIMUM LIMIT - 1
   const currentCount =
     form.training_type === "BENEFICIARY"
-      ? selectedBeneficiaries.length
-      : selectedTrainerIds.size;
+      ? selectedBeneficiaries?.length || 0
+      : form.training_type === "TRAINER"
+        ? selectedTrainerIds?.size || 0
+        : selectedStaffIds?.size || 0;
 
-  const hasEnough = currentCount >= 5;
+  const hasEnough = currentCount >= 1;
 
   React.useEffect(() => {
     if (roleKey === "smmu") {
@@ -207,9 +212,10 @@ export default function Step2Participants({
             const val = e.target.value;
             setForm((f) => ({ ...f, training_type: val }));
 
-            if (val === "TRAINER" || val === "STAFF") {
+            if (val === "TRAINER") {
               fetchMasterTrainersByDistrict(true);
             }
+            // Note: If val === "STAFF", StaffList.jsx triggers its own fetch automatically.
           }}
           style={{
             outline: "2px solid #3d6ba6",
@@ -599,9 +605,12 @@ export default function Step2Participants({
           />
         </div>
       ) : form.training_type === "STAFF" ? (
-        <div className="muted" style={{ padding: 20 }}>
-          {/* SURGICAL ADDITION: Placeholder for STAFF selection view */}
-          Staff selection will be available once the Staff data is integrated.
+        <div>
+          <StaffList
+            user={user}
+            onToggleStaff={onToggleStaff}
+            selectedIds={selectedStaffIds}
+          />
         </div>
       ) : null}
     </>

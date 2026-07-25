@@ -41,7 +41,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
     level: "",
     batch_type: "",
 
-    financial_year: "",
+    financial_year: "2026-27",
   });
 
   /* ================= LOOKUPS ================= */
@@ -436,10 +436,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             }
           >
             <option value="">Status</option>
-            {[
-              "BATCHING",
-              "COMPLETED",
-            ].map((s) => (
+            {["BATCHING", "COMPLETED"].map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>

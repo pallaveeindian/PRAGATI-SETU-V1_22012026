@@ -504,6 +504,12 @@ export default function CreateTrainingRequest() {
       geoscopeCached?.district_id ??
       user?.district_id ??
       null;
+
+    // SURGICAL FIX: Map District ID to Human-Readable Name
+    const distName =
+      districts.find((d) => String(d.district_id) === String(previewDistrict))
+        ?.district_name_en || previewDistrict;
+
     return {
       financial_year: trState.form.financial_year,
       training_plan: trState.selectedPlan?.training_name ?? null,
@@ -520,8 +526,13 @@ export default function CreateTrainingRequest() {
         trState.form.training_type === "TRAINER"
           ? trState.selectedTrainersMap.size
           : 0,
+      // SURGICAL ADDITION: Staff count for preview
+      staff_count:
+        trState.form.training_type === "STAFF"
+          ? trState.selectedStaffMap.size
+          : 0,
       block: userBlock ?? null,
-      district: previewDistrict ?? null,
+      district: distName ?? null,
     };
   }
 
@@ -544,6 +555,11 @@ export default function CreateTrainingRequest() {
       trState.selectedTrainersMap.size === 0
     )
       return alert("Select trainers.");
+    if (
+      trState.form.training_type === "STAFF" &&
+      trState.selectedStaffMap.size === 0
+    )
+      return alert("Select staff members.");
 
     trState.setEngagementStatus("idle");
     trState.setEngagedParticipants([]);
@@ -558,9 +574,13 @@ export default function CreateTrainingRequest() {
         ids = trState.selectedBeneficiaries
           .map((b) => b.lokos_member_code)
           .filter(Boolean);
-      } else {
+      } else if (trState.form.training_type === "TRAINER") {
         ids = Array.from(trState.selectedTrainersMap.keys()).map(String);
+      } else if (trState.form.training_type === "STAFF") {
+        // SURGICAL ADDITION: Staff IDs
+        ids = Array.from(trState.selectedStaffMap.keys()).map(String);
       }
+
       if (ids.length === 0) {
         trState.setEngagementStatus("all_clear");
         return;
@@ -581,9 +601,13 @@ export default function CreateTrainingRequest() {
           engagedList = trState.selectedBeneficiaries.filter((b) =>
             engagedIds.includes(b.lokos_member_code),
           );
-        } else {
+        } else if (trState.form.training_type === "TRAINER") {
           engagedList = Array.from(trState.selectedTrainersMap.values()).filter(
             (t) => engagedIds.includes(String(t.id)),
+          );
+        } else if (trState.form.training_type === "STAFF") {
+          engagedList = Array.from(trState.selectedStaffMap.values()).filter(
+            (s) => engagedIds.includes(String(s.id)),
           );
         }
         trState.setEngagedParticipants(engagedList);
@@ -724,7 +748,7 @@ export default function CreateTrainingRequest() {
             failures.push({ type: "beneficiary", row: b, error: msg });
           }
         }
-      } else {
+      } else if (trState.form.training_type === "TRAINER") {
         for (const [tid, detail] of trState.selectedTrainersMap.entries()) {
           const tPayload = {
             training: trId,
@@ -750,6 +774,40 @@ export default function CreateTrainingRequest() {
               e?.message ||
               String(e);
             failures.push({ type: "trainer", row: detail, error: msg });
+          }
+        }
+      } else if (trState.form.training_type === "STAFF") {
+        // SURGICAL ADDITION: Submission Loop for STAFF
+        for (const [sid, detail] of trState.selectedStaffMap.entries()) {
+          const sPayload = {
+            training: trId,
+            staff: sid,
+            full_name: detail.full_name || detail.name || "",
+            designation: detail.designation || "",
+            theme: detail.theme?.id || detail.theme || null,
+            district:
+              detail.district?.district_id ||
+              detail.district ||
+              resolvedDistrict ||
+              null, // SURGICAL FALLBACK: Use SMMU selected district if missing,
+            block: detail.block?.block_id || detail.block || null,
+            remarks: "",
+            created_by: user?.id ?? user?.user_id ?? null,
+          };
+          try {
+            const resp = TMS_API.trStaff.create(sPayload);
+
+            successes.push({
+              type: "staff",
+              row: detail,
+              resp: resp?.data ?? resp,
+            });
+          } catch (e) {
+            const msg =
+              (e?.response?.data && JSON.stringify(e.response.data)) ||
+              e?.message ||
+              String(e);
+            failures.push({ type: "staff", row: detail, error: msg });
           }
         }
       }
@@ -783,8 +841,10 @@ export default function CreateTrainingRequest() {
   const hasParticipants =
     // MINIMUM LIMIT ADJUSTMENT HERE ALSO!
     trState.form.training_type === "BENEFICIARY"
-      ? trState.selectedBeneficiaries.length >= 5
-      : trState.selectedTrainersMap.size >= 5;
+      ? trState.selectedBeneficiaries.length >= 1
+      : trState.form.training_type === "TRAINER"
+        ? trState.selectedTrainersMap.size >= 1
+        : trState.selectedStaffMap.size >= 1;
 
   const cardStyle = {
     background: "#fff",
@@ -979,6 +1039,8 @@ export default function CreateTrainingRequest() {
                       preloadReloadToken={preloadReloadToken}
                       selectedTrainerIds={trState.selectedTrainerIds}
                       onToggleTrainer={trState.onToggleTrainer}
+                      onToggleStaff={trState.onToggleStaff}
+                      selectedStaffIds={trState.selectedStaffIds}
                     />
                   )}
                   {trState.step === 3 && (
@@ -991,12 +1053,16 @@ export default function CreateTrainingRequest() {
                       partners={partners}
                       selectedBeneficiaries={trState.selectedBeneficiaries}
                       selectedTrainerList={trState.selectedTrainerList}
+                      selectedStaffList={trState.selectedStaffList}
                       goToPrev={trState.goToPrev}
                       openPreview={openPreview}
                       removeSelectedBeneficiary={
                         trState.removeSelectedBeneficiary
                       }
                       removeSelectedTrainer={trState.removeSelectedTrainer}
+                      removeSelectedStaff={trState.removeSelectedStaff}
+                      targetDistrictId={trState.districtId}
+                      districts={districts}
                     />
                   )}
                 </div>
@@ -1041,7 +1107,11 @@ export default function CreateTrainingRequest() {
                     <strong>Participants:</strong>{" "}
                     {trState.form.training_type === "BENEFICIARY"
                       ? `${trState.selectedBeneficiaries.length} beneficiaries`
-                      : `${trState.selectedTrainersMap.size} trainers`}
+                      : trState.form.training_type === "TRAINER"
+                        ? `${trState.selectedTrainersMap.size} trainers`
+                        : trState.form.training_type === "STAFF"
+                          ? `${trState.selectedStaffMap.size} Staff Members`
+                          : "0 participants"}
                   </div>
                   <div style={{ display: "flex", gap: 8 }}>
                     <button

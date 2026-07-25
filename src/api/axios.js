@@ -604,6 +604,11 @@ export const TMS_API = {
   tpcpCentreDetails: makeCrud("/tms/tpcp_to_centre/details/"),
   trainingPlans: makeCrud("/tms/training-plans/"),
 
+  // 2. Staff Profiles
+  // - TMS_API.staff.list({ search: '...', district: 1, designation: '...' }) -> Hits GET /api/v1/tms/staff/
+  // - TMS_API.staff.detail('UP-EMP-071') -> Hits GET /api/v1/tms/staff/UP-EMP-071/
+  staff: makeCrud("/tms/staff/"),
+
   // ------------------------------------
   // User Management
   // ------------------------------------
@@ -650,6 +655,7 @@ export const TMS_API = {
 
   trBeneficiaries: makeCrud("/tms/training-request-beneficiaries/"),
   trTrainers: makeCrud("/tms/training-request-trainers/"),
+  trStaff: makeCrud("/tms/training-request-staff/"),
 
   // For BMMU TMS Dashboard
   trainingRequestBeneficiaries: makeCrud(
