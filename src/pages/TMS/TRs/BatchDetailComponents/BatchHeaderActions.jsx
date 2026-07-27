@@ -1,6 +1,8 @@
 // src/pages/TMS/TRs/BatchDetailComponents/BatchHeaderActions.jsx
 import React from "react";
 import { useNavigate } from "react-router-dom";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faStopwatch } from "@fortawesome/free-solid-svg-icons";
 
 export default function BatchHeaderActions({
   batchId,
@@ -16,20 +18,13 @@ export default function BatchHeaderActions({
     <>
       <div className="batch-header-card">
         <div className="batch-header-content">
-          <h2 className="batch-page-title">Batch #{batchId}</h2>
-
           {batchCode && (
             <div className="batch-code">
-              Batch Code: <strong>{batchCode}</strong>
+              <h2 className="batch-page-title">
+                <strong> Batch: {batchCode}</strong>
+              </h2>
             </div>
           )}
-          <button
-            className="btn-primary"
-            style={{ background: "#2563eb" }}
-            onClick={() => navigate(`/tms/batches/${batchId}/history`)}
-          >
-            🕒 Batch History
-          </button>
           <div className="batch-header-actions">
             {batchStatus === "CLOSED" && (
               <button
@@ -43,7 +38,16 @@ export default function BatchHeaderActions({
             <button className="btn-primary" onClick={onRefresh}>
               🔄 Refresh
             </button>
-
+            <button
+              className="btn-primary"
+              onClick={() => navigate(`/tms/batches/${batchId}/history`)}
+            >
+              <FontAwesomeIcon
+                icon={faStopwatch}
+                style={{ marginRight: "8px" }}
+              />
+              Batch History
+            </button>
             <button className="btn-secondary" onClick={() => navigate(-1)}>
               ← Back
             </button>

@@ -589,7 +589,6 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
     #0167b6 52%,
     #0093e1 100%
   );
-  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   transition: width 0.25s ease;
@@ -769,6 +768,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   border: none;
   background: #002073;
   border-top: 1px solid #e5e7eb;
+  border-radius: 0px;
   cursor: pointer;
   font-size: 14px;
   color: #fff;

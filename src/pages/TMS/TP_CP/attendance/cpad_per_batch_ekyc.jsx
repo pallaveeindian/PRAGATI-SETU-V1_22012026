@@ -121,7 +121,6 @@ export default function CpAdPerBatchEkyc() {
       });
     });
 
-    // NEW: Include regular trainers (acting as trainees in a TOT batch)
     (batchObj.trainer_participations || []).forEach((tp) => {
       const key = `trainee-${tp.id}`;
       rows.push({
@@ -129,6 +128,20 @@ export default function CpAdPerBatchEkyc() {
         id: null,
         batch: batchObj.id,
         participant_id: String(tp.id),
+        participant_role: "trainee",
+        ekyc_status: "PENDING",
+        verified_on: null,
+        remarks: "",
+      });
+    });
+
+    (batchObj.staff_participations || []).forEach((sp) => {
+      const key = `trainee-${sp.id}`;
+      rows.push({
+        key,
+        id: null,
+        batch: batchObj.id,
+        participant_id: String(sp.id),
         participant_role: "trainee",
         ekyc_status: "PENDING",
         verified_on: null,
@@ -179,10 +192,13 @@ export default function CpAdPerBatchEkyc() {
     (batch.beneficiary_participations || []).forEach((bp) => {
       expected.add(`trainee-${bp.id}`);
     });
-    // NEW: Add trainer participations to expected completion list
     (batch.trainer_participations || []).forEach((tp) => {
       expected.add(`trainee-${tp.id}`);
     });
+    (batch.staff_participations || []).forEach((sp) => {
+      expected.add(`trainee-${sp.id}`);
+    });
+
     if (!expected.size) return false;
 
     const verified = new Set(
@@ -215,7 +231,7 @@ export default function CpAdPerBatchEkyc() {
           return;
         }
       }
-      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      const resp = await TMS_API.batchDetailV2(batchId);
       const data = resp?.data || null;
       setBatch(data);
       saveJson(BATCH_DETAIL_CACHE_PREFIX + batchId, data);
@@ -434,13 +450,15 @@ export default function CpAdPerBatchEkyc() {
   const participantInfoMap = useMemo(() => {
     const map = {};
     if (!batch) return map;
+
     (batch.master_trainer_participations || []).forEach((mtp) => {
-      const mt = (batch.master_trainers || []).find(
-        (m) => m.id === mtp.master_trainer,
-      );
-      const name = mt?.full_name || `MasterTrainer #${mtp.master_trainer}`;
+      const mt =
+        mtp.master_trainer ||
+        (batch.master_trainers || []).find((m) => m.id === mtp.master_trainer);
+      const name = mt?.full_name || `Master Trainer #${mtp.id}`;
       map[`trainer-${mtp.id}`] = { name, roleLabel: "Master Trainer" };
     });
+
     (batch.beneficiary_participations || []).forEach((bp) => {
       const b = (batch.beneficiary || []).find((x) => x.id === bp.beneficiary);
       const name = b?.member_name || `Beneficiary #${bp.beneficiary}`;
@@ -452,6 +470,13 @@ export default function CpAdPerBatchEkyc() {
       const t = (batch.trainer || []).find((x) => x.id === tp.trainer);
       const name = t?.full_name || t?.member_name || `Trainer #${tp.trainer}`;
       map[`trainee-${tp.id}`] = { name, roleLabel: "Trainee" };
+    });
+
+    // SURGICAL ADDITION: Map names for Staff
+    (batch.staff_participations || []).forEach((sp) => {
+      const s = sp.staff || (batch.staff || []).find((x) => x.id === sp.staff);
+      const name = s?.full_name || s?.member_name || `Staff #${sp.id}`;
+      map[`trainee-${sp.id}`] = { name, roleLabel: "Trainee" };
     });
 
     return map;

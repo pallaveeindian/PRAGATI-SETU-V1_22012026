@@ -18,7 +18,6 @@ const PLAN_MAP_KEY = "tms_plan_map_v1";
 const TP_SELF_PARTNER_KEY = "tms_self_partner_id_v1";
 
 /* ---------------- cache helpers ---------------- */
-``;
 function saveCache(payload, meta = {}) {
   try {
     localStorage.setItem(
@@ -52,7 +51,6 @@ function saveMap(key, map) {
 }
 
 /* ---------------- partner resolver (SAFE & CACHED) ---------------- */
-
 async function resolveTrainingPartnerIdForUser(userId) {
   if (!userId) return null;
 
@@ -96,18 +94,19 @@ export default function TrainingRequestList() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState([]);
-  const [totalCount, setTotalCount] = useState(0); // SURGICAL ADDITION: Track total API count
+  const [totalCount, setTotalCount] = useState(0);
   const [refreshToken, setRefreshToken] = useState(0);
-  // PAGINATION CHANGE START
+
   const [currentPage, setCurrentPage] = useState(1);
+  const [jumpPage, setJumpPage] = useState("");
   const [themes, setThemes] = useState([]);
   const rowsPerPage = 10;
-  // PAGINATION CHANGE END
+
   const [filters, setFilters] = useState({
     status: "",
     level: "",
     training_type: "",
-    financial_year: "2026-27",
+    financial_year: "2026-27", // Preselected Default
   });
 
   const [userMap, setUserMap] = useState(() => loadMap(USER_MAP_KEY));
@@ -117,7 +116,6 @@ export default function TrainingRequestList() {
   const didRunRef = useRef(false);
 
   /* ---------------- geoscope ---------------- */
-
   async function ensureUserGeoscope() {
     try {
       const cached = JSON.parse(
@@ -150,7 +148,6 @@ export default function TrainingRequestList() {
   }
 
   /* ---------------- lookup maps ---------------- */
-
   async function fetchAndStoreLookupMaps(items = []) {
     try {
       const userIds = new Set();
@@ -220,70 +217,6 @@ export default function TrainingRequestList() {
   }
 
   /* ---------------- main fetch ---------------- */
-
-  async function fetchRequests(force = false) {
-    if (!user?.id) return;
-
-    setLoading(true);
-    try {
-      const params = {
-        limit: rowsPerPage,
-        offset: (currentPage - 1) * rowsPerPage,
-      };
-      const geoscope = await ensureUserGeoscope();
-
-      if (role === "smmu") {
-        const myTheme = themes.find(
-          (t) => Number(t.expert) === Number(user?.id),
-        );
-
-        if (myTheme) {
-          params.theme_id = myTheme.id;
-        }
-      }
-
-      if (role === "bmmu" && geoscope?.blocks?.[0])
-        params.block_id = geoscope.blocks[0];
-
-      if (role === "dmmu" && geoscope?.districts?.[0])
-        params.district_id = geoscope.districts[0];
-
-      if (role === "training_partner") {
-        const partnerId = await resolveTrainingPartnerIdForUser(user.id);
-        if (!partnerId) {
-          setRequests([]);
-          setLoading(false);
-          return;
-        }
-        params.partner_id = partnerId;
-      }
-
-      if (role === "dtp" && geoscope?.districts?.[0]) {
-        const partnerId = await resolvePartnerId(user.id);
-        if (!partnerId) {
-          setRequests([]);
-          setLoading(false);
-          return;
-        }
-        params.district_id = geoscope.districts[0];
-        params.partner_id = partnerId;
-      }
-      const resp = await TMS_API.trainingRequestsList.list(params);
-      const items = resp?.data?.results || [];
-
-      setTotalCount(resp?.data?.count || 0);
-      setRequests(items);
-      saveCache(items, { userId: user.id, role });
-      await fetchAndStoreLookupMaps(items);
-    } catch (e) {
-      console.error("fetch training requests failed", e);
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
-  }
-
-  /* training req list */
   async function fetchRequestsWithFilters(
     appliedFilters = {},
     overridePage = null,
@@ -345,7 +278,7 @@ export default function TrainingRequestList() {
       const resp = await TMS_API.trainingRequestsList.list(params);
       const items = resp?.data?.results || [];
 
-      setTotalCount(resp?.data?.count || 0); // SURGICAL ADDITION
+      setTotalCount(resp?.data?.count || 0);
       setRequests(items);
       await fetchAndStoreLookupMaps(items);
     } catch (e) {
@@ -353,6 +286,53 @@ export default function TrainingRequestList() {
       setRequests([]);
     } finally {
       setLoading(false);
+    }
+  }
+
+  /* ---------------- fetch all for export ---------------- */
+  async function fetchAllForExport() {
+    if (!user?.id) return [];
+    try {
+      let params = {
+        limit: 50000, // MAX LIMIT
+        offset: 0,
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([, v]) => v !== "" && v !== false),
+        ),
+      };
+
+      const geoscope = await ensureUserGeoscope();
+
+      if (role === "smmu") {
+        const myTheme = themes.find(
+          (t) => Number(t.expert) === Number(user?.id),
+        );
+        if (myTheme) params.theme_id = myTheme.id;
+      }
+
+      if (role === "bmmu" && geoscope?.blocks?.[0])
+        params.block_id = geoscope.blocks[0];
+
+      if (role === "dmmu" && geoscope?.districts?.[0])
+        params.district_id = geoscope.districts[0];
+
+      if (role === "training_partner") {
+        const partnerId = await resolveTrainingPartnerIdForUser(user.id);
+        if (!partnerId) return [];
+        params.partner_id = partnerId;
+      }
+      if (role === "dtp" && geoscope?.districts?.[0]) {
+        const partnerId = await resolvePartnerId(user.id);
+        if (!partnerId) return [];
+        params.district_id = geoscope.districts[0];
+        params.partner_id = partnerId;
+      }
+
+      const resp = await TMS_API.trainingRequestsList.list(params);
+      return resp?.data?.results || [];
+    } catch (e) {
+      console.error("Export fetch failed", e);
+      return [];
     }
   }
 
@@ -365,17 +345,17 @@ export default function TrainingRequestList() {
   /* ---------------- pagination helper ---------------- */
   const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
 
-  // Generates array: [1, 2, 3, '...', 1245]
   const getPageNumbers = () => {
     const pages = [];
-    if (totalPages <= 7) {
+    if (totalPages <= 9) {
       for (let i = 1; i <= totalPages; i++) pages.push(i);
     } else {
-      if (currentPage <= 4) {
-        pages.push(1, 2, 3, 4, 5, "...", totalPages);
+      if (currentPage <= 7) {
+        pages.push(1, 2, 3, 4, 5, 6, 7, "...", totalPages);
       } else if (currentPage >= totalPages - 3) {
         pages.push(
           1,
+          2,
           "...",
           totalPages - 4,
           totalPages - 3,
@@ -386,6 +366,7 @@ export default function TrainingRequestList() {
       } else {
         pages.push(
           1,
+          2,
           "...",
           currentPage - 1,
           currentPage,
@@ -409,7 +390,7 @@ export default function TrainingRequestList() {
     try {
       await TMS_API.deleteTrainingRequest(requestId);
       alert("Training Request deleted successfully.");
-      setRefreshToken((t) => t + 1); // Forces table data to re-fetch
+      setRefreshToken((t) => t + 1);
     } catch (error) {
       console.error("Deletion failed:", error);
       alert(
@@ -420,11 +401,6 @@ export default function TrainingRequestList() {
   };
 
   /* ---------------- render helpers ---------------- */
-
-  const renderUsername = (id) => userMap[id] || id || "-";
-  const renderPartnerName = (id) => partnerMap[id] || id || "-";
-  const renderTrainingName = (id) => planMap[id] || id || "-";
-
   useEffect(() => {
     async function loadThemes() {
       try {
@@ -441,10 +417,8 @@ export default function TrainingRequestList() {
 
           if (myTheme) {
             setThemes([myTheme]);
-            // auto fetch only this theme
-            fetchRequestsWithFilters({
-              theme_id: myTheme.id,
-            });
+            setFilters((prev) => ({ ...prev, theme_id: myTheme.id }));
+            fetchRequestsWithFilters({ ...filters, theme_id: myTheme.id });
           } else {
             setThemes([]);
           }
@@ -462,7 +436,6 @@ export default function TrainingRequestList() {
   }, [user?.id, role]);
 
   /* ---------------- UI ---------------- */
-
   return (
     <div className="app-shell">
       <Header />
@@ -472,26 +445,16 @@ export default function TrainingRequestList() {
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav
-          left={
-            <div className="app-title">Pragati Setu — Training Requests</div>
-          }
-        /> */}
-
           <main
             style={{
               padding: 18,
               minHeight: "100vh",
             }}
           >
-            {/* <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div> */}
-
             <div
               style={{
-                width: "100%",
-                margin: "10px 0", // SURGICAL FIX: Removes auto-margins to stretch component fully to left/right bounds
+                width: "100%", // Horizontal stretch
+                margin: "10px 0",
               }}
             >
               {/* FILTER */}
@@ -501,9 +464,16 @@ export default function TrainingRequestList() {
                   themes={themes}
                   lockedTheme={role === "smmu"}
                   onApply={(newFilters) => {
-                    setFilters(newFilters);
-                    setCurrentPage(1); // Reset page to 1 on new filter
-                    fetchRequestsWithFilters(newFilters, 1);
+                    const mergedFilters = {
+                      ...newFilters,
+                      financial_year:
+                        newFilters.financial_year ||
+                        filters.financial_year ||
+                        "2026-27",
+                    };
+                    setFilters(mergedFilters);
+                    setCurrentPage(1);
+                    fetchRequestsWithFilters(mergedFilters, 1);
                   }}
                 />
               </div>
@@ -525,7 +495,8 @@ export default function TrainingRequestList() {
                 <div
                   style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
                 >
-                  <TRListExport requests={requests} />
+                  {/* EXPORT BUTTON */}
+                  <TRListExport fetchData={fetchAllForExport} />
 
                   <button
                     className="btnPrimary"
@@ -569,7 +540,7 @@ export default function TrainingRequestList() {
                         <th>Block</th>
                         <th>Participant Count</th>
                         <th>Financial Year</th>
-                        <th>Training Request ID</th>
+                        <th>ID</th>
                         <th>Actions</th>
                       </tr>
                     </thead>
@@ -588,11 +559,17 @@ export default function TrainingRequestList() {
                           <tr key={r.id}>
                             <td>
                               {(currentPage - 1) * rowsPerPage + index + 1}
-                            </td>{" "}
+                            </td>
                             <td>{r.theme_name}</td>
                             <td>{r.training_plan_name}</td>
                             <td>{r.level}</td>
-                            <td>{r.status}</td>
+                            <td>
+                              <span
+                                className={`status-badge status-${String(r.status).toLowerCase()}`}
+                              >
+                                {r.status}
+                              </span>
+                            </td>
                             <td>{r.partner_name}</td>
                             <td>{r.district_name}</td>
                             <td>{r.block_name}</td>
@@ -629,10 +606,10 @@ export default function TrainingRequestList() {
                       )}
                     </tbody>
                   </table>
-                  {/* ========================= */}
-                  {/* 🔽 ADDED: MOBILE CARD VIEW */}
-                  {/* ========================= */}
 
+                  {/* ========================= */}
+                  {/* MOBILE CARD VIEW          */}
+                  {/* ========================= */}
                   <div className="mobile-card-list">
                     {loading ? (
                       <div className="mobile-card">Loading…</div>
@@ -642,7 +619,8 @@ export default function TrainingRequestList() {
                       requests.map((r, index) => (
                         <div key={r.id} className="mobile-card">
                           <div>
-                            <strong>ID:</strong> {r.id}
+                            <strong>S.No:</strong>{" "}
+                            {(currentPage - 1) * rowsPerPage + index + 1}
                           </div>
                           <div>
                             <strong>Theme:</strong> {r.theme_name}
@@ -668,6 +646,9 @@ export default function TrainingRequestList() {
                           </div>
                           <div>
                             <strong>Financial Year:</strong> {r.financial_year}
+                          </div>
+                          <div>
+                            <strong>ID:</strong> {r.id}
                           </div>
                           <div
                             style={{
@@ -699,24 +680,46 @@ export default function TrainingRequestList() {
                       ))
                     )}
                   </div>
+
                   {/* PAGINATION CONTROLS */}
                   <div
                     style={{
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
-                      marginTop: 12,
+                      marginTop: 16,
+                      flexWrap: "wrap",
+                      gap: 12,
                     }}
                   >
                     <div style={{ color: "#2b4e72", fontSize: 14 }}>
-                      Page {currentPage} of {totalPages || 1}
+                      Page <strong>{currentPage}</strong> of{" "}
+                      <strong>{totalPages || 1}</strong>
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          color: "#6c757d",
+                          fontSize: 12,
+                        }}
+                      >
+                        (Total Records: {totalCount})
+                      </span>
                     </div>
 
-                    <div style={{ display: "flex", gap: 6 }}>
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                      }}
+                    >
                       <button
                         className="btnPage"
                         disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
                       >
                         Prev
                       </button>
@@ -724,13 +727,16 @@ export default function TrainingRequestList() {
                       {getPageNumbers().map((num, i) => (
                         <button
                           key={i}
-                          className={`btnPage ${currentPage === num ? "activePage" : ""}`}
+                          className={`btnPage ${
+                            currentPage === num ? "activePage" : ""
+                          }`}
                           onClick={() =>
                             typeof num === "number" && setCurrentPage(num)
                           }
                           disabled={num === "..."}
                           style={{
                             cursor: num === "..." ? "default" : "pointer",
+                            minWidth: 32,
                           }}
                         >
                           {num}
@@ -739,11 +745,60 @@ export default function TrainingRequestList() {
 
                       <button
                         className="btnPage"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage((p) => p + 1)}
+                        disabled={currentPage >= totalPages}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
                       >
                         Next
                       </button>
+
+                      {/* SURGICAL ADDITION: Jump to Page Search */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          marginLeft: 12,
+                        }}
+                      >
+                        <input
+                          type="number"
+                          value={jumpPage}
+                          onChange={(e) => setJumpPage(e.target.value)}
+                          placeholder="Go to"
+                          style={{
+                            width: 65,
+                            padding: "6px 8px",
+                            borderRadius: 6,
+                            border: "1px solid #a7c6ed",
+                            outline: "none",
+                            fontSize: 13,
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const p = parseInt(jumpPage, 10);
+                              if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                                setCurrentPage(p);
+                                setJumpPage("");
+                              }
+                            }
+                          }}
+                        />
+                        <button
+                          className="btnPrimary"
+                          style={{ padding: "6px 12px" }}
+                          onClick={() => {
+                            const p = parseInt(jumpPage, 10);
+                            if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                              setCurrentPage(p);
+                              setJumpPage("");
+                            }
+                          }}
+                        >
+                          Go
+                        </button>
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -752,7 +807,6 @@ export default function TrainingRequestList() {
 
             {/* CSS */}
             <style>{`
-
 /* BUTTON */
 .btnPrimary{
   background:#3d6ba6;
@@ -824,6 +878,33 @@ export default function TrainingRequestList() {
   background:#edf4fb;
 }
 
+.status-badge{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  min-width:100px;
+  text-align:center;
+  border:1px solid transparent;
+}
+
+/* BATCHING - Reddish Orange */
+.status-batching{
+  background:#ffedd5;
+  color:#c2410c;
+  border-color:#fb923c;
+}
+
+/* COMPLETED - Green */
+.status-completed{
+  background:#dcfce7;
+  color:#166534;
+  border-color:#86efac;
+}
+
 /* HOVER */
 .training-table tbody tr:hover{
   background:#a7c6ed;
@@ -862,7 +943,7 @@ export default function TrainingRequestList() {
   transition:all .2s ease;
 }
 
-.btnPage:hover{
+.btnPage:hover:not(:disabled){
   background:#a7c6ed;
 }
 
@@ -873,8 +954,8 @@ export default function TrainingRequestList() {
 
 /* ACTIVE PAGE */
 .activePage{
-  background:#3d6ba6;
-  color:#fff;
+  background:#3d6ba6 !important;
+  color:#fff !important;
 }
 
 /* HEADER */
@@ -912,7 +993,7 @@ export default function TrainingRequestList() {
 
   /* 🔥 FORCE HIDE TABLE COMPLETELY */
   .training-table{
-    display:none !important; /* 🔽 IMPORTANT FIX */
+    display:none !important; 
   }
 
   /* SHOW CARD VIEW */
@@ -949,8 +1030,8 @@ export default function TrainingRequestList() {
 
   /* header adjust */
   .dashboard-title{
-    margin-left:10px; /* 🔽 ADDED */
-    font-size:18px;   /* 🔽 ADDED */
+    margin-left:10px; 
+    font-size:18px;   
   }
 }
 

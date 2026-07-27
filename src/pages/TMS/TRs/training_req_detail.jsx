@@ -1219,7 +1219,36 @@ export default function TrainingRequestDetail() {
                     )}
 
                     {/* ACTION BUTTONS */}
-                    <div style={{ marginTop: 12 }}></div>
+                    <div
+                      style={{
+                        marginTop: 24,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      {isTP &&
+                        (tr?.training_type || "").toUpperCase() === "STAFF" &&
+                        tr?.status === "BATCHING" && (
+                          <button
+                            className="btn-primary"
+                            style={{
+                              padding: "12px 24px",
+                              fontSize: "15px",
+                              fontWeight: "600",
+                              background:
+                                "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+                              boxShadow: "0 4px 12px rgba(22, 163, 74, 0.2)",
+                            }}
+                            onClick={() =>
+                              navigate(`/tms/tp/staff-batch-creator/${id}`, {
+                                state: { trId: id },
+                              })
+                            }
+                          >
+                            Create Staff Batch
+                          </button>
+                        )}
+                    </div>
                   </>
                 )}
               </div>

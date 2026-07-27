@@ -444,448 +444,502 @@ export default function TrainingBatchList() {
           collapsed={navCollapsed}
           onToggle={() => setNavCollapsed((v) => !v)}
         />
-        <div className="main-wrapper">
-          <main style={{ padding: "18px 24px", minHeight: "100vh" }}>
-            {/* SURGICAL FIX: Removed horizontal max-width locks to enlarge table fully */}
-            <div style={{ width: "100%", margin: "0 auto" }}>
+        <div className="main-area">
+          <main style={{ padding: 18, minHeight: "100vh" }}>
+            <div style={{ width: "100%", margin: "10px 0" }}>
               {!isRequestScoped && (
-                <div className="filter-panel">
-                  <div>
-                    <div className="filter-row">
-                      {role === "smmu" && (
-                        <>
-                          <select
-                            className="input"
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                mandal_id: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">Mandal</option>
-                            {mandals.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className="input"
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                district_category_id: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">District Category</option>
-                            {districtCategories.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                {d.name}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-
-                      {role !== "bmmu" && (
+                <div
+                  style={{
+                    background: "#e4ecf5",
+                    padding: 16,
+                    borderRadius: 10,
+                    marginBottom: 14,
+                    border: "2px solid #3d6ba6",
+                    boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                  }}
+                >
+                  <div
+                    className="filter-row"
+                    style={{
+                      display: "flex",
+                      flexWrap: "nowrap",
+                      gap: 12,
+                      alignItems: "center",
+                      whiteSpace: "nowrap",
+                      overflow: "auto",
+                    }}
+                  >
+                    {role === "smmu" && (
+                      <>
                         <select
-                          className="input"
-                          value={filters.district_id}
-                          disabled={role === "dmmu" || role === "dtp"}
-                          onChange={(e) => {
-                            if (role === "dmmu" || role === "dtp") return;
-                            setBlocks([]);
+                          className="filter-input"
+                          onChange={(e) =>
                             setFilters((f) => ({
                               ...f,
-                              district_id: e.target.value,
+                              mandal_id: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Mandal</option>
+                          {mandals.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="filter-input"
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              district_category_id: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">District Category</option>
+                          {districtCategories.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {role !== "bmmu" && (
+                      <select
+                        className="filter-input"
+                        value={filters.district_id}
+                        disabled={role === "dmmu" || role === "dtp"}
+                        onChange={(e) => {
+                          if (role === "dmmu" || role === "dtp") return;
+                          setBlocks([]);
+                          setFilters((f) => ({
+                            ...f,
+                            district_id: e.target.value,
+                            block_id: "",
+                            aspirational_only: false,
+                          }));
+                        }}
+                      >
+                        <option value="">District</option>
+                        {districts.map((d) => (
+                          <option key={d.district_id} value={d.district_id}>
+                            {d.district_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role !== "bmmu" && (
+                      <label
+                        className="aspirational-box"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 14,
+                          color: "#2b4e72",
+                          background: "#fff",
+                          padding: "6px 10px",
+                          borderRadius: 6,
+                          border: "1px solid #a7c6ed",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filters.aspirational_only}
+                          disabled={role === "dtp"}
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              aspirational_only: e.target.checked,
                               block_id: "",
-                              aspirational_only: false,
-                            }));
-                          }}
-                        >
-                          <option value="">District</option>
-                          {districts.map((d) => (
-                            <option key={d.district_id} value={d.district_id}>
-                              {d.district_name_en}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {role !== "bmmu" && (
-                        <label
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                            fontSize: "14px",
-                            fontWeight: "500",
-                            color: "#3d6ba6",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.aspirational_only}
-                            disabled={role === "dtp"}
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                aspirational_only: e.target.checked,
-                                block_id: "",
-                              }))
-                            }
-                          />
-                          Aspirational
-                        </label>
-                      )}
-
-                      {role !== "bmmu" && filters.district_id && (
-                        <select
-                          key={filters.district_id}
-                          className="input"
-                          value={filters.block_id}
-                          onChange={(e) =>
-                            setFilters((f) => ({
-                              ...f,
-                              block_id: e.target.value,
                             }))
                           }
-                        >
-                          <option value="">Block</option>
-                          {blocks.map((b) => (
-                            <option key={b.block_id} value={b.block_id}>
-                              {b.block_name_en}
-                            </option>
-                          ))}
-                        </select>
-                      )}
+                        />
+                        Aspirational
+                      </label>
+                    )}
 
-                      {role === "training_partner" && (
+                    {role !== "bmmu" && filters.district_id && (
+                      <select
+                        key={filters.district_id}
+                        className="filter-input"
+                        value={filters.block_id}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            block_id: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Block</option>
+                        {blocks.map((b) => (
+                          <option key={b.block_id} value={b.block_id}>
+                            {b.block_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role === "training_partner" && (
+                      <select
+                        className="filter-input"
+                        value={filters.centre_id}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            centre_id: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Centre</option>
+                        {centres.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.venue_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role !== "training_partner" &&
+                      role !== "dtp" &&
+                      role !== "tpcp" && (
                         <select
-                          className="input"
-                          value={filters.centre_id}
-                          onChange={(e) =>
-                            setFilters((f) => ({
-                              ...f,
-                              centre_id: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Centre</option>
-                          {centres.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.venue_name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {role !== "training_partner" &&
-                        role !== "dtp" &&
-                        role !== "tpcp" && (
-                          <select
-                            className="input"
-                            value={filters.partner}
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                partner: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">Training Partner</option>
-                            {partners.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-
-                      {role === "dtp" && (
-                        <select
-                          className="input"
+                          className="filter-input"
                           value={filters.partner}
-                          disabled
-                        >
-                          <option value={filters.partner}>
-                            {dtpPartnerName}
-                          </option>
-                        </select>
-                      )}
-
-                      <select
-                        className="input"
-                        value={filters.theme}
-                        disabled={role === "smmu"}
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            theme: e.target.value,
-                            training_plan: "",
-                          }))
-                        }
-                      >
-                        <option value="">Training Theme</option>
-                        {themes.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.theme_name}
-                          </option>
-                        ))}
-                      </select>
-
-                      {plans.length > 0 && (
-                        <select
-                          className="input"
                           onChange={(e) =>
                             setFilters((f) => ({
                               ...f,
-                              training_plan: e.target.value,
+                              partner: e.target.value,
                             }))
                           }
                         >
-                          <option value="">Training Plan</option>
-                          {plans.map((p) => (
+                          <option value="">Training Partner</option>
+                          {partners.map((p) => (
                             <option key={p.id} value={p.id}>
-                              {p.training_name}
+                              {p.name}
                             </option>
                           ))}
                         </select>
                       )}
 
+                    {role === "dtp" && (
                       <select
-                        className="input"
-                        onChange={(e) =>
-                          setFilters((f) => ({ ...f, level: e.target.value }))
-                        }
+                        className="filter-input"
+                        value={filters.partner}
+                        disabled
                       >
-                        <option value="">Level</option>
-                        {["BLOCK", "DISTRICT", "STATE"].map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
+                        <option value={filters.partner}>
+                          {dtpPartnerName}
+                        </option>
                       </select>
+                    )}
 
-                      <select
-                        className="input"
-                        onChange={(e) =>
-                          setFilters((f) => ({ ...f, status: e.target.value }))
-                        }
-                      >
-                        <option value="">Status</option>
-                        {[
-                          "DRAFT",
-                          "PENDING",
-                          "REJECTED",
-                          "ONGOING",
-                          "SCHEDULED",
-                          "COMPLETED",
-                          "REVIEW",
-                          "CLOSED",
-                        ].map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
+                    <select
+                      className="filter-input"
+                      value={filters.theme}
+                      disabled={role === "smmu"}
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          theme: e.target.value,
+                          training_plan: "",
+                        }))
+                      }
+                    >
+                      <option value="">Training Theme</option>
+                      {themes.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.theme_name}
+                        </option>
+                      ))}
+                    </select>
 
+                    {plans.length > 0 && (
                       <select
-                        className="input"
+                        className="filter-input"
                         onChange={(e) =>
                           setFilters((f) => ({
                             ...f,
-                            training_type: e.target.value,
+                            training_plan: e.target.value,
                           }))
                         }
                       >
-                        <option value="">Participant</option>
-                        <option value="BENEFICIARY">Beneficiary</option>
-                        <option value="TRAINER">Trainer</option>
+                        <option value="">Training Plan</option>
+                        {plans.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.training_name}
+                          </option>
+                        ))}
                       </select>
+                    )}
 
-                      <select
-                        className="input"
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            batch_type: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Batch Type</option>
-                        <option value="SEPARATE">Separate</option>
-                        <option value="COMBINED">Combined</option>
-                      </select>
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, level: e.target.value }))
+                      }
+                    >
+                      <option value="">Level</option>
+                      {["BLOCK", "DISTRICT", "STATE"].map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
 
-                      <button
-                        className="btn btn-primary fetch-btn"
-                        onClick={fetchBatches}
-                      >
-                        Fetch Batches
-                      </button>
-                    </div>
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, status: e.target.value }))
+                      }
+                    >
+                      <option value="">Status</option>
+                      {[
+                        "DRAFT",
+                        "PENDING",
+                        "REJECTED",
+                        "ONGOING",
+                        "SCHEDULED",
+                        "COMPLETED",
+                        "REVIEW",
+                        "CLOSED",
+                      ].map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          training_type: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Participant</option>
+                      <option value="BENEFICIARY">Beneficiary</option>
+                      <option value="TRAINER">Trainer</option>
+                      <option value="STAFF">Staff</option>
+                    </select>
+
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          batch_type: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Batch Type</option>
+                      <option value="SEPARATE">Separate</option>
+                      <option value="COMBINED">Combined</option>
+                    </select>
+                  </div>
+                  <div
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                      marginTop: 16,
+                    }}
+                  >
+                    <button className="fetch-btn" onClick={fetchBatches}>
+                      Fetch Batches
+                    </button>
                   </div>
                 </div>
               )}
 
-              {/* SURGICAL ADDITION: Export Button Container */}
+              {/* HEADER */}
               <div
                 style={{
                   display: "flex",
-                  justifyContent: "flex-end",
-                  marginBottom: "12px",
-                  width: "100%",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  borderBottom: "2px solid #a7c6ed",
+                  paddingBottom: 8,
                 }}
               >
-                <BatchListExport batches={visibleBatches} />
+                <h2 style={{ margin: 0, color: "#2b4e72" }}>
+                  Training Batches
+                </h2>
+                <div
+                  style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
+                >
+                  <BatchListExport batches={visibleBatches} />
+                </div>
               </div>
 
-              <div className="table-wrapper">
-                <table className="table">
-                  <thead>
-                    <tr>
-                      <th>#</th>
-                      <th>Batch Code</th>
-                      <th>Status</th>
-                      <th>Participant</th>
-                      <th>Start</th>
-                      <th>End</th>
-                      <th>Level</th>
-                      <th>Type</th>
-                      <th>Centre</th>
-                      <th>Partner</th>
-                      <th>Block</th>
-                      <th>District</th>
-                      <th>Count</th>
-                      <th>Action</th>
-                    </tr>
-                  </thead>
-
-                  <tbody>
-                    {loading ? (
+              {/* TABLE CARD */}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 14,
+                  borderRadius: 10,
+                  border: "2px solid #3d6ba6",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                }}
+              >
+                <div style={{ maxHeight: "100%", overflow: "auto" }}>
+                  <table className="training-table">
+                    <thead>
                       <tr>
-                        <td
-                          colSpan={13}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          Loading data...
-                        </td>
+                        <th>#</th>
+                        <th>Batch Code</th>
+                        <th>Status</th>
+                        <th>Participant</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Level</th>
+                        <th>Type</th>
+                        <th>Centre</th>
+                        <th>Partner</th>
+                        <th>Block</th>
+                        <th>District</th>
+                        <th>Count</th>
+                        <th>Action</th>
                       </tr>
-                    ) : visibleBatches.length === 0 ? (
-                      <tr>
-                        <td
-                          colSpan={13}
-                          style={{ textAlign: "center", padding: "20px" }}
-                        >
-                          No batches found
-                        </td>
-                      </tr>
-                    ) : (
-                      paginatedBatches.map((b, i) => (
-                        <tr key={b.id}>
-                          <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
-                          <td style={{ fontWeight: "600", color: "#2563eb" }}>
-                            {b.code}
-                          </td>
-                          <td>
-                            <span
-                              className={`status-badge status-${String(b.status).toLowerCase()}`}
-                            >
-                              {b.status}
-                            </span>
-                          </td>
-                          <td>{b.participant_type}</td>
-                          <td>{b.start_date}</td>
-                          <td>{b.end_date}</td>
-                          <td>{b.level}</td>
-                          <td>{b.batch_type}</td>
-                          <td>{renderCentreName(b.centre)}</td>
-                          <td>{b.centre?.partner?.name || "-"}</td>
-                          <td>{b.block?.block_name_en || "-"}</td>
-                          <td>{b.district?.district_name_en || "-"}</td>
+                    </thead>
 
-                          {/* SURGICAL FIX: Dynamic participant count logic extraction */}
+                    <tbody>
+                      {loading ? (
+                        <tr>
                           <td
-                            style={{ textAlign: "center", fontWeight: "600" }}
+                            colSpan={14}
+                            style={{ textAlign: "center", padding: "20px" }}
                           >
-                            {b.pax_count || 0}
+                            Loading data...
                           </td>
+                        </tr>
+                      ) : visibleBatches.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={14}
+                            style={{ textAlign: "center", padding: "20px" }}
+                          >
+                            No batches found
+                          </td>
+                        </tr>
+                      ) : (
+                        paginatedBatches.map((b, i) => (
+                          <tr key={b.id}>
+                            <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
+                            <td style={{ fontWeight: "600", color: "#2563eb" }}>
+                              {b.code}
+                            </td>
+                            <td>
+                              <span
+                                className={`status-badge status-${String(b.status).toLowerCase()}`}
+                              >
+                                {b.status}
+                              </span>
+                            </td>
+                            <td>{b.participant_type}</td>
+                            <td>{b.start_date}</td>
+                            <td>{b.end_date}</td>
+                            <td>{b.level}</td>
+                            <td>{b.batch_type}</td>
+                            <td>{renderCentreName(b.centre)}</td>
+                            <td>{b.centre?.partner?.name || "-"}</td>
+                            <td>{b.block?.block_name_en || "-"}</td>
+                            <td>{b.district?.district_name_en || "-"}</td>
 
-                          <td style={{ display: "flex", gap: "6px" }}>
-                            <button
-                              className="btn-sm btn-flat"
-                              onClick={() => handleViewBatch(b.id)}
+                            <td
+                              style={{ textAlign: "center", fontWeight: "600" }}
                             >
-                              View
-                            </button>
-                            {role === "dtp" &&
-                              (String(b.status).toUpperCase() === "DRAFT" ||
-                                (String(b.status).toUpperCase() ===
-                                  "REJECTED" &&
-                                  String(b.batch_type).toUpperCase() ===
-                                    "SEPARATE")) && (
+                              {b.pax_count || 0}
+                            </td>
+
+                            <td>
+                              <div style={{ display: "flex", gap: "6px" }}>
                                 <button
-                                  className="btn-sm btn-action-resume"
-                                  onClick={() =>
-                                    navigate("/tms/batch-creator/", {
-                                      state: { resume: true, batchId: b.id },
-                                    })
-                                  }
+                                  className="btnView"
+                                  onClick={() => handleViewBatch(b.id)}
                                 >
-                                  Resume
+                                  View
                                 </button>
-                              )}
-                            {((role === "dmmu" &&
-                              String(b.level).toUpperCase() !== "STATE") ||
-                              (role === "smmu" &&
-                                String(b.level).toUpperCase() === "STATE")) &&
-                              String(b.status).toUpperCase() === "PENDING" && (
-                                <button
-                                  className="btn-sm btn-action-resume"
-                                  onClick={() =>
-                                    navigate(`/tms/dmmu/batch-review/${b.id}`)
-                                  }
-                                >
-                                  Review
-                                </button>
-                              )}
-                            {role === "dtp" &&
-                              ["DRAFT", "REJECTED"].includes(
-                                String(b.status).toUpperCase(),
-                              ) && (
-                                <button
-                                  className="btn-sm btn-danger"
-                                  onClick={() => handleDeleteBatch(b.id)}
-                                >
-                                  Delete
-                                </button>
-                              )}
-                            {(role === "dtp" || role === "training_partner") &&
-                              ["COMPLETED", "REVIEW"].includes(
-                                String(b.status).toUpperCase(),
-                              ) && (
-                                <button
-                                  className="btn-sm btn-flat"
-                                  onClick={() =>
-                                    navigate(`/tms/tp/tr-closure/${b.id}`)
-                                  }
-                                >
-                                  Closure
-                                </button>
-                              )}
-                            {["bmmu", "dmmu", "smmu"].includes(role) && (
-                              <>
-                                {(role === "dmmu" &&
+                                {role === "dtp" &&
+                                  (String(b.status).toUpperCase() === "DRAFT" ||
+                                    (String(b.status).toUpperCase() ===
+                                      "REJECTED" &&
+                                      String(b.batch_type).toUpperCase() ===
+                                        "SEPARATE")) && (
+                                    <button
+                                      className="btnView"
+                                      onClick={() =>
+                                        navigate("/tms/batch-creator/", {
+                                          state: {
+                                            resume: true,
+                                            batchId: b.id,
+                                          },
+                                        })
+                                      }
+                                    >
+                                      Resume
+                                    </button>
+                                  )}
+                                {((role === "dmmu" &&
                                   String(b.level).toUpperCase() !== "STATE") ||
                                   (role === "smmu" &&
-                                    String(b.level).toUpperCase() === "STATE" &&
-                                    String(b.status).toUpperCase() ===
-                                      "REVIEW" && (
+                                    String(b.level).toUpperCase() ===
+                                      "STATE")) &&
+                                  String(b.status).toUpperCase() ===
+                                    "PENDING" && (
+                                    <button
+                                      className="btnView"
+                                      onClick={() =>
+                                        navigate(
+                                          `/tms/dmmu/batch-review/${b.id}`,
+                                        )
+                                      }
+                                    >
+                                      Review
+                                    </button>
+                                  )}
+                                {role === "dtp" &&
+                                  ["DRAFT", "REJECTED"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteBatch(b.id)}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                {(role === "dtp" ||
+                                  role === "training_partner") &&
+                                  ["COMPLETED", "REVIEW"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
+                                    <button
+                                      className="btnView"
+                                      onClick={() =>
+                                        navigate(`/tms/tp/tr-closure/${b.id}`)
+                                      }
+                                    >
+                                      Closure
+                                    </button>
+                                  )}
+                                {["bmmu", "dmmu", "smmu"].includes(role) && (
+                                  <>
+                                    {(role === "dmmu" &&
+                                      String(b.level).toUpperCase() !==
+                                        "STATE") ||
+                                    (role === "smmu" &&
+                                      String(b.level).toUpperCase() ===
+                                        "STATE" &&
+                                      String(b.status).toUpperCase() ===
+                                        "REVIEW") ? (
                                       <button
-                                        className="btn-sm btn-flat"
+                                        className="btnView"
                                         onClick={() =>
                                           role === "dmmu" || role === "smmu"
                                             ? navigate(
@@ -900,247 +954,348 @@ export default function TrainingBatchList() {
                                           ? "Closure"
                                           : "Certificate"}
                                       </button>
-                                    ))}
-                                {String(b.status).toUpperCase() ===
-                                  "CLOSED" && (
-                                  <button
-                                    className="btn-sm btn-flat"
-                                    onClick={() =>
-                                      navigate(`/tms/batch-certificate/${b.id}`)
-                                    }
-                                  >
-                                    Certificate
-                                  </button>
+                                    ) : null}
+                                    {String(b.status).toUpperCase() ===
+                                      "CLOSED" && (
+                                      <button
+                                        className="btnView"
+                                        onClick={() =>
+                                          navigate(
+                                            `/tms/batch-certificate/${b.id}`,
+                                          )
+                                        }
+                                      >
+                                        Certificate
+                                      </button>
+                                    )}
+                                  </>
                                 )}
-                              </>
-                            )}
-                          </td>
-                        </tr>
-                      ))
-                    )}
-                  </tbody>
-                </table>
-              </div>
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
 
-              <div className="pagination">
-                <button
-                  className="btn-sm btn-flat"
-                  disabled={currentPage === 1}
-                  onClick={() => setCurrentPage((p) => p - 1)}
+                {/* PAGINATION CONTROLS */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 12,
+                  }}
                 >
-                  Prev
-                </button>
-                <span className="pagination-info">
-                  Page {currentPage} of {totalPages || 1}
-                </span>
-                <button
-                  className="btn-sm btn-flat"
-                  disabled={currentPage === totalPages || totalPages === 0}
-                  onClick={() => setCurrentPage((p) => p + 1)}
-                >
-                  Next
-                </button>
+                  <div style={{ color: "#2b4e72", fontSize: 14 }}>
+                    Page {currentPage} of {totalPages || 1}
+                  </div>
+
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      className="btnPage"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => p - 1)}
+                    >
+                      Prev
+                    </button>
+                    <button
+                      className="btnPage"
+                      disabled={currentPage === totalPages || totalPages === 0}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                    >
+                      Next
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
-          </main>
-          <Footer />
-        </div>
-      </div>
-      <style>{`
-/* ================= OVERHAULED VISUAL STYLES ================= */
+            <style>{`
+/* LAYOUT FIXES */
 .content-area {
   display: flex;
   flex: 1;
   width: 100%;
 }
-.content-area > *:first-child { flex-shrink: 0; }
-.main-wrapper {
+.main-area {
   flex: 1;
   display: flex;
   flex-direction: column;
-  width: 100%;
-  min-width: 0;
+  min-width: 0; /* Critical: Prevents table from stretching off-screen */
   background-color: #f8fafc;
 }
 
-/* FILTER PANEL */
-.filter-panel {
-  top: 0;
-  z-index: 100;
-  background: #fff;
-  padding: 8px 12px;
-  margin-bottom: 12px;
-  
-  border: 1px solid #dbe4ef;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0,0,0,.06);
-
-  /* SURGICAL FIX: Removed overflow and white-space locks so it can wrap naturally */
-}
-.filter-panel label{
-    font-size:12px;
-    gap:4px;
-}  
-.filter-row{
-    display:flex;
-    align-items:center;
-    gap:8px;
-    width:100%;     /* SURGICAL FIX: Keeps container constrained to screen width */
-}
-.input{
-    height:32px;
-    min-width:110px;
-    padding:0 8px;
-    font-size:12px;
-    border-radius:6px;
-}
-.filter-panel input[type="checkbox"]{
-    width:14px;
-    height:14px;
-}    
-.input:focus {
-  outline: none;
-  border-color: #3b82f6;
-  box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.2);
-  background: #ffffff;
+/* BUTTON */
+.btnPrimary{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:6px 14px;
+  cursor:pointer;
+  transition:all .25s ease;
 }
 
-/* BUTTONS */
-.btn {
-  padding: 8px 16px;
-  border-radius: 8px;
-  cursor: pointer;
-  border: none;
-  font-weight: 600;
-  transition: all 0.2s ease;
+.btnPrimary:hover{
+  transform:translateY(-3px);
+  box-shadow:0 6px 12px rgba(0,0,0,0.15);
 }
-.btn-primary {
-  height:32px;
-  padding:0 16px;
+
+/* VIEW BUTTON */
+.btnView{
+  background:#5a8cc2;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:5px 12px;
+  cursor:pointer;
+    transition:all .25s ease;
+}
+
+.btnView:hover{
+  transform: translateY(-6px);
+  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+}
+
+/* TABLE */
+.training-table{
+  width:100%;
+  border-collapse:collapse;
+  font-size:14px;
+}
+
+/* HEADER */
+.training-table thead{
+  background:#3d6ba6;
+  color:white;
+}
+
+.training-table th{
+  padding:10px;
+  text-align:left;
+  font-weight:600;
+  text-align:center;
+  justify-content:center;  
+}
+
+/* BODY */
+.training-table td{
+  padding:10px;
+  border-bottom:1px solid #e4ecf5;
+  text-align:center;
+  justify-content:center;  
+}
+
+/* ROW BACKGROUND */
+.training-table tbody tr{
+  background:#f8fbff;
+}
+
+/* ALTERNATE ROW */
+.training-table tbody tr:nth-child(even){
+  background:#edf4fb;
+}
+
+/* HOVER */
+.training-table tbody tr:hover{
+  background:#a7c6ed;
+  transition:background .2s;
+}
+
+/* LOADING / EMPTY */
+.training-table tbody td{
+  color:#1f2937;
+}
+
+/* DELETE BUTTON */
+.btnDelete{
+  background:#ef4444;
+  color:#fff;
+  border:none;
+  border-radius:6px;
+  padding:5px 12px;
+  cursor:pointer;
+  transition:all .25s ease;
+}
+
+.btnDelete:hover{
+  transform: translateY(-3px);
+  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.25);
+}
+
+/* PAGINATION BUTTON */
+.btnPage{
+  background:#e4ecf5;
+  border:none;
+  padding:6px 10px;
+  border-radius:6px;
+  cursor:pointer;
+  color:#2b4e72;
+  transition:all .2s ease;
+}
+
+.btnPage:hover:not(:disabled){
+  background:#a7c6ed;
+}
+
+.btnPage:disabled{
+  opacity:0.5;
+  cursor:not-allowed;
+}
+
+/* ACTIVE PAGE */
+.activePage{
+  background:#3d6ba6 !important;
+  color:#fff !important;
+}
+
+.status-badge{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:999px;
   font-size:12px;
-  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
-  color: #ffffff;
-  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
-}
-.fetch-btn{
-    white-space: nowrap;
-    margin-left: auto;
-    margin-right: auto;
-}
-.btn-primary:hover {
-  transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
-}
-.btn-sm {
-  padding: 6px 12px;
-  font-size: 13px;
-  font-weight: 600;
-}
-.btn-flat {
-  background: #f1f5f9;
-  color: #475569;
-  border: 1px solid #cbd5e1;
-  border-radius: 6px;
-}
-.btn-flat:hover {
-  background: #e2e8f0;
-  color: #1e293b;
-}
-.btn-action-resume {
-  background: #fef3c7;
-  color: #b45309;
-  border: 1px solid #fde68a;
-  border-radius: 6px;
-}
-.btn-action-resume:hover {
-  background: #fde68a;
-  color: #92400e;
-}
-.btn-danger {
-  background: #fef2f2;
-  color: #b91c1c;
-  border: 1px solid #fecaca;
-  border-radius: 6px;
-}
-.btn-danger:hover {
-  background: #fee2e2;
-  color: #991b1b;
+  font-weight:700;
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  min-width:95px;
+  text-align:center;
+  border:1px solid transparent;
 }
 
-/* TABLE OVERHAUL */
-.table-wrapper {
-  background: #ffffff;
-  border-radius: 12px;
-  border: 1px solid #e2e8f0;
-  box-shadow: 0 4px 6px -1px rgba(0,0,0,0.05);
-  overflow: auto;
-  max-height: 82vh;
+/* DRAFT */
+.status-draft{
+  background:#f3f4f6;
+  color:#4b5563;
+  border-color:#d1d5db;
 }
-.table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
+
+/* PENDING */
+.status-pending{
+  background:#fef3c7;
+  color:#92400e;
+  border-color:#fcd34d;
 }
-.table thead {
-  position: sticky;
-  top: 0;
-  z-index: 10;
+
+/* REJECTED */
+.status-rejected{
+  background:#fee2e2;
+  color:#b91c1c;
+  border-color:#fca5a5;
 }
-.table th {
-  background: #f8fafc;
-  color: #475569;
-  padding: 14px 16px;
-  text-align: left;
-  font-weight: 600;
-  border-bottom: 2px solid #e2e8f0;
+
+/* ONGOING */
+.status-ongoing{
+  background:#D0E3CC;
+  color:#1C881B;
+  border-color:#1C881B;
+}
+
+/* SCHEDULED */
+.status-scheduled{
+  background:#ede9fe;
+  color:#6d28d9;
+  border-color:#c4b5fd;
+}
+
+/* COMPLETED */
+.status-completed{
+  background:#dcfce7;
+  color:#166534;
+  border-color:#86efac;
+}
+
+/* REVIEW */
+.status-review{
+  background:#ffedd5;
+  color:#c2410c;
+  border-color:#fdba74;
+}
+
+/* CLOSED */
+.status-closed{
+  background:#cffafe;
+  color:#155e75;
+  border-color:#67e8f9;
+}
+
+/* FILTER STYLES */
+.filter-input{
+  border:1px solid #3d6ba6;
+  border-radius:6px;
+  padding:7px 10px;
+  background:#fff;
+  outline:none;
+  font-size:14px;
+  min-width:160px;
+  transition:all .2s ease;
+}
+
+.filter-input:focus{
+  border-color:#5a8cc2;
+  box-shadow:0 0 0 2px rgba(61,107,166,0.2);
+}
+
+.filter-input:disabled {
+  background-color: #f1f5f9;
+  color: #64748b;
+  cursor: not-allowed;
+  border-color: #cbd5e1;
+}
+
+.fetch-btn{
+  background:#3d6ba6;
+  color:#fff;
+  border:none;
+  padding:8px 18px;
+  border-radius:6px;
+  font-weight:500;
+  cursor:pointer;
+  transition:all .25s ease;
   white-space: nowrap;
 }
-.table td {
-  padding: 14px 16px;
-  border-bottom: 1px solid #f1f5f9;
-  color: #334155;
-  vertical-align: middle;
-}
-.table tbody tr:hover {
-  background: #f8fafc;
+
+.fetch-btn:hover{
+  background:#5a8cc2;
+  transform:translateY(-2px);
+  box-shadow:0 6px 14px rgba(0,0,0,0.12);
 }
 
-/* STATUS BADGES */
-.status-badge {
-  padding: 4px 10px;
-  border-radius: 20px;
-  font-weight: 600;
-  font-size: 12px;
-  display: inline-block;
-  text-align: center;
-}
-.status-draft { background: #fef3c7; color: #b45309; }
-.status-pending { background: #fee2e2; color: #b91c1c; }
-.status-ongoing { background: #dbeafe; color: #1d4ed8; }
-.status-scheduled { background: #e0e7ff; color: #1e40af; }
-.status-completed { background: #dcfce7; color: #15803d; }
-.status-rejected { background: #f6f4f3; color: #ff0000; }
-
-/* PAGINATION */
-.pagination {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  gap: 16px;
-  padding: 16px 0;
-}
-.pagination-info {
-  font-weight: 600;
-  color: #64748b;
-  font-size: 14px;
+@media (max-width: 1200px){
+  .filter-row{
+    flex-wrap: wrap !important;
+    white-space: normal !important;
+  }
 }
 
-/* RESPONSIVE TRIMS */
-@media (max-width: 1024px) {
-  .filter-panel > div > div { flex-wrap: wrap !important; gap: 10px !important; }
-  .input { flex: 1 1 160px; min-width: 160px; }
+@media (max-width: 768px){
+  .filter-input{
+    min-width: 140px;
+    flex: 1 1 45%; 
+  }
+  .aspirational-box{
+    flex: 1 1 45%;
+    justify-content: center;
+  }
 }
-`}</style>
+
+@media (max-width: 480px){
+  .filter-input{
+    flex: 1 1 100%;
+    min-width: unset;
+  }
+  .aspirational-box{
+    flex: 1 1 100%;
+  }
+  .fetch-btn{
+    width: 100%;
+  }
+}
+          `}</style>
+          </main>
+          <Footer />
+        </div>
+      </div>
     </div>
   );
 }

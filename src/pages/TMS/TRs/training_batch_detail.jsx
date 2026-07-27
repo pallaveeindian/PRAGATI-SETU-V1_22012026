@@ -102,7 +102,7 @@ export default function TrainingBatchDetail() {
     ) {
       batchData.combined_batch_details.forEach((detail) => {
         (detail.participants || []).forEach((p) => {
-          const person = p.beneficiary || p.trainer || p;
+          const person = p.beneficiary || p.trainer || p.staff || p; // SURGICAL FIX: Added p.staff fallback
           participants.push({
             ...person,
             attendance_summary: p.attendance_summary,
@@ -111,6 +111,13 @@ export default function TrainingBatchDetail() {
           });
         });
       });
+    } else if (batchData?.participant_type === "STAFF") {
+      participants = (batchData.staff_participations || []).map((sp) => ({
+        ...(sp.staff || {}),
+        attendance_summary: sp.attendance_summary,
+        participation_id: sp.id,
+        total_cost: costsMap[sp.id],
+      }));
     } else if (isTrainerTraining) {
       participants = (batchData.trainer_participations || []).map((tp) => ({
         ...(tp.trainer || {}),
@@ -218,6 +225,7 @@ export default function TrainingBatchDetail() {
                   <ParticipantsSummaryTable
                     displayedParticipants={displayedParticipants}
                     isTrainerTraining={isTrainerTraining}
+                    isStaffBatch={batchData.participant_type === "STAFF"}
                   />
 
                   <DailyAttendanceViewer

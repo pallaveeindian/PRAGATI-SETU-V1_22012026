@@ -4,17 +4,22 @@ import { FaFileExcel, FaSpinner } from "react-icons/fa";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
-export default function TRListExport({ requests }) {
+// SURGICAL FIX: Accept fetchData function instead of static array
+export default function TRListExport({ fetchData }) {
   const [exporting, setExporting] = useState(false);
 
   const handleExport = async () => {
-    if (!requests || requests.length === 0) {
-      alert("No data available to export.");
-      return;
-    }
-
     setExporting(true);
     try {
+      // Fetch all filtered data directly from server with max limit
+      const requests = await fetchData();
+
+      if (!requests || requests.length === 0) {
+        alert("No data available to export.");
+        setExporting(false);
+        return;
+      }
+
       // 1. Initialize Workbook
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Training Requests");
@@ -162,7 +167,7 @@ export default function TRListExport({ requests }) {
       <button
         className="btn-export-excel"
         onClick={handleExport}
-        disabled={exporting || !requests || requests.length === 0}
+        disabled={exporting}
         title="Export Data to Excel"
       >
         {exporting ? (

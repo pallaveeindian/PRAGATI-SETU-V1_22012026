@@ -470,6 +470,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             <option value="">Participant</option>
             <option value="BENEFICIARY">Beneficiary</option>
             <option value="TRAINER">Trainer</option>
+            <option value="STAFF">Staff</option>
           </select>
 
           {/* ===== Level ===== */}

@@ -52,6 +52,8 @@ import SmmuTargetAchievement from "../pages/TMS/SMMU/smmu_tp_tva";
 import BmmuTargetAchievement from "../pages/TMS/BMMU/bmmu_tp_tvs";
 import DmmuTargetAchievement from "../pages/TMS/DMMU/dmmu_tp_tvs";
 import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
+import StaffBatchCreatorDashboard from "../pages/TMS/StaffBatchCreator/StaffBatchCreatorDashboard";
+
 // Master Trainer Management V2
 import {
   MTDirectoryConductor,
@@ -121,6 +123,10 @@ export default function TmsRoutes() {
       {/* Training Partner Routes */}
       <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
         <Route path="tp/dashboard" element={<TpDashboard />} />
+        <Route
+          path="tp/staff-batch-creator/:paramTrId"
+          element={<StaffBatchCreatorDashboard />}
+        />
       </Route>
       <Route
         element={<ProtectedRoute allowedRoles={["training_partner", "dtp"]} />}

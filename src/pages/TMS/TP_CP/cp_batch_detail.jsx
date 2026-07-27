@@ -55,7 +55,6 @@ export default function CpBatchDetail() {
     if (!batchId) return;
     setLoadingBatch(true);
     try {
-      // Swapped to the live comprehensive detail v2 endpoint
       const resp = await api.get(
         `/tms/batches/comprehensive-detail/${batchId}/`,
       );

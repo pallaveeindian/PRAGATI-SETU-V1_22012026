@@ -23,7 +23,20 @@ export default function BatchMetaCard({ batchData }) {
           <div className="batch-label">Batch Code</div>
           <div className="batch-value highlight">{batchData.code || "-"}</div>
         </div>
-
+        <div className="batch-item">
+          <div className="batch-label">District</div>
+          <div className="batch-value highlight">
+            {batchData.district_name_en || "-"}
+          </div>
+        </div>
+        {batchData.block_name_en && (
+          <div className="batch-item">
+            <div className="batch-label">Block</div>
+            <div className="batch-value highlight">
+              {batchData.block_name_en || "-"}
+            </div>
+          </div>
+        )}
         <div className="batch-item">
           <div className="batch-label">Batch Type</div>
           <div className="batch-value">{batchData.batch_type || "-"}</div>
@@ -40,15 +53,24 @@ export default function BatchMetaCard({ batchData }) {
             {batchData.financial_year || "-"}
           </div>
         </div>
+        <div className="batch-dates">
+          <div className="batch-item" style={{ textAlign: "center" }}>
+            <div className="batch-label" style={{ fontSize: "15px" }}>
+              <strong>Start Date</strong>
+            </div>
+            <div className="batch-value" style={{ fontSize: "20px" }}>
+              {fmtDate(batchData.start_date)}
+            </div>
+          </div>
 
-        <div className="batch-item">
-          <div className="batch-label">Start Date</div>
-          <div className="batch-value">{fmtDate(batchData.start_date)}</div>
-        </div>
-
-        <div className="batch-item">
-          <div className="batch-label">End Date</div>
-          <div className="batch-value">{fmtDate(batchData.end_date)}</div>
+          <div className="batch-item" style={{ textAlign: "center" }}>
+            <div className="batch-label" style={{ fontSize: "15px" }}>
+              <strong>End Date</strong>
+            </div>
+            <div className="batch-value" style={{ fontSize: "20px" }}>
+              {fmtDate(batchData.end_date)}
+            </div>
+          </div>
         </div>
       </div>
 
@@ -96,6 +118,18 @@ export default function BatchMetaCard({ batchData }) {
           color: #3d6ba6;
           font-weight: 700;
         }
+        .batch-dates{
+          grid-column: 1 / -1;   /* Span entire grid */
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .batch-dates .batch-item{
+          min-width: 220px;
+          max-width: 260px;
+        }          
       `}</style>
     </div>
   );
