@@ -1,0 +1,242 @@
+/* Full screen container */
+.pdu-login-container {
+    position: relative;
+    width: 100vw;
+    height: 100vh;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    font-family: "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+/* Background images for slideshow */
+.pdu-login-bg {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-size: cover;
+    background-position: center;
+    background-repeat: no-repeat;
+    opacity: 0;
+    transition: opacity 1.5s ease-in-out;
+    z-index: 1;
+}
+
+.pdu-login-bg.active {
+    opacity: 1;
+}
+
+/* Dark mesh/blur overlay for the futuristic vibe */
+.pdu-login-overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: radial-gradient(circle at center, rgba(17, 24, 39, 0.4) 0%, rgba(17, 24, 39, 0.8) 100%);
+    backdrop-filter: blur(4px);
+    z-index: 2;
+}
+
+/* Content Wrapper */
+.pdu-login-content {
+    position: relative;
+    z-index: 3;
+    width: 100%;
+    max-width: 420px;
+    padding: 20px;
+}
+
+/* Customizing the PDUCard to be Glassmorphic / Futuristic */
+.pdu-futuristic-card {
+    background: rgba(255, 255, 255, 0.05) !important;
+    backdrop-filter: blur(16px);
+    -webkit-backdrop-filter: blur(16px);
+    border: 1px solid rgba(255, 255, 255, 0.1) !important;
+    box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5), 0 0 20px rgba(139, 92, 246, 0.15) !important;
+    border-radius: 16px !important;
+    color: white !important;
+}
+
+/* Internal Form Padding */
+.pdu-login-form {
+    padding: 10px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Header Elements */
+.pdu-logo-header {
+    display: flex;
+    justify-content: center;
+    margin-bottom: 5px;
+}
+
+.pdu-app-logo {
+    width: 80px;
+    height: 80px;
+    border-radius: 12px;
+    box-shadow: 0 0 15px rgba(255, 255, 255, 0.2);
+}
+
+.pdu-form-header-text {
+    text-align: center;
+}
+
+.pdu-form-header-text h2 {
+    margin: 0;
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #ffffff;
+    letter-spacing: 0.5px;
+}
+
+.pdu-smmu-lock-text {
+    margin: 8px 0 0 0;
+    font-weight: 600;
+    font-size: 0.85rem;
+    color: #a78bfa; /* Soft futuristic purple */
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+/* Inputs */
+.pdu-input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.pdu-block-label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #d1d5db; /* Light gray */
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.pdu-form-input {
+    width: 100%;
+    padding: 12px 14px;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.15);
+    border-radius: 8px;
+    color: white;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    box-sizing: border-box;
+}
+
+.pdu-form-input:focus {
+    outline: none;
+    border-color: #8b5cf6;
+    background: rgba(0, 0, 0, 0.4);
+    box-shadow: 0 0 10px rgba(139, 92, 246, 0.3);
+}
+
+.pdu-form-input::placeholder {
+    color: rgba(255, 255, 255, 0.3);
+}
+
+/* Password Eye Icon Wrapper */
+.pdu-password-wrapper {
+    position: relative;
+    display: flex;
+    align-items: center;
+}
+
+.pdu-eye-icon {
+    position: absolute;
+    right: 14px;
+    color: rgba(255, 255, 255, 0.5);
+    cursor: pointer;
+    transition: color 0.2s;
+}
+
+.pdu-eye-icon:hover {
+    color: white;
+}
+
+/* Captcha Layout */
+.pdu-captcha-wrapper {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.pdu-captcha-image-box {
+    display: flex;
+    gap: 10px;
+    align-items: stretch;
+}
+
+.pdu-captcha-image-box img {
+    flex-grow: 1;
+    height: 48px;
+    border-radius: 8px;
+    background: white; /* Captcha API usually returns white images */
+}
+
+.pdu-captcha-refresh {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 8px;
+    color: white;
+    font-size: 1.2rem;
+    padding: 0 16px;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pdu-captcha-refresh:hover {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.pdu-captcha-input {
+    letter-spacing: 2px;
+    font-weight: bold;
+}
+
+/* Errors */
+.pdu-error {
+    color: #ef4444; /* Bright red */
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin: 0;
+    text-align: center;
+    background: rgba(239, 68, 68, 0.1);
+    padding: 8px;
+    border-radius: 6px;
+    border: 1px solid rgba(239, 68, 68, 0.2);
+}
+
+/* Submit Button Override */
+.pdu-submit-wrapper {
+    margin-top: 10px;
+    display: flex;
+    justify-content: center;
+}
+
+/* Injecting neon purple futuristic color into your exact diagonal swipe login button */
+.pdu-submit-wrapper .pdu-btn-login {
+    width: 100%;
+    color: #c4b5fd !important;
+    border-color: #8b5cf6 !important;
+    padding: 14px 20px;
+    font-size: 1.1rem;
+    letter-spacing: 1px;
+}
+
+.pdu-submit-wrapper .pdu-btn-login::before {
+    background-color: #8b5cf6 !important;
+}
+
+.pdu-submit-wrapper .pdu-btn-login:hover {
+    color: white !important;
+    text-shadow: 0 0 10px rgba(255,255,255,0.5);
+    box-shadow: 0 0 20px rgba(139, 92, 246, 0.4);
+}
