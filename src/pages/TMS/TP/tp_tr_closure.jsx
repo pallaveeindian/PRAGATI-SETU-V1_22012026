@@ -5,7 +5,7 @@ import LeftNav from "../layout/tms_LeftNav";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api from "../../../api/axios";
+import api, { TMS_API } from "../../../api/axios";
 import {
   getCanonicalRole,
   ROLE_WELCOME_MESSAGES,
@@ -91,10 +91,8 @@ export default function TpTrainingRequestClosure() {
     setLoading(true);
     setFetchError(null);
     try {
-      const resp = await api.get(
-        `/tms/batches/comprehensive-detail/${batchId}/`,
-      );
-      const data = resp?.data;
+      const resp = await TMS_API.batchDetailV2(batchId);
+      const data = resp?.data || null;
 
       if (!data) throw new Error("Empty response");
 
@@ -119,7 +117,8 @@ export default function TpTrainingRequestClosure() {
       if (data?.participant_costs?.length) {
         const map = {};
         data.participant_costs.forEach((pc) => {
-          const key = pc.batch_beneficiary ?? pc.batch_trainer;
+          const key =
+            pc.batch_beneficiary ?? pc.batch_trainer ?? pc.batch_staff;
           if (key != null) {
             map[key] = {
               hra: String(pc.hra ?? "0"),
@@ -200,6 +199,24 @@ export default function TpTrainingRequestClosure() {
               bt.trainer?.full_name || `Trainer #${bt.trainer?.id || bt.id}`,
             attendance_pct:
               bt.attendance_summary?.attendance_percentage || "0.00",
+          };
+        });
+    }
+
+    if (trainingType === "STAFF") {
+      return (batch.staff_participations || [])
+        .filter(
+          (sp) =>
+            sp.is_active !== false &&
+            sp.attendance_summary?.is_successful === true,
+        )
+        .map((sp) => {
+          const st = sp.staff || {};
+          return {
+            ...sp,
+            display_name: st.full_name || `Staff #${st.id || sp.id}`,
+            attendance_pct:
+              sp.attendance_summary?.attendance_percentage || "0.00",
           };
         });
     }
@@ -315,16 +332,19 @@ export default function TpTrainingRequestClosure() {
         const c = costs[p.id] || { hra: "0", ta_da: "0" };
 
         // Find existing record for this participant
-        const existingCostLine = (batch.participant_costs || []).find((pc) =>
-          trainingType === "BENEFICIARY"
-            ? pc.batch_beneficiary === p.id
-            : pc.batch_trainer === p.id,
-        );
+        const existingCostLine = (batch.participant_costs || []).find((pc) => {
+          if (trainingType === "BENEFICIARY")
+            return pc.batch_beneficiary === p.id;
+          if (trainingType === "TRAINER") return pc.batch_trainer === p.id;
+          if (trainingType === "STAFF") return pc.batch_staff === p.id;
+          return false;
+        });
 
         const payload = {
           batch: parseInt(batchId, 10),
           batch_beneficiary: trainingType === "BENEFICIARY" ? p.id : null,
           batch_trainer: trainingType === "TRAINER" ? p.id : null,
+          batch_staff: trainingType === "STAFF" ? p.id : null,
           participant_type: trainingType,
           hra: parseFloat(c.hra || 0),
           ta_da: parseFloat(c.ta_da || 0),

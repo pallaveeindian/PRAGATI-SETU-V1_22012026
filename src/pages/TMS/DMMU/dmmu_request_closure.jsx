@@ -3,7 +3,7 @@ import React, { useContext, useEffect, useState, useMemo, useRef } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import api from "../../../api/axios";
+import api, { TMS_API } from "../../../api/axios";
 import {
   getCanonicalRole,
   ROLE_WELCOME_MESSAGES,
@@ -87,12 +87,10 @@ export default function DmmuBatchClosureReview() {
     setFetchError(null);
     try {
       // ⚠️ SURGICAL FIX: Using the new Comprehensive Detail V2 endpoint
-      const resp = await api.get(
-        `/tms/batches/comprehensive-detail/${batchId}/`,
-      );
-      const data = resp?.data;
+      const resp = await TMS_API.batchDetailV2(batchId);
+      const data = resp?.data || null;
 
-      if (!data) throw new Error("Empty response");
+      if (!data) throw new Error("Batch Not Found !");
 
       setBatch(data);
 
@@ -197,6 +195,39 @@ export default function DmmuBatchClosureReview() {
           };
         });
     }
+
+    // Map Staff
+    if (trainingType === "STAFF") {
+      return (batch.staff_participations || [])
+        .filter(
+          (sp) =>
+            sp.is_active !== false &&
+            sp.attendance_summary?.is_successful === true,
+        )
+        .map((sp) => {
+          const st = sp.staff || {};
+          const summary = sp.attendance_summary || {};
+
+          const costLine =
+            (batch.participant_costs || []).find(
+              (c) => c.batch_staff === sp.id,
+            ) || {};
+
+          return {
+            ...sp,
+            display_name: st.full_name || `Staff #${st.id || sp.id}`,
+            attendance_pct: summary.attendance_percentage || "0.00",
+            hra: costLine.hra || 0,
+            ta_da: costLine.ta_da || 0,
+            total_cost: costLine.total_cost || 0,
+            designation: st.designation || "-", // Captured correctly as designation
+            gender: st.gender || "-",
+            category: st.social_category || "-",
+            mobile: st.mobile || "-",
+          };
+        });
+    }
+
     return [];
   }, [batch, trainingType]);
 
@@ -868,12 +899,15 @@ export default function DmmuBatchClosureReview() {
                           <th>#</th>
                           <th>Participant Name</th>
                           <th>Gender</th>
-                          <th>Age</th>
+                          {trainingType === "STAFF" ? (
+                            <th>Designation</th>
+                          ) : (
+                            <th>Age</th>
+                          )}
                           <th>Category</th>
                           <th>Mobile</th>
                           <th>Attendance %</th>
                           <th>TA (₹)</th>
-                          <th>DA (₹)</th>
                           <th>Row Total (₹)</th>
                         </tr>
                       </thead>
@@ -885,7 +919,11 @@ export default function DmmuBatchClosureReview() {
                               {p.display_name}
                             </td>
                             <td>{p.gender}</td>
-                            <td>{p.age}</td>
+                            {trainingType === "STAFF" ? (
+                              <td>{p.designation}</td>
+                            ) : (
+                              <td>{p.age}</td>
+                            )}
                             <td>{p.category}</td>
                             <td>{p.mobile}</td>
                             <td>
@@ -903,7 +941,6 @@ export default function DmmuBatchClosureReview() {
                               </span>
                             </td>
                             {/* ── READ-ONLY ── */}
-                            <td>₹{fmt(p.hra)}</td>
                             <td>₹{fmt(p.ta_da)}</td>
                             <td>
                               <strong style={{ color: "#1e40af" }}>

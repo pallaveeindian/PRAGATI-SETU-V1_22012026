@@ -149,6 +149,7 @@ export default function TrainingBatchList() {
     if (role === "training_partner") return { partner: tpPartnerId };
     if (role === "dtp")
       return { district_id: dtpDistrictId, partner: dtpPartnerId };
+    if (role === "smmu" && filters.theme) return { theme_id: filters.theme };
     return {};
   }
 
@@ -423,11 +424,15 @@ export default function TrainingBatchList() {
     if (!user?.id || didInitRef.current || isRequestScoped) return;
     if (role === "bmmu" || role === "training_partner" || role === "dtp")
       return;
+
+    if (role === "smmu" && !filters.theme) return;
+
     didInitRef.current = true;
+
     const cached = loadCache(getScopeKey());
     if (cached?.payload) setBatches(cached.payload);
     else fetchBatches();
-  }, [user?.id, role, requestId]);
+  }, [user?.id, role, requestId, filters.theme]);
 
   useEffect(() => {
     if (!requestId || !user?.id) return;
@@ -799,7 +804,8 @@ export default function TrainingBatchList() {
                         <th>End</th>
                         <th>Level</th>
                         <th>Type</th>
-                        <th>Centre</th>
+                        <th>Theme</th>
+                        <th>Training Plan</th>
                         <th>Partner</th>
                         <th>Block</th>
                         <th>District</th>
@@ -846,7 +852,8 @@ export default function TrainingBatchList() {
                             <td>{b.end_date}</td>
                             <td>{b.level}</td>
                             <td>{b.batch_type}</td>
-                            <td>{renderCentreName(b.centre)}</td>
+                            <td>{b.training_plan.theme.theme_name}</td>
+                            <td>{b.training_plan.training_name}</td>
                             <td>{b.centre?.partner?.name || "-"}</td>
                             <td>{b.block?.block_name_en || "-"}</td>
                             <td>{b.district?.district_name_en || "-"}</td>
@@ -914,8 +921,10 @@ export default function TrainingBatchList() {
                                       Delete
                                     </button>
                                   )}
-                                {(role === "dtp" ||
-                                  role === "training_partner") &&
+                                {(role === "training_partner" ||
+                                  (role === "dtp" &&
+                                    String(b.participant_type).toUpperCase() !==
+                                      "STAFF")) &&
                                   ["COMPLETED", "REVIEW"].includes(
                                     String(b.status).toUpperCase(),
                                   ) && (

@@ -415,10 +415,10 @@ export default function DmmuBatchReview() {
                   </h3>
 
                   <button
-                    className="btn-sm btn-flat"
+                    className="btn-sm primary"
                     onClick={() => handleViewBatch(batchId)}
                   >
-                    View Complete Batch Details
+                    <strong>View Complete Batch Details</strong>
                   </button>
                 </div>
 

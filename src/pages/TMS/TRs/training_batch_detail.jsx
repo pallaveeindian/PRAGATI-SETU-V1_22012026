@@ -87,7 +87,6 @@ export default function TrainingBatchDetail() {
   const displayedParticipants = useMemo(() => {
     if (!batchData) return [];
 
-    // --- SURGICAL ADDITION: Create a quick lookup map for costs ---
     const costsMap = {};
     (batchData.participant_costs || []).forEach((c) => {
       const pId = c.batch_beneficiary || c.batch_trainer;
@@ -102,7 +101,7 @@ export default function TrainingBatchDetail() {
     ) {
       batchData.combined_batch_details.forEach((detail) => {
         (detail.participants || []).forEach((p) => {
-          const person = p.beneficiary || p.trainer || p.staff || p; // SURGICAL FIX: Added p.staff fallback
+          const person = p.beneficiary || p.trainer || p.staff || p;
           participants.push({
             ...person,
             attendance_summary: p.attendance_summary,

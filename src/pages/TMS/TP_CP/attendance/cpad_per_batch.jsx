@@ -128,7 +128,7 @@ export default function CpAdPerBatch() {
           return;
         }
       }
-      const resp = await api.get(`/tms/batches/${batchId}/detail/`);
+      const resp = await TMS_API.batchDetailV2(batchId);
       const data = resp?.data || null;
       setBatch(data);
       saveJson(BATCHDETAIL_CACHE_PREFIX + batchId, data);
@@ -211,10 +211,13 @@ export default function CpAdPerBatch() {
     (batch.beneficiary_participations || []).forEach((bp) => {
       expectedIds.add(`trainee-${bp.id}`);
     });
-    // NEW: Add trainer participations to expected completion list
     (batch.trainer_participations || []).forEach((tp) => {
       expectedIds.add(`trainee-${tp.id}`);
     });
+    (batch.staff_participations || []).forEach((sp) => {
+      expectedIds.add(`trainee-${sp.id}`);
+    });
+
     if (expectedIds.size === 0) return false;
     const verifiedIds = new Set(
       (ekyc || [])
@@ -316,36 +319,52 @@ export default function CpAdPerBatch() {
   const participants = useMemo(() => {
     if (!batch) return [];
     const rows = [];
+
     (batch.master_trainer_participations || []).forEach((mtp) => {
-      const mt = (batch.master_trainers || []).find(
-        (m) => m.id === mtp.master_trainer,
-      );
+      const mt =
+        mtp.master_trainer ||
+        (batch.master_trainers || []).find((m) => m.id === mtp.master_trainer);
       rows.push({
         key: `trainer-${mtp.id}`,
         participant_id: String(mtp.id),
         participant_role: "trainer",
-        name: mt?.full_name || `MasterTrainer #${mtp.master_trainer}`,
+        name: mt?.full_name || `MasterTrainer #${mtp.id}`,
       });
     });
+
     (batch.beneficiary_participations || []).forEach((bp) => {
-      const b = (batch.beneficiary || []).find((x) => x.id === bp.beneficiary);
+      const b =
+        bp.beneficiary ||
+        (batch.beneficiary || []).find((x) => x.id === bp.beneficiary);
       rows.push({
         key: `trainee-${bp.id}`,
         participant_id: String(bp.id),
         participant_role: "trainee",
-        name: b?.member_name || `Beneficiary #${bp.beneficiary}`,
+        name: b?.member_name || `Beneficiary #${bp.id}`,
       });
     });
-    // NEW: Add trainer participations (acting as trainees)
+
     (batch.trainer_participations || []).forEach((tp) => {
-      const t = (batch.trainer || []).find((x) => x.id === tp.trainer);
+      const t =
+        tp.trainer || (batch.trainer || []).find((x) => x.id === tp.trainer);
       rows.push({
         key: `trainee-${tp.id}`,
         participant_id: String(tp.id),
         participant_role: "trainee",
-        name: t?.full_name || t?.member_name || `Trainer #${tp.trainer}`,
+        name: t?.full_name || t?.member_name || `Trainer #${tp.id}`,
       });
     });
+
+    (batch.staff_participations || []).forEach((sp) => {
+      const s = sp.staff || (batch.staff || []).find((x) => x.id === sp.staff);
+      rows.push({
+        key: `trainee-${sp.id}`,
+        participant_id: String(sp.id),
+        participant_role: "trainee",
+        name: s?.full_name || s?.member_name || `Staff #${sp.id}`,
+      });
+    });
+
     return rows;
   }, [batch]);
 
@@ -600,7 +619,7 @@ export default function CpAdPerBatch() {
 
   /* ---------------- submit today's attendance ---------------- */
   const validateCsvFile = (file) => {
-    if (!file) return "CSV file is required";
+    if (!file) return null;
 
     // ❌ 0 KB file
     if (file.size === 0) {
@@ -669,11 +688,11 @@ export default function CpAdPerBatch() {
         alert("Cannot create participant attendance without record id.");
         return;
       }
-      const error = validateCsvFile(csvFile);
-      if (error) {
-        alert(error);
-        return;
-      }
+      // const error = validateCsvFile(csvFile);
+      // if (error) {
+      //   alert(error);
+      //   return;
+      // }
       const existingKeys = await getExistingParticipantAttendanceIds(rec.id);
 
       for (const p of participants) {
@@ -987,13 +1006,10 @@ export default function CpAdPerBatch() {
                                         display: "block",
                                       }}
                                     >
-                                      Upload Punch Machine CSV{" "}
-                                      <span style={{ color: "#dc2626" }}>
-                                        *
-                                      </span>
+                                      Upload Punch Machine CSV
                                     </label>
 
-                                    <div
+                                    {/* <div
                                       style={{
                                         fontSize: 12,
                                         color: "#b91c1c",
@@ -1002,7 +1018,7 @@ export default function CpAdPerBatch() {
                                     >
                                       CSV upload is mandatory to submit today’s
                                       attendance.
-                                    </div>
+                                    </div> */}
                                     {/* <input
                                     type="file"
                                     accept=".csv"
@@ -1043,8 +1059,9 @@ export default function CpAdPerBatch() {
                                     )}
                                     <div
                                       style={{
-                                        fontSize: 12,
-                                        color: "#6b7280",
+                                        fontSize: 18,
+                                        fontWeight: "20px",
+                                        color: "#002174",
                                         marginTop: 4,
                                       }}
                                     >
@@ -1118,10 +1135,9 @@ export default function CpAdPerBatch() {
                                       type="submit"
                                       className="btn btn-success"
                                       disabled={
-                                        savingAttendance ||
-                                        !participants.length ||
-                                        !csvFile ||
-                                        csvError
+                                        savingAttendance || !participants.length
+                                        // !csvFile ||
+                                        // csvError
                                       }
                                     >
                                       {savingAttendance

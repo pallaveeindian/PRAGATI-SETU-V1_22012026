@@ -44,7 +44,6 @@ export default function EkycVerificationTable({
         <table className="table table-compact ekyc-table">
           <thead>
             <tr>
-              {/* --- SURGICAL ADDITION: New Headers --- */}
               <th className="thStyle">S.No.</th>
               <th className="thStyle">Participant Name</th>
               <th className="thStyle">Role</th>
@@ -54,31 +53,67 @@ export default function EkycVerificationTable({
             </tr>
           </thead>
           <tbody>
-            {/* --- SURGICAL ADDITION: Index and Dynamic Name Lookup --- */}
             {ekycVerifications.map((kyc, index) => {
               let pName = "Unknown";
               const pId = String(kyc.participant_id);
+              const roleLower = (kyc.participant_role || "").toLowerCase();
 
-              if (kyc.participant_role?.toLowerCase() === "trainer") {
-                // Check master trainers first
-                const mt = (batchData.master_trainer_participations || []).find(
-                  (m) => String(m.id) === pId,
+              // --- SURGICAL FIX: Comprehensive Name Resolution for V2 API ---
+              if (roleLower === "trainer") {
+                const mtp = (
+                  batchData.master_trainer_participations || []
+                ).find((m) => String(m.id) === pId);
+                const mt =
+                  mtp?.master_trainer ||
+                  (batchData.master_trainers || []).find(
+                    (m) => String(m.id) === String(mtp?.master_trainer),
+                  );
+                if (mt) pName = mt.full_name || mt.member_name || "Unknown";
+              } else {
+                // For trainees, could be Staff, Trainer (as trainee), or Beneficiary
+
+                // 1. Check Staff
+                const sp = (batchData.staff_participations || []).find(
+                  (s) => String(s.id) === pId,
                 );
-                if (mt) pName = mt.master_trainer?.full_name || "Unknown";
+                if (sp) {
+                  const s =
+                    sp.staff ||
+                    (batchData.staff || []).find(
+                      (x) => String(x.id) === String(sp.staff),
+                    );
+                  pName = s?.full_name || s?.member_name || "Unknown";
+                }
 
-                // Fallback to regular trainers if not a master trainer
+                // 2. Check Trainer (as trainee)
                 if (pName === "Unknown") {
-                  const tr = (batchData.trainer_participations || []).find(
+                  const tp = (batchData.trainer_participations || []).find(
                     (t) => String(t.id) === pId,
                   );
-                  if (tr) pName = tr.trainer?.full_name || "Unknown";
+                  if (tp) {
+                    const t =
+                      tp.trainer ||
+                      (batchData.trainer || []).find(
+                        (x) => String(x.id) === String(tp.trainer),
+                      );
+                    pName = t?.full_name || t?.member_name || "Unknown";
+                  }
                 }
-              } else {
-                // Trainees (Beneficiaries)
-                const bn = (batchData.beneficiary_participations || []).find(
-                  (b) => String(b.id) === pId,
-                );
-                if (bn) pName = bn.beneficiary?.member_name || "Unknown";
+
+                // 3. Check Beneficiary
+                if (pName === "Unknown") {
+                  const bp = (batchData.beneficiary_participations || []).find(
+                    (b) => String(b.id) === pId,
+                  );
+                  if (bp) {
+                    const b =
+                      bp.beneficiary ||
+                      (batchData.beneficiary || []).find(
+                        (x) => String(x.id) === String(bp.beneficiary),
+                      );
+                    pName = b?.member_name || b?.full_name || "Unknown";
+                  }
+                }
               }
 
               return (
