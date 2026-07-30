@@ -40,6 +40,8 @@ import CrpEpLogin from "./pages/LoginComps/CrpEpLogin";
 import MouLogin from "./pages/LoginComps/MouLogin";
 import AdminLogin from "./pages/LoginComps/AdminLogin";
 import EPSMSLogin from "./pages/LoginComps/EPSMSLogin.jsx";
+// Planning Dept Integration portal
+import PDULogin from "./pages/PlanningDeptUpdate/Pages/PDULogin.jsx";
 
 // Dashboard / Error Pages
 import DashboardHome from "./pages/Dashboard/DashboardHome";
@@ -54,6 +56,7 @@ import MouRoutes from "./routes/MouRoutes";
 import SupportRoutes from "./routes/SupportRoutes.jsx";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
 import EPSMSRoutes from "./routes/EPSMSRoutes.jsx";
+import UPPLDRoutes from "./routes/UPPLDRoutes.jsx";
 
 export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
@@ -137,7 +140,7 @@ export default function App() {
         <Route path="/register-grievance" element={<RegisterGrievance />} />
 
         {/* ----- Login Routes ----- */}
-        <Route path="/login" element={<Login />} />
+        <Route path="/upsrlm-planning/login" element={<PDULogin />} />
         <Route path="/module-login" element={<LoginParent />} />
 
         {/* Only render sub-login routes if their module is active */}
@@ -166,6 +169,8 @@ export default function App() {
         {/* ----- Protected Application Routes ----- */}
         <Route element={<ProtectedRoute />}>
           <Route path="/dashboard" element={<DashboardHome />} />
+
+          <Route path="/upsrlm-planning/*" element={<UPPLDRoutes />} />
 
           {/* Sub-Software Routing (Conditionally Mounted) */}
           {isModuleActive("tms") && (

@@ -1,0 +1,100 @@
+.pdu-dashboard-container {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    max-width: 1600px;
+    margin: 0 auto;
+    background-color: #f3f4f6; /* Very light gray background for the whole module */
+    min-height: 100vh;
+}
+
+/* Centered state for loaders and errors */
+.pdu-dashboard-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f3f4f6;
+}
+
+.pdu-error-box {
+    background-color: #fef2f2;
+    border: 1px solid #f87171;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    color: #991b1b;
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1);
+}
+
+.pdu-error-box h2 {
+    margin-top: 0;
+}
+
+/* Header */
+.pdu-dashboard-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    border-bottom: 2px solid #e5e7eb;
+    padding-bottom: 16px;
+}
+
+.pdu-dashboard-title {
+    margin: 0;
+    font-size: 1.8rem;
+    font-weight: 700;
+    color: #111827;
+    letter-spacing: -0.02em;
+}
+
+.pdu-dashboard-subtitle {
+    margin: 8px 0 0 0;
+    font-size: 1rem;
+    color: #6b7280;
+}
+
+/* KPI Grid - 4 Columns */
+.pdu-dashboard-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+}
+
+/* Charts Grid - 2 Columns */
+.pdu-dashboard-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 24px;
+}
+
+.pdu-chart-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.pdu-chart-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f9fafb;
+    border: 2px dashed #d1d5db;
+}
+
+/* Sections */
+.pdu-dashboard-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pdu-section-title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #374151;
+}

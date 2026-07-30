@@ -1,7 +1,7 @@
 import React, { useEffect, useRef } from "react";
 import PDUButton from "./PDUButton";
 import PDUProgressBar from "./PDUProgressBar";
-import "./PDUStatusModal.css";
+import "./styles/PDUStatusModal.css";
 
 /**
  * PDUStatusModal - A modal overlay to track the block-by-block data upload.

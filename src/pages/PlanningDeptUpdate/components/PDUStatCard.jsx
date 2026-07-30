@@ -1,5 +1,5 @@
 import React from "react";
-import "./PDUStatCard.css";
+import "./styles/PDUStatCard.css";
 
 /**
  * PDUStatCard - A reusable card for displaying dashboard statistics.

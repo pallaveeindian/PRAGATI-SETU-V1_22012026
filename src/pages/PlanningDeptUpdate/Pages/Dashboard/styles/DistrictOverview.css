@@ -1,0 +1,86 @@
+/* Card Override to remove default PDUCard padding so the table touches the edges perfectly */
+.pdu-dist-overview-card .pdu-card-body {
+    padding: 0; 
+}
+
+/* Custom Header containing Title and Controls */
+.pdu-dist-overview-header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 16px;
+    padding: 16px 20px;
+    background-color: #f9fafb;
+    border-bottom: 1px solid #e5e7eb;
+}
+
+.pdu-dist-overview-title {
+    margin: 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #1f2937;
+}
+
+/* Controls Wrapper */
+.pdu-dist-overview-controls {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Search Input */
+.pdu-dist-search {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #374151;
+    background-color: #ffffff;
+    min-width: 200px;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pdu-dist-search:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+.pdu-dist-search::placeholder {
+    color: #9ca3af;
+}
+
+/* Sort Dropdown */
+.pdu-dist-sort {
+    padding: 8px 12px;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    color: #374151;
+    background-color: #ffffff;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.2s, box-shadow 0.2s;
+}
+
+.pdu-dist-sort:focus {
+    border-color: #3b82f6;
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+}
+
+/* Responsive adjustments for mobile */
+@media (max-width: 600px) {
+    .pdu-dist-overview-header {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .pdu-dist-overview-controls {
+        flex-direction: column;
+    }
+    
+    .pdu-dist-search, .pdu-dist-sort {
+        width: 100%;
+    }
+}

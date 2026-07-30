@@ -1,3 +1,4 @@
+// src/pages/PlanningDeptUpdate/Pages/PDULogin.jsx
 import React, { useState, useContext, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
@@ -7,20 +8,16 @@ import { FaEye, FaEyeSlash } from "react-icons/fa";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { AUTH_API } from "../../../api/axios";
 
-// Reusable UI Components
 import PDUButton from "../components/PDUButton";
 import PDUCard from "../components/PDUCard";
 
-// Specific Styles for Login Page
 import "./PDULogin.css";
 
-// Logo (Adjust path as needed)
-import psLogo from "../../../assets/PS_LOGO_SQUARED.jpg";
+import psLogo from "../../../assets/prernaHd.png";
 
-// Optional: Import your background theme images
-import theme1 from "../../../assets/LoginThemes/theme1.jpg";
-import theme2 from "../../../assets/LoginThemes/theme2.jpg";
-import theme3 from "../../../assets/LoginThemes/theme3.jpg";
+import theme1 from "../../../assets/LoginThemes/FARMLH.jpg";
+import theme2 from "../../../assets/LoginThemes/SISD.jpg";
+import theme3 from "../../../assets/LoginThemes/MFIF.jpg";
 
 const ROLE_SMMU_ROUTE = {
   dashboard: "/planning-dept-update/dashboard",
@@ -98,7 +95,7 @@ export default function PDULogin() {
     }
 
     setFailedAttempts(0);
-    navigate(ROLE_SMMU_ROUTE.dashboard, { replace: true });
+    navigate("/upsrlm-planning/state/dashboard", { replace: true });
   };
 
   return (

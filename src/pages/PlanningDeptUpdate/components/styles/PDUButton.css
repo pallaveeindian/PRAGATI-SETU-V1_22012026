@@ -93,10 +93,10 @@
    2. LOGIN VARIANT (Diagonal Swipe)
    ========================================= */
 .pdu-btn-login {
-  color: purple;
+  color: #E01B22;
   text-transform: uppercase;
   text-decoration: none;
-  border: 2px solid purple;
+  border: 2px solid #E01B22;
   padding: 10px 20px;
   font-size: 17px;
   cursor: pointer;
@@ -125,7 +125,7 @@
   top: 0;
   left: -40px;
   transform: skewX(45deg);
-  background-color: purple;
+  background-color: #E01B22;
   z-index: -1;
   transition: all 1s;
 }
