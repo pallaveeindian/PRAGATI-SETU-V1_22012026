@@ -63,10 +63,15 @@ export default function PDUDashboard() {
       {/* Dashboard Header */}
       <div className="pdu-dashboard-header">
         <div>
-          <h1 className="pdu-dashboard-title">Uttar Pradesh State Overview</h1>
+          <h1 className="pdu-dashboard-title">
+            Uttar Pradesh Planning Department Dashboard
+          </h1>
+
           <p className="pdu-dashboard-subtitle">
-            Live snapshot of Lakhpati Didi & SHG data from Lokos across{" "}
-            {counts.districtCount || 75} Districts.
+            Comprehensive live overview of Self Help Groups (SHGs), Members and
+            Potential Lakhpati Didis across{" "}
+            <strong>{counts.districtCount || 75}</strong> districts of Uttar
+            Pradesh.
           </p>
         </div>
       </div>
@@ -134,7 +139,7 @@ export default function PDUDashboard() {
 
       {/* District Breakdown Table / Overview */}
       <div className="pdu-dashboard-section">
-        <h2 className="pdu-section-title">District-Wise Breakdown</h2>
+        <h2 className="pdu-dashboard-title">District-Wise Breakdown</h2>
         <DistrictOverview districtsData={stateOverview.districts} />
       </div>
     </div>

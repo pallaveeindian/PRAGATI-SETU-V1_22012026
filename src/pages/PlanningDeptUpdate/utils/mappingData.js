@@ -104,35 +104,17 @@ export const initializeMappingData = async () => {
   if (isInitialized) return true;
 
   try {
-    const [
-      payloadData,
-      blocksData,
-      districtsData,
-      indicatorsData,
-      departmentsData,
-      periodsData,
-      monthsData,
-    ] = await Promise.all([
-      fetchAndParse(apiPayloadCSV),
-      fetchAndParse(blocksListCSV),
-      fetchAndParse(districtsListCSV),
-      fetchAndParse(indicatorCodesCSV),
-      fetchAndParse(deptListCSV),
-      fetchAndParse(periodicityCSV),
-      fetchAndParse(dataPeriodCSV),
-    ]);
+    // Since you used ?raw, the imports are already strings. Just parse them directly.
+    store.payloadTemplate = parseCSV(apiPayloadCSV);
+    store.blocks = parseCSV(blocksListCSV);
+    store.districts = parseCSV(districtsListCSV);
+    store.indicators = parseCSV(indicatorCodesCSV);
+    store.departments = parseCSV(deptListCSV);
+    store.periods = parseCSV(periodicityCSV);
+    store.months = parseCSV(dataPeriodCSV);
 
-    store.payloadTemplate = payloadData;
-    store.blocks = blocksData;
-    store.districts = districtsData;
-    store.indicators = indicatorsData;
-    store.departments = departmentsData;
-    store.periods = periodsData;
-    store.months = monthsData;
-
-    // Extract API key from the payload csv (it was stored at the bottom)
-    const rawPayloadText = await (await fetch(apiPayloadCSV)).text();
-    const apiKeyMatch = rawPayloadText.match(/API KEY:\s*([A-F0-9]+)/);
+    // Extract API key directly from the raw string
+    const apiKeyMatch = apiPayloadCSV.match(/API KEY:\s*([A-F0-9]+)/);
     if (apiKeyMatch && apiKeyMatch[1]) {
       store.apiKey = apiKeyMatch[1].trim();
     }

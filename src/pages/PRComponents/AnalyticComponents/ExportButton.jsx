@@ -4,35 +4,6 @@ import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
 
 export default function ExportButton({ data, headers, filename }) {
-  // const handleExport = () => {
-  //   if (!data || data.length === 0) return;
-
-  //   // 1. Create CSV header row
-  //   const csvRows = [headers.map((h) => `"${h.label}"`).join(",")];
-
-  //   // 2. Create CSV data rows
-  //   for (const row of data) {
-  //     const values = headers.map((header) => {
-  //       const val = row[header.key];
-  //       // Escape quotes to prevent CSV breaking
-  //       const escaped = ("" + (val ?? "")).replace(/"/g, '""');
-  //       return `"${escaped}"`;
-  //     });
-  //     csvRows.push(values.join(","));
-  //   }
-
-  //   // 3. Generate Blob and trigger download
-  //   const csvString = csvRows.join("\n");
-  //   const blob = new Blob([csvString], { type: "text/csv;charset=utf-8;" });
-  //   const url = URL.createObjectURL(blob);
-
-  //   const link = document.createElement("a");
-  //   link.href = url;
-  //   link.setAttribute("download", filename || "export_data.csv");
-  //   document.body.appendChild(link);
-  //   link.click();
-  //   document.body.removeChild(link);
-  // };
   const handleExport = async () => {
     if (!data || data.length === 0) return;
 
@@ -97,9 +68,7 @@ export default function ExportButton({ data, headers, filename }) {
 
       // ===== Data =====
       data.forEach((item) => {
-        const row = worksheet.addRow(
-          headers.map((h) => item[h.key] ?? "")
-        );
+        const row = worksheet.addRow(headers.map((h) => item[h.key] ?? ""));
 
         row.eachCell((cell) => {
           cell.border = thinBorder;
@@ -115,10 +84,9 @@ export default function ExportButton({ data, headers, filename }) {
 
       saveAs(
         new Blob([buffer], {
-          type:
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+          type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         }),
-        filename?.replace(".csv", ".xlsx") || "Report.xlsx"
+        filename?.replace(".csv", ".xlsx") || "Report.xlsx",
       );
     } catch (err) {
       console.error(err);

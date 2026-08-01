@@ -8,6 +8,7 @@ import PDULayout from "../pages/PlanningDeptUpdate/PDULayout";
 
 // Dashboard
 import PDUDashboard from "../pages/PlanningDeptUpdate/Pages/Dashboard/PDUDashboard";
+import SHGPointer from "../pages/PlanningDeptUpdate/Pages/SHGPointer/SHGPointer";
 
 export default function UPPLDRoutes() {
   return (
@@ -15,6 +16,7 @@ export default function UPPLDRoutes() {
       <Route element={<ProtectedRoute allowedRoles="smm_uppld" />}>
         <Route path="state/" element={<PDULayout />}>
           <Route path="dashboard" element={<PDUDashboard />} />
+          <Route path="shg-pointer" element={<SHGPointer />} />
         </Route>
       </Route>
     </Routes>

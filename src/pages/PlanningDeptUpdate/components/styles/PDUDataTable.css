@@ -1,58 +1,79 @@
-/* Container to handle responsive scrolling if table gets too wide */
+/* Main Wrapper */
+.pdu-table-wrapper {
+  display: flex;
+  flex-direction: column;
+  background-color: #ffffff;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Toolbar (Export & Record Count) */
+.pdu-table-toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: #f9fafb;
+  border-bottom: 1px solid #e5e7eb;
+}
+
+.pdu-table-records {
+  font-size: 0.9rem;
+  color: #000000;
+}
+
+/* Table Container for horizontal scrolling */
 .pdu-table-container {
-    width: 100%;
-    overflow-x: auto;
-    background-color: #ffffff;
-    border-radius: 12px;
-    border: 1px solid #e5e7eb;
-    box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  width: 100%;
+  overflow-x: auto;
 }
 
 .pdu-data-table {
-    width: 100%;
-    border-collapse: collapse;
-    font-family: inherit;
-    text-align: left;
-    white-space: nowrap;
+  width: 100%;
+  border-collapse: collapse;
+  font-family: inherit;
+  text-align: left;
+  white-space: nowrap;
 }
 
-/* Header Styling */
+/* SLEEK GRADIENT HEADER */
 .pdu-table-th {
-    background-color: #f9fafb;
-    color: #4b5563;
-    font-weight: 600;
-    font-size: 0.875rem; /* 14px */
-    padding: 14px 20px;
-    border-bottom: 1px solid #e5e7eb;
-    letter-spacing: 0.025em;
+  background: linear-gradient(90deg, #38A3C5 0%, #353F7C 100%);
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.875rem;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+.pdu-table-th:last-child {
+  border-right: none;
 }
 
 /* Row & Cell Styling */
 .pdu-table-row {
-    transition: background-color 0.2s ease;
-    border-bottom: 1px solid #e5e7eb;
-}
-
-.pdu-table-row:last-child {
-    border-bottom: none;
+  transition: background-color 0.2s ease;
+  border-bottom: 1px solid #e5e7eb;
 }
 
 .pdu-table-row:hover {
-    background-color: #f3f4f6; /* Subtle gray hover */
+  background-color: #f0f6fd; /* Subtle green hover to look modern */
 }
 
 .pdu-table-td {
-    padding: 14px 20px;
-    font-size: 0.95rem;
-    color: #1f2937;
-    vertical-align: middle;
+  padding: 14px 20px;
+  font-size: 0.95rem;
+  color: #1f2937;
+  vertical-align: middle;
 }
 
 .pdu-table-empty {
-    text-align: center;
-    padding: 30px;
-    color: #6b7280;
-    font-style: italic;
+  text-align: center;
+  padding: 40px;
+  color: #6b7280;
+  font-style: italic;
+  font-size: 1rem;
 }
 
 /* Alignment Utils */
@@ -61,46 +82,139 @@
 .pdu-align-right { text-align: right; }
 
 /* =========================================
+   PAGINATION CONTROLS
+   ========================================= */
+.pdu-table-pagination {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 12px 20px;
+  background-color: #f9fafb;
+  border-top: 1px solid #e5e7eb;
+}
+
+.pdu-page-info {
+  font-size: 0.875rem;
+  color: #6b7280;
+}
+
+.pdu-page-controls {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.pdu-page-number {
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #374151;
+}
+
+.pdu-page-btn {
+  padding: 6px 14px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: #353F7C;
+  background-color: #ffffff;
+  border: 1px solid #d1d5db;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.pdu-page-btn:hover:not(:disabled) {
+  background-color: #38A3C5;
+  color: #ffffff;
+  border-color: #38A3C5;
+}
+
+.pdu-page-btn:disabled {
+  color: #9ca3af;
+  background-color: #f3f4f6;
+  cursor: not-allowed;
+}
+
+/* =========================================
+   EXPORT BUTTON (Pragati Setu Style)
+   ========================================= */
+.btn-export {
+  background: #10b981; /* Green accent */
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  padding: 0;
+  overflow: hidden;
+  transition: transform 0.2s, box-shadow 0.2s;
+  box-shadow: 0 2px 4px rgba(16, 185, 129, 0.3);
+}
+
+.btn-export:disabled {
+  background: #9ca3af;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.btn-export:hover:not(:disabled) {
+  transform: translateY(-1px);
+  box-shadow: 0 4px 6px rgba(16, 185, 129, 0.4);
+}
+
+.btn-export-content {
+  display: flex;
+  align-items: center;
+}
+
+.btn-export-icon-wrap {
+  background: rgba(0, 0, 0, 0.15);
+  padding: 8px 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.btn-export-icon {
+  width: 18px;
+  height: 18px;
+  fill: #ffffff;
+}
+
+.btn-export-text-wrap {
+  padding: 8px 14px;
+}
+
+.btn-export-text {
+  color: #ffffff;
+  font-weight: 600;
+  font-size: 0.85rem;
+  letter-spacing: 0.3px;
+}
+
+/* =========================================
    TOP 3 HIGHLIGHTS (Gold, Silver, Bronze)
    ========================================= */
-
-/* Gold (1st Place) */
 .pdu-row-gold {
-    background-color: rgba(253, 224, 71, 0.1); /* Very subtle yellow tint */
-    position: relative;
+  background-color: rgba(253, 224, 71, 0.1); 
 }
 .pdu-row-gold td:first-child {
-    border-left: 4px solid #eab308; /* Yellow border */
-}
-.pdu-row-gold:hover {
-    background-color: rgba(253, 224, 71, 0.2);
+  border-left: 4px solid #eab308; 
 }
 
-/* Silver (2nd Place) */
 .pdu-row-silver {
-    background-color: rgba(156, 163, 175, 0.05); /* Very subtle gray tint */
+  background-color: rgba(156, 163, 175, 0.05);
 }
 .pdu-row-silver td:first-child {
-    border-left: 4px solid #9ca3af; /* Gray border */
-}
-.pdu-row-silver:hover {
-    background-color: rgba(156, 163, 175, 0.15);
+  border-left: 4px solid #9ca3af; 
 }
 
-/* Bronze (3rd Place) */
 .pdu-row-bronze {
-    background-color: rgba(217, 119, 6, 0.05); /* Very subtle brown/orange tint */
+  background-color: rgba(217, 119, 6, 0.05); 
 }
 .pdu-row-bronze td:first-child {
-    border-left: 4px solid #d97706; /* Brown/Orange border */
-}
-.pdu-row-bronze:hover {
-    background-color: rgba(217, 119, 6, 0.12);
+  border-left: 4px solid #d97706; 
 }
 
-/* Emoji formatting */
 .pdu-medal-emoji {
-    display: inline-block;
-    margin-right: 6px;
-    font-size: 1.1rem;
+  display: inline-block;
+  margin-right: 6px;
+  font-size: 1.1rem;
 }

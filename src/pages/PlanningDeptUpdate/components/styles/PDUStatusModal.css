@@ -1,0 +1,125 @@
+/* Dark semi-transparent backdrop */
+.pdu-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(17, 24, 39, 0.6); /* Backdrop blur/darken */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    backdrop-filter: blur(2px);
+}
+/* The Modal Box itself */
+.pdu-modal-content {
+    background-color: #ffffff;
+    border-radius: 12px;
+    width: 90%;
+    max-width: 550px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    animation: pdu-modal-slide-up 0.3s ease-out forwards;
+}
+@keyframes pdu-modal-slide-up {
+    from {
+        opacity: 0;
+        transform: translateY(20px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+/* Header */
+.pdu-modal-header {
+    padding: 16px 24px;
+    border-bottom: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+}
+.pdu-modal-title {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+/* Body */
+.pdu-modal-body {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+}
+/* Live Logs Terminal styling */
+.pdu-modal-logs-container {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+.pdu-logs-title {
+    margin: 0;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #4b5563;
+}
+.pdu-logs-window {
+    background-color: #1f2937; /* Dark terminal look */
+    border-radius: 8px;
+    height: 200px;
+    padding: 12px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font-family: 'Courier New', Courier, monospace; /* Monospace for terminal feel */
+    border: 1px solid #374151;
+}
+/* Custom Scrollbar for Logs */
+.pdu-logs-window::-webkit-scrollbar {
+    width: 8px;
+}
+.pdu-logs-window::-webkit-scrollbar-track {
+    background: #1f2937;
+    border-radius: 8px;
+}
+.pdu-logs-window::-webkit-scrollbar-thumb {
+    background-color: #4b5563;
+    border-radius: 8px;
+}
+/* Individual Log Entries */
+.pdu-log-entry {
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    font-size: 0.85rem;
+    line-height: 1.4;
+    word-break: break-all;
+}
+.pdu-log-icon {
+    font-size: 0.8rem;
+    margin-top: 2px;
+}
+.pdu-log-empty {
+    color: #9ca3af;
+    font-style: italic;
+    font-size: 0.85rem;
+}
+.pdu-log-success .pdu-log-text {
+    color: #10b981; /* Green text for success */
+}
+.pdu-log-error .pdu-log-text {
+    color: #ef4444; /* Red text for errors */
+}
+/* Footer */
+.pdu-modal-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #e5e7eb;
+    background-color: #f9fafb;
+    display: flex;
+    justify-content: flex-end;
+    gap: 12px;
+}

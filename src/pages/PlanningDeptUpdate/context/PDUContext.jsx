@@ -122,18 +122,27 @@ export const PDUProvider = ({ children }) => {
       const enrichedBlocks = baseBlocksList.map((block) => {
         // Find the district data
         const distData = districtDataMap[block.lokos_district_id];
-        // Drill down to the specific block
-        const blockLokosData = distData?.blocks?.[block.lokos_block_id];
+        // Drill down to the specific block (Add .district before .blocks)
+        const blockLokosData =
+          distData?.district?.blocks?.[block.lokos_block_id];
 
         return {
           // Spread our CSV mapping data (api_block_code, district_name, etc.)
           ...block,
+          districtName: distData?.district?.districtName || "Unknown", // Fetched dynamically from Lokos District API
           // Attach the live Lokos counts
           cumulativeCounts: blockLokosData?.blockCumulativeCounts || null,
-          // Helper properties for quick table rendering
+          // All Display Counts extracted dynamically
           shgCount: blockLokosData?.blockCumulativeCounts?.shgCount || 0,
+          voCount: blockLokosData?.blockCumulativeCounts?.voCount || 0,
+          clfCount: blockLokosData?.blockCumulativeCounts?.clfCount || 0,
           memberCount: blockLokosData?.blockCumulativeCounts?.memberCount || 0,
-          rfReceivedCount: 0, // Placeholder: Replace when RF data is available in Lokos API
+          potentialDidiCount:
+            blockLokosData?.blockCumulativeCounts?.potentialDidiCount || 0,
+          crpsCount: blockLokosData?.blockCumulativeCounts?.crpsCount || 0,
+          aajeevikaRegisterCount:
+            blockLokosData?.blockCumulativeCounts?.aajeevikaRegisterCount || 0,
+          rfReceivedCount: 0, // Placeholder
         };
       });
 

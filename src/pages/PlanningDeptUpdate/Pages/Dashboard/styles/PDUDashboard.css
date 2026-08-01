@@ -5,7 +5,6 @@
     gap: 32px;
     max-width: 1600px;
     margin: 0 auto;
-    background-color: #f3f4f6; /* Very light gray background for the whole module */
     min-height: 100vh;
 }
 
@@ -34,25 +33,77 @@
 
 /* Header */
 .pdu-dashboard-header {
+    position: relative;
     display: flex;
     justify-content: space-between;
-    align-items: flex-end;
-    border-bottom: 2px solid #e5e7eb;
-    padding-bottom: 16px;
+    align-items: center;
+    padding: 28px 34px;
+    border-radius: 24px;
+    overflow: hidden;
+
+    background: #fff;
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    border: 1px solid rgba(56, 163, 197, 0.18);
+
+    box-shadow:
+        0 10px 30px rgba(53, 63, 124, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Decorative Glow */
+.pdu-dashboard-header::before {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    top: -120px;
+    right: -90px;
+    border-radius: 50%;
+
+    background: radial-gradient(circle,
+            rgba(56, 163, 197, 0.18) 0%,
+            transparent 70%);
+}
+
+/* Decorative Accent */
+.pdu-dashboard-header::after {
+    content: "";
+    position: absolute;
+    left: 34px;
+    bottom: 0;
+    width: 120px;
+    height: 4px;
+    border-radius: 999px;
+
+    background: linear-gradient(90deg,
+            #38A3C5,
+            #353F7C);
 }
 
 .pdu-dashboard-title {
     margin: 0;
-    font-size: 1.8rem;
-    font-weight: 700;
-    color: #111827;
-    letter-spacing: -0.02em;
+
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.04em;
+
+    color: #1f2d5a;
 }
 
 .pdu-dashboard-subtitle {
-    margin: 8px 0 0 0;
-    font-size: 1rem;
-    color: #6b7280;
+    margin-top: 12px;
+
+    max-width: 760px;
+
+    font-size: 1.05rem;
+    line-height: 1.75;
+    font-weight: 500;
+
+    color: #5b6474;
 }
 
 /* KPI Grid - 4 Columns */
@@ -97,4 +148,21 @@
     font-size: 1.4rem;
     font-weight: 600;
     color: #374151;
+}
+
+@media (max-width: 768px) {
+
+    .pdu-dashboard-header {
+        padding: 22px;
+        border-radius: 18px;
+    }
+
+    .pdu-dashboard-title {
+        font-size: 1.75rem;
+    }
+
+    .pdu-dashboard-subtitle {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
 }
