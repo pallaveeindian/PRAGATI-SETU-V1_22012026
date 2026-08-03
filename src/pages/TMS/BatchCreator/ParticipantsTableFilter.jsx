@@ -163,12 +163,6 @@ const ParticipantTableFilters = ({
     return minDate.toISOString().split("T")[0];
   };
 
-  const getMaxStartDate = () => {
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 7);
-    return maxDate.toISOString().split("T")[0];
-  };
-
   const handleStartDateChange = (dateValue) => {
     handleValueChange("startDate", dateValue);
 
@@ -336,7 +330,6 @@ const ParticipantTableFilters = ({
             type="date"
             style={inputStyle}
             min={getMinStartDate()}
-            max={getMaxStartDate()}
             value={filters.startDate || ""}
             onChange={(e) => handleStartDateChange(e.target.value)}
           />
@@ -419,125 +412,6 @@ const ParticipantTableFilters = ({
 
         {filters.participantType === "Beneficiary" && (
           <>
-            {/* <div ref={panchayatRef} style={{ position: "relative" }}>
-              <label style={labelStyle}>
-                Panchayat ({verifiedPanchayats.length})
-              </label>
-              <div
-                style={{
-                  ...selectStyle,
-                  background: isCombined ? "#f3f4f6" : "#fff",
-                  cursor: isCombined ? "not-allowed" : "pointer",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-                onClick={() =>
-                  !isCombined && setIsPanchayatOpen(!isPanchayatOpen)
-                }
-              >
-                <span
-                  style={{
-                    flex: 1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {isCombined
-                    ? "Not Available for Combined Batch"
-                    : selectedPanchayatLabel}
-                </span>
-                <span
-                  style={{
-                    fontSize: "10px",
-                    color: "#6b7280",
-                    marginLeft: "4px",
-                  }}
-                >
-                  ▼
-                </span>
-              </div>
-
-              {isPanchayatOpen && !isCombined && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    zIndex: 50,
-                    background: "#fff",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    marginTop: "4px",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      background: !filters.panchayat
-                        ? "#f3f4f6"
-                        : "transparent",
-                    }}
-                    onClick={() => {
-                      handleValueChange("panchayat", "");
-                      handleValueChange("village", "");
-                      setIsPanchayatOpen(false);
-                    }}
-                  >
-                    All
-                  </div>
-                  {paginatedPanchayats.map((item, idx) => {
-                    const val = getPanchayatValue(item);
-                    const label = getPanchayatLabel(item);
-                    const isSelected =
-                      String(filters.panchayat) === String(val);
-                    return (
-                      <div
-                        key={idx}
-                        style={{
-                          padding: "8px 12px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          background: isSelected ? "#2563eb" : "transparent",
-                          color: isSelected ? "#fff" : "#000",
-                        }}
-                        onClick={() => {
-                          handleValueChange("panchayat", val);
-                          handleValueChange("village", "");
-                          setIsPanchayatOpen(false);
-                        }}
-                      >
-                        {label}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div> */}
-
-            {/* <div>
-              <label style={labelStyle}>Village</label>
-              <select
-                style={selectStyle}
-                value={filters.village || ""}
-                onChange={(e) => handleValueChange("village", e.target.value)}
-              >
-                <option value="">All</option>
-                {verifiedVillages.map((item, idx) => (
-                  <option key={idx} value={getVillageValue(item)}>
-                    {getVillageLabel(item)}
-                  </option>
-                ))}
-              </select>
-            </div> */}
-
             <div>
               <label style={labelStyle}>Age Range</label>
               <select

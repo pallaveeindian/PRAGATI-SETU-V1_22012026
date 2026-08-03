@@ -1,3 +1,4 @@
+// src/config/modulesConfig.js
 import tmsLogo from "../assets/TMS/tms_logo.png";
 import esmLogo from "../assets/ems_logo.png";
 import ldmsLogo from "../assets/ldms_logo.png";
@@ -5,7 +6,7 @@ import prernaLogo from "../assets/prernaHd.png";
 import BDOLogo from "../assets/BDOLogo.png";
 
 export const MODULES_CONFIG = [
-  // 2026-07-23T13:00:00
+  // 2026-08-03T17:30:00
 
   {
     id: "tms",
@@ -16,7 +17,7 @@ export const MODULES_CONFIG = [
     color: "#2a56cf",
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-08-03T17:30:00",
   },
   {
     id: "crp",
@@ -27,7 +28,7 @@ export const MODULES_CONFIG = [
     color: "#f59e0b",
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-08-03T17:30:00",
   },
   {
     id: "ldms",
@@ -62,7 +63,7 @@ export const MODULES_CONFIG = [
     color: "#ea6733",
     path: "/module-login?module=epsms",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-08-03T17:30:00",
   },
   {
     id: "prerna",
@@ -95,6 +96,6 @@ export const MODULES_CONFIG = [
     color: "#1e8a1ade",
     path: "/module-login?module=admin",
     level: "Block",
-    maintenanceUntil: "permanent",
+    maintenanceUntil: "2026-08-03T17:30:00",
   },
 ];

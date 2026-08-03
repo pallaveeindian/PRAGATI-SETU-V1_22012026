@@ -493,14 +493,17 @@ export default function CRPForm() {
             {/* Subcategory */}
             <div className="crp-input-group">
               <label>
-                <FaTags /> CRP Subcategory (Optional)
+                <FaTags /> CRP Subcategory
               </label>
-              <input
-                type="text"
-                placeholder="Enter Sub Category of CRP (Optional)"
+              <select
                 value={subcat}
                 onChange={(e) => setSubCat(e.target.value)}
-              />
+              >
+                <option value="">Please select</option>
+                <option value="WIDOW">Widow</option>
+                <option value="DIVYANG">Divyang</option>
+                <option value="NONE">None</option>
+              </select>
             </div>
             {/* Alt Number */}
             <div className="crp-input-group">

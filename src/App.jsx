@@ -40,6 +40,7 @@ import CrpEpLogin from "./pages/LoginComps/CrpEpLogin";
 import MouLogin from "./pages/LoginComps/MouLogin";
 import AdminLogin from "./pages/LoginComps/AdminLogin";
 import EPSMSLogin from "./pages/LoginComps/EPSMSLogin.jsx";
+import StateLogin from "./pages/LoginComps/StateLogin";
 // Planning Dept Integration portal
 import PDULogin from "./pages/PlanningDeptUpdate/Pages/PDULogin.jsx";
 
@@ -49,6 +50,7 @@ import ErrorPage from "./components/ErrorPages/ErrorPage";
 import SiteDevErrorPage from "./components/ErrorPages/SiteDevErrorPage";
 
 // Modular Routes
+import MasterRoutes from "./routes/MasterRoutes.jsx";
 import TmsRoutes from "./routes/TmsRoutes";
 import LdmsRoutes from "./routes/LdmsRoutes";
 import CrpEpRoutes from "./routes/CrpEpRoutes";
@@ -97,6 +99,8 @@ export default function App() {
       location.pathname.startsWith("/support") ||
       location.pathname.startsWith("/admin") ||
       location.pathname.startsWith("/epsms") ||
+      location.pathname.startsWith("/upsrlm-planning") ||
+      location.pathname.startsWith("/master") ||
       location.pathname.startsWith("/error");
 
     if (navType === "POP" && !isPortalRoute) {
@@ -159,6 +163,9 @@ export default function App() {
         {isModuleActive("epsms") && (
           <Route path="/module-login?module=epsms" element={<EPSMSLogin />} />
         )}
+        {isModuleActive("masteradmin") && (
+          <Route path="/module-login?module=admin" element={<StateLogin />} />
+        )}
         {isModuleActive("pmuadmin") && (
           <Route
             path="/module-login?module=pmuadmin"
@@ -194,7 +201,9 @@ export default function App() {
           {isModuleActive("pmuadmin") && (
             <Route path="/admin/*" element={<AdminRoutes />} />
           )}
-
+          {isModuleActive("masteradmin") && (
+            <Route path="/master/*" element={<MasterRoutes />} />
+          )}
           <Route path="/error" element={<ErrorPage />} />
         </Route>
 

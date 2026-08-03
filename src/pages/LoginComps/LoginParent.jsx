@@ -11,6 +11,8 @@ import CrpEpLogin from "./CrpEpLogin";
 import MouLogin from "./MouLogin";
 import AdminLogin from "./AdminLogin";
 import EPSMSLogin from "./EPSMSLogin";
+import StateLogin from "./StateLogin";
+
 export default function LoginParent() {
   const { loading } = useContext(AuthContext);
   const [searchParams] = useSearchParams();
@@ -46,6 +48,10 @@ export default function LoginParent() {
     case "pmuadmin":
       content = <AdminLogin />;
       theme = "blue";
+      break;
+    case "admin":
+      content = <StateLogin />;
+      theme = "green"; 
       break;
     default:
       content = <TmsLogin />;

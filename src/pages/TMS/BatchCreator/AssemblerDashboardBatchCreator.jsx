@@ -113,7 +113,7 @@ const AssemblerDashboardBatchCreator = () => {
     ) {
       setParticipantData((prev) => ({
         ...prev,
-        totalLimit: 40,
+        totalLimit: 50,
       }));
     } else {
       setParticipantData({ selectedParticipants: [], totalLimit: 0 });
@@ -645,7 +645,7 @@ const AssemblerDashboardBatchCreator = () => {
                   fontWeight: "600",
                   color:
                     participantData.selectedParticipants.length >= 20 &&
-                    participantData.selectedParticipants.length <= 40 &&
+                    participantData.selectedParticipants.length <= 50 &&
                     (batchType !== "SEPARATE" ||
                       filters.participantType === "Trainer" ||
                       filters.block) &&
@@ -658,8 +658,8 @@ const AssemblerDashboardBatchCreator = () => {
                   ? "⚠ Start Date is required." // <-- Start Date Warning added here
                   : participantData.selectedParticipants.length < 20
                     ? "⚠ Minimum 20 participants required to form a batch."
-                    : participantData.selectedParticipants.length > 40
-                      ? "⚠ Maximum 40 participants allowed per batch."
+                    : participantData.selectedParticipants.length > 50
+                      ? "⚠ Maximum 50 participants allowed per batch."
                       : batchType === "SEPARATE" &&
                           filters.participantType !== "Trainer" &&
                           !filters.block
@@ -671,7 +671,7 @@ const AssemblerDashboardBatchCreator = () => {
                 onClick={() => setIsPreviewOpen(true)}
                 disabled={
                   participantData.selectedParticipants.length < 20 ||
-                  participantData.selectedParticipants.length > 40 ||
+                  participantData.selectedParticipants.length > 50 ||
                   (batchType === "SEPARATE" &&
                     filters.participantType !== "Trainer" &&
                     !filters.block) ||
@@ -680,7 +680,7 @@ const AssemblerDashboardBatchCreator = () => {
                 style={{
                   background:
                     participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
+                    participantData.selectedParticipants.length > 50 ||
                     (batchType === "SEPARATE" &&
                       filters.participantType !== "Trainer" &&
                       !filters.block) ||
@@ -689,7 +689,7 @@ const AssemblerDashboardBatchCreator = () => {
                       : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
                   color:
                     participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
+                    participantData.selectedParticipants.length > 50 ||
                     (batchType === "SEPARATE" &&
                       filters.participantType !== "Trainer" &&
                       !filters.block) ||
@@ -703,7 +703,7 @@ const AssemblerDashboardBatchCreator = () => {
                   fontSize: "14px",
                   boxShadow:
                     participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
+                    participantData.selectedParticipants.length > 50 ||
                     (batchType === "SEPARATE" &&
                       filters.participantType !== "Trainer" &&
                       !filters.block) ||
@@ -712,7 +712,7 @@ const AssemblerDashboardBatchCreator = () => {
                       : "0 4px 12px rgba(37, 99, 235, 0.15)",
                   cursor:
                     participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
+                    participantData.selectedParticipants.length > 50 ||
                     (batchType === "SEPARATE" &&
                       filters.participantType !== "Trainer" &&
                       !filters.block) ||

@@ -305,6 +305,8 @@ const ParticipantTable = ({
                 ) : (
                   <>
                     <th style={thStyle}>Name</th>
+                    <th style={thStyle}>LokOS Member ID</th>
+                    <th style={thStyle}>LokOS SHG ID</th>
                     <th style={thStyle}>Mobile</th>
                     <th style={thStyle}>Gender</th>
                     <th style={thStyle}>Category</th>
@@ -350,7 +352,8 @@ const ParticipantTable = ({
                             row.participant_name ||
                             "-"}
                         </td>
-
+                        <td style={tdStyle}>{row.lokos_member_code || "-"}</td>
+                        <td style={tdStyle}>{row.lokos_shg_code || "-"}</td>
                         <td style={tdStyle}>
                           {row.mobile || row.mobile_number || "-"}
                         </td>

@@ -125,7 +125,6 @@
     background: rgba(0, 0, 0, 0.2);
     border: 1px solid rgba(255, 255, 255, 0.15);
     border-radius: 8px;
-    color: rgb(255, 255, 255);
     font-size: 1rem;
     transition: all 0.3s ease;
     box-sizing: border-box;
@@ -152,13 +151,13 @@
 .pdu-eye-icon {
     position: absolute;
     right: 14px;
-    color: rgba(255, 255, 255, 0.5);
+    color: rgb(255, 0, 0);
     cursor: pointer;
     transition: color 0.2s;
 }
 
 .pdu-eye-icon:hover {
-    color: white;
+    color: rgb(76, 1, 105);
 }
 
 /* Captcha Layout */
@@ -199,6 +198,18 @@
 .pdu-captcha-input {
     letter-spacing: 2px;
     font-weight: bold;
+    transition: color 0.2s ease;
+}
+
+/* When focused (typing) */
+.pdu-captcha-input:focus {
+    color: #fff !important;
+    caret-color: #fff;
+}
+
+/* Optional: keep placeholder visible */
+.pdu-captcha-input:focus::placeholder {
+    color: rgba(255, 255, 255, 0.6);
 }
 
 /* Errors */
