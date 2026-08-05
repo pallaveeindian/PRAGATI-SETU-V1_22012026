@@ -15,7 +15,7 @@ export default function DmmuTargetAchievement() {
   const [loading, setLoading] = useState(false);
   const [targetsData, setTargetsData] = useState([]);
 
-  const [financialYear, setFinancialYear] = useState("2023-24");
+  const [financialYear, setFinancialYear] = useState("2026-27");
   const [searchPartner, setSearchPartner] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
   const [geoscope, setGeoscope] = useState(null);

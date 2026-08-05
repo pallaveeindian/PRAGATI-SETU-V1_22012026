@@ -67,7 +67,7 @@ export default function SmmuCreatePartnerTargets() {
     district_id: "",
     theme: "",
     target_count: "",
-    financial_year: "2023-24",
+    financial_year: "2026-27",
     notes: "",
   });
 

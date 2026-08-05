@@ -70,7 +70,7 @@ export default function TrainingBatchList() {
   const { id: requestId } = useParams();
   const isRequestScoped = Boolean(requestId);
   const navigate = useNavigate();
-
+  const [search, setSearch] = useState("");
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState([]);
@@ -84,6 +84,7 @@ export default function TrainingBatchList() {
   const [dtpDistrictId, setDtpDistrictId] = useState(null);
   const [dtpPartnerId, setDtpPartnerId] = useState(null);
   const [dtpPartnerName, setDtpPartnerName] = useState("");
+  const formatDate = (date) => new Date(date).toLocaleDateString("en-GB");
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
@@ -117,6 +118,7 @@ export default function TrainingBatchList() {
     batch_type: "",
     theme: "",
     training_plan: "",
+    financial_year: "2026-27",
   });
 
   const [mandals, setMandals] = useState([]);
@@ -357,6 +359,7 @@ export default function TrainingBatchList() {
 
         finalParams = {
           ...baseParams,
+          search,
           ...Object.fromEntries(
             Object.entries(effectiveFilters).filter(
               ([, v]) => v !== "" && v !== false,
@@ -667,6 +670,24 @@ export default function TrainingBatchList() {
                       ))}
                     </select>
 
+                    <select
+                      className="filter-input"
+                      value={filters.financial_year}
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          financial_year: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Financial Year</option>
+                      {["2025-26", "2026-27"].map((fy) => (
+                        <option key={fy} value={fy}>
+                          {fy}
+                        </option>
+                      ))}
+                    </select>
+
                     {plans.length > 0 && (
                       <select
                         className="filter-input"
@@ -752,6 +773,15 @@ export default function TrainingBatchList() {
                       <option value="COMBINED">Combined</option>
                     </select>
                   </div>
+
+                  <input
+                    type="text"
+                    placeholder="Search Batch Code..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="..."
+                  />
+
                   <div
                     style={{
                       width: "100%",
@@ -853,8 +883,8 @@ export default function TrainingBatchList() {
                               </span>
                             </td>
                             <td>{b.participant_type}</td>
-                            <td>{b.start_date}</td>
-                            <td>{b.end_date}</td>
+                            <td>{formatDate(b.start_date)}</td>
+                            <td>{formatDate(b.end_date)}</td>
                             <td>{b.level}</td>
                             <td>{b.batch_type}</td>
                             <td>{b.training_plan.theme.theme_name}</td>

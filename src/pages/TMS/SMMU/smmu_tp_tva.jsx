@@ -20,7 +20,7 @@ export default function SmmuTargetAchievement() {
   const [targetsData, setTargetsData] = useState([]);
 
   // Filter States
-  const [financialYear, setFinancialYear] = useState("2023-24");
+  const [financialYear, setFinancialYear] = useState("2026-27");
   const [searchPartner, setSearchPartner] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
