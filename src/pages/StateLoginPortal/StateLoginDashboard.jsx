@@ -1,11 +1,11 @@
 // src/pages/StateLoginPortal/StateLoginDashboard.jsx
 import React, { useState } from "react";
 import TMSDashboard from "../StateLoginPortal/TMSStateLoginDashboard/TMSDashboard";
-import LakhpatiDashboard from "./dashboards/LakhpatiDashboard";
-import CRPEPFormDashboard from "./dashboards/CRPEPFormDashboard";
-import MOUFormDashboard from "./dashboards/MOUFormDashboard";
+import LakhpatiDashboard from "./Dashboards/LakhpatiDashboard";
+import CRPEPFormDashboard from "./Dashboards/CRPEPFormDashboard";
+import MOUFormDashboard from "./Dashboards/MOUFormDashboard";
 import StateLoginHeader from "./StateLoginHeader";
-import HomeDashboard from "./dashboards/HomeDashboard";
+import HomeDashboard from "./Dashboards/HomeDashboard";
 const StateLoginDashboard = () => {
   const [activeTab, setActiveTab] = useState("home-dashboard");
 
