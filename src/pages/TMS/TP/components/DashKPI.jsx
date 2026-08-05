@@ -8,6 +8,10 @@ import {
   FaUsers,
   FaUserGraduate,
   FaArrowUp,
+  FaCross,
+  FaRegObjectGroup,
+  FaSkullCrossbones,
+  FaStopCircle,
 } from "react-icons/fa";
 
 export default function DashKPI({ data, batchesFilter }) {
@@ -16,9 +20,14 @@ export default function DashKPI({ data, batchesFilter }) {
   // Destructure with fallbacks to 0
   const {
     total_batches_created = 0,
-    ongoing_batches = 0,
+    draft_batches = 0,
     pending_batches = 0,
+    scheduled_batches = 0,
+    ongoing_batches = 0,
+    completed_batches = 0,
+    review_batches = 0,
     closed_batches = 0,
+    rejected_batches = 0,
     total_participants_allotted = 0,
     total_participants_trained = 0,
   } = data;
@@ -35,6 +44,33 @@ export default function DashKPI({ data, batchesFilter }) {
       trendSuffix: "in current FY",
     },
     {
+      title: "Batches saved as Draft",
+      value: draft_batches,
+      icon: <FaClock />,
+      iconBg: "#fef08a", // Soft Yellow
+      iconColor: "#ca8a04", // Yellow-Brown
+      trendText: "Awaiting",
+      trendSuffix: "approvals",
+    },
+    {
+      title: "Scheduled Batches",
+      value: scheduled_batches,
+      icon: <FaClock />,
+      iconBg: "#fef08a", // Soft Yellow
+      iconColor: "#ca8a04", // Yellow-Brown
+      trendText: "Awaiting",
+      trendSuffix: "approvals",
+    },
+    {
+      title: "Pending Batches",
+      value: pending_batches,
+      icon: <FaClock />,
+      iconBg: "#fef08a", // Soft Yellow
+      iconColor: "#ca8a04", // Yellow-Brown
+      trendText: "Awaiting",
+      trendSuffix: "approvals",
+    },
+    {
       title: "Ongoing Batches",
       value: ongoing_batches,
       icon: <FaSyncAlt />,
@@ -44,8 +80,17 @@ export default function DashKPI({ data, batchesFilter }) {
       trendSuffix: "training active",
     },
     {
-      title: "Pending Batches",
-      value: pending_batches,
+      title: "Completed Batches",
+      value: completed_batches,
+      icon: <FaCheckCircle />,
+      iconBg: "#dcfce7", // Soft Green
+      iconColor: "#22c55e", // Green
+      trendText: "Completed",
+      trendSuffix: "successfully",
+    },
+    {
+      title: "Batches in Review",
+      value: review_batches,
       icon: <FaClock />,
       iconBg: "#fef08a", // Soft Yellow
       iconColor: "#ca8a04", // Yellow-Brown
@@ -58,6 +103,15 @@ export default function DashKPI({ data, batchesFilter }) {
       icon: <FaCheckCircle />,
       iconBg: "#dcfce7", // Soft Green
       iconColor: "#22c55e", // Green
+      trendText: "Completed",
+      trendSuffix: "successfully",
+    },
+    {
+      title: "Rejected Batches",
+      value: rejected_batches,
+      icon: <FaStopCircle />,
+      iconBg: "#fcdcdc", // Soft Red
+      iconColor: "#c52222", // Red
       trendText: "Completed",
       trendSuffix: "successfully",
     },
@@ -106,8 +160,10 @@ export default function DashKPI({ data, batchesFilter }) {
             {/* Bottom Row: Trend Indicator matching image_f0d887.png */}
             <div className="kpi-trend-row">
               <FaArrowUp className="kpi-trend-icon" />
-              <span className="kpi-trend-highlight">{card.trendText}</span>
-              <span className="kpi-trend-suffix">{card.trendSuffix}</span>
+              <div className="kpi-trend-text">
+                <span className="kpi-trend-highlight">{card.trendText}</span>
+                <span className="kpi-trend-suffix">{card.trendSuffix}</span>
+              </div>
             </div>
           </div>
         ))}
@@ -149,9 +205,10 @@ export default function DashKPI({ data, batchesFilter }) {
 
         .kpi-header {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 10px;
-          margin-bottom: 12px;
+          margin-bottom: 10px;
+          min-height: 52px; /* Same space reserved for every title */
         }
 
         /* Shrunk icon box */
@@ -168,13 +225,17 @@ export default function DashKPI({ data, batchesFilter }) {
 
         /* Scaled down text with truncation to prevent wrapping */
         .kpi-title {
+          flex: 1;
           font-size: 12px;
           font-weight: 600;
-          color: #64748b; /* Slate 500 */
+          color: #64748b;
           font-family: 'Inter', system-ui, sans-serif;
-          white-space: nowrap;
-          overflow: hidden;
-          text-overflow: ellipsis;
+          white-space: wrap;
+          line-height: 1.3;
+          display: -webkit-box;
+          -webkit-box-orient: vertical;
+          -webkit-line-clamp: 2; /* Maximum 2 lines */
+          min-height: 32px; /* Reserve exactly 2 lines */
         }
 
         /* Scaled down numbers */
@@ -190,7 +251,7 @@ export default function DashKPI({ data, batchesFilter }) {
         /* Trend row scaling and truncation */
         .kpi-trend-row {
           display: flex;
-          align-items: center;
+          align-items: flex-start;
           gap: 4px;
           font-size: 11px;
           font-family: 'Inter', system-ui, sans-serif;
@@ -205,14 +266,25 @@ export default function DashKPI({ data, batchesFilter }) {
           flex-shrink: 0;
         }
 
+        .kpi-trend-text {
+          display: flex;
+          flex-direction: column;
+          line-height: 1.2;
+          min-width: 0;
+        }
+
         .kpi-trend-highlight {
-          color: #22c55e; /* Green 500 */
+          color: #22c55e;
+          font-size: 11px;
           font-weight: 600;
         }
 
         .kpi-trend-suffix {
-          color: #94a3b8; /* Slate 400 */
+          color: #94a3b8;
+          font-size: 10px;
           font-weight: 500;
+          white-space: normal;
+          word-break: break-word;
         }
 
         /* Hide the entire KPI section on Mobile */

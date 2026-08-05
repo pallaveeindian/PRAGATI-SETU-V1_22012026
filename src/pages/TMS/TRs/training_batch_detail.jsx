@@ -183,6 +183,7 @@ export default function TrainingBatchDetail() {
                 onDownloadCert={() =>
                   navigate(`/tms/download-certificate/${batchId}`)
                 }
+                batchData={batchData}
               />
 
               {!batchData ? (

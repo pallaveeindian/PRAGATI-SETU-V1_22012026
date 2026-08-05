@@ -560,8 +560,6 @@ export default function BatchCertificate() {
                 border: "1px solid #d1d5db",
               }}
             >
-              <option value="2024-25">2024-25</option>
-              <option value="2025-26">2025-26</option>
               <option value="2026-27">2026-27</option>
             </select>
             <div

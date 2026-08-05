@@ -187,7 +187,7 @@ export default function CpBatchDetail() {
                   </button>
                   <button
                     className="btn btn-outline"
-                    onClick={() => navigate(-1)}
+                    onClick={() => navigate("/tms/cp/batch-list")}
                   >
                     Back
                   </button>

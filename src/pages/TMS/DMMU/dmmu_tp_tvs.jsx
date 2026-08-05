@@ -278,9 +278,6 @@ export default function DmmuTargetAchievement() {
                         setTotalItems(0);
                       }}
                     >
-                      <option>2023-24</option>
-                      <option>2024-25</option>
-                      <option>2025-26</option>
                       <option>2026-27</option>
                     </select>
                   </div>

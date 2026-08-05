@@ -11,6 +11,7 @@ import {
   ROLE_WELCOME_MESSAGES,
 } from "../../../utils/roleUtils";
 import BatchListExport from "./BatchListExport";
+import BatchRescheduleModal from "./BatchRescheduleModal";
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
@@ -73,6 +74,10 @@ export default function TrainingBatchList() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState([]);
+
+  // SURGICAL ADDITION: Reschedule Modal States
+  const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
+  const [rescheduleBatchId, setRescheduleBatchId] = useState(null);
 
   const [tpPartnerId, setTpPartnerId] = useState(null);
   const [tpPartnerName, setTpPartnerName] = useState(null);
@@ -865,13 +870,41 @@ export default function TrainingBatchList() {
                             </td>
 
                             <td>
-                              <div style={{ display: "flex", gap: "6px" }}>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  gap: "6px",
+                                  flexWrap: "wrap",
+                                }}
+                              >
                                 <button
                                   className="btnView"
                                   onClick={() => handleViewBatch(b.id)}
                                 >
                                   View
                                 </button>
+
+                                {/* SURGICAL ADDITION: Reschedule Button logic */}
+                                {((role === "dmmu" &&
+                                  String(b.level).toUpperCase() !== "STATE") ||
+                                  (role === "smmu" &&
+                                    String(b.level).toUpperCase() ===
+                                      "STATE")) &&
+                                  ["ONGOING", "SCHEDULED", "PENDING"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
+                                    <button
+                                      className="btnView"
+                                      style={{ background: "#f59e0b" }}
+                                      onClick={() => {
+                                        setRescheduleBatchId(b.id);
+                                        setRescheduleModalOpen(true);
+                                      }}
+                                    >
+                                      Reschedule
+                                    </button>
+                                  )}
+
                                 {role === "dtp" &&
                                   (String(b.status).toUpperCase() === "DRAFT" ||
                                     (String(b.status).toUpperCase() ===
@@ -1020,286 +1053,297 @@ export default function TrainingBatchList() {
                 </div>
               </div>
             </div>
+
+            <BatchRescheduleModal
+              isOpen={rescheduleModalOpen}
+              batchId={rescheduleBatchId}
+              onClose={() => {
+                setRescheduleModalOpen(false);
+                setRescheduleBatchId(null);
+              }}
+              onSuccess={() => fetchBatches()}
+            />
+
             <style>{`
-/* LAYOUT FIXES */
-.content-area {
-  display: flex;
-  flex: 1;
-  width: 100%;
-}
-.main-area {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  min-width: 0; /* Critical: Prevents table from stretching off-screen */
-  background-color: #f8fafc;
-}
+              /* LAYOUT FIXES */
+              .content-area {
+                display: flex;
+                flex: 1;
+                width: 100%;
+              }
+              .main-area {
+                flex: 1;
+                display: flex;
+                flex-direction: column;
+                min-width: 0; /* Critical: Prevents table from stretching off-screen */
+                background-color: #f8fafc;
+              }
 
-/* BUTTON */
-.btnPrimary{
-  background:#3d6ba6;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  padding:6px 14px;
-  cursor:pointer;
-  transition:all .25s ease;
-}
+              /* BUTTON */
+              .btnPrimary{
+                background:#3d6ba6;
+                color:#fff;
+                border:none;
+                border-radius:6px;
+                padding:6px 14px;
+                cursor:pointer;
+                transition:all .25s ease;
+              }
 
-.btnPrimary:hover{
-  transform:translateY(-3px);
-  box-shadow:0 6px 12px rgba(0,0,0,0.15);
-}
+              .btnPrimary:hover{
+                transform:translateY(-3px);
+                box-shadow:0 6px 12px rgba(0,0,0,0.15);
+              }
 
-/* VIEW BUTTON */
-.btnView{
-  background:#5a8cc2;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  padding:5px 12px;
-  cursor:pointer;
-    transition:all .25s ease;
-}
+              /* VIEW BUTTON */
+              .btnView{
+                background:#5a8cc2;
+                color:#fff;
+                border:none;
+                border-radius:6px;
+                padding:5px 12px;
+                cursor:pointer;
+                  transition:all .25s ease;
+              }
 
-.btnView:hover{
-  transform: translateY(-6px);
-  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
-}
+              .btnView:hover{
+                transform: translateY(-6px);
+                box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+              }
 
-/* TABLE */
-.training-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
-}
+              /* TABLE */
+              .training-table{
+                width:100%;
+                border-collapse:collapse;
+                font-size:14px;
+              }
 
-/* HEADER */
-.training-table thead{
-  background:#3d6ba6;
-  color:white;
-}
+              /* HEADER */
+              .training-table thead{
+                background:#3d6ba6;
+                color:white;
+              }
 
-.training-table th{
-  padding:10px;
-  text-align:left;
-  font-weight:600;
-  text-align:center;
-  justify-content:center;  
-}
+              .training-table th{
+                padding:10px;
+                text-align:left;
+                font-weight:600;
+                text-align:center;
+                justify-content:center;  
+              }
 
-/* BODY */
-.training-table td{
-  padding:10px;
-  border-bottom:1px solid #e4ecf5;
-  text-align:center;
-  justify-content:center;  
-}
+              /* BODY */
+              .training-table td{
+                padding:10px;
+                border-bottom:1px solid #e4ecf5;
+                text-align:center;
+                justify-content:center;  
+              }
 
-/* ROW BACKGROUND */
-.training-table tbody tr{
-  background:#f8fbff;
-}
+              /* ROW BACKGROUND */
+              .training-table tbody tr{
+                background:#f8fbff;
+              }
 
-/* ALTERNATE ROW */
-.training-table tbody tr:nth-child(even){
-  background:#edf4fb;
-}
+              /* ALTERNATE ROW */
+              .training-table tbody tr:nth-child(even){
+                background:#edf4fb;
+              }
 
-/* HOVER */
-.training-table tbody tr:hover{
-  background:#a7c6ed;
-  transition:background .2s;
-}
+              /* HOVER */
+              .training-table tbody tr:hover{
+                background:#a7c6ed;
+                transition:background .2s;
+              }
 
-/* LOADING / EMPTY */
-.training-table tbody td{
-  color:#1f2937;
-}
+              /* LOADING / EMPTY */
+              .training-table tbody td{
+                color:#1f2937;
+              }
 
-/* DELETE BUTTON */
-.btnDelete{
-  background:#ef4444;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  padding:5px 12px;
-  cursor:pointer;
-  transition:all .25s ease;
-}
+              /* DELETE BUTTON */
+              .btnDelete{
+                background:#ef4444;
+                color:#fff;
+                border:none;
+                border-radius:6px;
+                padding:5px 12px;
+                cursor:pointer;
+                transition:all .25s ease;
+              }
 
-.btnDelete:hover{
-  transform: translateY(-3px);
-  box-shadow: 0 6px 12px rgba(239, 68, 68, 0.25);
-}
+              .btnDelete:hover{
+                transform: translateY(-3px);
+                box-shadow: 0 6px 12px rgba(239, 68, 68, 0.25);
+              }
 
-/* PAGINATION BUTTON */
-.btnPage{
-  background:#e4ecf5;
-  border:none;
-  padding:6px 10px;
-  border-radius:6px;
-  cursor:pointer;
-  color:#2b4e72;
-  transition:all .2s ease;
-}
+              /* PAGINATION BUTTON */
+              .btnPage{
+                background:#e4ecf5;
+                border:none;
+                padding:6px 10px;
+                border-radius:6px;
+                cursor:pointer;
+                color:#2b4e72;
+                transition:all .2s ease;
+              }
 
-.btnPage:hover:not(:disabled){
-  background:#a7c6ed;
-}
+              .btnPage:hover:not(:disabled){
+                background:#a7c6ed;
+              }
 
-.btnPage:disabled{
-  opacity:0.5;
-  cursor:not-allowed;
-}
+              .btnPage:disabled{
+                opacity:0.5;
+                cursor:not-allowed;
+              }
 
-/* ACTIVE PAGE */
-.activePage{
-  background:#3d6ba6 !important;
-  color:#fff !important;
-}
+              /* ACTIVE PAGE */
+              .activePage{
+                background:#3d6ba6 !important;
+                color:#fff !important;
+              }
 
-.status-badge{
-  display:inline-block;
-  padding:6px 12px;
-  border-radius:999px;
-  font-size:12px;
-  font-weight:700;
-  letter-spacing:.3px;
-  text-transform:uppercase;
-  min-width:95px;
-  text-align:center;
-  border:1px solid transparent;
-}
+              .status-badge{
+                display:inline-block;
+                padding:6px 12px;
+                border-radius:999px;
+                font-size:12px;
+                font-weight:700;
+                letter-spacing:.3px;
+                text-transform:uppercase;
+                min-width:95px;
+                text-align:center;
+                border:1px solid transparent;
+              }
 
-/* DRAFT */
-.status-draft{
-  background:#f3f4f6;
-  color:#4b5563;
-  border-color:#d1d5db;
-}
+              /* DRAFT */
+              .status-draft{
+                background:#f3f4f6;
+                color:#4b5563;
+                border-color:#d1d5db;
+              }
 
-/* PENDING */
-.status-pending{
-  background:#fef3c7;
-  color:#92400e;
-  border-color:#fcd34d;
-}
+              /* PENDING */
+              .status-pending{
+                background:#fef3c7;
+                color:#92400e;
+                border-color:#fcd34d;
+              }
 
-/* REJECTED */
-.status-rejected{
-  background:#fee2e2;
-  color:#b91c1c;
-  border-color:#fca5a5;
-}
+              /* REJECTED */
+              .status-rejected{
+                background:#fee2e2;
+                color:#b91c1c;
+                border-color:#fca5a5;
+              }
 
-/* ONGOING */
-.status-ongoing{
-  background:#D0E3CC;
-  color:#1C881B;
-  border-color:#1C881B;
-}
+              /* ONGOING */
+              .status-ongoing{
+                background:#D0E3CC;
+                color:#1C881B;
+                border-color:#1C881B;
+              }
 
-/* SCHEDULED */
-.status-scheduled{
-  background:#ede9fe;
-  color:#6d28d9;
-  border-color:#c4b5fd;
-}
+              /* SCHEDULED */
+              .status-scheduled{
+                background:#ede9fe;
+                color:#6d28d9;
+                border-color:#c4b5fd;
+              }
 
-/* COMPLETED */
-.status-completed{
-  background:#dcfce7;
-  color:#166534;
-  border-color:#86efac;
-}
+              /* COMPLETED */
+              .status-completed{
+                background:#dcfce7;
+                color:#166534;
+                border-color:#86efac;
+              }
 
-/* REVIEW */
-.status-review{
-  background:#ffedd5;
-  color:#c2410c;
-  border-color:#fdba74;
-}
+              /* REVIEW */
+              .status-review{
+                background:#ffedd5;
+                color:#c2410c;
+                border-color:#fdba74;
+              }
 
-/* CLOSED */
-.status-closed{
-  background:#cffafe;
-  color:#155e75;
-  border-color:#67e8f9;
-}
+              /* CLOSED */
+              .status-closed{
+                background:#cffafe;
+                color:#155e75;
+                border-color:#67e8f9;
+              }
 
-/* FILTER STYLES */
-.filter-input{
-  border:1px solid #3d6ba6;
-  border-radius:6px;
-  padding:7px 10px;
-  background:#fff;
-  outline:none;
-  font-size:14px;
-  min-width:160px;
-  transition:all .2s ease;
-}
+              /* FILTER STYLES */
+              .filter-input{
+                border:1px solid #3d6ba6;
+                border-radius:6px;
+                padding:7px 10px;
+                background:#fff;
+                outline:none;
+                font-size:14px;
+                min-width:160px;
+                transition:all .2s ease;
+              }
 
-.filter-input:focus{
-  border-color:#5a8cc2;
-  box-shadow:0 0 0 2px rgba(61,107,166,0.2);
-}
+              .filter-input:focus{
+                border-color:#5a8cc2;
+                box-shadow:0 0 0 2px rgba(61,107,166,0.2);
+              }
 
-.filter-input:disabled {
-  background-color: #f1f5f9;
-  color: #64748b;
-  cursor: not-allowed;
-  border-color: #cbd5e1;
-}
+              .filter-input:disabled {
+                background-color: #f1f5f9;
+                color: #64748b;
+                cursor: not-allowed;
+                border-color: #cbd5e1;
+              }
 
-.fetch-btn{
-  background:#3d6ba6;
-  color:#fff;
-  border:none;
-  padding:8px 18px;
-  border-radius:6px;
-  font-weight:500;
-  cursor:pointer;
-  transition:all .25s ease;
-  white-space: nowrap;
-}
+              .fetch-btn{
+                background:#3d6ba6;
+                color:#fff;
+                border:none;
+                padding:8px 18px;
+                border-radius:6px;
+                font-weight:500;
+                cursor:pointer;
+                transition:all .25s ease;
+                white-space: nowrap;
+              }
 
-.fetch-btn:hover{
-  background:#5a8cc2;
-  transform:translateY(-2px);
-  box-shadow:0 6px 14px rgba(0,0,0,0.12);
-}
+              .fetch-btn:hover{
+                background:#5a8cc2;
+                transform:translateY(-2px);
+                box-shadow:0 6px 14px rgba(0,0,0,0.12);
+              }
 
-@media (max-width: 1200px){
-  .filter-row{
-    flex-wrap: wrap !important;
-    white-space: normal !important;
-  }
-}
+              @media (max-width: 1200px){
+                .filter-row{
+                  flex-wrap: wrap !important;
+                  white-space: normal !important;
+                }
+              }
 
-@media (max-width: 768px){
-  .filter-input{
-    min-width: 140px;
-    flex: 1 1 45%; 
-  }
-  .aspirational-box{
-    flex: 1 1 45%;
-    justify-content: center;
-  }
-}
+              @media (max-width: 768px){
+                .filter-input{
+                  min-width: 140px;
+                  flex: 1 1 45%; 
+                }
+                .aspirational-box{
+                  flex: 1 1 45%;
+                  justify-content: center;
+                }
+              }
 
-@media (max-width: 480px){
-  .filter-input{
-    flex: 1 1 100%;
-    min-width: unset;
-  }
-  .aspirational-box{
-    flex: 1 1 100%;
-  }
-  .fetch-btn{
-    width: 100%;
-  }
-}
+              @media (max-width: 480px){
+                .filter-input{
+                  flex: 1 1 100%;
+                  min-width: unset;
+                }
+                .aspirational-box{
+                  flex: 1 1 100%;
+                }
+                .fetch-btn{
+                  width: 100%;
+                }
+              }
           `}</style>
           </main>
           <Footer />

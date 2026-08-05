@@ -836,6 +836,10 @@ export default function TrainingRequestDetail() {
                             <thead>
                               <tr>
                                 <th>S.No.</th>
+                                <th>District</th>
+                                <th>Block</th>
+                                <th>Panchayat</th>
+                                <th>Village</th>
                                 <th>SHG Code</th>
                                 <th>Member Code</th>
                                 <th>Name</th>
@@ -854,6 +858,10 @@ export default function TrainingRequestDetail() {
                                       index +
                                       1}
                                   </td>
+                                  <td>{p.district_name_en || "-"}</td>
+                                  <td>{p.block_name_en || "-"}</td>
+                                  <td>{p.panchayat_name_en || "-"}</td>
+                                  <td>{p.village_name_english || "-"}</td>
                                   <td>{p.lokos_shg_code}</td>
                                   <td>{p.lokos_member_code}</td>
                                   <td>{p.member_name}</td>

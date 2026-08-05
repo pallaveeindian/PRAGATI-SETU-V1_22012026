@@ -194,7 +194,7 @@ export default function PanchayatsList({ crpData, blockId }) {
           );
 
           const isDisabled =
-            isCrpHome || isAssigned || (selected.length >= 5 && !isSelected);
+            isCrpHome || isAssigned || (selected.length >= 50 && !isSelected);
 
           return (
             <div

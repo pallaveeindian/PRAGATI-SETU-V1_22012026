@@ -3,6 +3,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStopwatch } from "@fortawesome/free-solid-svg-icons";
+import BatchExport from "./BatchExport";
 
 export default function BatchHeaderActions({
   batchId,
@@ -11,6 +12,7 @@ export default function BatchHeaderActions({
   loadingClosureInfo,
   closureRequest,
   onRefresh,
+  batchData,
 }) {
   const navigate = useNavigate();
 
@@ -34,6 +36,9 @@ export default function BatchHeaderActions({
                 📄 Download Certificate
               </button>
             )}
+
+            {/* SURGICAL ADDITION: Excel Export Button */}
+            {batchData && <BatchExport batchData={batchData} />}
 
             <button className="btn-primary" onClick={onRefresh}>
               🔄 Refresh

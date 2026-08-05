@@ -123,7 +123,9 @@ export default function BatchAttendanceStepper({ activeStep = 1 }) {
                     🔄 Refresh Data
                   </button>
                   <button
-                    onClick={() => navigate("/tms/cp/batch-list")}
+                    onClick={() =>
+                      navigate(`/tms/cp/batch-detail/${batchData.id}`)
+                    }
                     style={{
                       background: "#002174",
                       border: "none",

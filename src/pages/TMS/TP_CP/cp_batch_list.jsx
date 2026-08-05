@@ -407,7 +407,6 @@ export default function CpBatchList() {
                       }
                     >
                       <option value="">Financial Year</option>
-                      <option value="2025-26">2025-26</option>
                       <option value="2026-27">2026-27</option>
                     </select>
                   </div>

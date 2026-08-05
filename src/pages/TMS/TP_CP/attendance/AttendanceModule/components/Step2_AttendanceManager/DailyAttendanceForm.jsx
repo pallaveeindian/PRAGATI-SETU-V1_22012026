@@ -169,8 +169,8 @@ export default function DailyAttendanceForm({
           Attendance Complete ✅
         </h5>
         <span style={{ fontSize: 14 }}>
-          Attendance for today ({today}) has been successfully submitted and
-          locked.
+          Attendance for today ({formattedToday}) has been successfully
+          submitted and locked.
         </span>
       </div>
     );
