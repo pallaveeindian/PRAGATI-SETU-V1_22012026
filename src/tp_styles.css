@@ -634,3 +634,44 @@ label input[type="radio"] {
     justify-content: center;
   }
 }
+
+.master-trainer-badge-row td {
+  padding: 6px 8px 2px;
+  background: #ffffff !important;
+  border: none !important;
+}
+
+.master-trainer-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+
+  padding: 4px 12px;
+  border-radius: 999px;
+
+  background: linear-gradient(135deg, #f59e0b, #d97706);
+  color: #fff;
+
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .08em;
+
+  box-shadow: 0 4px 12px rgba(245,158,11,.25);
+}
+
+.master-trainer-row {
+  background: linear-gradient(
+    90deg,
+    rgba(255,247,204,.95) 0%,
+    rgba(255,252,235,1) 100%
+  ) !important;
+  border-left: 5px solid #f59e0b;
+}
+
+.master-trainer-row:hover {
+  background: linear-gradient(
+    90deg,
+    rgba(254,243,199,1) 0%,
+    rgba(255,251,235,1) 100%
+  ) !important;
+}
