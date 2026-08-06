@@ -166,7 +166,7 @@ const PDUDataTable = ({
           onClick={handleExport}
           disabled={data.length === 0}
         >
-          <div className="btn-export-content">
+          <div className="pdubtn-export-content">
             <div className="btn-export-icon-wrap">
               <svg
                 className="btn-export-icon"

@@ -1,12 +1,24 @@
 // src/pages/StateLoginPortal/Dashboards/HomeDashboard.jsx
-import React from "react";
+import React, { useState } from "react";
 import KPICard from "../Dashboards/KpiCards";
+import TMSDashHeader from "../../TMS/layout/TMSDashHeader";
 
 const HomeDashboard = () => {
+  const [loading, setLoading] = useState(false);
+
+  // State for Financial Year (Defaulting to upcoming/current)
+  const [financialYear, setFinancialYear] = useState("2026-27");
+
   return (
     <>
       <div className="home-dashboard">
-        <h2 className="dashboard-title">State Dashboard Overview</h2>
+        <TMSDashHeader
+          partnerName={"UP State Dashboard"}
+          username={"UPSRLM Admin"}
+          financialYear={financialYear}
+          setFinancialYear={setFinancialYear}
+          loading={loading}
+        />
 
         <div className="dashboard-grid">
           <KPICard
@@ -108,8 +120,7 @@ const HomeDashboard = () => {
 
       <style>{`
         .home-dashboard{
-          padding:30px;
-          background:#f8fafc;
+          background:#fff;
           min-height:100vh;
         }
 

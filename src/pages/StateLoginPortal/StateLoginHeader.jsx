@@ -40,11 +40,17 @@ const StateLoginHeader = () => {
       <style>{`
                 .state-header {
                     height: 82px;
+
+                    /* Animated Blue Gradient */
                     background: linear-gradient(
-                        90deg,
+                        -45deg,
                         #083a8c,
-                        #1293db
+                        #0b5cb8,
+                        #1293db,
+                        #47b8f5
                     );
+                    background-size: 400% 400%;
+                    animation: gradient 12s ease infinite;
 
                     display: flex;
                     align-items: center;
@@ -53,6 +59,9 @@ const StateLoginHeader = () => {
                     padding: 0 24px;
                     box-sizing: border-box;
                     color: white;
+
+                    position: relative;
+                    overflow: hidden;
                 }
 
                 .header-left {
@@ -137,6 +146,24 @@ const StateLoginHeader = () => {
                         padding: 10px 16px;
                     }
                 }
+
+                @keyframes gradient {
+                    0% {
+                        background-position: 0% 50%;
+                    }
+                    25% {
+                        background-position: 50% 100%;
+                    }
+                    50% {
+                        background-position: 100% 50%;
+                    }
+                    75% {
+                        background-position: 50% 0%;
+                    }
+                    100% {
+                        background-position: 0% 50%;
+                    }
+                }                
             `}</style>
     </>
   );

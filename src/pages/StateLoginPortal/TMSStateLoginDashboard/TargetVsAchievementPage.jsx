@@ -1,8 +1,8 @@
-// src/pages/StateLoginPortal/TMSStateLoginDashboard/TargetVsAchievementPage.jsx
-import React, { useState, useMemo, useEffect } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import TablePagination from "../CommonUiComp/TablePagination";
+import { FaDownload } from "react-icons/fa";
 
-// 1. Core Chart.js imports
+// Core Chart.js imports
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -14,11 +14,7 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 
-// Import your system lookup configurations and custom hooks
-import { LOOKUP_API, TMS_API } from "../../../api/axios";
-import useUserGeoscope, {
-  useCanteenFilters,
-} from "../../../Hooks/useUserGeoscope";
+import api, { LOOKUP_API } from "../../../api/axios";
 
 ChartJS.register(
   CategoryScale,
@@ -29,201 +25,121 @@ ChartJS.register(
   Legend,
 );
 
-// Mock operational targets array remains for internal table data structural mappings
-const MOCK_DATA = [
-  {
-    id: 1,
-    plan: "Plan A (Skills Dev)",
-    districtId: "1",
-    district: "Patna",
-    blockId: "101",
-    block: "Phulwari Sharif",
-    target: 150,
-    achievement: 120,
-  },
-  {
-    id: 2,
-    plan: "Plan A (Skills Dev)",
-    districtId: "1",
-    district: "Patna",
-    blockId: "102",
-    block: "Sampatchak",
-    target: 100,
-    achievement: 95,
-  },
-  {
-    id: 3,
-    plan: "Plan A (Skills Dev)",
-    districtId: "2",
-    district: "Gaya",
-    blockId: "201",
-    block: "Bodhgaya",
-    target: 200,
-    achievement: 185,
-  },
-  {
-    id: 4,
-    plan: "Plan B (Livelihood)",
-    districtId: "2",
-    district: "Gaya",
-    blockId: "202",
-    block: "Sherghati",
-    target: 120,
-    achievement: 110,
-  },
-  {
-    id: 5,
-    plan: "Plan B (Livelihood)",
-    districtId: "3",
-    district: "Muzaffarpur",
-    blockId: "301",
-    block: "Mushahari",
-    target: 180,
-    achievement: 140,
-  },
-  {
-    id: 6,
-    plan: "Plan B (Livelihood)",
-    districtId: "3",
-    district: "Muzaffarpur",
-    blockId: "302",
-    block: "Kanti",
-    target: 130,
-    achievement: 135,
-  },
-];
-
-// Helper to extract DRF router array lists gracefully
-const extractListing = (res) => {
-  if (!res) return [];
-  if (Array.isArray(res.data)) return res.data;
-  if (res.data && Array.isArray(res.data.results)) return res.data.results;
-  return [];
-};
-
-const TargetVsAchievementPage = () => {
-  const [selectedPlan, setSelectedPlan] = useState("");
+export default function TargetVsAchievementPage() {
+  // --- UI & Filter State ---
+  const [viewMode, setViewMode] = useState("target_prcnt"); // "target_prcnt" | "theme_prcnt"
   const [selectedDistrict, setSelectedDistrict] = useState("");
-  const [selectedBlock, setSelectedBlock] = useState("");
+  const [selectedTheme, setSelectedTheme] = useState("");
 
-  // API State for training plans
-  const [apiTrainingPlans, setApiTrainingPlans] = useState([]);
-  const [plansLoading, setPlansLoading] = useState(false);
+  // --- Lookup Data State ---
+  const [apiDistricts, setApiDistricts] = useState([]);
+  const [apiThemes, setApiThemes] = useState([]);
+  const [lookupsLoading, setLookupsLoading] = useState(false);
 
-  // Pagination Settings
+  // --- Main Data State ---
+  const [apiData, setApiData] = useState([]);
+  const [dataLoading, setDataLoading] = useState(false);
+
+  // --- Pagination State ---
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
 
-  // Contextual User Authorization Geoscope Hooks Initialization
-  const { geoScope, loading: geoLoading } = useUserGeoscope();
-
-  const {
-    districts: apiDistricts,
-    blocks: apiBlocks,
-    isBMM,
-    isDMM,
-    loading: filtersLoading,
-  } = useCanteenFilters({
-    district: selectedDistrict,
-    setDistrict: setSelectedDistrict,
-    block: selectedBlock,
-    setBlock: setSelectedBlock,
-    geoScope,
-    geoLoading,
-    extractListing,
-  });
-
-  // Fetch Training Plans from TMS API
+  // ==========================================
+  // 1. FETCH LOOKUPS (Districts & Themes)
+  // ==========================================
   useEffect(() => {
-    const fetchTrainingPlans = async () => {
+    const fetchLookups = async () => {
+      setLookupsLoading(true);
       try {
-        setPlansLoading(true);
-        // Passing a larger page size to fetch master list values under DRF pagination limits
-        const response = await TMS_API.trainingPlans.list({ page_size: 500 });
-        const fetchedPlans = extractListing(response);
-        setApiTrainingPlans(fetchedPlans);
+        const [distRes, themeRes] = await Promise.all([
+          LOOKUP_API.districts.list({ page_size: 5000 }),
+          api.get("/tms/public/training-themes/", {
+            params: { page_size: 100 },
+          }),
+        ]);
+        setApiDistricts(
+          Array.isArray(distRes?.data)
+            ? distRes.data
+            : distRes?.data?.results || [],
+        );
+        setApiThemes(themeRes?.data?.results || themeRes?.data || []);
       } catch (err) {
-        console.error("Error fetching master training plans list scope:", err);
-        setApiTrainingPlans([]);
+        console.error("Error fetching lookups:", err);
       } finally {
-        setPlansLoading(false);
+        setLookupsLoading(false);
       }
     };
-
-    fetchTrainingPlans();
+    fetchLookups();
   }, []);
 
-  // Action handling on primary configuration elements
-  const handlePlanChange = (e) => {
-    setSelectedPlan(e.target.value);
-    if (!isDMM && !isBMM) setSelectedDistrict("");
-    if (!isBMM) setSelectedBlock("");
+  // ==========================================
+  // 2. FETCH MAIN ANALYTICS DATA
+  // ==========================================
+  const fetchReportData = useCallback(async () => {
+    setDataLoading(true);
+    setApiData([]); // Clear previous
     setPage(1);
-  };
 
-  const handleDistrictChange = (e) => {
-    setSelectedDistrict(e.target.value);
-    setSelectedBlock("");
-    setPage(1);
-  };
+    const queryParams = new URLSearchParams();
+    if (selectedDistrict) queryParams.append("district_id", selectedDistrict);
+    if (selectedTheme) queryParams.append("theme_id", selectedTheme);
 
-  // Matrix calculation engine
-  const filteredData = useMemo(() => {
-    return MOCK_DATA.filter((item) => {
-      // Evaluates matches based on name or potential ID relations mapping values
-      const matchesPlan = selectedPlan
-        ? item.plan === selectedPlan ||
-          String(item.planId) === String(selectedPlan)
-        : true;
+    if (viewMode === "target_prcnt") {
+      queryParams.append("dist_trgt_prcnt", "1");
+    } else if (viewMode === "theme_prcnt") {
+      queryParams.append("dist_theme_prcnt", "1");
+    }
 
-      const matchesDistrict = selectedDistrict
-        ? String(item.districtId) === String(selectedDistrict) ||
-          item.district === selectedDistrict
-        : true;
+    try {
+      const res = await api.get(
+        `/public/cadre-selection-summary/?${queryParams.toString()}`,
+      );
+      if (res.data?.status === "success") {
+        if (viewMode === "target_prcnt") {
+          setApiData(res.data.district_target_percentage || []);
+        } else {
+          setApiData(res.data.district_theme_percentage || []);
+        }
+      }
+    } catch (err) {
+      console.error("Error fetching report data:", err);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [viewMode, selectedDistrict, selectedTheme]);
 
-      const matchesBlock = selectedBlock
-        ? String(item.blockId) === String(selectedBlock) ||
-          item.block === selectedBlock
-        : true;
+  // Fetch data when filters change
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]);
 
-      return matchesPlan && matchesDistrict && matchesBlock;
-    });
-  }, [selectedPlan, selectedDistrict, selectedBlock]);
-
-  // Dynamic Pagination Processing
-  const totalPages = useMemo(() => {
-    const pages = Math.ceil(filteredData.length / rowsPerPage);
-    return pages === 0 ? 1 : pages;
-  }, [filteredData.length, rowsPerPage]);
-
+  // ==========================================
+  // 3. PAGINATION & DATA MAPPING
+  // ==========================================
+  const totalPages = Math.ceil(apiData.length / rowsPerPage) || 1;
   const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * rowsPerPage;
-    return filteredData.slice(startIndex, startIndex + rowsPerPage);
-  }, [filteredData, page, rowsPerPage]);
+    const start = (page - 1) * rowsPerPage;
+    return apiData.slice(start, start + rowsPerPage);
+  }, [apiData, page, rowsPerPage]);
 
-  const totals = useMemo(() => {
-    return filteredData.reduce(
-      (acc, curr) => {
-        acc.target += curr.target;
-        acc.achievement += curr.achievement;
-        return acc;
-      },
-      { target: 0, achievement: 0 },
-    );
-  }, [filteredData]);
-
-  const calculatePercentage = (achieved, target) => {
-    if (!target) return 0;
-    return ((achieved / target) * 100).toFixed(1);
-  };
-
-  // Chart Data Transformation Matrix Setup
+  // ==========================================
+  // 4. CHART CONFIGURATION
+  // ==========================================
   const chartConfigData = useMemo(() => {
-    const labels = filteredData.map(
-      (item) => `${item.district} - ${item.block}`,
+    // Only chart the currently viewed paginated data to prevent squishing
+    const labels = paginatedData.map((item) =>
+      viewMode === "target_prcnt"
+        ? item.district_name_en || "Unknown"
+        : `${item.district_name_en || "Unknown"} (${item.theme_name || "-"})`,
     );
-    const targets = filteredData.map((item) => item.target);
-    const achievements = filteredData.map((item) => item.achievement);
+
+    const targets = paginatedData.map((item) =>
+      viewMode === "target_prcnt" ? item.total_target : item.theme_target,
+    );
+
+    const achievements = paginatedData.map((item) =>
+      viewMode === "target_prcnt" ? item.total_cadre : item.total_on_boarded,
+    );
 
     return {
       labels,
@@ -232,224 +148,509 @@ const TargetVsAchievementPage = () => {
           label: "Target Metrics",
           data: targets,
           backgroundColor: "#3b82f6",
-          borderRadius: 6,
+          borderRadius: 4,
         },
         {
           label: "Achievement Metrics",
           data: achievements,
           backgroundColor: "#f59e0b",
-          borderRadius: 6,
+          borderRadius: 4,
         },
       ],
     };
-  }, [filteredData]);
+  }, [paginatedData, viewMode]);
 
   const chartOptions = {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top" },
+      legend: {
+        position: "top",
+        labels: {
+          color: "#334155",
+          font: { family: "inherit", weight: "600" },
+        },
+      },
+      tooltip: {
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: { size: 14 },
+        bodyFont: { size: 13 },
+      },
     },
     scales: {
-      x: { grid: { display: false } },
-      y: { beginAtZero: true },
+      x: {
+        grid: { display: false },
+        ticks: { color: "#64748b", font: { size: 11 } },
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: "#f1f5f9" },
+        ticks: { color: "#64748b" },
+      },
     },
   };
 
+  // ==========================================
+  // 5. CSV EXPORT LOGIC
+  // ==========================================
+  const exportToCSV = () => {
+    if (!apiData || apiData.length === 0) return;
+
+    let csvContent = "";
+    if (viewMode === "target_prcnt") {
+      csvContent +=
+        "S.No.,District,Total Target,Cadre Onboarded,Achievement %\n";
+      apiData.forEach((row, i) => {
+        csvContent += `"${i + 1}","${row.district_name_en || "-"}","${row.total_target}","${row.total_cadre}","${row.percentage}%"\n`;
+      });
+    } else {
+      csvContent +=
+        "S.No.,District,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
+      apiData.forEach((row, i) => {
+        csvContent += `"${i + 1}","${row.district_name_en || "-"}","${row.theme_name || "-"}","${row.theme_target}","${row.total_on_boarded}","${row.percentage}%"\n`;
+      });
+    }
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      viewMode === "target_prcnt"
+        ? "District_Target_vs_Achievement.csv"
+        : "District_Theme_Achievement.csv",
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
   return (
-    <>
-      <div className="report-container">
-        <div className="report-header">
-          <p>
-            Monitor your development targets against operational completions
-            verified via location scopes.
-          </p>
+    <div className="analytics-white-card">
+      <div className="report-header">
+        <h2>Target vs Achievement</h2>
+        <p>
+          Monitor your development targets against operational completions
+          verified via location scopes.
+        </p>
+      </div>
+
+      {/* --- FILTERS --- */}
+      <div className="filters-row">
+        <div className="filter-group">
+          <label>View Mode</label>
+          <select
+            value={viewMode}
+            onChange={(e) => setViewMode(e.target.value)}
+          >
+            <option value="target_prcnt">
+              District Target vs Cadre Achievement
+            </option>
+            <option value="theme_prcnt">
+              District & Theme Target vs Achievement
+            </option>
+          </select>
         </div>
 
-        {/* Filter Controls Panel */}
-        <div className="filter-card">
-          {/* API Linked Training Plan Dropdown */}
-          <div className="filter-group">
-            <label htmlFor="plan-select">Training Plan</label>
-            <select
-              id="plan-select"
-              value={selectedPlan}
-              onChange={handlePlanChange}
-              className="filter-select"
-              disabled={plansLoading}
-            >
-              <option value="">
-                {plansLoading ? "Loading Plans..." : "All Training Plans"}
+        <div className="filter-group">
+          <label>District</label>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+            disabled={lookupsLoading}
+          >
+            <option value="">-- All Districts --</option>
+            {apiDistricts.map((d) => (
+              <option key={d.district_id} value={d.district_id}>
+                {d.district_name_en}
               </option>
-              {apiTrainingPlans.map((plan) => {
-                // Fallback structures depending on DB layout configurations (name vs title)
-                const planLabel =
-                  plan.name || plan.title || plan.training_name || plan.plan;
-                const planVal = plan.id || plan.plan_id || planLabel;
-                return (
-                  <option key={planVal} value={planVal}>
-                    {planLabel}
-                  </option>
-                );
-              })}
-            </select>
-          </div>
+            ))}
+          </select>
+        </div>
 
-          {/* API Linked District Dropdown */}
+        {viewMode === "theme_prcnt" && (
           <div className="filter-group">
-            <label htmlFor="district-select">District</label>
+            <label>Training Theme</label>
             <select
-              id="district-select"
-              value={selectedDistrict}
-              onChange={handleDistrictChange}
-              className="filter-select"
-              disabled={geoLoading || isDMM || isBMM}
+              value={selectedTheme}
+              onChange={(e) => setSelectedTheme(e.target.value)}
+              disabled={lookupsLoading}
             >
-              <option value="">All Districts</option>
-              {apiDistricts.map((dist) => (
-                <option key={dist.district_id} value={dist.district_id}>
-                  {dist.district_name_en || dist.name || dist.district}
+              <option value="">-- All Themes --</option>
+              {apiThemes.map((t) => (
+                <option key={t.id} value={t.id}>
+                  {t.theme_name}
                 </option>
               ))}
             </select>
           </div>
+        )}
 
-          {/* Cascading Block Dropdown (Populates automatically on district selection) */}
-          <div className="filter-group">
-            <label htmlFor="block-select">Block</label>
-            <select
-              id="block-select"
-              value={selectedBlock}
-              onChange={(e) => {
-                setSelectedBlock(e.target.value);
-                setPage(1);
-              }}
-              className="filter-select"
-              disabled={!selectedDistrict || isBMM}
-            >
-              <option value="">All Blocks</option>
-              {apiBlocks.map((blk) => (
-                <option key={blk.block_id} value={blk.block_id}>
-                  {blk.block_name_en || blk.name || blk.block}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          {/* Reset Button */}
-          {(selectedPlan ||
-            (!isDMM && !isBMM && selectedDistrict) ||
-            (!isBMM && selectedBlock)) && (
+        {(selectedDistrict || selectedTheme) && (
+          <div
+            className="filter-group"
+            style={{ justifyContent: "flex-end", paddingBottom: "2px" }}
+          >
             <button
-              className="clear-btn"
+              className="reset-btn"
               onClick={() => {
-                setSelectedPlan("");
-                if (!isDMM && !isBMM) setSelectedDistrict("");
-                if (!isBMM) setSelectedBlock("");
-                setPage(1);
+                setSelectedDistrict("");
+                setSelectedTheme("");
               }}
             >
               Reset Filters
             </button>
+          </div>
+        )}
+      </div>
+
+      {/* --- CHART --- */}
+      <div className="chart-card">
+        <h3>Analytics Visualization (Current Page)</h3>
+        <div className="chart-inner-container">
+          {dataLoading ? (
+            <div className="empty-state">Loading Chart Data...</div>
+          ) : paginatedData.length > 0 ? (
+            <Bar data={chartConfigData} options={chartOptions} />
+          ) : (
+            <div className="empty-state">
+              No matrix data found to compile visual chart plots.
+            </div>
           )}
         </div>
+      </div>
 
-        {/* Chart Integration Section */}
-        <div className="chart-card">
-          <h3>Analytics Visualization</h3>
-          <div className="chart-inner-container">
-            {filteredData.length > 0 ? (
-              <Bar data={chartConfigData} options={chartOptions} />
-            ) : (
-              <div className="chart-empty-state">
-                No matrix data found to compile visual chart plots.
-              </div>
-            )}
-          </div>
-        </div>
+      {/* --- TABLE HEADER & EXPORT --- */}
+      <div className="table-header-flex">
+        <h3>
+          {viewMode === "target_prcnt"
+            ? "District Target vs Cadre Achievement"
+            : "District & Theme Target vs Achievement"}
+        </h3>
+        <button
+          className="export-btn"
+          onClick={exportToCSV}
+          disabled={apiData.length === 0 || dataLoading}
+        >
+          <FaDownload /> Export Excel
+        </button>
+      </div>
 
-        {/* Data Visual Table Grid */}
-        <div className="table-wrapper">
-          <table className="report-table">
-            <thead>
+      {/* --- TABLE --- */}
+      <div className="table-responsive">
+        <table className="gov-data-table">
+          <thead>
+            {viewMode === "target_prcnt" ? (
               <tr>
-                <th>Sl. No.</th>
-                <th>Training Plan</th>
+                <th>S.No.</th>
                 <th>District</th>
-                <th>Block</th>
-                <th className="num-col">Target</th>
-                <th className="num-col">Achievement</th>
+                <th className="num-col">Total Target</th>
+                <th className="num-col">Cadre Onboarded</th>
                 <th className="num-col">Achievement %</th>
               </tr>
-            </thead>
-            <tbody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((row, index) => {
-                  const percent = calculatePercentage(
-                    row.achievement,
-                    row.target,
-                  );
-                  const serialNumber = (page - 1) * rowsPerPage + index + 1;
-
-                  return (
-                    <tr key={row.id}>
-                      <td>{serialNumber}</td>
-                      <td>
-                        <span className="plan-tag">{row.plan}</span>
-                      </td>
-                      <td>
-                        <strong>{row.district}</strong>
-                      </td>
-                      <td>{row.block}</td>
-                      <td className="num-col">{row.target}</td>
-                      <td className="num-col">{row.achievement}</td>
-                      <td className="num-col">
-                        <span
-                          className={`status-badge ${percent >= 90 ? "high" : "mid"}`}
-                        >
-                          {percent}%
-                        </span>
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="7" className="empty-state">
-                    No metrics match your current filtering matrix.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-            {filteredData.length > 0 && (
-              <tfoot>
-                <tr>
-                  <td colSpan="4" className="text-right">
-                    Total Aggregate:
-                  </td>
-                  <td className="num-col">{totals.target}</td>
-                  <td className="num-col">{totals.achievement}</td>
-                  <td className="num-col font-bold">
-                    {calculatePercentage(totals.achievement, totals.target)}%
-                  </td>
-                </tr>
-              </tfoot>
+            ) : (
+              <tr>
+                <th>S.No.</th>
+                <th>District</th>
+                <th>Theme Name</th>
+                <th className="num-col">Theme Target</th>
+                <th className="num-col">Total Onboarded</th>
+                <th className="num-col">Achievement %</th>
+              </tr>
             )}
-          </table>
-        </div>
+          </thead>
+          <tbody>
+            {dataLoading ? (
+              <tr>
+                <td colSpan="6" className="empty-state">
+                  Loading records...
+                </td>
+              </tr>
+            ) : paginatedData.length > 0 ? (
+              paginatedData.map((row, index) => {
+                const serialNumber = (page - 1) * rowsPerPage + index + 1;
+                const percent = row.percentage || 0;
 
-        {/* Pagination Controls Component */}
+                return viewMode === "target_prcnt" ? (
+                  <tr key={index}>
+                    <td>{serialNumber}</td>
+                    <td className="fw-bold">{row.district_name_en || "-"}</td>
+                    <td className="num-col">{row.total_target}</td>
+                    <td className="num-col">{row.total_cadre}</td>
+                    <td className="num-col">
+                      <span
+                        style={{
+                          fontWeight: "700",
+                          color:
+                            percent >= 100
+                              ? "#16a34a"
+                              : percent > 0
+                                ? "#ea580c"
+                                : "#64748b",
+                        }}
+                      >
+                        {percent}%
+                      </span>
+                    </td>
+                  </tr>
+                ) : (
+                  <tr key={index}>
+                    <td>{serialNumber}</td>
+                    <td className="fw-bold">{row.district_name_en || "-"}</td>
+                    <td className="fw-bold" style={{ color: "#3b82f6" }}>
+                      {row.theme_name || "-"}
+                    </td>
+                    <td className="num-col">{row.theme_target}</td>
+                    <td className="num-col">{row.total_on_boarded}</td>
+                    <td className="num-col">
+                      <span
+                        style={{
+                          fontWeight: "700",
+                          color:
+                            percent >= 100
+                              ? "#16a34a"
+                              : percent > 0
+                                ? "#ea580c"
+                                : "#64748b",
+                        }}
+                      >
+                        {percent}%
+                      </span>
+                    </td>
+                  </tr>
+                );
+              })
+            ) : (
+              <tr>
+                <td colSpan="6" className="empty-state">
+                  No target data found for the selected filters.
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+
+      {/* --- PAGINATION --- */}
+      {!dataLoading && apiData.length > 0 && (
         <TablePagination
           page={page}
           totalPages={totalPages}
           rowsPerPage={rowsPerPage}
           setRowsPerPage={setRowsPerPage}
           setPage={setPage}
-          totalRecords={filteredData.length}
+          totalRecords={apiData.length}
         />
-      </div>
-    </>
-  );
-};
+      )}
 
-export default TargetVsAchievementPage;
+      {/* --- STYLES --- */}
+      <style>{`
+        .analytics-white-card {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 28px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15); /* Strong shadow to separate from blue background */
+          border: 1px solid #e2e8f0;
+          animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .report-header {
+          margin-bottom: 24px;
+          border-bottom: 2px solid #f1f5f9;
+          padding-bottom: 16px;
+        }
+
+        .report-header h2 {
+          font-size: 24px;
+          font-weight: 800;
+          color: #0f172a;
+          margin: 0 0 8px 0;
+        }
+
+        .report-header p {
+          color: #64748b;
+          font-size: 15px;
+          margin: 0;
+        }
+
+        .filters-row {
+          display: flex;
+          flex-wrap: wrap;
+          gap: 20px;
+          background: #f8fafc;
+          padding: 20px;
+          border-radius: 12px;
+          border: 1px solid #e2e8f0;
+          margin-bottom: 24px;
+        }
+
+        .filter-group {
+          display: flex;
+          flex-direction: column;
+          gap: 8px;
+          flex: 1;
+          min-width: 220px;
+        }
+
+        .filter-group label {
+          font-size: 13px;
+          font-weight: 700;
+          color: #475569;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .filter-group select {
+          padding: 12px 14px;
+          border: 1px solid #cbd5e1;
+          border-radius: 8px;
+          font-size: 14px;
+          font-weight: 600;
+          color: #0f172a;
+          background: #ffffff;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+
+        .filter-group select:focus {
+          border-color: #0092E0;
+          box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15);
+        }
+
+        .reset-btn {
+          background: #f1f5f9;
+          color: #ef4444;
+          border: 1px solid #fecaca;
+          padding: 12px 20px;
+          border-radius: 8px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s;
+        }
+
+        .reset-btn:hover {
+          background: #fee2e2;
+        }
+
+        .chart-card {
+          background: #ffffff;
+          border: 1px solid #e2e8f0;
+          border-radius: 12px;
+          padding: 20px;
+          margin-bottom: 30px;
+        }
+
+        .chart-card h3 {
+          margin: 0 0 20px 0;
+          color: #0f172a;
+          font-size: 16px;
+        }
+
+        .chart-inner-container {
+          height: 350px;
+          width: 100%;
+        }
+
+        .table-header-flex {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          margin-bottom: 16px;
+        }
+
+        .table-header-flex h3 {
+          margin: 0;
+          color: #0f172a;
+          font-size: 18px;
+        }
+
+        .export-btn {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          background: #16a34a;
+          color: white;
+          border: none;
+          padding: 10px 20px;
+          border-radius: 8px;
+          font-weight: 700;
+          font-size: 14px;
+          cursor: pointer;
+          transition: all 0.2s;
+          box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3);
+        }
+
+        .export-btn:hover:not(:disabled) {
+          background: #15803d;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4);
+        }
+
+        .export-btn:disabled {
+          background: #cbd5e1;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .table-responsive {
+          width: 100%;
+          overflow-x: auto;
+          border: 1px solid #e2e8f0;
+          border-radius: 8px;
+        }
+
+        .gov-data-table {
+          width: 100%;
+          border-collapse: collapse;
+          text-align: left;
+          background: #ffffff;
+        }
+
+        .gov-data-table th, .gov-data-table td {
+          padding: 14px 20px;
+          border-bottom: 1px solid #f1f5f9;
+          font-size: 14px;
+          color: #334155;
+        }
+
+        .gov-data-table th {
+          background: #f8fafc;
+          font-weight: 700;
+          color: #475569;
+          text-transform: uppercase;
+          font-size: 12px;
+          letter-spacing: 0.5px;
+        }
+
+        .gov-data-table tbody tr:hover {
+          background: #f8fafc;
+        }
+
+        .num-col {
+          text-align: center;
+        }
+
+        .fw-bold {
+          font-weight: 700;
+          color: #0f172a;
+        }
+
+        .empty-state {
+          text-align: center;
+          padding: 40px !important;
+          color: #64748b !important;
+          font-size: 15px;
+          font-style: italic;
+          background: #f8fafc;
+        }
+
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+      `}</style>
+    </div>
+  );
+}

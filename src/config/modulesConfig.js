@@ -96,6 +96,6 @@ export const MODULES_CONFIG = [
     color: "#1e8a1ade",
     path: "/module-login?module=admin",
     level: "Block",
-    maintenanceUntil: "permanent",
+    maintenanceUntil: null,
   },
 ];

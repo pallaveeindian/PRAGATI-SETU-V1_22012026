@@ -8,12 +8,25 @@ import BatchProgressDashboard from "./BatchProgressDashboard";
 import DmmuCertificatePendency from "./DmmuCertificatePendency";
 import BeneficiaryAttendanceRatioPage from "./BeneficiaryAttendanceRatioPage";
 
+import TMSDashHeader from "../../TMS/layout/TMSDashHeader";
+
 const TMSDashboard = () => {
+  const [loading, setLoading] = useState(false);
+
+  // State for Financial Year (Defaulting to upcoming/current)
+  const [financialYear, setFinancialYear] = useState("2026-27");
   const [activeTab, setActiveTab] = useState("target_vs_achievement");
 
   return (
     <>
       <div className="tms-dashboard">
+        <TMSDashHeader
+          partnerName={"UP State Dashboard"}
+          username={"UPSRLM Admin"}
+          financialYear={financialYear}
+          setFinancialYear={setFinancialYear}
+          loading={loading}
+        />
         {/* Tabs */}
         <div className="tabs-container">
           <button
@@ -67,7 +80,7 @@ const TMSDashboard = () => {
         </div>
 
         {/* Tab Content */}
-        <div className="tab-content">
+        <div className="state-tab-content">
           {activeTab === "target_vs_achievement" && (
             <div className="placeholder-card">
               <h2>Target vs Achievement</h2>
@@ -116,8 +129,8 @@ const TMSDashboard = () => {
 
       <style>{`
                 .tms-dashboard {
-             /* Removed top padding to pull tabs up tight */
                     width: 100%;
+                    background: #fff;
                 }
 
                 .dashboard-title {
@@ -128,47 +141,65 @@ const TMSDashboard = () => {
                 }
 
                 .tabs-container {
-                    display: inline-flex;
                     flex-wrap: wrap;
                     gap: 4px;
                     padding: 4px;
-                    background: #fef3c7;
-                    border-radius: 14px;
-                    margin: 0px 0px 24px 0px; /* Explicitly cleared top, left, and right margins */
+
+                    background: linear-gradient(
+                        to top,
+                        #083a8c 0%,
+                        #0b5cb8 20%,
+                        #1293db 45%,
+                        #dceffd 75%,
+                        #ffffff 100%
+                    );
+
+                    border-bottom: 5px solid #083a8c;
+                    margin: 2px 0 0px 0;
                 }
 
                 .tab-btn {
-                    border: none;
+                    border: 1px solid rgba(255, 255, 255, 0.25);
                     outline: none;
-                    background: transparent;
+
+                    background: rgba(255, 255, 255, 0.18);
+                    backdrop-filter: blur(8px);
+                    -webkit-backdrop-filter: blur(8px);
+
+                    box-shadow:
+                        0 4px 12px rgba(8, 58, 140, 0.12),
+                        inset 0 1px 1px rgba(255, 255, 255, 0.35);
+
                     padding: 10px 18px;
                     border-radius: 10px;
                     cursor: pointer;
+
                     font-size: 14px;
                     font-weight: 600;
-                    color: #92400e;
+                    color: #083a8c;
+
                     transition: all 0.25s ease;
                 }
 
                 .tab-btn:hover {
-                    background: #fde68a;
+                    background: #083a8c;
+                    color: white;
+                    box-shadow: 0 2px 8px rgba(11, 34, 245, 0.35);
                 }
 
                 .tab-btn.active {
-                    background: #f59e0b;
-                    color: white;
-                    box-shadow: 0 2px 8px rgba(245, 158, 11, 0.35);
+                    background: white;
+                    color: #083a8c;
+                    box-shadow: 0 2px 8px rgba(11, 34, 245, 0.35);
                 }
 
-                .tab-content {
-                    margin-top: 10px;
+                .state-tab-content{
+                    background: #083a8c;
                 }
 
                 .placeholder-card {
-                    background: #fff;
+                    background: #083a8c;
                     padding: 30px;
-                    border-radius: 16px;
-                    border: 1px solid #e5e7eb;
                     box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
                 }
 

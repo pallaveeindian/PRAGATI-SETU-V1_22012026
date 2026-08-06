@@ -98,6 +98,7 @@ export default function TMSDashHeader({
           background-repeat: no-repeat;
           overflow: hidden;
           color: #ffffff;
+          margin-bottom: 15px;
         }
 
         /* BLUE TRANSPARENT OVERLAY */
