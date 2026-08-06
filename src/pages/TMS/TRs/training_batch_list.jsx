@@ -834,7 +834,6 @@ export default function TrainingBatchList() {
                         <th>#</th>
                         <th>Batch Code</th>
                         <th>Status</th>
-                        <th>Participant</th>
                         <th>Start</th>
                         <th>End</th>
                         <th>Level</th>
@@ -844,6 +843,7 @@ export default function TrainingBatchList() {
                         <th>Partner</th>
                         <th>Block</th>
                         <th>District</th>
+                        <th>Assigned Trainers</th>
                         <th>Count</th>
                         <th>Action</th>
                       </tr>
@@ -882,7 +882,6 @@ export default function TrainingBatchList() {
                                 {b.status}
                               </span>
                             </td>
-                            <td>{b.participant_type}</td>
                             <td>{formatDate(b.start_date)}</td>
                             <td>{formatDate(b.end_date)}</td>
                             <td>{b.level}</td>
@@ -892,7 +891,24 @@ export default function TrainingBatchList() {
                             <td>{b.centre?.partner?.name || "-"}</td>
                             <td>{b.block?.block_name_en || "-"}</td>
                             <td>{b.district?.district_name_en || "-"}</td>
-
+                            <td>
+                              {Array.isArray(b.master_trainers) &&
+                              b.master_trainers.length > 0
+                                ? b.master_trainers.map((trainer) => (
+                                    <div
+                                      key={trainer.id}
+                                      style={{ marginBottom: 4 }}
+                                    >
+                                      <strong>{trainer.full_name}</strong>
+                                      <br />
+                                      <span>
+                                        {trainer.designation} (
+                                        {trainer.mobile_no})
+                                      </span>
+                                    </div>
+                                  ))
+                                : "-"}
+                            </td>
                             <td
                               style={{ textAlign: "center", fontWeight: "600" }}
                             >
