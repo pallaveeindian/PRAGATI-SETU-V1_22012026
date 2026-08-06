@@ -21,11 +21,12 @@ const TMSDashboard = () => {
     <>
       <div className="tms-dashboard">
         <TMSDashHeader
-          partnerName={"UP State Dashboard"}
+          partnerName={"UP Analytics - TMS"}
           username={"UPSRLM Admin"}
           financialYear={financialYear}
           setFinancialYear={setFinancialYear}
           loading={loading}
+          theme="tms"
         />
         {/* Tabs */}
         <div className="tabs-container">
@@ -33,14 +34,14 @@ const TMSDashboard = () => {
             className={`tab-btn ${activeTab === "target_vs_achievement" ? "active" : ""}`}
             onClick={() => setActiveTab("target_vs_achievement")}
           >
-            Target vs Achievement
+            Cadre Selection Count
           </button>
 
           <button
             className={`tab-btn ${activeTab === "cadre_selection_count" ? "active" : ""}`}
             onClick={() => setActiveTab("cadre_selection_count")}
           >
-            Cadre Selection Count
+            Batch wise Cadre Selection
           </button>
 
           <button
@@ -75,7 +76,7 @@ const TMSDashboard = () => {
             className={`tab-btn ${activeTab === "training_request" ? "active" : ""}`}
             onClick={() => setActiveTab("training_request")}
           >
-            Training Request Created
+            Training Requests Created
           </button>
         </div>
 
@@ -89,35 +90,30 @@ const TMSDashboard = () => {
 
           {activeTab === "cadre_selection_count" && (
             <div className="placeholder-card">
-              <h2>Cadre Selection Count</h2>
-              <CadreSelectionCountPage />
+              <CadreSelectionCountPage financialYear={financialYear} />
             </div>
           )}
 
           {activeTab === "training_centre_pendencies" && (
             <div className="placeholder-card">
-              <h2>Training Centre Pendencies</h2>
               <TrainingCenterPendencyPage />
             </div>
           )}
 
           {activeTab === "batch_progress" && (
             <div className="placeholder-card">
-              <h2>Batch Progress</h2>
               <BatchProgressDashboard />
             </div>
           )}
 
           {activeTab === "batch_certificate_pendency" && (
             <div className="placeholder-card">
-              <h2>Batch Certificate Pendency</h2>
               <DmmuCertificatePendency />
             </div>
           )}
 
           {activeTab === "beneficiary_eligibility_attendance" && (
             <div className="placeholder-card">
-              <h2>Beneficiary Eligibility Attendance Ratio</h2>
               <BeneficiaryAttendanceRatioPage />
             </div>
           )}
@@ -179,14 +175,14 @@ const TMSDashboard = () => {
 
                     font-size: 14px;
                     font-weight: 600;
-                    color: #fff;
+                    color: #083a8c;
 
                     transition: all 0.25s ease;
                     display: flex;
                     justify-content: center;
                     align-items: center;
                     gap: 14px;
-                    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
+                    text-shadow: 0 4px 12px rgba(255, 255, 255, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
                 }
 
                 .tab-btn:hover {
@@ -196,8 +192,8 @@ const TMSDashboard = () => {
                 }
 
                 .tab-btn.active {
-                    background: white;
-                    color: #083a8c;
+                    background: #083a8c;
+                    color: #fff;
                     box-shadow: 0 2px 8px rgba(11, 34, 245, 0.35);
                 }
 

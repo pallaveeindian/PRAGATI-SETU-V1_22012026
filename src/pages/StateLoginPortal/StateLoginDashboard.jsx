@@ -30,7 +30,8 @@ const StateLoginDashboard = () => {
 
   return (
     <>
-      <StateLoginHeader />
+      <StateLoginHeader activeTab={activeTab} />
+
       <div className="state-dashboard-layout">
         <DashboardSidebar activeTab={activeTab} setActiveTab={setActiveTab} />
 

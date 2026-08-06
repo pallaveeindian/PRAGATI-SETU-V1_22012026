@@ -4,51 +4,96 @@ import { FiLogOut } from "react-icons/fi";
 import PrernaLogo from "../../assets/prerna.png";
 import Emblem from "../../assets/EmblemOfndia.png";
 import UpGovLogo from "../../assets/UpgovNoBgImg.png";
-const StateLoginHeader = () => {
-  const handleLogout = () => {
-    localStorage.clear();
-    window.location.href = "/";
-  };
+const StateLoginHeader = ({ activeTab }) => {
+    const handleLogout = () => {
+        localStorage.clear();
+        window.location.href = "/";
+    };
 
-  return (
-    <>
-      <header className="state-header">
-        {/* Left Section */}
-        <div className="header-left">
-          <img src={PrernaLogo} alt="Prerna Logo" className="header-logo" />
+    const headerGradients = {
+        "home-dashboard": `linear-gradient(
+    to right,
+    #632f05 0%,
+    #EA580C 15%,
+    #F97316 40%,
+    #FB923C 65%,
+    #FDBA74 85%,
+    #FED7AA 100%
+  )`,
 
-          <div className="header-title">
-            <span className="header-subtitle">PRAGATI SETU</span>
+        tms: `linear-gradient(
+    to right,
+    #02132E 0%,
+    #042152 12%,
+    #062C6E 28%,
+    #08398A 45%,
+    #0A4AAA 60%,
+    #1D63C9 75%,
+    #3D82E0 88%,
+    #B9D7FB 100%
+  )`,
 
-            <h2>Master Login</h2>
-          </div>
-        </div>
+        lakhpati: `linear-gradient(
+    to right,
+    #2B0207 0%,
+    #4A0410 12%,
+    #6B091A 28%,
+    #8B1122 45%,
+    #B91C1C 60%,
+    #DC2626 75%,
+    #EF4444 88%,
+    #FCA5A5 100%
+  )`,
 
-        {/* Right Section */}
-        <div className="header-right">
-          <img src={Emblem} alt="Emblem of India" className="gov-logo" />
+        crpep: `linear-gradient(
+    to right,
+    #052E16 0%,
+    #14532D 12%,
+    #166534 28%,
+    #15803D 45%,
+    #16A34A 60%,
+    #22C55E 75%,
+    #4ADE80 88%,
+    #BBF7D0 100%
+  )`,
+    };
 
-          <img src={UpGovLogo} alt="UP Government Logo" className="gov-logo" />
+    const headerBackground =
+        headerGradients[activeTab] || headerGradients["home-dashboard"];
 
-          <button className="logout-btn" onClick={handleLogout}>
-            <FiLogOut />
-            Logout
-          </button>
-        </div>
-      </header>
+    return (
+        <>
+            <header
+                className="state-header"
+                style={{ background: headerBackground }}
+            >
+                {/* Left Section */}
+                <div className="header-left">
+                    <img src={PrernaLogo} alt="Prerna Logo" className="header-logo" />
 
-      <style>{`
+                    <div className="header-title">
+                        <span className="header-subtitle">PRAGATI SETU</span>
+
+                        <h2>Master Login</h2>
+                    </div>
+                </div>
+
+                {/* Right Section */}
+                <div className="header-right">
+                    <img src={Emblem} alt="Emblem of India" className="gov-logo" />
+
+                    <img src={UpGovLogo} alt="UP Government Logo" className="gov-logo" />
+
+                    <button className="logout-btn" onClick={handleLogout}>
+                        <FiLogOut />
+                        Logout
+                    </button>
+                </div>
+            </header>
+
+            <style>{`
                 .state-header {
                     height: 82px;
-
-                    /* Animated Blue Gradient */
-                    background: linear-gradient(
-                        -45deg,
-                        #083a8c,
-                        #0b5cb8,
-                        #1293db,
-                        #47b8f5
-                    );
                     background-size: 400% 400%;
                     animation: gradient 12s ease infinite;
 
@@ -145,28 +190,10 @@ const StateLoginHeader = () => {
                     .logout-btn {
                         padding: 10px 16px;
                     }
-                }
-
-                @keyframes gradient {
-                    0% {
-                        background-position: 0% 50%;
-                    }
-                    25% {
-                        background-position: 50% 100%;
-                    }
-                    50% {
-                        background-position: 100% 50%;
-                    }
-                    75% {
-                        background-position: 50% 0%;
-                    }
-                    100% {
-                        background-position: 0% 50%;
-                    }
-                }                
+                }             
             `}</style>
-    </>
-  );
+        </>
+    );
 };
 
 export default StateLoginHeader;

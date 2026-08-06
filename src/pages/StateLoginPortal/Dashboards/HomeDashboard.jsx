@@ -18,6 +18,7 @@ const HomeDashboard = () => {
           financialYear={financialYear}
           setFinancialYear={setFinancialYear}
           loading={loading}
+          theme="home"
         />
 
         <div className="dashboard-grid">

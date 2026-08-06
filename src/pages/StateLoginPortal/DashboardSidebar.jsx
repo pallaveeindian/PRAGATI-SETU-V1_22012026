@@ -544,7 +544,7 @@ const DashboardSidebar = ({ activeTab, setActiveTab }) => {
           width: 6px;
           height: 6px;
           border-radius: 50%;
-          background: #ffffff;
+          background: #000000;
           box-shadow: 0 0 6px rgba(255,255,255,1);
         }
 

@@ -15,7 +15,7 @@ import {
 } from "chart.js";
 import { Bar } from "react-chartjs-2";
 
-import api, { LOOKUP_API } from "../../../api/axios";
+import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
 
 ChartJS.register(
   CategoryScale,
@@ -82,7 +82,7 @@ export default function TargetVsAchievement({ financialYear }) {
       return;
     }
     setDataLoading(true);
-    setApiData([]); // Clear previous
+    setApiData([]);
     setPage(1);
 
     const queryParams = new URLSearchParams();
@@ -93,7 +93,7 @@ export default function TargetVsAchievement({ financialYear }) {
 
     if (viewMode === "target_prcnt") {
       queryParams.append("dist_trgt_prcnt", "1");
-    } else if (viewMode === "theme_prcnt") {
+    } else if (viewMode === "theme_prcnt" || viewMode === "theme_only_prcnt") {
       queryParams.append("dist_theme_prcnt", "1");
     }
 
@@ -104,8 +104,30 @@ export default function TargetVsAchievement({ financialYear }) {
       if (res.data?.status === "success") {
         if (viewMode === "target_prcnt") {
           setApiData(res.data.district_target_percentage || []);
-        } else {
+        } else if (viewMode === "theme_prcnt") {
           setApiData(res.data.district_theme_percentage || []);
+        } else if (viewMode === "theme_only_prcnt") {
+          const rawData = res.data.district_theme_percentage || [];
+          const themeMap = {};
+
+          rawData.forEach((row) => {
+            const tName = row.theme_name || "Unknown Theme";
+            if (!themeMap[tName]) {
+              themeMap[tName] = { theme_name: tName, theme_target: 0, total_on_boarded: 0 };
+            }
+            themeMap[tName].theme_target += Number(row.theme_target) || 0;
+            themeMap[tName].total_on_boarded += Number(row.total_on_boarded) || 0;
+          });
+
+          // Calculate final percentages
+          const aggregatedData = Object.values(themeMap).map((item) => ({
+            ...item,
+            percentage: item.theme_target > 0
+              ? ((item.total_on_boarded / item.theme_target) * 100).toFixed(1)
+              : 0
+          }));
+
+          setApiData(aggregatedData);
         }
       }
     } catch (err) {
@@ -135,12 +157,11 @@ export default function TargetVsAchievement({ financialYear }) {
   // 4. CHART CONFIGURATION
   // ==========================================
   const chartConfigData = useMemo(() => {
-    // Only chart the currently viewed paginated data to prevent squishing
-    const labels = paginatedData.map((item) =>
-      viewMode === "target_prcnt"
-        ? item.district_name_en || "Unknown"
-        : `${item.district_name_en || "Unknown"} (${item.theme_name || "-"})`,
-    );
+    const labels = paginatedData.map((item) => {
+      if (viewMode === "target_prcnt") return item.district_name_en || "Unknown";
+      if (viewMode === "theme_only_prcnt") return item.theme_name || "Unknown";
+      return `${item.district_name_en || "Unknown"} (${item.theme_name || "-"})`;
+    });
 
     const targets = paginatedData.map((item) =>
       viewMode === "target_prcnt" ? item.total_target : item.theme_target,
@@ -208,14 +229,17 @@ export default function TargetVsAchievement({ financialYear }) {
 
     let csvContent = "";
     if (viewMode === "target_prcnt") {
-      csvContent +=
-        "S.No.,District,Total Target,Cadre Onboarded,Achievement %\n";
+      csvContent += "S.No.,District,Total Target,Cadre Onboarded,Achievement %\n";
       apiData.forEach((row, i) => {
         csvContent += `"${i + 1}","${row.district_name_en || "-"}","${row.total_target}","${row.total_cadre}","${row.percentage}%"\n`;
       });
+    } else if (viewMode === "theme_only_prcnt") {
+      csvContent += "S.No.,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
+      apiData.forEach((row, i) => {
+        csvContent += `"${i + 1}","${row.theme_name || "-"}","${row.theme_target}","${row.total_on_boarded}","${row.percentage}%"\n`;
+      });
     } else {
-      csvContent +=
-        "S.No.,District,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
+      csvContent += "S.No.,District,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
       apiData.forEach((row, i) => {
         csvContent += `"${i + 1}","${row.district_name_en || "-"}","${row.theme_name || "-"}","${row.theme_target}","${row.total_on_boarded}","${row.percentage}%"\n`;
       });
@@ -227,112 +251,97 @@ export default function TargetVsAchievement({ financialYear }) {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      viewMode === "target_prcnt"
-        ? "District_Target_vs_Achievement.csv"
-        : "District_Theme_Achievement.csv",
+      viewMode === "target_prcnt" ? "District_Target_vs_Achievement.csv"
+        : viewMode === "theme_only_prcnt" ? "Theme_Wise_Analytics.csv"
+          : "District_Theme_Achievement.csv"
     );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
   };
 
-  const columns =
-    viewMode === "target_prcnt"
-      ? [
-          {
-            header: "District",
-            key: "district_name_en",
-          },
-          {
-            header: "Total Target",
-            key: "total_target",
-          },
-          {
-            header: "Cadre Onboarded",
-            key: "total_cadre",
-          },
-          {
-            header: "Achievement %",
-            key: "percentage",
-            render: (row) => {
-              const percent = row.percentage || 0;
+  let columns = [];
 
-              return (
-                <span
-                  style={{
-                    fontWeight: 700,
-                    color:
-                      percent >= 100
-                        ? "#16a34a"
-                        : percent > 0
-                          ? "#ea580c"
-                          : "#64748b",
-                  }}
-                >
-                  {percent}%
-                </span>
-              );
-            },
-          },
-        ]
-      : [
-          {
-            header: "District",
-            key: "district_name_en",
-          },
-          {
-            header: "Theme Name",
-            key: "theme_name",
-            render: (row) => (
-              <span
-                style={{
-                  fontWeight: 700,
-                  color: "#3b82f6",
-                }}
-              >
-                {row.theme_name || "-"}
-              </span>
-            ),
-          },
-          {
-            header: "Theme Target",
-            key: "theme_target",
-          },
-          {
-            header: "Total Onboarded",
-            key: "total_on_boarded",
-          },
-          {
-            header: "Achievement %",
-            key: "percentage",
-            render: (row) => {
-              const percent = row.percentage || 0;
-
-              return (
-                <span
-                  style={{
-                    fontWeight: 700,
-                    color:
-                      percent >= 100
-                        ? "#16a34a"
-                        : percent >= 15
-                          ? "#083785"
-                          : "#ea0c0c",
-                  }}
-                >
-                  {percent}%
-                </span>
-              );
-            },
-          },
-        ];
+  if (viewMode === "target_prcnt") {
+    columns = [
+      { header: "District", key: "district_name_en" },
+      { header: "Total Target", key: "total_target" },
+      { header: "Cadre Onboarded", key: "total_cadre" },
+      {
+        header: "Achievement %",
+        key: "percentage",
+        render: (row) => {
+          const percent = row.percentage || 0;
+          return (
+            <span style={{ fontWeight: 700, color: percent >= 100 ? "#16a34a" : percent > 0 ? "#ea580c" : "#64748b" }}>
+              {percent}%
+            </span>
+          );
+        },
+      },
+    ];
+  } else if (viewMode === "theme_only_prcnt") {
+    columns = [
+      {
+        header: "Theme Name",
+        key: "theme_name",
+        render: (row) => (
+          <span style={{ fontWeight: 700, color: "#3b82f6" }}>
+            {row.theme_name || "-"}
+          </span>
+        ),
+      },
+      { header: "Theme Target", key: "theme_target" },
+      { header: "Total Onboarded", key: "total_on_boarded" },
+      {
+        header: "Achievement %",
+        key: "percentage",
+        render: (row) => {
+          const percent = row.percentage || 0;
+          return (
+            <span style={{ fontWeight: 700, color: percent >= 100 ? "#16a34a" : percent >= 15 ? "#083785" : "#ea0c0c" }}>
+              {percent}%
+            </span>
+          );
+        },
+      },
+    ];
+  } else {
+    // theme_prcnt
+    columns = [
+      { header: "District", key: "district_name_en" },
+      {
+        header: "Theme Name",
+        key: "theme_name",
+        render: (row) => (
+          <span style={{ fontWeight: 700, color: "#3b82f6" }}>
+            {row.theme_name || "-"}
+          </span>
+        ),
+      },
+      { header: "Theme Target", key: "theme_target" },
+      { header: "Total Onboarded", key: "total_on_boarded" },
+      {
+        header: "Achievement %",
+        key: "percentage",
+        render: (row) => {
+          const percent = row.percentage || 0;
+          return (
+            <span style={{ fontWeight: 700, color: percent >= 100 ? "#16a34a" : percent >= 15 ? "#083785" : "#ea0c0c" }}>
+              {percent}%
+            </span>
+          );
+        },
+      },
+    ];
+  }
 
   return (
     <div className="analytics-white-card">
       <div className="report-header">
-        <h2>Target vs Achievement</h2>
+        <h2>Cadre Onboarding Target vs Achievement</h2>
         <p>
-          Monitor your development targets against operational completions
+          Monitor your cadre selection targets against operational completions
           verified via location scopes.
         </p>
       </div>
@@ -343,14 +352,14 @@ export default function TargetVsAchievement({ financialYear }) {
           <label>View Mode</label>
           <select
             value={viewMode}
-            onChange={(e) => setViewMode(e.target.value)}
+            onChange={(e) => {
+              setViewMode(e.target.value);
+              setSelectedDistrict("");
+            }}
           >
-            <option value="target_prcnt">
-              District Target vs Cadre Achievement
-            </option>
-            <option value="theme_prcnt">
-              District & Theme Target vs Achievement
-            </option>
+            <option value="target_prcnt">District Target vs Cadre Achievement</option>
+            <option value="theme_prcnt">District & Theme Target vs Achievement</option>
+            <option value="theme_only_prcnt">Theme Wise Analytics</option>
           </select>
         </div>
 
@@ -425,9 +434,9 @@ export default function TargetVsAchievement({ financialYear }) {
       {/* --- TABLE HEADER & EXPORT --- */}
       <div className="table-header-flex">
         <h3>
-          {viewMode === "target_prcnt"
-            ? "District Target vs Cadre Achievement"
-            : "District & Theme Target vs Achievement"}
+          {viewMode === "target_prcnt" ? "District Target vs Cadre Achievement"
+            : viewMode === "theme_only_prcnt" ? "Theme Wise Analytics"
+              : "District & Theme Target vs Achievement"}
         </h3>
         <button
           className="export-btn"
