@@ -11,6 +11,7 @@ import CrpEpLogin from "./CrpEpLogin";
 import MouLogin from "./MouLogin";
 import AdminLogin from "./AdminLogin";
 import EPSMSLogin from "./EPSMSLogin";
+import MFFILogin from "./MFFILogin";
 export default function LoginParent() {
   const { loading } = useContext(AuthContext);
   const [searchParams] = useSearchParams();
@@ -50,6 +51,10 @@ export default function LoginParent() {
     default:
       content = <TmsLogin />;
       theme = "blue";
+      break;
+    case "mffi":
+      content = <MFFILogin />;
+      theme = "orange";
       break;
   }
 

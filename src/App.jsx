@@ -40,6 +40,7 @@ import CrpEpLogin from "./pages/LoginComps/CrpEpLogin";
 import MouLogin from "./pages/LoginComps/MouLogin";
 import AdminLogin from "./pages/LoginComps/AdminLogin";
 import EPSMSLogin from "./pages/LoginComps/EPSMSLogin.jsx";
+import MFFILogin from "./pages/LoginComps/MFFILogin.jsx";
 // Planning Dept Integration portal
 import PDULogin from "./pages/PlanningDeptUpdate/Pages/PDULogin.jsx";
 
@@ -57,6 +58,7 @@ import SupportRoutes from "./routes/SupportRoutes.jsx";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
 import EPSMSRoutes from "./routes/EPSMSRoutes.jsx";
 import UPPLDRoutes from "./routes/UPPLDRoutes.jsx";
+import MFFIRoutes from "./routes/MFFIRoutes.jsx";
 
 export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
@@ -97,6 +99,7 @@ export default function App() {
       location.pathname.startsWith("/support") ||
       location.pathname.startsWith("/admin") ||
       location.pathname.startsWith("/epsms") ||
+      location.pathname.startsWith("/mffi") ||
       location.pathname.startsWith("/error");
 
     if (navType === "POP" && !isPortalRoute) {
@@ -165,6 +168,12 @@ export default function App() {
             element={<AdminLogin />}
           />
         )}
+        {isModuleActive("mffi") && (
+          <Route
+            path="/module-login?module=mffi"
+            element={<MFFILogin />}
+          />
+        )}
 
         {/* ----- Protected Application Routes ----- */}
         <Route element={<ProtectedRoute />}>
@@ -193,6 +202,10 @@ export default function App() {
           )}
           {isModuleActive("pmuadmin") && (
             <Route path="/admin/*" element={<AdminRoutes />} />
+          )}
+          
+          {isModuleActive("mffi") && (
+            <Route path="/mffi/*" element={<MFFIRoutes />} />
           )}
 
           <Route path="/error" element={<ErrorPage />} />

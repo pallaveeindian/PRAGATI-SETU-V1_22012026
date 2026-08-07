@@ -97,4 +97,16 @@ export const MODULES_CONFIG = [
     level: "Block",
     maintenanceUntil: "permanent",
   },
+
+  {
+    id: "mffi",
+    logo: esmLogo,
+    title: "MF&FI Portal",
+    subtitle: "MFFI Management System",
+    desc: "Manage and Monitor MF&FI Thematic Activities.",
+    color: "#8a3d1ade",
+    path: "/module-login?module=mffi",
+    level: "Block",
+    maintenanceUntil: null,
+  },
 ];
