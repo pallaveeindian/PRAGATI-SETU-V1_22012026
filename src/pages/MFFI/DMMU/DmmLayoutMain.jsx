@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 // Navigate aur useNavigate dono yahan import kiye hain
 import { useOutlet, useLocation, useNavigate, Navigate } from "react-router-dom"; 
-import { useAuth } from "../../contexts/AuthContext.jsx";
+import { useAuth } from "../../../contexts/AuthContext.jsx";
 
 import DmmHeader from "./Dashboard/layout/DmmHeader.jsx";
 import DmmSidebar from "./Dashboard/layout/DmmSidebar.jsx";
 import DmmFooter from "./Dashboard/layout/DmmFooter.jsx";
 import DmmDashboardPage from "./Dashboard/DmmDashboardpage.jsx";
-import MCCYBackground from "../../assets/MCCYBackground.png";
+import MCCYBackground from "../../../assets/MCCYBackground.png";
 
 export default function DmmLayoutMain() {
   const { user, logout } = useAuth();

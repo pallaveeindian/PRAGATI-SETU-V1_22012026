@@ -1,5 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+// Yaha sabhi zaroori icons import kiye hain
+import { 
+  FaBars, 
+  FaArrowLeft, 
+  FaHome, 
+  FaClipboardList, 
+  FaFileAlt 
+} from 'react-icons/fa';
 
 const DmmSidebar = ({
   activeMenu,
@@ -25,9 +33,7 @@ const DmmSidebar = ({
       style={{ 
         width: isCollapsed ? '72px' : '250px', 
         minWidth: isCollapsed ? '72px' : '250px', 
-        
-        
-        aalignSelf: 'stretch', 
+        alignSelf: 'stretch', // Fixed typo 'aalignSelf'
         minHeight: '100%',    
         display: 'flex',
         flexDirection: 'column',
@@ -62,6 +68,7 @@ const DmmSidebar = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
+            gap: '8px', // Added gap for spacing between icon and text
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             boxShadow: '0 4px 10px rgba(245, 158, 11, 0.22)',
           }}
@@ -69,7 +76,13 @@ const DmmSidebar = ({
           onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          {isCollapsed ? '☰' : '← Close Sidebar'}
+          {isCollapsed ? (
+            <FaBars size={18} />
+          ) : (
+            <>
+              <FaArrowLeft size={16} /> Close Sidebar
+            </>
+          )}
         </button>
       </div>
 
@@ -77,7 +90,6 @@ const DmmSidebar = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
         {menuItems.map((item) => {
           const isActive = activeMenu === item;
-          const icon = item === 'Dashboard' ? '📊' : item === 'Application Forwarded' ? '📋' : '📑';
 
           return (
             <button
@@ -108,7 +120,12 @@ const DmmSidebar = ({
               onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '18px' }}>{icon}</span>
+                <span style={{ fontSize: '18px', width: '24px', textAlign: 'center', display: 'flex', alignItems: 'center' }}>
+                  {item === 'Dashboard' && <FaHome />}
+                  {item === 'Application Forwarded' && <FaClipboardList />}
+                  {item === 'Report Section' && <FaFileAlt />}
+                </span>
+                
                 {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>{item}</span>}
               </div>
             </button>

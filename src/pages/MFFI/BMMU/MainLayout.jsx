@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from "react";
-import { useAuth } from "../../contexts/AuthContext.jsx";
+import { useAuth } from "../../../contexts/AuthContext.jsx";
 // Navigate aur useNavigate dono import kiye gaye hain
 import { useOutlet, useLocation, useParams, useNavigate, Navigate } from "react-router-dom"; 
-import { getCanonicalRole } from "../../utils/roleUtils";
-import MCCYBackground from "../../assets/MCCYBackground.png";
+import { getCanonicalRole } from "../../../utils/roleUtils";
+import MCCYBackground from "../../../assets/MCCYBackground.png";
 
 // Layout Components
 import Header from "./layout/Header.jsx";

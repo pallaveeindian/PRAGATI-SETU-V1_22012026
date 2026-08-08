@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useContext } from "react";
-import { LOOKUP_API } from "../../../api/axios.js";
-import { AuthContext } from "../../../contexts/AuthContext";
-import { getCanonicalRole } from "../../../utils/roleUtils";
+import { LOOKUP_API } from "../../../../api/axios.js";
+import { AuthContext } from "../../../../contexts/AuthContext";
+import { getCanonicalRole } from "../../../../utils/roleUtils";
 
 // --- Helper functions ---
 const extractLookupList = (res) => {

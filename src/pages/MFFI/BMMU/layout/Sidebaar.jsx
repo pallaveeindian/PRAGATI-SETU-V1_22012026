@@ -1,5 +1,14 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+// Yaha FaHome aur FaBuilding import kiya hai
+import { 
+  FaBars, 
+  FaArrowLeft, 
+  FaHome, 
+  FaBuilding, 
+  FaClipboardList, 
+  FaFileAlt 
+} from 'react-icons/fa';
 
 const Sidebaar = ({
   activeMenu,
@@ -25,8 +34,6 @@ const Sidebaar = ({
       style={{ 
         width: isCollapsed ? '72px' : '250px', 
         minWidth: isCollapsed ? '72px' : '250px', 
-        
-        
         alignSelf: 'stretch', 
         minHeight: '100%',    
         display: 'flex',
@@ -62,6 +69,7 @@ const Sidebaar = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
+            gap: '8px',
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             boxShadow: '0 4px 10px rgba(245, 158, 11, 0.22)',
           }}
@@ -69,7 +77,13 @@ const Sidebaar = ({
           onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          {isCollapsed ? '☰' : '← Close Sidebar'}
+          {isCollapsed ? (
+            <FaBars size={18} />
+          ) : (
+            <>
+              <FaArrowLeft size={16} /> Close Sidebar
+            </>
+          )}
         </button>
       </div>
 
@@ -77,8 +91,7 @@ const Sidebaar = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
         {menuItems.map((item) => {
           const isActive = activeMenu === item;
-          const icon = item === 'Dashboard' ? '📊' : item === 'Application List' ? '📋' : '📑';
-
+          
           return (
             <button
               key={item}
@@ -108,7 +121,14 @@ const Sidebaar = ({
               onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '18px' }}>{icon}</span>
+                <span style={{ fontSize: '18px', width: '24px', textAlign: 'center', display: 'flex', alignItems: 'center' }}>
+                  {/* Dashboard ke liye Home icon */}
+                  {item === 'Dashboard' && <FaHome />} 
+                 
+                  
+                  {item === 'Application List' && <FaClipboardList />}
+                  {item === 'Report Section' && <FaFileAlt />}
+                </span>
                 {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>{item}</span>}
               </div>
             </button>

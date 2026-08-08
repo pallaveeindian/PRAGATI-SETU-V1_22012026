@@ -1,7 +1,7 @@
 import React, { useState } from "react";
-import EpsmsLogo from "../../../../assets/MCCYLogo.png";
-import UpGovLogo from "../../../../assets/upgov_logo.jpg";
-import IndiaEmblem from "../../../../assets/EmblemOfndia.png";
+import EpsmsLogo from "../../../../../assets/MCCYLogo.png";
+import UpGovLogo from "../../../../../assets/upgov_logo.jpg";
+import IndiaEmblem from "../../../../../assets/EmblemOfndia.png";
 
 const DmmHeader = ({ activeMenu, onLogout, displayName }) => {
   const [isHovered, setIsHovered] = useState(false);

@@ -1,5 +1,13 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
+// Sabhi zaroori icons import kar liye hain
+import { 
+  FaBars, 
+  FaArrowLeft, 
+  FaHome, 
+  FaClipboardList, 
+  FaFileAlt 
+} from 'react-icons/fa';
 
 const BankSidebar = ({
   activeMenu,
@@ -8,6 +16,7 @@ const BankSidebar = ({
   onToggleSidebar,
   currentRole,
 }) => {
+  // Dhyan de: 'Bank Application ' me last me ek space hai (jo aapke original code me tha)
   const menuItems = ['Dashboard', 'Bank Application ', 'Report Section'];
   const navigate = useNavigate();
 
@@ -25,9 +34,7 @@ const BankSidebar = ({
       style={{ 
         width: isCollapsed ? '72px' : '250px', 
         minWidth: isCollapsed ? '72px' : '250px', 
-        
-        
-        aalignSelf: 'stretch', 
+        alignSelf: 'stretch', // aalignSelf ki spelling theek kar di gayi hai
         minHeight: '100%',    
         display: 'flex',
         flexDirection: 'column',
@@ -62,6 +69,7 @@ const BankSidebar = ({
             display: 'flex',
             justifyContent: 'center',
             alignItems: 'center',
+            gap: '8px', // Icon aur text ke beech space ke liye
             transition: 'transform 0.2s ease, box-shadow 0.2s ease',
             boxShadow: '0 4px 10px rgba(245, 158, 11, 0.22)',
           }}
@@ -69,7 +77,13 @@ const BankSidebar = ({
           onMouseEnter={(e) => e.currentTarget.style.transform = 'translateY(-1px)'}
           onMouseLeave={(e) => e.currentTarget.style.transform = 'translateY(0)'}
         >
-          {isCollapsed ? '☰' : '← Close Sidebar'}
+          {isCollapsed ? (
+            <FaBars size={18} />
+          ) : (
+            <>
+              <FaArrowLeft size={16} /> Close Sidebar
+            </>
+          )}
         </button>
       </div>
 
@@ -77,7 +91,6 @@ const BankSidebar = ({
       <div style={{ display: 'flex', flexDirection: 'column', gap: '8px', flex: 1 }}>
         {menuItems.map((item) => {
           const isActive = activeMenu === item;
-          const icon = item === 'Dashboard' ? '📊' : item === 'Bank Application ' ? '📋' : '📑';
 
           return (
             <button
@@ -108,7 +121,11 @@ const BankSidebar = ({
               onMouseLeave={(e) => e.currentTarget.style.transform = 'translateX(0)'}
             >
               <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
-                <span style={{ fontSize: '18px' }}>{icon}</span>
+                <span style={{ fontSize: '18px', width: '24px', textAlign: 'center', display: 'flex', alignItems: 'center' }}>
+                  {item === 'Dashboard' && <FaHome />}
+                  {item === 'Bank Application ' && <FaClipboardList />}
+                  {item === 'Report Section' && <FaFileAlt />}
+                </span>
                 {!isCollapsed && <span style={{ whiteSpace: 'nowrap' }}>{item}</span>}
               </div>
             </button>
