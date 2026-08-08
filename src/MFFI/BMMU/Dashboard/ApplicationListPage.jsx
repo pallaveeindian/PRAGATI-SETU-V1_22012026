@@ -48,8 +48,8 @@ export default function ApplicationListPage() {
       ifscCode:"SBIN00987",
       district: "Lucknow",
       block: "Gosainganj",
-      panchayat: "Amethi",
-      village: "Amethi Khurd",
+      panchayat: "Beli",
+      village: "Beli",
       docs: { idProof: "id_proof_sita.pdf", incomeProof: "income_proof_sita.pdf", voVerification: "vo_verification_sita.pdf", clfVerification: "clf_verification_sita.pdf" }
     },
     {
