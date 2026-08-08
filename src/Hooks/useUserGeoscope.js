@@ -19,11 +19,6 @@ export default function useUserGeoscope() {
 
       try {
         const response = await LOOKUP_API.userGeoscopeByUserId(userId);
-        console.log("==================================");
-        console.log("USER ID :", userId);
-        console.log("ROLE ID :", roleId);
-        console.log("GEOSCOPE RESPONSE :", response.data);
-        console.log("==================================");
         setGeoScope({
           roleId,
           ...(response?.data || {}),

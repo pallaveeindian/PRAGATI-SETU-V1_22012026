@@ -83,8 +83,7 @@ const TMSDashboard = () => {
         <div className="state-tab-content">
           {activeTab === "target_vs_achievement" && (
             <div className="placeholder-card">
-              <h2>Target vs Achievement</h2>
-              <TargetVsAchievement />
+              <TargetVsAchievement financialYear={financialYear} />
             </div>
           )}
 
@@ -141,6 +140,7 @@ const TMSDashboard = () => {
                 }
 
                 .tabs-container {
+                    display: flex;
                     flex-wrap: wrap;
                     gap: 4px;
                     padding: 4px;
@@ -156,6 +156,9 @@ const TMSDashboard = () => {
 
                     border-bottom: 5px solid #083a8c;
                     margin: 2px 0 0px 0;
+
+                    justify-content: center;
+                    align-items: center;
                 }
 
                 .tab-btn {
@@ -176,9 +179,14 @@ const TMSDashboard = () => {
 
                     font-size: 14px;
                     font-weight: 600;
-                    color: #083a8c;
+                    color: #fff;
 
                     transition: all 0.25s ease;
+                    display: flex;
+                    justify-content: center;
+                    align-items: center;
+                    gap: 14px;
+                    text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 2px 4px rgba(0, 0, 0, 0.2);
                 }
 
                 .tab-btn:hover {

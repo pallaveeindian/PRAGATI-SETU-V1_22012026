@@ -1,6 +1,7 @@
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import TablePagination from "../CommonUiComp/TablePagination";
 import { FaDownload } from "react-icons/fa";
+import TableUI from "../CommonUiComp/TableUI";
 
 // Core Chart.js imports
 import {
@@ -25,7 +26,7 @@ ChartJS.register(
   Legend,
 );
 
-export default function TargetVsAchievementPage() {
+export default function TargetVsAchievement({ financialYear }) {
   // --- UI & Filter State ---
   const [viewMode, setViewMode] = useState("target_prcnt"); // "target_prcnt" | "theme_prcnt"
   const [selectedDistrict, setSelectedDistrict] = useState("");
@@ -76,11 +77,17 @@ export default function TargetVsAchievementPage() {
   // 2. FETCH MAIN ANALYTICS DATA
   // ==========================================
   const fetchReportData = useCallback(async () => {
+    if (!financialYear) {
+      setApiData([]);
+      return;
+    }
     setDataLoading(true);
     setApiData([]); // Clear previous
     setPage(1);
 
     const queryParams = new URLSearchParams();
+
+    queryParams.append("financial_year", financialYear);
     if (selectedDistrict) queryParams.append("district_id", selectedDistrict);
     if (selectedTheme) queryParams.append("theme_id", selectedTheme);
 
@@ -106,12 +113,14 @@ export default function TargetVsAchievementPage() {
     } finally {
       setDataLoading(false);
     }
-  }, [viewMode, selectedDistrict, selectedTheme]);
+  }, [financialYear, viewMode, selectedDistrict, selectedTheme]);
 
   // Fetch data when filters change
   useEffect(() => {
+    if (!financialYear) return;
+
     fetchReportData();
-  }, [fetchReportData]);
+  }, [fetchReportData, financialYear]);
 
   // ==========================================
   // 3. PAGINATION & DATA MAPPING
@@ -145,13 +154,13 @@ export default function TargetVsAchievementPage() {
       labels,
       datasets: [
         {
-          label: "Target Metrics",
+          label: "Target",
           data: targets,
-          backgroundColor: "#3b82f6",
+          backgroundColor: "#08398A",
           borderRadius: 4,
         },
         {
-          label: "Achievement Metrics",
+          label: "Achievement",
           data: achievements,
           backgroundColor: "#f59e0b",
           borderRadius: 4,
@@ -226,6 +235,97 @@ export default function TargetVsAchievementPage() {
     link.click();
     document.body.removeChild(link);
   };
+
+  const columns =
+    viewMode === "target_prcnt"
+      ? [
+          {
+            header: "District",
+            key: "district_name_en",
+          },
+          {
+            header: "Total Target",
+            key: "total_target",
+          },
+          {
+            header: "Cadre Onboarded",
+            key: "total_cadre",
+          },
+          {
+            header: "Achievement %",
+            key: "percentage",
+            render: (row) => {
+              const percent = row.percentage || 0;
+
+              return (
+                <span
+                  style={{
+                    fontWeight: 700,
+                    color:
+                      percent >= 100
+                        ? "#16a34a"
+                        : percent > 0
+                          ? "#ea580c"
+                          : "#64748b",
+                  }}
+                >
+                  {percent}%
+                </span>
+              );
+            },
+          },
+        ]
+      : [
+          {
+            header: "District",
+            key: "district_name_en",
+          },
+          {
+            header: "Theme Name",
+            key: "theme_name",
+            render: (row) => (
+              <span
+                style={{
+                  fontWeight: 700,
+                  color: "#3b82f6",
+                }}
+              >
+                {row.theme_name || "-"}
+              </span>
+            ),
+          },
+          {
+            header: "Theme Target",
+            key: "theme_target",
+          },
+          {
+            header: "Total Onboarded",
+            key: "total_on_boarded",
+          },
+          {
+            header: "Achievement %",
+            key: "percentage",
+            render: (row) => {
+              const percent = row.percentage || 0;
+
+              return (
+                <span
+                  style={{
+                    fontWeight: 700,
+                    color:
+                      percent >= 100
+                        ? "#16a34a"
+                        : percent >= 15
+                          ? "#083785"
+                          : "#ea0c0c",
+                  }}
+                >
+                  {percent}%
+                </span>
+              );
+            },
+          },
+        ];
 
   return (
     <div className="analytics-white-card">
@@ -339,99 +439,13 @@ export default function TargetVsAchievementPage() {
       </div>
 
       {/* --- TABLE --- */}
-      <div className="table-responsive">
-        <table className="gov-data-table">
-          <thead>
-            {viewMode === "target_prcnt" ? (
-              <tr>
-                <th>S.No.</th>
-                <th>District</th>
-                <th className="num-col">Total Target</th>
-                <th className="num-col">Cadre Onboarded</th>
-                <th className="num-col">Achievement %</th>
-              </tr>
-            ) : (
-              <tr>
-                <th>S.No.</th>
-                <th>District</th>
-                <th>Theme Name</th>
-                <th className="num-col">Theme Target</th>
-                <th className="num-col">Total Onboarded</th>
-                <th className="num-col">Achievement %</th>
-              </tr>
-            )}
-          </thead>
-          <tbody>
-            {dataLoading ? (
-              <tr>
-                <td colSpan="6" className="empty-state">
-                  Loading records...
-                </td>
-              </tr>
-            ) : paginatedData.length > 0 ? (
-              paginatedData.map((row, index) => {
-                const serialNumber = (page - 1) * rowsPerPage + index + 1;
-                const percent = row.percentage || 0;
-
-                return viewMode === "target_prcnt" ? (
-                  <tr key={index}>
-                    <td>{serialNumber}</td>
-                    <td className="fw-bold">{row.district_name_en || "-"}</td>
-                    <td className="num-col">{row.total_target}</td>
-                    <td className="num-col">{row.total_cadre}</td>
-                    <td className="num-col">
-                      <span
-                        style={{
-                          fontWeight: "700",
-                          color:
-                            percent >= 100
-                              ? "#16a34a"
-                              : percent > 0
-                                ? "#ea580c"
-                                : "#64748b",
-                        }}
-                      >
-                        {percent}%
-                      </span>
-                    </td>
-                  </tr>
-                ) : (
-                  <tr key={index}>
-                    <td>{serialNumber}</td>
-                    <td className="fw-bold">{row.district_name_en || "-"}</td>
-                    <td className="fw-bold" style={{ color: "#3b82f6" }}>
-                      {row.theme_name || "-"}
-                    </td>
-                    <td className="num-col">{row.theme_target}</td>
-                    <td className="num-col">{row.total_on_boarded}</td>
-                    <td className="num-col">
-                      <span
-                        style={{
-                          fontWeight: "700",
-                          color:
-                            percent >= 100
-                              ? "#16a34a"
-                              : percent > 0
-                                ? "#ea580c"
-                                : "#64748b",
-                        }}
-                      >
-                        {percent}%
-                      </span>
-                    </td>
-                  </tr>
-                );
-              })
-            ) : (
-              <tr>
-                <td colSpan="6" className="empty-state">
-                  No target data found for the selected filters.
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
-      </div>
+      <TableUI
+        data={apiData}
+        columns={columns}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        loading={dataLoading}
+      />
 
       {/* --- PAGINATION --- */}
       {!dataLoading && apiData.length > 0 && (
@@ -465,21 +479,31 @@ export default function TargetVsAchievementPage() {
         .report-header h2 {
           font-size: 24px;
           font-weight: 800;
-          color: #0f172a;
+          color: #083A8B;
           margin: 0 0 8px 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 14px;
+          margin: 0;
+          letter-spacing: 0.5px;
+          text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .report-header p {
           color: #64748b;
           font-size: 15px;
           margin: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;          
         }
 
         .filters-row {
           display: flex;
           flex-wrap: wrap;
           gap: 20px;
-          background: #f8fafc;
+          background: #08398A;
           padding: 20px;
           border-radius: 12px;
           border: 1px solid #e2e8f0;
@@ -497,7 +521,7 @@ export default function TargetVsAchievementPage() {
         .filter-group label {
           font-size: 13px;
           font-weight: 700;
-          color: #475569;
+          color: #ffffff;
           text-transform: uppercase;
           letter-spacing: 0.5px;
         }
@@ -531,12 +555,13 @@ export default function TargetVsAchievementPage() {
         }
 
         .reset-btn:hover {
-          background: #fee2e2;
+          background: #ef4444;
+          color: #fff;
         }
 
         .chart-card {
           background: #ffffff;
-          border: 1px solid #e2e8f0;
+          border: 3px solid #08398A;
           border-radius: 12px;
           padding: 20px;
           margin-bottom: 30px;
@@ -564,6 +589,11 @@ export default function TargetVsAchievementPage() {
           margin: 0;
           color: #0f172a;
           font-size: 18px;
+          display: flex;
+          gap: 14px;
+          margin: 0;
+          letter-spacing: 0.5px;
+          text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
         }
 
         .export-btn {
@@ -616,12 +646,17 @@ export default function TargetVsAchievementPage() {
         }
 
         .gov-data-table th {
-          background: #f8fafc;
+          background: #08398A;
+          border-right: 1px solid #f1f5f9;
           font-weight: 700;
-          color: #475569;
+          color: #fff;
           text-transform: uppercase;
           font-size: 12px;
           letter-spacing: 0.5px;
+        }
+
+        .gov-data-table tbody td{
+          border-right: 1px solid #f1f5f9;
         }
 
         .gov-data-table tbody tr:hover {

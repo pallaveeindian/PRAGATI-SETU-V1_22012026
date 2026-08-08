@@ -7,7 +7,7 @@ import UpGovLogo from "../../assets/UpgovNoBgImg.png";
 const StateLoginHeader = () => {
   const handleLogout = () => {
     localStorage.clear();
-    window.location.href = "/state-login";
+    window.location.href = "/";
   };
 
   return (
