@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { LOOKUP_API } from "../../../api/axios.js";
+import { LOOKUP_API } from "../../../../api/axios.js";
 
 // --- Helper functions ---
 const extractLookupList = (res) => {

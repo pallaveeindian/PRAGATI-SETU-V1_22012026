@@ -93,7 +93,6 @@ const styles = {
     height: "100vh", 
     overflow: "hidden",
     backgroundColor: "transparent",
-    backgroundImage: `url(${MCCYBackground})`,
     backgroundSize: "cover",
     backgroundPosition: "center center",
     backgroundRepeat: "no-repeat",

@@ -3,6 +3,7 @@ import esmLogo from "../assets/ems_logo.png";
 import ldmsLogo from "../assets/ldms_logo.png";
 import prernaLogo from "../assets/prernaHd.png";
 import BDOLogo from "../assets/BDOLogo.png";
+import MCCYLogo from "../assets/MCCYLogo.png";
 
 export const MODULES_CONFIG = [
   // 2026-07-23T13:00:00
@@ -100,10 +101,10 @@ export const MODULES_CONFIG = [
 
   {
     id: "mffi",
-    logo: esmLogo,
-    title: "MF&FI Portal",
-    subtitle: "MFFI Management System",
-    desc: "Manage and Monitor MF&FI Thematic Activities.",
+    logo: MCCYLogo,
+    title: "MCCY App Dashboard",
+    subtitle: "MCCY App Dashboard",
+    desc: "Manage and Monitor MCCY App Activities.",
     color: "#8a3d1ade",
     path: "/module-login?module=mffi",
     level: "Block",

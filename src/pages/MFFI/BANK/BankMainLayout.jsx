@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from "react";
 // useNavigate aur Navigate add kiya gaya hai
 import { useOutlet, useLocation, useNavigate, Navigate } from "react-router-dom"; 
-import { useAuth } from "../../contexts/AuthContext.jsx";
+import { useAuth } from "../../../contexts/AuthContext.jsx";
 
 import BankHeader from "./Dashboard/layout/BankHeader.jsx";
 import BankSidebar from "./Dashboard/layout/BankSidebar.jsx";
 import BankFooter from "./Dashboard/layout/BankFooter.jsx";
 import BankDashboardPage from "./Dashboard/BankDashboardPage.jsx";
-import MCCYBackground from "../../assets/MCCYBackground.png";
+import MCCYBackground from "../../../assets/MCCYBackground.png";
 
 export default function BankLayoutMain() {
   const { user, logout } = useAuth();

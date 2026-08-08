@@ -10,7 +10,7 @@ import { AuthContext } from "../../contexts/AuthContext";
 import MFFIRoleSelector from "../../components/auth/MFFIRoleSelector";
 import { getUser } from "../../utils/storage";
 import { AUTH_API } from "../../api/axios";
-import esmLogo from "../../assets/ems_logo.png";
+import MCCYLogo from "../../assets/MCCYLogo.png";
 
 const ROLE_MFFI_ROUTE = {
   1: "/mffi/bmmu/dashboard",
@@ -119,11 +119,11 @@ export default function MFFILogin() {
   return (
     <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
       <div className="logo-header">
-        <img src={esmLogo} alt="EPSMS Logo" className="app-logo" />
+        <img src={MCCYLogo} alt="EPSMS Logo" className="app-logo" />
       </div>
 
       <div className="form-header-text">
-        <h2>MICRO FINANCE AND FINANCIAL INOCULATION (MFFI)</h2>
+        <h2>MAHILA CREDIT CARD YOJANA (MCCY) APP DASHBOARD</h2>
 
         <p
           style={{

@@ -4,29 +4,28 @@ import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
 
 // Layouts
-import BmmuMainLayout from "../MFFI/BMMU/MainLayout.jsx";
-import DmmuMainLayout from "../MFFI/DMMU/DmmLayoutMain.jsx";
-import BankMainLayout from "../MFFI/BANK/BankMainLayout.jsx";
+import BmmuMainLayout from "../pages/MFFI/BMMU/MainLayout.jsx";
+import DmmuMainLayout from "../pages/MFFI/DMMU/DmmLayoutMain.jsx";
+import BankMainLayout from "../pages/MFFI/BANK/BankMainLayout.jsx";
 
 // BMMU PAGES
-import DashboardPage from "../MFFI/BMMU/Dashboard/DashboardPage.jsx";
-import ApplicationListPage from "../MFFI/BMMU/Dashboard/ApplicationListPage.jsx";
-import ReportSectionPage from "../MFFI/BMMU/Dashboard/ReportSectionPage.jsx";
+import DashboardPage from "../pages/MFFI/BMMU/Dashboard/DashboardPage.jsx";
+import ApplicationListPage from "../pages/MFFI/BMMU/Dashboard/ApplicationListPage.jsx";
+import ReportSectionPage from "../pages/MFFI/BMMU/Dashboard/ReportSectionPage.jsx";
 
 // DMMU PAGES
-import DmmDashboardPage from "../MFFI/DMMU/Dashboard/DmmDashboardpage.jsx"; 
-import DmmApplicationPage from "../MFFI/DMMU/Dashboard/DmmApplicationPage.jsx";
-import DmmReportPage from "../MFFI/DMMU/Dashboard/DmmReportPage.jsx";
+import DmmDashboardPage from "../pages/MFFI/DMMU/Dashboard/DmmDashboardpage.jsx";
+import DmmApplicationPage from "../pages/MFFI/DMMU/Dashboard/DmmApplicationPage.jsx";
+import DmmReportPage from "../pages/MFFI/DMMU/Dashboard/DmmReportPage.jsx";
 
 // BANK PAGES
-import BankDashboardPage from "../MFFI/BANK/Dashboard/BankDashboardPage.jsx";
-import BankApplicationPage from "../MFFI/BANK/Dashboard/BankApplicationPage.jsx";
-import BankReportPage from "../MFFI/BANK/Dashboard/BankReportPage.jsx";
+import BankDashboardPage from "../pages/MFFI/BANK/Dashboard/BankDashboardPage.jsx";
+import BankApplicationPage from "../pages/MFFI/BANK/Dashboard/BankApplicationPage.jsx";
+import BankReportPage from "../pages/MFFI/BANK/Dashboard/BankReportPage.jsx";
 
 export default function MFFIRoutes() {
   return (
     <Routes>
-      
       {/* =======================================
           BMMU Routes
       ======================================= */}
@@ -44,8 +43,8 @@ export default function MFFIRoutes() {
       <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
         <Route path="dmmu/dashboard" element={<DmmuMainLayout />}>
           <Route index element={<DmmDashboardPage />} />
-            <Route path="applications" element={<DmmApplicationPage />} />
-            <Route path="reports" element={<DmmReportPage />} />
+          <Route path="applications" element={<DmmApplicationPage />} />
+          <Route path="reports" element={<DmmReportPage />} />
           {/* DMMU ke baaki pages yahan aayenge in future */}
         </Route>
       </Route>
@@ -82,7 +81,6 @@ export default function MFFIRoutes() {
          <Route path="common-page" element={<SomeCommonComponent />} />
       </Route>
       */}
-
     </Routes>
   );
 }

@@ -54,7 +54,7 @@ export default function LoginParent() {
       break;
     case "mffi":
       content = <MFFILogin />;
-      theme = "orange";
+      theme = "brown";
       break;
   }
 
@@ -348,6 +348,34 @@ export default function LoginParent() {
       .theme-orange .log-in:hover { background: #f59e0b; transform: translateY(2px); }
       .theme-orange .form-input { border-radius: 10px 4px 10px 4px; }
       .theme-orange .form-input:focus { border-color: #f59e0b; }
+
+      /* --- BROWN THEME (MCCY) --- */
+      .theme-brown.login-page {
+        background: linear-gradient(135deg, #8A3D1A 30%, #B85C2A 70%);
+      }
+
+      .theme-brown .login-form {
+        border-radius: 40px 10px 40px 10px;
+        box-shadow: 0 15px 35px rgba(90, 35, 12, 0.4);
+      }
+
+      .theme-brown .log-in {
+        background: #8A3D1A;
+        border-radius: 20px 5px 20px 5px;
+      }
+
+      .theme-brown .log-in:hover {
+        background: #6F2F14;
+        transform: translateY(2px);
+      }
+
+      .theme-brown .form-input {
+        border-radius: 10px 4px 10px 4px;
+      }
+
+      .theme-brown .form-input:focus {
+        border-color: #8A3D1A;
+      }        
       `}</style>
     </div>
   );
