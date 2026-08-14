@@ -230,7 +230,7 @@ export default function ApplicationModal({ app, onClose, onForward, onRevert, is
                   disabled={!isDocVerified}
                   onClick={handleForward}
                 >
-                  Forward to DMM ➔
+                  Forward to DMMU ➔
                 </button>
               )
             )}

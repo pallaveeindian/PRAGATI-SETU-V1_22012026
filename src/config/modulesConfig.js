@@ -102,9 +102,9 @@ export const MODULES_CONFIG = [
   {
     id: "mffi",
     logo: MCCYLogo,
-    title: "MCCY App Dashboard",
-    subtitle: "MCCY App Dashboard",
-    desc: "Manage and Monitor MCCY App Activities.",
+    title: "MUCY App Dashboard",
+    subtitle: "MUCY App Dashboard",
+    desc: "Manage and Monitor MUCY App Activities.",
     color: "#8a3d1ade",
     path: "/module-login?module=mffi",
     level: "Block",

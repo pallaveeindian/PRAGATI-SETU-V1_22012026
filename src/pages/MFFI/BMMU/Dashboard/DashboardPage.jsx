@@ -18,7 +18,7 @@ export default function DashboardPage() {
         Dashboard
       </h1>
       <p style={{ color: "#EF9C6A", fontSize: "1.2rem", fontWeight: "500" }}>
-        Welcome to the MCCY Dashboard! Here you can manage applications, view
+        Welcome to the MUCY Dashboard! Here you can manage applications, view
         reports, and monitor system performance. Use the sidebar to navigate
         through different sections of the dashboard.
       </p>

@@ -6,7 +6,7 @@ import IndiaEmblem from "../../../../assets/EmblemOfndia.png";
 const Header = ({ activeMenu, onLogout, displayName }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
-  const title = "MCCY APP DASHBOARD";
+  const title = "MUCY APP DASHBOARD";
 
   
 

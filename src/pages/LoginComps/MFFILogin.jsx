@@ -123,7 +123,7 @@ export default function MFFILogin() {
       </div>
 
       <div className="form-header-text">
-        <h2>MAHILA CREDIT CARD YOJANA (MCCY) APP DASHBOARD</h2>
+        <h2>MAHILA UDYAMI CREDIT YOJANA (MUCY) APP DASHBOARD</h2>
 
         <p
           style={{

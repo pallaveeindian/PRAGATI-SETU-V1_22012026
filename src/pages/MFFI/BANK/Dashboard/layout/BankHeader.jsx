@@ -6,7 +6,7 @@ import IndiaEmblem from "../../../../../assets/EmblemOfndia.png";
 const BankHeader = ({ activeMenu, onLogout, displayName }) => {
   const [isHovered, setIsHovered] = useState(false);
   const [showLogout, setShowLogout] = useState(false);
-  const title = "MFFI ADMIN PORTAL";
+  const title = "MUCY APP DASHBOARD";
 
   
 
