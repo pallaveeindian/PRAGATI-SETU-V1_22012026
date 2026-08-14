@@ -10,6 +10,7 @@ const LOKOS_BASE_UP_URL =
   "https://cdn.lokos.in/lokos-in/lakhpati_didi/prod/UP/LAKHPATI_DIDI_DATA.json";
 const LOKOS_DISTRICT_BASE_URL =
   "https://cdn.lokos.in/lokos-in/lakhpati_didi/prod/UP/district";
+const LOKOS_RF_DISTRICT_BASE_URL = "https://cdn.lokos.in/lokos-in/fdm/prod/UP";
 
 /**
  * 1. Fetch UP State Overview Data
@@ -180,5 +181,24 @@ export const fetchAllVillagesByPanchayat = async (
       error,
     );
     throw error;
+  }
+};
+
+/**
+ * 6. Fetch Block-wise RF Details for a District
+ *
+ * @param {string|number} districtId - The Lokos District ID
+ * @returns {Promise<Array>} Array of block RF objects
+ */
+export const fetchDistrictRFData = async (districtId) => {
+  if (!districtId) return [];
+  try {
+    // Note: We use a timestamp query param to bypass CDN caching if needed, similar to your example
+    const url = `${LOKOS_RF_DISTRICT_BASE_URL}/${districtId}/BLOCK_FDM_REVOLVINGFUND.json?v=${new Date().getTime()}`;
+    const response = await axios.get(url);
+    return response.data; // This endpoint returns an array directly
+  } catch (error) {
+    console.error(`Error fetching RF Data for District ${districtId}:`, error);
+    return []; // Return empty array on fail so Promise.all doesn't crash
   }
 };

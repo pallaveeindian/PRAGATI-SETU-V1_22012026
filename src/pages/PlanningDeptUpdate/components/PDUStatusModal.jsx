@@ -1,24 +1,21 @@
 import React, { useEffect, useRef } from "react";
 import PDUButton from "./PDUButton";
-import PDUProgressBar from "./PDUProgressBar";
 import "./styles/PDUStatusModal.css";
 
 /**
- * PDUStatusModal - A modal overlay to track the block-by-block data upload.
+ * PDUStatusModal - A modal overlay to track the bulk data upload to the Planning Dept.
  *
  * @param {boolean} isOpen - Controls modal visibility
  * @param {function} onClose - Function to close the modal
- * @param {number} currentBlock - The number of blocks processed so far
- * @param {number} totalBlocks - Total number of blocks (Default 108)
- * @param {boolean} isUploading - Whether the upload process is currently active
- * @param {boolean} isComplete - Whether the entire batch process has finished
- * @param {Array<Object>} logs - Array of log objects: { id, status: 'success'|'error', message: '...' }
+ * @param {number} totalBlocks - Total number of blocks to be pushed (e.g., 108)
+ * @param {boolean} isUploading - Whether the upload request is currently active
+ * @param {boolean} isComplete - Whether the bulk push has finished
+ * @param {Array<Object>} logs - Array of log objects: { status: 'success'|'error', message: '...' }
  * @param {function} onStartPush - Function to trigger the upload process
  */
 const PDUStatusModal = ({
   isOpen,
   onClose,
-  currentBlock = 0,
   totalBlocks = 108,
   isUploading = false,
   isComplete = false,
@@ -34,13 +31,12 @@ const PDUStatusModal = ({
     }
   }, [logs]);
 
-  // Don't render anything if the modal is closed
   if (!isOpen) return null;
 
   // Determine the header title based on state
   let titleText = "Ready to Push Data";
-  if (isUploading) titleText = "Pushing Data to Planning Dept...";
-  if (isComplete) titleText = "Upload Process Complete";
+  if (isUploading) titleText = "Transmitting to Planning Dept...";
+  if (isComplete) titleText = "Transmission Complete";
 
   return (
     <div className="pdu-modal-overlay">
@@ -52,17 +48,46 @@ const PDUStatusModal = ({
 
         {/* Body */}
         <div className="pdu-modal-body">
-          <PDUProgressBar
-            current={currentBlock}
-            total={totalBlocks}
-            label="Overall Progress"
-          />
+          {/* Status Indicator Area */}
+          <div className="pdu-modal-status-area">
+            {!isUploading && !isComplete && (
+              <div className="pdu-status-idle">
+                <span style={{ fontSize: "2rem" }}>📤</span>
+                <p>
+                  Ready to transmit <strong>{totalBlocks}</strong> blocks via
+                  encrypted Base64 payload.
+                </p>
+              </div>
+            )}
 
+            {isUploading && (
+              <div className="pdu-status-loading">
+                <div className="pdu-spinner"></div>
+                <p>Awaiting response from API.up.gov.in...</p>
+              </div>
+            )}
+
+            {isComplete && logs.some((l) => l.status === "success") && (
+              <div className="pdu-status-success">
+                <span style={{ fontSize: "2rem" }}>✅</span>
+                <p>Data successfully transmitted.</p>
+              </div>
+            )}
+
+            {isComplete && !logs.some((l) => l.status === "success") && (
+              <div className="pdu-status-failed">
+                <span style={{ fontSize: "2rem" }}>❌</span>
+                <p>Transmission Failed.</p>
+              </div>
+            )}
+          </div>
+
+          {/* Terminal / Logs Console */}
           <div className="pdu-modal-logs-container">
-            <p className="pdu-logs-title">Live Transaction Logs:</p>
+            <p className="pdu-logs-title">System Console:</p>
             <div className="pdu-logs-window">
               {logs.length === 0 && (
-                <span className="pdu-log-empty">Waiting to start...</span>
+                <span className="pdu-log-empty">Waiting for execution...</span>
               )}
               {logs.map((log, index) => (
                 <div
@@ -70,12 +95,11 @@ const PDUStatusModal = ({
                   className={`pdu-log-entry pdu-log-${log.status}`}
                 >
                   <span className="pdu-log-icon">
-                    {log.status === "success" ? "✅" : "❌"}
+                    {log.status === "success" ? ">>" : "!!"}
                   </span>
                   <span className="pdu-log-text">{log.message}</span>
                 </div>
               ))}
-              {/* Invisible div to target for auto-scrolling */}
               <div ref={logsEndRef} />
             </div>
           </div>
@@ -83,29 +107,26 @@ const PDUStatusModal = ({
 
         {/* Footer */}
         <div className="pdu-modal-footer">
-          {/* Only show Start button if we haven't started and haven't completed */}
           {!isUploading && !isComplete && (
             <>
               <PDUButton variant="outline" onClick={onClose}>
                 Cancel
               </PDUButton>
               <PDUButton variant="action" onClick={onStartPush}>
-                Start Upload
+                Confirm & Push Data
               </PDUButton>
             </>
           )}
 
-          {/* Show a disabled button while uploading */}
           {isUploading && (
             <PDUButton variant="action" disabled>
-              Uploading...
+              Transmitting...
             </PDUButton>
           )}
 
-          {/* Show Done/Close button when finished */}
           {isComplete && (
             <PDUButton variant="default" onClick={onClose}>
-              Finish & Close
+              Close Window
             </PDUButton>
           )}
         </div>

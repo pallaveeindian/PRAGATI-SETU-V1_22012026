@@ -1,6 +1,16 @@
-// src/pages/StateLoginPortal/TMSStateLoginDashboard/BatchProgressDashboard.jsx
-import React, { useState, useMemo } from "react";
+import React, {
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+  useContext,
+} from "react";
 import TablePagination from "../CommonUiComp/TablePagination";
+import TableUI from "../CommonUiComp/TableUI";
+import * as XLSX from "xlsx";
+import { AuthContext } from "../../../contexts/AuthContext";
+import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
+import { getCanonicalRole } from "../../../utils/roleUtils";
 
 // Core Chart.js configuration modules
 import {
@@ -23,170 +33,202 @@ ChartJS.register(
   Legend,
 );
 
-// High-fidelity Mock dataset aligned with your official workflow status criteria
-const BATCH_MOCK_DATA = [
-  {
-    id: 1,
-    batchCode: "B-PAT-2026-004",
-    district: "Patna",
-    block: "Phulwari Sharif",
-    scheme: "DDU-GKY",
-    currentStatus: "BATCHING",
-    totalTrainees: 30,
-    windowExpiryDate: "2026-03-15",
-  }, // Overdue Expiry Exception
-  {
-    id: 2,
-    batchCode: "B-PAT-2026-009",
-    district: "Patna",
-    block: "Sampatchak",
-    scheme: "SVEP",
-    currentStatus: "COMPLETED",
-    totalTrainees: 25,
-    windowExpiryDate: "2026-05-01",
-  },
-  {
-    id: 3,
-    batchCode: "B-GAY-2026-012",
-    district: "Gaya",
-    block: "Bodhgaya",
-    scheme: "DDU-GKY",
-    currentStatus: "REVIEW",
-    totalTrainees: 28,
-    windowExpiryDate: "2026-02-10",
-  }, // Overdue Expiry Exception
-  {
-    id: 4,
-    batchCode: "B-GAY-2026-088",
-    district: "Gaya",
-    block: "Sherghati",
-    scheme: "NRLM",
-    currentStatus: "ONGOING",
-    totalTrainees: 35,
-    windowExpiryDate: "2026-08-30",
-  },
-  {
-    id: 5,
-    batchCode: "B-MUZ-2026-031",
-    district: "Muzaffarpur",
-    block: "Mushahari",
-    scheme: "MKSP",
-    currentStatus: "PENDING",
-    totalTrainees: 20,
-    windowExpiryDate: "2026-04-05",
-  }, // Overdue Expiry Exception
-  {
-    id: 6,
-    batchCode: "B-MUZ-2026-077",
-    district: "Muzaffarpur",
-    block: "Kanti",
-    scheme: "SVEP",
-    currentStatus: "REJECTED",
-    totalTrainees: 32,
-    windowExpiryDate: "2026-05-20",
-  },
-];
+const GEOSCOPE_KEY = "ps_user_geoscope";
 
-const BatchProgressDashboard = () => {
-  // --- Cascading Structural Filter States ---
+function getGeoscope() {
+  try {
+    const raw = localStorage.getItem(GEOSCOPE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeFirst(arr) {
+  return Array.isArray(arr) && arr.length ? arr[0] : null;
+}
+
+export default function BatchProgressDashboard({ financialYear }) {
+  const { user } = useContext(AuthContext) || {};
+  const role = getCanonicalRole(user || {});
+
+  // --- UI & Filter States ---
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
   const [selectedStatus, setSelectedStatus] = useState("");
+  const [search, setSearch] = useState("");
 
-  // --- Tabular Pagination Local States ---
+  // --- Lookup States ---
+  const [districts, setDistricts] = useState([]);
+  const [blocks, setBlocks] = useState([]);
+  const [lookupsLoading, setLookupsLoading] = useState(false);
+
+  // --- Data States ---
+  const [batches, setBatches] = useState([]);
+  const [loading, setLoading] = useState(false);
+
+  // --- Pagination States ---
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-
-  // Dynamic current tracking baseline matching the context calendar era
-  const SIMULATED_TODAY = useMemo(() => new Date("2026-06-18"), []);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
 
   // ==========================================
-  // CASCADING REGIONAL CONFIGURATIONS
+  // 1. BASE GEOSCOPE RESOLUTION (From TrainingBatchList)
   // ==========================================
-  const uniqueDistricts = useMemo(() => {
-    return [...new Set(BATCH_MOCK_DATA.map((item) => item.district))];
-  }, []);
+  const getDefaultScopeParams = useCallback(() => {
+    const geo = getGeoscope() || {};
+    const blockId = geo.block_id || safeFirst(geo.blocks);
+    const districtId = geo.district_id || safeFirst(geo.districts);
 
-  const availableBlocks = useMemo(() => {
-    if (!selectedDistrict) return [];
-    const filtered = BATCH_MOCK_DATA.filter(
-      (item) => item.district === selectedDistrict,
-    );
-    return [...new Set(filtered.map((item) => item.block))];
-  }, [selectedDistrict]);
+    if (role === "bmmu" && blockId) return { block_id: blockId };
+    if (role === "dmmu" && districtId) return { district_id: districtId };
+    // Add logic for training_partner / dtp if needed for state dashboard scope
+    return {};
+  }, [role]);
 
-  // Explicit Status Flow derived from your image selection criteria
-  const uniqueStatuses = [
-    "BATCHING",
-    "PENDING",
-    "ONGOING",
-    "REVIEW",
-    "COMPLETED",
-    "REJECTED",
-  ];
+  // ==========================================
+  // 2. FETCH INITIAL LOOKUPS
+  // ==========================================
+  useEffect(() => {
+    const fetchInitialLookups = async () => {
+      setLookupsLoading(true);
+      try {
+        const dRes = await LOOKUP_API.districts.list({ page_size: 5000 });
+        setDistricts(
+          Array.isArray(dRes?.data) ? dRes.data : dRes?.data?.results || [],
+        );
 
-  // Reset Child downstream states when top-level district undergoes updates
+        // Auto-lock DMMU District
+        if (role === "dmmu") {
+          const geo = getGeoscope() || {};
+          const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
+          if (dmmuDistrictId) {
+            setSelectedDistrict(String(dmmuDistrictId));
+          }
+        }
+      } catch (err) {
+        console.error("Lookup load failed", err);
+      } finally {
+        setLookupsLoading(false);
+      }
+    };
+    fetchInitialLookups();
+  }, [role]);
+
+  // Fetch Blocks when District changes
+  useEffect(() => {
+    if (role === "bmmu") return;
+    if (!selectedDistrict) {
+      setBlocks([]);
+      return;
+    }
+    LOOKUP_API.blocksByDistrict(selectedDistrict)
+      .then((r) => setBlocks(r?.data?.results || []))
+      .catch(() => setBlocks([]));
+  }, [selectedDistrict, role]);
+
+  // ==========================================
+  // 3. MAIN BATCH FETCH ENGINE
+  // ==========================================
+  const fetchBatches = useCallback(async () => {
+    if (!user?.id || !financialYear) return;
+    setLoading(true);
+
+    try {
+      const baseParams = getDefaultScopeParams();
+
+      // Determine effective filters based on Role security
+      let effectiveDistrict = selectedDistrict;
+      let effectiveBlock = selectedBlock;
+
+      if (role === "bmmu") {
+        effectiveDistrict = "";
+        effectiveBlock = ""; // Forced by baseParams
+      } else if (role === "dmmu") {
+        effectiveDistrict = ""; // Forced by baseParams
+      }
+
+      const finalParams = {
+        ...baseParams,
+        search,
+        status: selectedStatus,
+        financial_year: financialYear,
+        district_id: effectiveDistrict,
+        block_id: effectiveBlock,
+        page_size: 5000, // Fetch all for local dashboard metrics mapping
+      };
+
+      // Clean empty params
+      const cleanParams = Object.fromEntries(
+        Object.entries(finalParams).filter(
+          ([, v]) => v !== "" && v !== null && v !== undefined,
+        ),
+      );
+
+      const qs = new URLSearchParams(cleanParams).toString();
+      const resp = await api.get(`/tms/batches-list/?${qs}`);
+
+      let items = resp?.data?.results || [];
+
+      // Post-process: Hide DRAFT from everyone except DTP (as per your logic)
+      if (role !== "dtp") {
+        items = items.filter((b) => String(b.status).toUpperCase() !== "DRAFT");
+      }
+
+      setBatches(items);
+      setPage(1);
+    } catch (e) {
+      console.error("Batch fetch failed", e);
+      setBatches([]);
+    } finally {
+      setLoading(false);
+    }
+  }, [
+    user?.id,
+    financialYear,
+    selectedDistrict,
+    selectedBlock,
+    selectedStatus,
+    search,
+    role,
+    getDefaultScopeParams,
+  ]);
+
+  // Re-fetch when major triggers change
+  useEffect(() => {
+    fetchBatches();
+  }, [fetchBatches]);
+
+  // ==========================================
+  // DISTRICT CHANGE HANDLER
+  // ==========================================
   const handleDistrictChange = (e) => {
-    setSelectedDistrict(e.target.value);
+    const districtId = e.target.value;
+
+    setSelectedDistrict(districtId);
     setSelectedBlock("");
+    setBlocks([]);
     setPage(1);
   };
 
   // ==========================================
-  // EXCEPTION SORTING & DATA EVALUATION LAYER
-  // ==========================================
-  const processedAndSortedBatches = useMemo(() => {
-    // 1. Initial Filtering Operation Pass
-    const filtered = BATCH_MOCK_DATA.filter((item) => {
-      const matchesDistrict = selectedDistrict
-        ? item.district === selectedDistrict
-        : true;
-      const matchesBlock = selectedBlock ? item.block === selectedBlock : true;
-      const matchesStatus = selectedStatus
-        ? item.currentStatus === selectedStatus
-        : true;
-      return matchesDistrict && matchesBlock && matchesStatus;
-    });
-
-    // 2. Determine structural expiration exceptions and map flag elements inline
-    const markedBatches = filtered.map((batch) => {
-      const expiry = new Date(batch.windowExpiryDate);
-      // Exception Test: Expiry timeline window has passed but state is still not completely finalized
-      const isExpiredAndPending =
-        expiry < SIMULATED_TODAY &&
-        batch.currentStatus !== "COMPLETED" &&
-        batch.currentStatus !== "REJECTED";
-
-      return {
-        ...batch,
-        isOverdueException: isExpiredAndPending,
-      };
-    });
-
-    // 3. Force sorting rank prioritization pass: items with `isOverdueException` move to index top
-    return markedBatches.sort((a, b) => {
-      if (a.isOverdueException && !b.isOverdueException) return -1;
-      if (!a.isOverdueException && b.isOverdueException) return 1;
-      // Fallback chronological arrangement for balanced layout symmetry
-      return new Date(a.windowExpiryDate) - new Date(b.windowExpiryDate);
-    });
-  }, [selectedDistrict, selectedBlock, selectedStatus, SIMULATED_TODAY]);
-
-  // ==========================================
-  // CHART ANALYTICS AGGREGATIONS
+  // 4. CHART AGGREGATIONS
   // ==========================================
   const chartConfigData = useMemo(() => {
     const countsMap = {
-      BATCHING: 0,
+      DRAFTED: 0,
       PENDING: 0,
       ONGOING: 0,
+      SCHEDULED: 0,
       REVIEW: 0,
       COMPLETED: 0,
+      CLOSED: 0,
       REJECTED: 0,
     };
-    processedAndSortedBatches.forEach((batch) => {
-      if (countsMap[batch.currentStatus] !== undefined) {
-        countsMap[batch.currentStatus] += 1;
+
+    batches.forEach((batch) => {
+      const stat = String(batch.status).toUpperCase();
+      if (countsMap[stat] !== undefined) {
+        countsMap[stat] += 1;
       }
     });
 
@@ -194,22 +236,35 @@ const BatchProgressDashboard = () => {
       labels: Object.keys(countsMap),
       datasets: [
         {
-          label: "Active Batches Volume",
+          label: "Batch Count",
           data: Object.values(countsMap),
           backgroundColor: [
-            "rgba(37, 99, 235, 0.85)", // BATCHING: Corporate Blue
-            "rgba(100, 116, 139, 0.85)", // PENDING: Muted Slate
-            "rgba(245, 158, 11, 0.85)", // ONGOING: Vibrant Amber
-            "rgba(168, 85, 247, 0.85)", // REVIEW: Purple
-            "rgba(16, 185, 129, 0.85)", // COMPLETED: Success Emerald
-            "rgba(239, 68, 68, 0.85)", // REJECTED: Alarming Red
+            "#e0f2fe", // BATCHING
+            "#f1f5f9", // PENDING
+            "#fef3c7", // ONGOING
+            "#ede9fe", // SCHEDULED
+            "#fae8ff", // REVIEW
+            "#dcfce7", // COMPLETED
+            "#cffafe", // CLOSED
+            "#fee2e2", // REJECTED
           ],
+          borderColor: [
+            "#0369a1", // BATCHING
+            "#475569", // PENDING
+            "#b45309", // ONGOING
+            "#6d28d9", // SCHEDULED
+            "#6b21a8", // REVIEW
+            "#166534", // COMPLETED
+            "#155e75", // CLOSED
+            "#991b1b", // REJECTED
+          ],
+          borderWidth: 1,
           borderRadius: 6,
           barThickness: 35,
         },
       ],
     };
-  }, [processedAndSortedBatches]);
+  }, [batches]);
 
   const chartOptions = {
     responsive: true,
@@ -228,432 +283,461 @@ const BatchProgressDashboard = () => {
   };
 
   // ==========================================
-  // STANDARD PAGE FRACTION COMPUTATION
+  // 5. TABLE CONFIGURATION
   // ==========================================
-  const totalPages = useMemo(() => {
-    const pages = Math.ceil(processedAndSortedBatches.length / rowsPerPage);
-    return pages === 0 ? 1 : pages;
-  }, [processedAndSortedBatches.length, rowsPerPage]);
+  const formatDate = (date) =>
+    date ? new Date(date).toLocaleDateString("en-GB") : "-";
 
-  const paginatedData = useMemo(() => {
-    const startIndex = (page - 1) * rowsPerPage;
-    return processedAndSortedBatches.slice(
-      startIndex,
-      startIndex + rowsPerPage,
-    );
-  }, [processedAndSortedBatches, page, rowsPerPage]);
+  const columns = [
+    {
+      header: "Batch Code",
+      key: "code",
+      render: (row) => (
+        <span style={{ fontWeight: 600, color: "#2563eb" }}>{row.code}</span>
+      ),
+    },
+    {
+      header: "Status",
+      key: "status",
+      render: (row) => (
+        <span
+          className={`status-badge-node stage-${String(row.status).toLowerCase()}`}
+        >
+          {row.status}
+        </span>
+      ),
+    },
+    {
+      header: "Start Date",
+      key: "start_date",
+      render: (row) => formatDate(row.start_date),
+    },
+    {
+      header: "End Date",
+      key: "end_date",
+      render: (row) => formatDate(row.end_date),
+    },
+    { header: "Level", key: "level" },
+    { header: "Type", key: "batch_type" },
+    {
+      header: "Theme",
+      key: "theme",
+      render: (row) => row.training_plan?.theme?.theme_name || "-",
+    },
+    {
+      header: "Training Plan",
+      key: "plan",
+      render: (row) => row.training_plan?.training_name || "-",
+    },
+    {
+      header: "Partner",
+      key: "partner",
+      render: (row) => row.centre?.partner?.name || "-",
+    },
+    {
+      header: "District",
+      key: "district",
+      render: (row) => row.district?.district_name_en || "-",
+    },
+    {
+      header: "Block",
+      key: "block",
+      render: (row) => row.block?.block_name_en || "-",
+    },
+    {
+      header: "Assigned Trainers",
+      key: "trainers",
+      sortable: false,
+      render: (row) => {
+        if (
+          !Array.isArray(row.master_trainers) ||
+          row.master_trainers.length === 0
+        )
+          return "-";
+        return (
+          <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
+            {row.master_trainers.map((t) => (
+              <div key={t.id}>
+                <strong>{t.full_name}</strong>
+                <br />
+                <span style={{ fontSize: "11px", color: "#64748b" }}>
+                  {t.designation} ({t.mobile_no})
+                </span>
+              </div>
+            ))}
+          </div>
+        );
+      },
+    },
+    {
+      header: "Count",
+      key: "pax_count",
+      render: (row) => (
+        <div className="num-col fw-bold">{row.pax_count || 0}</div>
+      ),
+    },
+  ];
+
+  const handleExportExcel = () => {
+    if (!batches || batches.length === 0) {
+      alert("No batch data available to export.");
+      return;
+    }
+
+    const exportData = batches.map((batch, index) => ({
+      "S.No": index + 1,
+      "Batch Code": batch.code || "-",
+      Status: batch.status || "-",
+      "Start Date": formatDate(batch.start_date),
+      "End Date": formatDate(batch.end_date),
+      Level: batch.level || "-",
+      Type: batch.batch_type || "-",
+      Theme: batch.training_plan?.theme?.theme_name || "-",
+      "Training Plan": batch.training_plan?.training_name || "-",
+      Partner: batch.centre?.partner?.name || "-",
+      District: batch.district?.district_name_en || "-",
+      Block: batch.block?.block_name_en || "-",
+      "Assigned Trainers": Array.isArray(batch.master_trainers)
+        ? batch.master_trainers
+            .map(
+              (trainer) =>
+                `${trainer.full_name || "-"}${
+                  trainer.designation ? ` (${trainer.designation})` : ""
+                }${trainer.mobile_no ? ` - ${trainer.mobile_no}` : ""}`,
+            )
+            .join(", ")
+        : "-",
+      "Participant Count": batch.pax_count || 0,
+    }));
+
+    const worksheet = XLSX.utils.json_to_sheet(exportData);
+
+    const workbook = XLSX.utils.book_new();
+
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Batch Pipeline");
+
+    // Auto-size columns
+    const columnWidths = Object.keys(exportData[0]).map((key) => {
+      const maxLength = Math.max(
+        key.length,
+        ...exportData.map((row) => String(row[key] ?? "").length),
+      );
+
+      return {
+        wch: Math.min(Math.max(maxLength + 2, 12), 40),
+      };
+    });
+
+    worksheet["!cols"] = columnWidths;
+
+    const fileName = `Batch_Pipeline_Registry_${financialYear || "Export"}.xlsx`;
+
+    XLSX.writeFile(workbook, fileName);
+  };
 
   return (
-    <>
-      <div className="dashboard-container">
-        <div className="dashboard-header">
-          <p>
-            Track live execution tracks, status lifecycle shifts, and critical
-            window expiration exceptions.
-          </p>
+    <div className="analytics-white-card">
+      <div className="report-header">
+        <h2>Batch Execution & Lifecycle Progress</h2>
+        <p>
+          Track live execution tracks, status lifecycle shifts, and overarching
+          batch metrics.
+        </p>
+      </div>
+
+      {/* --- FILTERS ROW --- */}
+      <div className="filters-row">
+        <div className="filter-group">
+          <label>District Scope</label>
+          <select
+            value={selectedDistrict}
+            onChange={handleDistrictChange}
+            disabled={role === "dmmu" || role === "bmmu" || lookupsLoading}
+          >
+            <option value="">-- All Districts --</option>
+            {districts.map((d) => (
+              <option key={d.district_id} value={d.district_id}>
+                {d.district_name_en}
+              </option>
+            ))}
+          </select>
         </div>
 
-        {/* Filter Matrix Controls Core Card */}
-        <div className="filter-card">
-          {/* District Dropdown Selector */}
-          <div className="filter-group">
-            <label htmlFor="district-select">District Scope</label>
-            <select
-              id="district-select"
-              value={selectedDistrict}
-              onChange={handleDistrictChange}
-              className="filter-select"
-            >
-              <option value="">All Districts</option>
-              {uniqueDistricts.map((d) => (
-                <option key={d} value={d}>
-                  {d}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="filter-group">
+          <label>Block Boundary</label>
+          <select
+            value={selectedBlock}
+            onChange={(e) => {
+              setSelectedBlock(e.target.value);
+              setPage(1);
+            }}
+            disabled={!selectedDistrict || role === "bmmu"}
+          >
+            <option value="">-- All Blocks --</option>
+            {blocks.map((b) => (
+              <option key={b.block_id} value={b.block_id}>
+                {b.block_name_en}
+              </option>
+            ))}
+          </select>
+        </div>
 
-          {/* Dependent Block Cascading Selector */}
-          <div className="filter-group">
-            <label htmlFor="block-select">Block Boundary</label>
-            <select
-              id="block-select"
-              value={selectedBlock}
-              onChange={(e) => {
-                setSelectedBlock(e.target.value);
-                setPage(1);
-              }}
-              className="filter-select"
-              disabled={!selectedDistrict}
-            >
-              <option value="">All Blocks</option>
-              {availableBlocks.map((b) => (
-                <option key={b} value={b}>
-                  {b}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="filter-group">
+          <label>Current Status</label>
+          <select
+            value={selectedStatus}
+            onChange={(e) => {
+              setSelectedStatus(e.target.value);
+              setPage(1);
+            }}
+          >
+            <option value="">-- All Statuses --</option>
+            <option value="DRAFT">Saved As Draft</option>
+            <option value="PENDING">Pending Approval</option>
+            <option value="REJECTED">Rejected</option>
+            <option value="ONGOING">Ongoing</option>
+            <option value="SCHEDULED">Scheduled</option>
+            <option value="COMPLETED">Completed</option>
+            <option value="REVIEW">Under Review</option>
+            <option value="CLOSED">Closed</option>
+          </select>
+        </div>
 
-          {/* Batch Lifecycle Status Dropdown */}
-          <div className="filter-group">
-            <label htmlFor="status-select">Current Execution Status</label>
-            <select
-              id="status-select"
-              value={selectedStatus}
-              onChange={(e) => {
-                setSelectedStatus(e.target.value);
-                setPage(1);
-              }}
-              className="filter-select"
-            >
-              <option value="">All Status Layers</option>
-              {uniqueStatuses.map((s) => (
-                <option key={s} value={s}>
-                  {s}
-                </option>
-              ))}
-            </select>
-          </div>
+        <div className="filter-group">
+          <label>Search Batch Code</label>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="e.g. B-PAT..."
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && fetchBatches()}
+          />
+        </div>
 
-          {(selectedDistrict || selectedBlock || selectedStatus) && (
-            <button
-              className="clear-btn"
-              onClick={() => {
-                setSelectedDistrict("");
-                setSelectedBlock("");
-                setSelectedStatus("");
-                setPage(1);
+        <div
+          className="filter-group"
+          style={{
+            justifyContent: "flex-end",
+            paddingBottom: "2px",
+            flex: "none",
+          }}
+        >
+          <button className="reset-btn" onClick={fetchBatches}>
+            Search
+          </button>
+        </div>
+
+        {(selectedDistrict || selectedBlock || selectedStatus || search) &&
+          role !== "dmmu" &&
+          role !== "bmmu" && (
+            <div
+              className="filter-group"
+              style={{
+                justifyContent: "flex-end",
+                paddingBottom: "2px",
+                flex: "none",
               }}
             >
-              Reset Parameter Matrix
-            </button>
+              <button
+                className="reset-btn"
+                style={{ color: "#475569", borderColor: "#cbd5e1" }}
+                onClick={() => {
+                  setSelectedDistrict("");
+                  setSelectedBlock("");
+                  setSelectedStatus("");
+                  setSearch("");
+                  // fetchBatches triggers on useEffect
+                }}
+              >
+                Clear
+              </button>
+            </div>
+          )}
+      </div>
+
+      {/* --- CHART SECTION --- */}
+      <div className="chart-card">
+        <h3>Volume Distribution by Workflow Tracking Phase</h3>
+        <div className="chart-inner-container">
+          {loading ? (
+            <div className="empty-state">Loading Chart Data...</div>
+          ) : batches.length > 0 ? (
+            <Bar data={chartConfigData} options={chartOptions} />
+          ) : (
+            <div className="empty-state">
+              No active batches match to compile chart plot coordinates.
+            </div>
           )}
         </div>
+      </div>
 
-        {/* --- Chart Graphic Presentation Section --- */}
-        <div className="chart-card">
-          <h3>Volume Distribution by Workflow Tracking Phase</h3>
-          <div className="chart-inner-envelope">
-            {processedAndSortedBatches.length > 0 ? (
-              <Bar data={chartConfigData} options={chartOptions} />
-            ) : (
-              <div className="chart-fallback-empty">
-                No active items match to compile chart plot coordinates.
-              </div>
-            )}
-          </div>
+      {/* --- TABLE HEADER --- */}
+      <div className="table-header-flex">
+        <div className="table-heading-left">
+          <h3>Batch Pipeline Registry</h3>
+          <button
+            type="button"
+            className="export-excel-btn"
+            onClick={handleExportExcel}
+            disabled={loading || !batches.length}
+            title="Export batch data to Excel"
+          >
+            Export to Excel
+          </button>
         </div>
+      </div>
 
-        {/* Main Process Grid Table Framework */}
-        <div className="table-wrapper">
-          <table className="report-table">
-            <thead>
-              <tr>
-                <th style={{ width: "90px" }}>Sl. No.</th>
-                <th>Batch Code Reference</th>
-                <th>Regional Center Domain</th>
-                <th>Scheme Group</th>
-                <th style={{ textAlign: "center" }}>Current Status</th>
-                <th>Window Expiry Date</th>
-                <th className="num-col">Trainee Count</th>
-              </tr>
-            </thead>
-            <tbody>
-              {paginatedData.length > 0 ? (
-                paginatedData.map((row, index) => {
-                  const serialNumber = (page - 1) * rowsPerPage + index + 1;
+      {/* --- TABLE UI --- */}
+      <TableUI
+        data={batches}
+        columns={columns}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        loading={loading}
+      />
 
-                  return (
-                    <tr
-                      key={row.id}
-                      className={
-                        row.isOverdueException ? "exception-overdue-row" : ""
-                      }
-                    >
-                      <td>
-                        {row.isOverdueException ? (
-                          <span
-                            className="warning-indicator-pill"
-                            title="Critical Exception Rule: Training window has expired but batch remains unclosed. Action required."
-                          >
-                            ! Overdue
-                          </span>
-                        ) : (
-                          serialNumber
-                        )}
-                      </td>
-                      <td>
-                        <strong>{row.batchCode}</strong>
-                      </td>
-                      <td>
-                        <div className="geo-text-block">
-                          <span>{row.block}</span>
-                          <small>{row.district}</small>
-                        </div>
-                      </td>
-                      <td>
-                        <span className="scheme-tag">{row.scheme}</span>
-                      </td>
-                      <td style={{ textAlign: "center" }}>
-                        <span
-                          className={`status-badge-node stage-${row.currentStatus.toLowerCase()}`}
-                        >
-                          {row.currentStatus}
-                        </span>
-                      </td>
-                      <td>
-                        <span
-                          className={
-                            row.isOverdueException
-                              ? "expiry-date-alert-text"
-                              : "expiry-date-normal"
-                          }
-                        >
-                          {row.windowExpiryDate}
-                        </span>
-                      </td>
-                      <td className="num-col font-bold">
-                        {row.totalTrainees} slots
-                      </td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan="7" className="empty-state">
-                    No active operational batches match your current filter
-                    query parameters.
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Retained Standard Pagination Engine Module */}
+      {/* --- PAGINATION --- */}
+      {!loading && batches.length > 0 && (
         <TablePagination
           page={page}
-          totalPages={totalPages}
+          totalPages={Math.ceil(batches.length / rowsPerPage)}
           rowsPerPage={rowsPerPage}
           setRowsPerPage={setRowsPerPage}
           setPage={setPage}
-          totalRecords={processedAndSortedBatches.length}
+          totalRecords={batches.length}
         />
-      </div>
+      )}
 
+      {/* --- STYLES --- */}
       <style>{`
-                .dashboard-container {
-                    padding: 32px;
-                    background: #f8fafc;
-                    min-height: 100vh;
-                    font-family: system-ui, -apple-system, sans-serif;
-                }
-                .dashboard-header h2 {
-                    font-size: 24px;
-                    color: #0f172a;
-                    margin: 0 0 6px 0;
-                    font-weight: 700;
-                }
-                .dashboard-header p {
-                    color: #64748b;
-                    margin: 0 0 28px 0;
-                    font-size: 14px;
-                }
-                .filter-card {
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 12px;
-                    padding: 20px;
-                    display: flex;
-                    align-items: flex-end;
-                    gap: 16px;
-                    margin-bottom: 24px;
-                    box-shadow: 0 1px 3px rgba(0,0,0,0.02);
-                    flex-wrap: wrap;
-                }
-                .filter-group {
-                    display: flex;
-                    flex-direction: column;
-                    gap: 6px;
-                    min-width: 200px;
-                    flex: 1;
-                }
-                .filter-group label {
-                    font-size: 13px;
-                    font-weight: 600;
-                    color: #475569;
-                }
-                .filter-select {
-                    padding: 10px 14px;
-                    border-radius: 8px;
-                    border: 1px solid #cbd5e1;
-                    background-color: #ffffff;
-                    font-size: 14px;
-                    color: #1e293b;
-                    outline: none;
-                    cursor: pointer;
-                    transition: all 0.2s ease;
-                }
-                .filter-select:focus {
-                    border-color: #2563eb;
-                    box-shadow: 0 0 0 2px rgba(37,99,235,0.1);
-                }
-                .filter-select:disabled {
-                    background-color: #f1f5f9;
-                    color: #94a3b8;
-                    cursor: not-allowed;
-                }
-                .clear-btn {
-                    padding: 10px 16px;
-                    background: transparent;
-                    border: 1px dashed #cbd5e1;
-                    color: #64748b;
-                    font-weight: 500;
-                    font-size: 14px;
-                    border-radius: 8px;
-                    cursor: pointer;
-                    height: 41px;
-                    transition: all 0.2s ease;
-                }
-                .clear-btn:hover {
-                    background: #f1f5f9;
-                    color: #0f172a;
-                    border-color: #94a3b8;
-                }
+        .analytics-white-card {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 28px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+          border: 1px solid #e2e8f0;
+          animation: fadeIn 0.4s ease-in-out;
+        }
 
-                /* Analytics Graphic Elements */
-                .chart-card {
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 12px;
-                    padding: 24px;
-                    margin-bottom: 24px;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-                }
-                .chart-card h3 {
-                    margin: 0 0 16px 0;
-                    font-size: 16px;
-                    color: #1e293b;
-                    font-weight: 600;
-                }
-                .chart-inner-envelope {
-                    position: relative;
-                    height: 240px;
-                    width: 100%;
-                }
-                .chart-fallback-empty {
-                    display: flex;
-                    align-items: center;
-                    justify-content: center;
-                    height: 100%;
-                    color: #94a3b8;
-                    font-size: 14px;
-                }
+        .report-header { margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; }
+        .report-header h2 {
+          font-size: 24px;
+          font-weight: 800;
+          color: #083A8B;
+          margin: 0 0 8px 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 14px;
+          margin: 0;
+          letter-spacing: 0.5px;
+          text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
 
-                .table-wrapper {
-                    background: #ffffff;
-                    border: 1px solid #e2e8f0;
-                    border-radius: 12px;
-                    overflow: hidden;
-                    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05);
-                    margin-bottom: 24px;
-                }
-                .report-table {
-                    width: 100%;
-                    border-collapse: collapse;
-                    text-align: left;
-                    font-size: 14px;
-                }
-                .report-table th {
-                    background: #f1f5f9;
-                    color: #475569;
-                    font-weight: 600;
-                    padding: 14px 20px;
-                    border-bottom: 1px solid #e2e8f0;
-                }
-                .report-table td {
-                    padding: 14px 20px;
-                    color: #334155;
-                    border-bottom: 1px solid #f1f5f9;
-                }
-                .report-table tbody tr:hover {
-                    background-color: #f8fafc;
-                }
+        .report-header p {
+          color: #64748b;
+          font-size: 15px;
+          margin: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;          
+        }
+        .filters-row {
+          display: flex; flex-wrap: wrap; gap: 20px; background: #08398A; padding: 20px;
+          border-radius: 12px; margin-bottom: 24px;
+        }
 
-                /* Exception Row Overrides styling features */
-                .exception-overdue-row {
-                    background-color: #fffafb !important;
-                    border-left: 4px solid #ef4444;
-                }
-                .exception-overdue-row:hover {
-                    background-color: #fff1f2 !important;
-                }
-                .warning-indicator-pill {
-                    display: inline-block;
-                    background: #fee2e2;
-                    color: #991b1b;
-                    font-size: 11px;
-                    font-weight: 700;
-                    padding: 4px 8px;
-                    border-radius: 6px;
-                    border: 1px solid #fca5a5;
-                    white-space: nowrap;
-                }
-                .expiry-date-alert-text {
-                    color: #dc2626;
-                    font-weight: 600;
-                }
-                .expiry-date-normal {
-                    color: #4b5563;
-                }
+        .filter-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 180px; }
+        .filter-group label { font-size: 13px; font-weight: 700; color: #ffffff; text-transform: uppercase; }
+        .filter-group select, .search-input {
+          padding: 12px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px;
+          font-weight: 600; color: #0f172a; outline: none; transition: all 0.2s ease; background: #fff;
+        }
+        .filter-group select:focus, .search-input:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
+        .filter-group select:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
 
-                .geo-text-block {
-                    display: flex;
-                    flex-direction: column;
-                }
-                .geo-text-block small {
-                    font-size: 11px;
-                    color: #64748b;
-                    margin-top: 2px;
-                }
-                .scheme-tag {
-                    background: #f1f5f9;
-                    padding: 4px 8px;
-                    border-radius: 6px;
-                    font-size: 13px;
-                    color: #475569;
-                    font-weight: 500;
-                }
+        .reset-btn { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; height: 44px; }
+        .reset-btn:hover { background: #e2e8f0; }
 
-                /* Custom Status Node Badges aligned with Image specifications */
-                .status-badge-node {
-                    display: inline-block;
-                    padding: 4px 12px;
-                    border-radius: 20px;
-                    font-size: 11px;
-                    font-weight: 700;
-                    text-transform: uppercase;
-                    letter-spacing: 0.05em;
-                }
-                .stage-batching { background: #e0f2fe; color: #0369a1; }
-                .stage-pending { background: #f1f5f9; color: #475569; }
-                .stage-ongoing { background: #fef3c7; color: #b45309; }
-                .stage-review { background: #fae8ff; color: #6b21a8; }
-                .stage-completed { background: #dcfce7; color: #166534; }
-                .stage-rejected { background: #fee2e2; color: #991b1b; }
+        .chart-card { background: #ffffff; border: 3px solid #08398A; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
+        .chart-card h3 { margin: 0 0 20px 0; color: #0f172a; font-size: 16px; }
+        .chart-inner-container { height: 320px; width: 100%; display: flex; justify-content: center; }
 
-                .num-col { text-align: right; }
-                .font-bold { font-weight: 700; }
-                .empty-state {
-                    text-align: center;
-                    padding: 48px !important;
-                    color: #94a3b8;
-                    font-size: 14px;
-                }
-            `}</style>
-    </>
+        .table-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .table-header-flex h3 { margin: 0; color: #0f172a; font-size: 18px; font-weight: 800; }
+
+        .num-col { text-align: center; }
+        
+        /* Custom Status Node Badges */
+        .status-badge-node {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            border: 1px solid transparent;
+            white-space: nowrap;
+        }
+        .stage-batching { background: #e0f2fe; color: #0369a1; border-color: #7dd3fc; }
+        .stage-pending { background: #f1f5f9; color: #475569; border-color: #cbd5e1; }
+        .stage-ongoing { background: #fef3c7; color: #b45309; border-color: #fde047; }
+        .stage-review { background: #fae8ff; color: #6b21a8; border-color: #f0abfc; }
+        .stage-completed { background: #dcfce7; color: #166534; border-color: #bbf7d0; }
+        .stage-rejected { background: #fee2e2; color: #991b1b; border-color: #fca5a5; }
+        .stage-scheduled { background: #ede9fe; color: #6d28d9; border-color: #c4b5fd; }
+        .stage-closed { background: #cffafe; color: #155e75; border-color: #67e8f9; }
+
+        .empty-state { text-align: center; padding: 48px; color: #94a3b8; font-size: 15px; font-style: italic; width: 100%; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        .table-heading-left {
+          display: flex;
+          align-items: center;
+          gap: 14px;
+        }
+
+        .export-excel-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          gap: 7px;
+          height: 40px;
+          padding: 0 16px;
+          border: 1px solid #15803d;
+          border-radius: 8px;
+          background: #16a34a;
+          color: #ffffff;
+          font-size: 13px;
+          font-weight: 700;
+          cursor: pointer;
+          transition: all 0.2s ease;
+          white-space: nowrap;
+        }
+
+        .export-excel-btn:hover:not(:disabled) {
+          background: #15803d;
+          border-color: #166534;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 10px rgba(22, 163, 74, 0.2);
+        }
+
+        .export-excel-btn:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .export-excel-btn:disabled {
+          opacity: 0.55;
+          cursor: not-allowed;
+        }
+
+        .export-icon {
+          font-size: 18px;
+          font-weight: 900;
+          line-height: 1;
+        }        
+      `}</style>
+    </div>
   );
-};
-
-export default BatchProgressDashboard;
+}

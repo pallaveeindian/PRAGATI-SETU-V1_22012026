@@ -1,7 +1,9 @@
-// src/pages/StateLoginPortal/TMSStateLoginDashboard/TrainingRequestDashboard.jsx
-import React, { useMemo, useState } from "react";
+import React, { useState, useMemo, useEffect, useCallback } from "react";
 import TablePagination from "../CommonUiComp/TablePagination";
+import TableUI from "../CommonUiComp/TableUI";
+import { FaDownload } from "react-icons/fa";
 
+// Core Chart.js imports for Line layout structure
 import {
   Chart as ChartJS,
   CategoryScale,
@@ -12,8 +14,9 @@ import {
   Tooltip,
   Legend,
 } from "chart.js";
-
 import { Line } from "react-chartjs-2";
+
+import api, { LOOKUP_API } from "../../../api/axios";
 
 ChartJS.register(
   CategoryScale,
@@ -25,455 +28,540 @@ ChartJS.register(
   Legend,
 );
 
-// Inline Styles Object Blueprint
-const styles = {
-  dashboardContainer: {
-    display: "flex",
-    flexDirection: "column",
-    gap: "24px",
-    fontFamily:
-      'system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif',
-    width: "100%",
-  },
-  whiteCard: {
-    backgroundColor: "#ffffff",
-    borderRadius: "16px",
-    padding: "24px",
-    boxShadow:
-      "0 1px 3px 0 rgba(0, 0, 0, 0.05), 0 1px 2px 0 rgba(0, 0, 0, 0.03)",
-    border: "1px solid #e5e7eb",
-    width: "100%",
-    boxSizing: "border-box",
-  },
-  cardTitle: {
-    fontSize: "1.25rem",
-    fontWeight: "700",
-    color: "#1e293b",
-    margin: 0,
-  },
-  cardSubtitle: {
-    fontSize: "0.875rem",
-    color: "#6b7280",
-    margin: "4px 0 0 0",
-  },
-  headerWrapper: {
-    display: "flex",
-    justifyContent: "space-between",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "16px",
-    marginBottom: "24px",
-  },
-  controlsWrapper: {
-    display: "flex",
-    alignItems: "center",
-    flexWrap: "wrap",
-    gap: "16px",
-  },
-  searchContainer: {
-    display: "flex",
-    alignItems: "center",
-    border: "1px solid #fce37d", // Light amber-100 border
-    borderRadius: "12px",
-    overflow: "hidden",
-    backgroundColor: "#ffffff",
-    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-    transition: "all 0.15s ease",
-  },
-  searchContainerActive: {
-    border: "1px solid #f59e0b", // Solid amber-500 border
-    boxShadow: "0 0 0 2px rgba(245, 158, 11, 0.2)", // Amber focus ring
-  },
-  searchInput: {
-    width: "256px",
-    padding: "10px 16px",
-    fontSize: "0.875rem",
-    border: "none",
-    outline: "none",
-  },
-  searchButton: {
-    padding: "10px 20px",
-    border: "none",
-    borderLeft: "1px solid #e5e7eb",
-    background: "linear-gradient(135deg, #2563eb, #1d4ed8)",
-    fontWeight: "500",
-    fontSize: "0.875rem",
-    cursor: "pointer",
-    color: "#ffffff",
-    transition: "all 0.15s ease",
-  },
-  searchButtonHover: {
-    background: "linear-gradient(135deg, #f59e0b, #d97706)",
-    color: "#ffffff",
-  },
-  selectDropdown: {
-    width: "288px",
-    padding: "10px 16px",
-    border: "1px solid #fce37d", // Light amber-100 base border matching search input rest state
-    borderRadius: "12px",
-    backgroundColor: "#ffffff",
-    boxShadow: "0 1px 2px 0 rgba(0, 0, 0, 0.05)",
-    fontSize: "0.875rem",
-    outline: "none",
-    color: "#374151",
-    cursor: "pointer",
-    transition: "all 0.15s ease",
-  },
-  selectDropdownActive: {
-    border: "1px solid #f59e0b", // Solid amber-500 active border
-    boxShadow: "0 0 0 2px rgba(245, 158, 11, 0.2)", // Amber focus ring
-  },
-  dropdownOption: {
-    padding: "8px",
-    borderRadius: "8px", // Native dropdown layout fallback rounding support
-  },
-  tableOverflowContainer: {
-    overflowX: "auto",
-    borderRadius: "16px",
-    border: "1px solid #e5e7eb",
-  },
-  table: {
-    width: "100%",
-    borderCollapse: "collapse",
-    textAlign: "left",
-  },
-  tableHeaderRow: {
-    backgroundColor: "#f9fafb",
-  },
-  th: {
-    padding: "16px",
-    fontWeight: "600",
-    fontSize: "0.75rem",
-    textTransform: "uppercase",
-    letterSpacing: "0.05em",
-    color: "#6b7280",
-    borderBottom: "1px solid #e5e7eb",
-  },
-  tdDistrict: {
-    padding: "16px",
-    fontSize: "0.875rem",
-    fontWeight: "500",
-    color: "#111827",
-    borderBottom: "1px solid #e5e7eb",
-  },
-  tdValue: {
-    padding: "16px",
-    fontSize: "0.875rem",
-    color: "#4b5563",
-    borderBottom: "1px solid #e5e7eb",
-  },
-  tdNoRecords: {
-    padding: "32px",
-    textAlign: "center",
-    fontSize: "0.875rem",
-    color: "#6b7280",
-  },
-  paginationContainer: {
-    marginTop: "20px",
-  },
-};
+export default function TrainingRequestDashboard({ financialYear }) {
+  // --- Filter States ---
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [selectedBlock, setSelectedBlock] = useState("");
+  const [selectedTheme, setSelectedTheme] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState("");
 
-const labels = [
-  "Apr 3",
-  "Apr 10",
-  "Apr 17",
-  "Apr 24",
-  "May 1",
-  "May 8",
-  "May 15",
-  "May 23",
-  "May 31",
-  "Jun 7",
-  "Jun 14",
-  "Jun 21",
-  "Jun 30",
-];
+  // --- Lookup Data States ---
+  const [districts, setDistricts] = useState([]);
+  const [blocks, setBlocks] = useState([]);
+  const [themes, setThemes] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [lookupsLoading, setLookupsLoading] = useState(false);
 
-const chartData = {
-  labels,
-  datasets: [
-    {
-      label: "Training Requests",
-      data: [30, 55, 40, 80, 62, 95, 70, 45, 60, 88, 76, 90, 85],
-      borderColor: "#f59e0b",
-      backgroundColor: "rgba(245,158,11,0.2)",
-      fill: true,
-      tension: 0.4,
-      pointRadius: 4,
-      pointBackgroundColor: "#f59e0b",
-    },
-  ],
-};
+  // --- Main Data States ---
+  const [apiData, setApiData] = useState([]);
+  const [dataLoading, setDataLoading] = useState(false);
 
-const rows = [
-  {
-    id: 1,
-    region: "North America",
-    district: "District 1",
-    requests: 240,
-    completed: 181,
-  },
-  {
-    id: 2,
-    region: "North America",
-    district: "District 2",
-    requests: 400,
-    completed: 96,
-  },
-  {
-    id: 3,
-    region: "North America",
-    district: "District 3",
-    requests: 434,
-    completed: 163,
-  },
-  {
-    id: 4,
-    region: "North America",
-    district: "District 4",
-    requests: 371,
-    completed: 120,
-  },
-  {
-    id: 5,
-    region: "North America",
-    district: "District 5",
-    requests: 324,
-    completed: 131,
-  },
-  {
-    id: 6,
-    region: "Europe & Africa",
-    district: "District 6",
-    requests: 116,
-    completed: 167,
-  },
-  {
-    id: 7,
-    region: "Europe & Africa",
-    district: "District 7",
-    requests: 168,
-    completed: 5,
-  },
-  {
-    id: 8,
-    region: "Europe & Africa",
-    district: "District 8",
-    requests: 458,
-    completed: 8,
-  },
-  { id: 9, region: "Asia", district: "District 9", requests: 8, completed: 53 },
-  {
-    id: 10,
-    region: "Asia",
-    district: "District 10",
-    requests: 54,
-    completed: 118,
-  },
-];
-
-export default function TrainingRequestDashboard() {
+  // --- Pagination States ---
   const [page, setPage] = useState(1);
-  const [rowsPerPage, setRowsPerPage] = useState(25);
-  const [selectedDistrict, setSelectedDistrict] = useState("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [hoveredRowId, setHoveredRowId] = useState(null);
-  const [isButtonHovered, setIsButtonHovered] = useState(false);
-  const [isInputFocused, setIsInputFocused] = useState(false);
-  const [isSelectFocused, setIsSelectFocused] = useState(false);
+  const [rowsPerPage, setRowsPerPage] = useState(15);
 
-  const groupedDistricts = useMemo(() => {
-    const groups = {};
-    rows.forEach((row) => {
-      if (!groups[row.region]) {
-        groups[row.region] = [];
+  // ==========================================
+  // 1. FETCH INITIAL LOOKUPS
+  // ==========================================
+  useEffect(() => {
+    const fetchInitialLookups = async () => {
+      setLookupsLoading(true);
+      try {
+        const [distRes, themeRes] = await Promise.all([
+          LOOKUP_API.districts.list({ page_size: 5000 }),
+          api.get("/tms/public/training-themes/", {
+            params: { page_size: 100 },
+          }),
+        ]);
+        setDistricts(
+          Array.isArray(distRes?.data)
+            ? distRes.data
+            : distRes?.data?.results || [],
+        );
+        setThemes(themeRes?.data?.results || themeRes?.data || []);
+      } catch (err) {
+        console.error("Error loading lookups:", err);
+      } finally {
+        setLookupsLoading(false);
       }
-      if (!groups[row.region].includes(row.district)) {
-        groups[row.region].push(row.district);
-      }
-    });
-    return groups;
+    };
+    fetchInitialLookups();
   }, []);
 
-  const filteredRows = useMemo(() => {
-    return rows.filter((row) => {
-      const matchesDropdown =
-        selectedDistrict === "all" || row.district === selectedDistrict;
-      const matchesSearch = row.district
-        .toLowerCase()
-        .includes(searchQuery.toLowerCase());
-      return matchesDropdown && matchesSearch;
-    });
-  }, [selectedDistrict, searchQuery]);
+  // Fetch Blocks based on District
+  useEffect(() => {
+    if (!selectedDistrict) {
+      setBlocks([]);
+      return;
+    }
+    const fetchBlocks = async () => {
+      try {
+        const res = await LOOKUP_API.blocksByDistrict(selectedDistrict, {
+          params: { page_size: 5000 },
+        });
+        setBlocks(
+          Array.isArray(res?.data) ? res.data : res?.data?.results || [],
+        );
+      } catch (err) {
+        console.error("Error fetching blocks:", err);
+        setBlocks([]);
+      }
+    };
+    fetchBlocks();
+  }, [selectedDistrict]);
 
-  const start = (page - 1) * rowsPerPage;
-  const data = filteredRows.slice(start, start + rowsPerPage);
-  const totalPages = Math.ceil(filteredRows.length / rowsPerPage);
+  // Fetch Plans based on Theme
+  useEffect(() => {
+    if (!selectedTheme) {
+      setPlans([]);
+      return;
+    }
+    const fetchPlans = async () => {
+      try {
+        const res = await api.get("/tms/public/training-plans/", {
+          params: { theme: selectedTheme, page_size: 500 },
+        });
+        setPlans(res?.data?.results || res?.data || []);
+      } catch (err) {
+        console.error("Error fetching plans:", err);
+        setPlans([]);
+      }
+    };
+    fetchPlans();
+  }, [selectedTheme]);
+
+  // ==========================================
+  // 2. FETCH MAIN ANALYTICS DATA
+  // ==========================================
+  const fetchReportData = useCallback(async () => {
+    if (!financialYear) return;
+
+    setDataLoading(true);
+    setApiData([]);
+    setPage(1);
+
+    const queryParams = new URLSearchParams();
+    queryParams.append("financial_year", financialYear);
+
+    if (selectedDistrict) queryParams.append("district_id", selectedDistrict);
+    if (selectedBlock) queryParams.append("block_id", selectedBlock);
+    if (selectedTheme) queryParams.append("theme_id", selectedTheme);
+    if (selectedPlan) queryParams.append("plan_id", selectedPlan);
+
+    try {
+      const res = await api.get(
+        `/public/cadre-selection-summary/?${queryParams.toString()}`,
+      );
+      if (res.data?.status === "success") {
+        // Fallbacks based on your standard payload structure
+        const rawData =
+          res.data.data || res.data.results || res.data.cadre_summary || [];
+        setApiData(Array.isArray(rawData) ? rawData : []);
+      }
+    } catch (err) {
+      console.error("Error fetching training request data:", err);
+    } finally {
+      setDataLoading(false);
+    }
+  }, [
+    financialYear,
+    selectedDistrict,
+    selectedBlock,
+    selectedTheme,
+    selectedPlan,
+  ]);
+
+  useEffect(() => {
+    fetchReportData();
+  }, [fetchReportData]);
+
+  // ==========================================
+  // 3. CHART CONFIGURATION (LINE CHART)
+  // ==========================================
+  const chartConfigData = useMemo(() => {
+    // Group metrics dynamically based on the current filtering level
+    const summaryMap = {};
+    const groupKey = selectedDistrict ? "block_name_en" : "district_name_en";
+
+    apiData.forEach((item) => {
+      const label = item[groupKey] || item.training_name || "Unknown";
+      if (!summaryMap[label]) {
+        summaryMap[label] = 0;
+      }
+      summaryMap[label] +=
+        (Number(item.beneficiary_count) || 0) +
+        (Number(item.trainer_count) || 0);
+    });
+
+    const labels = Object.keys(summaryMap);
+    const dataPoints = labels.map((k) => summaryMap[k]);
+
+    return {
+      labels,
+      datasets: [
+        {
+          label: "Total Selected Cadre",
+          data: dataPoints,
+          borderColor: "#f59e0b", // Amber 500
+          backgroundColor: "rgba(245, 158, 11, 0.15)",
+          fill: true,
+          tension: 0.4,
+          pointRadius: 5,
+          pointBackgroundColor: "#f59e0b",
+          pointBorderColor: "#ffffff",
+          pointBorderWidth: 2,
+        },
+      ],
+    };
+  }, [apiData, selectedDistrict]);
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: { display: false },
+      tooltip: {
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: { size: 14 },
+        bodyFont: { size: 13 },
+      },
+    },
+    scales: {
+      x: {
+        grid: { display: false },
+        ticks: { color: "#64748b", font: { size: 11 } },
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: "#f1f5f9" },
+        ticks: { color: "#64748b" },
+      },
+    },
+  };
+
+  // ==========================================
+  // 4. TABLE COLUMNS SETUP
+  // ==========================================
+  const columns = [
+    {
+      header: "Created By",
+      key: "username",
+      render: (row) => (
+        <span style={{ fontWeight: 700, color: "#0f172a" }}>
+          {row.username || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "District",
+      key: "district_name_en",
+      render: (row) => (
+        <span style={{ fontWeight: 600 }}>{row.district_name_en || "-"}</span>
+      ),
+    },
+    {
+      header: "Block",
+      key: "block_name_en",
+      render: (row) => row.block_name_en || "-",
+    },
+    { header: "Financial Year", key: "financial_year" },
+    {
+      header: "Training Program",
+      key: "training_name",
+      render: (row) => (
+        <span style={{ color: "#2563eb", fontWeight: 700 }}>
+          {row.training_name || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "Beneficiaries Selected",
+      key: "beneficiary_count",
+      render: (row) => (
+        <div className="num-col" style={{ fontWeight: 700, color: "#0f172a" }}>
+          {row.beneficiary_count || 0}
+        </div>
+      ),
+    },
+    {
+      header: "Trainers Selected",
+      key: "trainer_count",
+      render: (row) => (
+        <div
+          className="num-col"
+          style={{
+            fontWeight: 700,
+            color: "#9a3412",
+            background: "#ffedd5",
+            padding: "4px 8px",
+            borderRadius: "6px",
+            display: "inline-block",
+          }}
+        >
+          {row.trainer_count || 0}
+        </div>
+      ),
+    },
+  ];
+
+  // ==========================================
+  // 5. CSV EXPORT LOGIC
+  // ==========================================
+  const exportToCSV = () => {
+    if (!apiData || apiData.length === 0) return;
+
+    let csvContent =
+      "S.No.,Created By,District,Block,Financial Year,Training Program,Beneficiaries Selected,Trainers Selected\n";
+
+    apiData.forEach((row, i) => {
+      csvContent += `"${i + 1}","${row.username || "-"}","${row.district_name_en || "-"}","${row.block_name_en || "-"}","${row.financial_year || "-"}","${row.training_name || "-"}","${row.beneficiary_count || 0}","${row.trainer_count || 0}"\n`;
+    });
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `Training_Requests_Created_${financialYear}.csv`,
+    );
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+  };
+
+  const totalPages = Math.ceil(apiData.length / rowsPerPage) || 1;
 
   return (
-    <div style={styles.dashboardContainer}>
-      {/* Chart Container Card */}
-      <div style={styles.whiteCard}>
-        <div style={{ marginBottom: "20px" }}>
-          <h2
+    <div className="analytics-white-card">
+      <div className="report-header">
+        <h2>Training Requests Created</h2>
+        <p>
+          Monitor raw operational capacity allocation and cadre selection
+          trajectories filtered by programmatic themes and geographical scopes.
+        </p>
+      </div>
+
+      {/* --- FILTERS ROW --- */}
+      <div className="filters-row">
+        <div className="filter-group">
+          <label>District Scope</label>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => {
+              setSelectedDistrict(e.target.value);
+              setSelectedBlock("");
+              setPage(1);
+            }}
+            disabled={lookupsLoading}
+          >
+            <option value="">-- All Districts --</option>
+            {districts.map((d) => (
+              <option key={d.district_id} value={d.district_id}>
+                {d.district_name_en}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label>Block Boundary</label>
+          <select
+            value={selectedBlock}
+            onChange={(e) => {
+              setSelectedBlock(e.target.value);
+              setPage(1);
+            }}
+            disabled={!selectedDistrict}
+          >
+            <option value="">-- All Blocks --</option>
+            {blocks.map((b) => (
+              <option key={b.block_id} value={b.block_id}>
+                {b.block_name_en}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label>Training Theme</label>
+          <select
+            value={selectedTheme}
+            onChange={(e) => {
+              setSelectedTheme(e.target.value);
+              setSelectedPlan("");
+              setPage(1);
+            }}
+            disabled={lookupsLoading}
+          >
+            <option value="">-- All Themes --</option>
+            {themes.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.theme_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        <div className="filter-group">
+          <label>Training Plan</label>
+          <select
+            value={selectedPlan}
+            onChange={(e) => {
+              setSelectedPlan(e.target.value);
+              setPage(1);
+            }}
+            disabled={!selectedTheme}
+          >
+            <option value="">-- All Plans --</option>
+            {plans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.training_name || p.title || p.plan_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {(selectedDistrict ||
+          selectedBlock ||
+          selectedTheme ||
+          selectedPlan) && (
+          <div
+            className="filter-group"
             style={{
-              fontSize: "1.5rem",
-              fontWeight: "700",
-              color: "#1e293b",
-              margin: 0,
+              justifyContent: "flex-end",
+              paddingBottom: "2px",
+              flex: "none",
             }}
           >
-            Total Training Requests
-          </h2>
-          <p style={styles.cardSubtitle}>Total requests for last 3 months</p>
-        </div>
-
-        <div style={{ height: "350px", position: "relative" }}>
-          <Line
-            data={chartData}
-            options={{
-              responsive: true,
-              maintainAspectRatio: false,
-              plugins: {
-                legend: { display: false },
-              },
-              scales: {
-                y: { beginAtZero: true },
-              },
-            }}
-          />
-        </div>
-      </div>
-
-      {/* Table Container Card */}
-      <div style={styles.whiteCard}>
-        {/* Header configuration */}
-        <div style={styles.headerWrapper}>
-          <h3 style={styles.cardTitle}>District Wise Training Data</h3>
-
-          <div style={styles.controlsWrapper}>
-            {/* Search Box Wrapper Container */}
-            <div
-              style={{
-                ...styles.searchContainer,
-                ...(isInputFocused ? styles.searchContainerActive : {}),
-              }}
-            >
-              <input
-                type="text"
-                placeholder="Type to search..."
-                value={searchQuery}
-                onFocus={() => setIsInputFocused(true)}
-                onBlur={() => setIsInputFocused(false)}
-                onChange={(e) => {
-                  setSearchQuery(e.target.value);
-                  setPage(1);
-                }}
-                style={styles.searchInput}
-              />
-
-              <button
-                type="button"
-                onMouseEnter={() => setIsButtonHovered(true)}
-                onMouseLeave={() => setIsButtonHovered(false)}
-                style={{
-                  ...styles.searchButton,
-                  ...(isButtonHovered ? styles.searchButtonHover : {}),
-                }}
-              >
-                Search
-              </button>
-            </div>
-
-            {/* Dropdown Menu Component Selection */}
-            <select
-              value={selectedDistrict}
-              onFocus={() => setIsSelectFocused(true)}
-              onBlur={() => setIsSelectFocused(false)}
-              onChange={(e) => {
-                setSelectedDistrict(e.target.value);
+            <button
+              className="reset-btn"
+              onClick={() => {
+                setSelectedDistrict("");
+                setSelectedBlock("");
+                setSelectedTheme("");
+                setSelectedPlan("");
                 setPage(1);
               }}
-              style={{
-                ...styles.selectDropdown,
-                ...(isSelectFocused ? styles.selectDropdownActive : {}),
-              }}
             >
-              <option value="all" style={styles.dropdownOption}>
-                Select District (All)
-              </option>
-              {Object.entries(groupedDistricts).map(([region, districts]) => (
-                <optgroup key={region} label={region}>
-                  {districts.map((district) => (
-                    <option
-                      key={district}
-                      value={district}
-                      style={styles.dropdownOption}
-                    >
-                      {district}
-                    </option>
-                  ))}
-                </optgroup>
-              ))}
-            </select>
+              Reset Filters
+            </button>
           </div>
-        </div>
+        )}
+      </div>
 
-        {/* Main Tabular View Frame inside the card wrapper */}
-        <div style={styles.tableOverflowContainer}>
-          <table style={styles.table}>
-            <thead>
-              <tr style={styles.tableHeaderRow}>
-                <th style={styles.th}>District</th>
-                <th style={styles.th}>Requests</th>
-                <th style={styles.th}>Completed</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.length > 0 ? (
-                data.map((row) => {
-                  const isHovered = hoveredRowId === row.id;
-                  return (
-                    <tr
-                      key={row.id}
-                      onMouseEnter={() => setHoveredRowId(row.id)}
-                      onMouseLeave={() => setHoveredRowId(null)}
-                      style={{
-                        backgroundColor: isHovered
-                          ? "rgba(245, 158, 11, 0.05)"
-                          : "transparent",
-                        transition: "background-color 0.15s ease",
-                      }}
-                    >
-                      <td style={styles.tdDistrict}>{row.district}</td>
-                      <td style={styles.tdValue}>{row.requests}</td>
-                      <td style={styles.tdValue}>{row.completed}</td>
-                    </tr>
-                  );
-                })
-              ) : (
-                <tr>
-                  <td colSpan={3} style={styles.tdNoRecords}>
-                    No records found
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Bottom Pagination controls context */}
-        <div style={styles.paginationContainer}>
-          <TablePagination
-            page={page}
-            totalPages={totalPages}
-            rowsPerPage={rowsPerPage}
-            setRowsPerPage={setRowsPerPage}
-            setPage={setPage}
-            totalRecords={filteredRows.length}
-          />
+      {/* --- CHART SECTION --- */}
+      <div className="chart-card">
+        <h3>Total Cadre Selection Trajectories</h3>
+        <p className="chart-subtitle">
+          Aggregated totals evaluated across selected geographical domains.
+        </p>
+        <div className="chart-inner-container">
+          {dataLoading ? (
+            <div className="empty-state">Loading analytical metrics...</div>
+          ) : apiData.length > 0 ? (
+            <Line data={chartConfigData} options={chartOptions} />
+          ) : (
+            <div className="empty-state">
+              No target data found for the selected filter combinations.
+            </div>
+          )}
         </div>
       </div>
+
+      {/* --- TABLE HEADER & EXPORT --- */}
+      <div className="table-header-flex">
+        <h3>Detailed Selection Registry</h3>
+        <button
+          className="export-btn"
+          onClick={exportToCSV}
+          disabled={apiData.length === 0 || dataLoading}
+        >
+          <FaDownload /> Export Excel
+        </button>
+      </div>
+
+      {/* --- TABLE UI --- */}
+      <TableUI
+        data={apiData}
+        columns={columns}
+        page={page}
+        rowsPerPage={rowsPerPage}
+        loading={dataLoading}
+      />
+
+      {/* --- PAGINATION --- */}
+      {!dataLoading && apiData.length > 0 && (
+        <TablePagination
+          page={page}
+          totalPages={totalPages}
+          rowsPerPage={rowsPerPage}
+          setRowsPerPage={setRowsPerPage}
+          setPage={setPage}
+          totalRecords={apiData.length}
+        />
+      )}
+
+      {/* --- STYLES --- */}
+      <style>{`
+        .analytics-white-card {
+          background: #ffffff;
+          border-radius: 16px;
+          padding: 28px;
+          box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+          border: 1px solid #e2e8f0;
+          animation: fadeIn 0.4s ease-in-out;
+        }
+
+        .report-header { margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; }
+        .report-header h2 {
+          font-size: 24px;
+          font-weight: 800;
+          color: #000000;
+          margin: 0 0 8px 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 14px;
+          margin: 0;
+          letter-spacing: 0.5px;
+          text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .report-header p {
+          color: #64748b;
+          font-size: 15px;
+          margin: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;          
+        }
+
+        .filters-row {
+          display: flex; flex-wrap: wrap; gap: 20px; background: #08398A; padding: 20px;
+          border-radius: 12px; margin-bottom: 24px; border: 1px solid #e2e8f0;
+        }
+
+        .filter-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 180px; }
+        .filter-group label { font-size: 13px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-group select {
+          padding: 12px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px;
+          font-weight: 600; color: #0f172a; outline: none; transition: all 0.2s ease;
+        }
+        .filter-group select:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
+        .filter-group select:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+
+        .reset-btn { background: #f1f5f9; color: #ef4444; border: 1px solid #fecaca; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; height: 44px; }
+        .reset-btn:hover { background: #ef4444; color: #fff; }
+
+        .chart-card { background: #ffffff; border: 3px solid #08398A; border-radius: 12px; padding: 24px; margin-bottom: 30px; box-shadow: 0 4px 10px rgba(0,0,0,0.05); }
+        .chart-card h3 { margin: 0; color: #0f172a; font-size: 18px; font-weight: 800; }
+        .chart-subtitle { color: #64748b; font-size: 13px; margin: 6px 0 20px 0; }
+        .chart-inner-container { height: 350px; width: 100%; display: flex; justify-content: center; }
+
+        .table-header-flex { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+        .table-header-flex h3 { margin: 0; color: #0f172a; font-size: 18px; font-weight: 800; }
+
+        .export-btn { display: flex; align-items: center; gap: 8px; background: #16a34a; color: white; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 14px; cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 6px rgba(22, 163, 74, 0.3); }
+        .export-btn:hover:not(:disabled) { background: #15803d; transform: translateY(-2px); box-shadow: 0 4px 12px rgba(22, 163, 74, 0.4); }
+        .export-btn:disabled { background: #cbd5e1; cursor: not-allowed; box-shadow: none; }
+
+        .num-col { text-align: center; }
+        .empty-state { text-align: center; padding: 48px; color: #94a3b8; font-size: 15px; font-style: italic; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; }
+        
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+      `}</style>
     </div>
   );
 }

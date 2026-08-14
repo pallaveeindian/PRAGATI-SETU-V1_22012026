@@ -25,10 +25,10 @@ ChartJS.register(
   BarElement,
   Title,
   Tooltip,
-  Legend
+  Legend,
 );
 
-export default function TrainingCenterPendencyPage() {
+export default function TrainingCenterPendencyPage({ financialYear }) {
   // --- UI & Filter State ---
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedPartner, setSelectedPartner] = useState("");
@@ -60,11 +60,19 @@ export default function TrainingCenterPendencyPage() {
       try {
         const [distRes, partnerRes] = await Promise.all([
           LOOKUP_API.districts.list({ page_size: 5000 }),
-          TMS_API.trainingPartners.list({ page_size: 500 }) // Assuming TMS_API has this
+          TMS_API.trainingPartners.list({ page_size: 500 }), // Assuming TMS_API has this
         ]);
 
-        setApiDistricts(Array.isArray(distRes?.data) ? distRes.data : distRes?.data?.results || []);
-        setApiPartners(Array.isArray(partnerRes?.data) ? partnerRes.data : partnerRes?.data?.results || []);
+        setApiDistricts(
+          Array.isArray(distRes?.data)
+            ? distRes.data
+            : distRes?.data?.results || [],
+        );
+        setApiPartners(
+          Array.isArray(partnerRes?.data)
+            ? partnerRes.data
+            : partnerRes?.data?.results || [],
+        );
       } catch (err) {
         console.error("Error fetching lookups:", err);
       } finally {
@@ -85,9 +93,13 @@ export default function TrainingCenterPendencyPage() {
     const queryParams = new URLSearchParams();
     if (selectedDistrict) queryParams.append("district_id", selectedDistrict);
     if (selectedPartner) queryParams.append("partner_id", selectedPartner);
+    queryParams.append("financial_year", financialYear);
+    queryParams.append("page_size", 1000);
 
     try {
-      const res = await api.get(`/tms/reports/centre-summary/?${queryParams.toString()}`);
+      const res = await api.get(
+        `/tms/reports/centre-summary/?${queryParams.toString()}`,
+      );
       // Assuming DRF pagination returns data inside .results
       const results = res.data?.results || res.data?.data || res.data || [];
       setApiData(results);
@@ -110,24 +122,37 @@ export default function TrainingCenterPendencyPage() {
   // ==========================================
   // 4. CHART CONFIGURATION (Aggregated by Partner)
   // ==========================================
+  // ==========================================
+  // 4. CHART CONFIGURATION (Aggregated by Partner)
+  // ==========================================
   const chartConfigData = useMemo(() => {
     const summaryMap = {};
+    const processedTargets = new Set(); // Tracks unique Partner + District combos
 
     apiData.forEach((item) => {
       const partner = item.partner_name || "Unknown Partner";
+      const districtId = item.district_id || "Unknown District";
+      const uniqueTargetKey = `${partner}_${districtId}`;
+
       if (!summaryMap[partner]) {
         summaryMap[partner] = { allocated: 0, activeBatches: 0, tcs: 0 };
       }
-      // Assuming multiple rows for same partner in different districts, we take max allocated to avoid double counting or just sum it based on business rules. We will sum.
-      summaryMap[partner].allocated += Number(item.allocated_target || 0);
+
+      // SURGICAL FIX: Only add allocated target ONCE per district for each partner
+      if (!processedTargets.has(uniqueTargetKey)) {
+        summaryMap[partner].allocated += Number(item.allocated_target || 0);
+        processedTargets.add(uniqueTargetKey);
+      }
+
+      // TCs and Active Batches are per-centre, so we sum them for every row
       summaryMap[partner].activeBatches += Number(item.batch_count || 0);
       summaryMap[partner].tcs += Number(item.tpcp_count || 0);
     });
 
     const labels = Object.keys(summaryMap);
-    const allocatedData = labels.map(l => summaryMap[l].allocated);
-    const tcsData = labels.map(l => summaryMap[l].tcs);
-    const batchesData = labels.map(l => summaryMap[l].activeBatches);
+    const allocatedData = labels.map((l) => summaryMap[l].allocated);
+    const tcsData = labels.map((l) => summaryMap[l].tcs);
+    const batchesData = labels.map((l) => summaryMap[l].activeBatches);
 
     return {
       labels,
@@ -158,12 +183,30 @@ export default function TrainingCenterPendencyPage() {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "top", labels: { color: "#334155", font: { family: "inherit", weight: "600" } } },
-      tooltip: { padding: 12, cornerRadius: 8, titleFont: { size: 14 }, bodyFont: { size: 13 } },
+      legend: {
+        position: "top",
+        labels: {
+          color: "#334155",
+          font: { family: "inherit", weight: "600" },
+        },
+      },
+      tooltip: {
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: { size: 14 },
+        bodyFont: { size: 13 },
+      },
     },
     scales: {
-      x: { grid: { display: false }, ticks: { color: "#64748b", font: { size: 11 } } },
-      y: { beginAtZero: true, grid: { color: "#f1f5f9" }, ticks: { color: "#64748b" } },
+      x: {
+        grid: { display: false },
+        ticks: { color: "#64748b", font: { size: 11 } },
+      },
+      y: {
+        beginAtZero: true,
+        grid: { color: "#f1f5f9" },
+        ticks: { color: "#64748b" },
+      },
     },
   };
 
@@ -171,12 +214,60 @@ export default function TrainingCenterPendencyPage() {
   // 5. TABLE COLUMNS SETUP
   // ==========================================
   const columns = [
-    { header: "Training Partner", key: "partner_name", render: (row) => <span style={{ fontWeight: 700, color: "#0f172a" }}>{row.partner_name || "-"}</span> },
-    { header: "District", key: "district_name", render: (row) => <span style={{ fontWeight: 600, color: "#475569" }}>{row.district_name || "-"}</span> },
-    { header: "Allocated Target", key: "allocated_target", render: (row) => <div className="num-col">{row.allocated_target}</div> },
-    { header: "Centre Name", key: "venue_name", render: (row) => <span style={{ fontWeight: 700, color: "#083A8B" }}>{row.venue_name || "-"}</span> },
-    { header: "TCs Created", key: "tpcp_count", render: (row) => <div className="num-col"><span className={`badge ${row.tpcp_count > 0 ? "state-green" : "state-amber"}`}>{row.tpcp_count}</span></div> },
-    { header: "Active Batches", key: "batch_count", render: (row) => <div className="num-col" style={{ fontWeight: 600, color: "#0f172a" }}>{row.batch_count}</div> },
+    {
+      header: "Training Partner",
+      key: "partner_name",
+      render: (row) => (
+        <span style={{ fontWeight: 700, color: "#0f172a" }}>
+          {row.partner_name || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "District",
+      key: "district_name",
+      render: (row) => (
+        <span style={{ fontWeight: 600, color: "#475569" }}>
+          {row.district_name || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "Allocated Target",
+      key: "allocated_target",
+      render: (row) => <div className="num-col">{row.allocated_target}</div>,
+    },
+    {
+      header: "Centre Name",
+      key: "venue_name",
+      render: (row) => (
+        <span style={{ fontWeight: 700, color: "#083A8B" }}>
+          {row.venue_name || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "TCs Created",
+      key: "tpcp_count",
+      render: (row) => (
+        <div className="num-col">
+          <span
+            className={`badge ${row.tpcp_count > 0 ? "state-green" : "state-amber"}`}
+          >
+            {row.tpcp_count}
+          </span>
+        </div>
+      ),
+    },
+    {
+      header: "Active Batches",
+      key: "batch_count",
+      render: (row) => (
+        <div className="num-col" style={{ fontWeight: 600, color: "#0f172a" }}>
+          {row.batch_count}
+        </div>
+      ),
+    },
     {
       header: "Uploaded Assets",
       key: "asset_count",
@@ -204,7 +295,8 @@ export default function TrainingCenterPendencyPage() {
   const exportToCSV = () => {
     if (!apiData || apiData.length === 0) return;
 
-    let csvContent = "S.No.,Training Partner Name,District,Allocated Target,Centre Name,TCs Created,Batches,Uploaded Assets\n";
+    let csvContent =
+      "S.No.,Training Partner Name,District,Allocated Target,Centre Name,TCs Created,Batches,Uploaded Assets\n";
     apiData.forEach((row, i) => {
       csvContent += `"${i + 1}","${row.partner_name || "-"}","${row.district_name || "-"}","${row.allocated_target}","${row.venue_name || "-"}","${row.tpcp_count}","${row.batch_count}","${row.asset_count}"\n`;
     });
@@ -223,33 +315,51 @@ export default function TrainingCenterPendencyPage() {
     <div className="analytics-white-card">
       <div className="report-header">
         <h2>Training Centre Pendencies & Asset Tracking</h2>
-        <p>Review and audit training space initialization, missing geo-tagged assets, and valid uploads.</p>
+        <p>
+          Review and audit training space initialization, missing geo-tagged
+          assets, and valid uploads.
+        </p>
       </div>
 
       {/* --- FILTERS ROW --- */}
       <div className="filters-row">
         <div className="filter-group">
           <label>District</label>
-          <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={lookupsLoading}>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+            disabled={lookupsLoading}
+          >
             <option value="">-- All Districts --</option>
             {apiDistricts.map((d) => (
-              <option key={d.district_id} value={d.district_id}>{d.district_name_en}</option>
+              <option key={d.district_id} value={d.district_id}>
+                {d.district_name_en}
+              </option>
             ))}
           </select>
         </div>
 
         <div className="filter-group">
           <label>Training Partner</label>
-          <select value={selectedPartner} onChange={(e) => setSelectedPartner(e.target.value)} disabled={lookupsLoading}>
+          <select
+            value={selectedPartner}
+            onChange={(e) => setSelectedPartner(e.target.value)}
+            disabled={lookupsLoading}
+          >
             <option value="">-- All Partners --</option>
             {apiPartners.map((p) => (
-              <option key={p.id} value={p.id}>{p.name}</option>
+              <option key={p.id} value={p.id}>
+                {p.name}
+              </option>
             ))}
           </select>
         </div>
 
         {(selectedDistrict || selectedPartner) && (
-          <div className="filter-group" style={{ justifyContent: "flex-end", paddingBottom: "2px" }}>
+          <div
+            className="filter-group"
+            style={{ justifyContent: "flex-end", paddingBottom: "2px" }}
+          >
             <button
               className="reset-btn"
               onClick={() => {
@@ -272,7 +382,9 @@ export default function TrainingCenterPendencyPage() {
           ) : apiData.length > 0 ? (
             <Bar data={chartConfigData} options={chartOptions} />
           ) : (
-            <div className="empty-state">No matrix data found to compile visual chart plots.</div>
+            <div className="empty-state">
+              No matrix data found to compile visual chart plots.
+            </div>
           )}
         </div>
       </div>
@@ -280,7 +392,11 @@ export default function TrainingCenterPendencyPage() {
       {/* --- TABLE HEADER & EXPORT --- */}
       <div className="table-header-flex">
         <h3>Centre Progress Details</h3>
-        <button className="export-btn" onClick={exportToCSV} disabled={apiData.length === 0 || dataLoading}>
+        <button
+          className="export-btn"
+          onClick={exportToCSV}
+          disabled={apiData.length === 0 || dataLoading}
+        >
           <FaDownload /> Export Excel
         </button>
       </div>
@@ -326,8 +442,28 @@ export default function TrainingCenterPendencyPage() {
         }
 
         .report-header { margin-bottom: 24px; border-bottom: 2px solid #f1f5f9; padding-bottom: 16px; }
-        .report-header h2 { font-size: 24px; font-weight: 800; color: #083A8B; margin: 0 0 8px 0; }
-        .report-header p { color: #64748b; font-size: 15px; margin: 0; }
+        .report-header h2 {
+          font-size: 24px;
+          font-weight: 800;
+          color: #083A8B;
+          margin: 0 0 8px 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;
+          gap: 14px;
+          margin: 0;
+          letter-spacing: 0.5px;
+          text-shadow: 0 4px 12px rgba(0, 0, 0, 0.3), 0 1px 2px rgba(0, 0, 0, 0.2);
+        }
+
+        .report-header p {
+          color: #64748b;
+          font-size: 15px;
+          margin: 0;
+          display: flex;
+          justify-content: center;
+          align-items: center;          
+        }
 
         .filters-row {
           display: flex; flex-wrap: wrap; gap: 20px; background: #08398A; padding: 20px;

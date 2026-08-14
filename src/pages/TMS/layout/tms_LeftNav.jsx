@@ -35,6 +35,22 @@ const MENU = {
   bmmu: [
     { label: "Dashboard", to: "/tms/bmmu/dashboard", icon: FaTachometerAlt },
     {
+      label: "Master Trainer DB",
+      icon: FaBuilding,
+      children: [
+        {
+          label: "All Trainer list",
+          to: "/tms/bmmu/master-trainers",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Master Trainer Registration Status",
+          to: "/tms/master-trainers/status",
+          icon: FaBook,
+        },
+      ],
+    },
+    {
       label: "Create Training Request",
       to: "/tms/create-training-request",
       icon: FaBook,
@@ -69,11 +85,22 @@ const MENU = {
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
-    // {
-    //   label: "Master Trainer DB",
-    //   to: "/tms/dmmu/master-trainers",
-    //   icon: FaBuilding,
-    // },
+    {
+      label: "Master Trainer DB",
+      icon: FaBuilding,
+      children: [
+        {
+          label: "All Trainer list",
+          to: "/tms/dmmu/master-trainers",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Master Trainer Registration Status",
+          to: "/tms/master-trainers/status",
+          icon: FaBook,
+        },
+      ],
+    },
     {
       label: "Create Training Request",
       to: "/tms/create-training-request",
@@ -147,6 +174,11 @@ const MENU = {
         {
           label: "Pending Certificate Approval",
           to: "/tms/smmu/master-trainers/approvals",
+          icon: FaBook,
+        },
+        {
+          label: "Master Trainer Registration Status",
+          to: "/tms/master-trainers/status",
           icon: FaBook,
         },
       ],

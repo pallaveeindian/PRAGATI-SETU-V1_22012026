@@ -831,7 +831,8 @@ export default function TrainingBatchList() {
                   <table className="training-table">
                     <thead>
                       <tr>
-                        <th>#</th>
+                        <th>S.No.</th>
+                        <th>FY</th>
                         <th>Batch Code</th>
                         <th>Status</th>
                         <th>Start</th>
@@ -872,6 +873,9 @@ export default function TrainingBatchList() {
                         paginatedBatches.map((b, i) => (
                           <tr key={b.id}>
                             <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
+                            <td style={{ fontWeight: "600" }}>
+                              {b.financial_year}
+                            </td>
                             <td style={{ fontWeight: "600", color: "#2563eb" }}>
                               {b.code}
                             </td>

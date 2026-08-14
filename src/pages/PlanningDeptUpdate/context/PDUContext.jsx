@@ -11,7 +11,11 @@ import React, {
   useEffect,
   useCallback,
 } from "react";
-import { fetchUPStateData, fetchRawDistrictData } from "../services/lokosApi";
+import {
+  fetchUPStateData,
+  fetchRawDistrictData,
+  fetchDistrictRFData,
+} from "../services/lokosApi";
 import {
   initializeMappingData,
   getAllAspirationalBlocks,
@@ -91,48 +95,56 @@ export const PDUProvider = ({ children }) => {
     setError(null);
 
     try {
-      // Get the base list of 108 blocks from our parsed CSV
       const baseBlocksList = getAllAspirationalBlocks();
-
       if (!baseBlocksList || baseBlocksList.length === 0) {
         throw new Error("Aspirational Blocks mapping data is empty.");
       }
 
-      // Extract unique Lokos District IDs (so we don't fetch the same district twice)
-      // e.g., We only fetch Balrampur once, even if it has 3 aspirational blocks.
       const uniqueDistrictIds = [
         ...new Set(baseBlocksList.map((b) => b.lokos_district_id)),
       ].filter(Boolean);
 
-      // Fetch all required district JSONs concurrently for maximum speed
+      // Fetch BOTH Demographic and RF data concurrently
       const districtResponses = await Promise.all(
         uniqueDistrictIds.map(async (distId) => {
-          const data = await fetchRawDistrictData(distId);
-          return { distId, data };
+          const [demographicData, rfDataArray] = await Promise.all([
+            fetchRawDistrictData(distId).catch(() => null),
+            fetchDistrictRFData(distId).catch(() => []),
+          ]);
+          return { distId, demographicData, rfDataArray };
         }),
       );
 
-      // Create a lookup dictionary for blazing fast data merging O(1)
+      // Create lookup dictionaries for blazing fast O(1) data merging
       const districtDataMap = {};
+      const rfDataMap = {};
+
       districtResponses.forEach((res) => {
-        districtDataMap[res.distId] = res.data;
+        districtDataMap[res.distId] = res.demographicData;
+
+        // Convert RF Array into a lookup object by blockId
+        rfDataMap[res.distId] = {};
+        if (res.rfDataArray && Array.isArray(res.rfDataArray)) {
+          res.rfDataArray.forEach((rfBlock) => {
+            rfDataMap[res.distId][rfBlock.blockId] = rfBlock;
+          });
+        }
       });
 
       // Merge the Lokos live data into our 108 blocks list
       const enrichedBlocks = baseBlocksList.map((block) => {
-        // Find the district data
         const distData = districtDataMap[block.lokos_district_id];
-        // Drill down to the specific block (Add .district before .blocks)
         const blockLokosData =
           distData?.district?.blocks?.[block.lokos_block_id];
 
+        // Extract the specific RF data for this block
+        const blockRfData =
+          rfDataMap[block.lokos_district_id]?.[block.lokos_block_id];
+
         return {
-          // Spread our CSV mapping data (api_block_code, district_name, etc.)
           ...block,
-          districtName: distData?.district?.districtName || "Unknown", // Fetched dynamically from Lokos District API
-          // Attach the live Lokos counts
+          districtName: distData?.district?.districtName || "Unknown",
           cumulativeCounts: blockLokosData?.blockCumulativeCounts || null,
-          // All Display Counts extracted dynamically
           shgCount: blockLokosData?.blockCumulativeCounts?.shgCount || 0,
           voCount: blockLokosData?.blockCumulativeCounts?.voCount || 0,
           clfCount: blockLokosData?.blockCumulativeCounts?.clfCount || 0,
@@ -142,7 +154,11 @@ export const PDUProvider = ({ children }) => {
           crpsCount: blockLokosData?.blockCumulativeCounts?.crpsCount || 0,
           aajeevikaRegisterCount:
             blockLokosData?.blockCumulativeCounts?.aajeevikaRegisterCount || 0,
-          rfReceivedCount: 0, // Placeholder
+
+          // --- NEW RF SPECIFIC DATA ---
+          rfReceivedCount: blockRfData?.shgReceivingRf || 0, // This is what goes to the API
+          rfPercentage: blockRfData?.shgReceivingRfPercentage || 0,
+          rfTotalAmount: blockRfData?.rfReceived || 0,
         };
       });
 

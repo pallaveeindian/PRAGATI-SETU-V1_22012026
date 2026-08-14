@@ -40,7 +40,9 @@ export default function MTDirectoryConductor() {
     filters,
     setFilters,
     isDMMU,
+    isBMMU,
     lockedDistrict,
+    lockedBlock,
     lockedTheme,
     triggerRefresh,
   } = useMTList();
@@ -120,8 +122,9 @@ export default function MTDirectoryConductor() {
               <MTFilterPanel
                 filters={filters}
                 setFilters={setFilters}
-                targetRole={isDMMU ? "dmmu" : "smmu"}
+                targetRole={isBMMU ? "bmmu" : isDMMU ? "dmmu" : "smmu"}
                 lockedDistrict={lockedDistrict}
+                lockedBlock={lockedBlock}
                 lockedTheme={lockedTheme}
               />
 
@@ -137,7 +140,7 @@ export default function MTDirectoryConductor() {
                   onViewClick={(trainer) => setViewTrainer(trainer)}
                   onEditClick={handleOpenEdit}
                   onCertificatesClick={(trainer) => setCertTrainer(trainer)}
-                  isSMMU={!isDMMU}
+                  isSMMU={!isDMMU && !isBMMU}
                   lockedTheme={lockedTheme}
                 />
               </div>
@@ -158,7 +161,7 @@ export default function MTDirectoryConductor() {
         onClose={handleCloseForm}
         onSuccessRefresh={handleSuccessRefresh}
         isDMMU={isDMMU}
-        isSMMU={!isDMMU}
+        isSMMU={!isDMMU && !isBMMU}
         lockedDistrict={lockedDistrict}
         lockedTheme={lockedTheme}
       />

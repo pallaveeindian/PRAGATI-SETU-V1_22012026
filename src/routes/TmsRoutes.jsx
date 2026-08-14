@@ -58,6 +58,7 @@ import StaffBatchCreatorDashboard from "../pages/TMS/StaffBatchCreator/StaffBatc
 import {
   MTDirectoryConductor,
   MTPendingApprovalsConductor,
+  MTProfileRegistrationsConductor,
 } from "../pages/TMS/MTManagementV2";
 
 export default function TmsRoutes() {
@@ -97,6 +98,16 @@ export default function TmsRoutes() {
         />
       </Route>
 
+      {/* MT APPROVAL */}
+      <Route
+        element={<ProtectedRoute allowedRoles={["bmmu", "dmmu", "smmu"]} />}
+      >
+        <Route
+          path="/master-trainers/status"
+          element={<MTProfileRegistrationsConductor />}
+        />
+      </Route>
+
       {/* DMMU Routes */}
       <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
         <Route path="dmmu/dashboard" element={<DmmuTmsDashboard />} />
@@ -118,6 +129,8 @@ export default function TmsRoutes() {
           element={<BmmuCreateTrainingPlan />}
         />
         <Route path="bmmu/tp-TvA" element={<BmmuTargetAchievement />} />
+        {/* MT Management V2 (DMMU is geoscope locked by the component automatically) */}
+        <Route path="bmmu/master-trainers" element={<MTDirectoryConductor />} />
       </Route>
 
       {/* Training Partner Routes */}

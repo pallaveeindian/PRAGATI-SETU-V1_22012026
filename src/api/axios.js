@@ -846,6 +846,16 @@ export const TMS_API = {
       api.delete(
         `/tms/mt/${encodeURIComponent(trainerId)}/certificates/${encodeURIComponent(certId)}/delete/`,
       ),
+
+    // List Master Trainer Profile Statuses (includes nested trainer depth=1)
+    // Supports params: { status: 'PENDING', district_id: 123 }
+    profileStatusList: (params) =>
+      api.get("/tms/master-trainer-status/list/", { params }),
+
+    // Approve or Reject a Master Trainer Profile
+    // Expects payload: { master_trainer_id: 12, status: "VERIFIED"|"REJECTED", remarks: "..." }
+    verifyProfile: (data) =>
+      api.patch("/tms/master-trainer-status/verify/", data),
   },
 };
 

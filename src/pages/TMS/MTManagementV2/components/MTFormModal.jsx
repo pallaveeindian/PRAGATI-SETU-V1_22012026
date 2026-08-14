@@ -55,6 +55,17 @@ export default function MTFormModal({
 }) {
   const isUpdate = Boolean(trainerId);
 
+  // SURGICAL ADDITION: Role context for form restrictions
+  const { user } =
+    React.useContext(
+      import("../../../../contexts/AuthContext")
+        .then((m) => m.AuthContext)
+        .catch(() => ({})),
+    ) || {};
+  const role = user?.role_name?.toLowerCase() || "";
+  const isCurrentBMMU = role === "bmmu" || role === "1";
+  const isCurrentDMMU = role === "dmmu" || role === "2";
+
   // 1. Form & UI State
   const [formData, setFormData] = useState({ ...INITIAL_FORM_STATE });
   const [originalData, setOriginalData] = useState(null); // <-- SURGICAL ADDITION
@@ -155,7 +166,8 @@ export default function MTFormModal({
       // Creation Mode Initialization
       setFormData({
         ...INITIAL_FORM_STATE,
-        empanel_district: isDMMU ? lockedDistrict : "",
+        empanel_district: isDMMU || isCurrentBMMU ? lockedDistrict : "",
+        empanel_block: isCurrentBMMU ? user?.block_id : "", // Assuming block_id is in user object, otherwise fetched via geoscope
         theme: isSMMU ? lockedTheme : "",
       });
     }
@@ -388,7 +400,7 @@ export default function MTFormModal({
                 <div className="nic-form-grid">
                   <div className="nic-form-group">
                     <label className="nic-label">
-                      Username (Auto-Generated if blank){" "}
+                      Username (MANDATORY){" "}
                       {!isUpdate && (
                         <span className="text-muted">(Min 4 chars)</span>
                       )}
@@ -401,7 +413,7 @@ export default function MTFormModal({
                       onChange={handleChange}
                       disabled={isUpdate}
                       placeholder={
-                        isUpdate ? "" : "Leave blank for auto-generation"
+                        isUpdate ? "" : "Please enter Username for Trainer ID"
                       }
                     />
                   </div>
@@ -562,9 +574,16 @@ export default function MTFormModal({
                       required
                     >
                       <option value="">Select Designation</option>
-                      <option value="BRP">BRP</option>
-                      <option value="DRP">DRP</option>
-                      <option value="SRP">SRP</option>
+                      {/* SURGICAL REPLACEMENT: RBAC Restricted Designation Selection */}
+                      {isCurrentBMMU && <option value="BRP">BRP</option>}
+                      {isCurrentDMMU && <option value="DRP">DRP</option>}
+                      {!isCurrentBMMU && !isCurrentDMMU && (
+                        <>
+                          <option value="BRP">BRP</option>
+                          <option value="DRP">DRP</option>
+                          <option value="SRP">SRP</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div className="nic-form-group">
@@ -610,7 +629,7 @@ export default function MTFormModal({
                       className="nic-select"
                       value={formData.empanel_block}
                       onChange={handleChange}
-                      disabled={!formData.empanel_district}
+                      disabled={!formData.empanel_district || isCurrentBMMU}
                     >
                       <option value="">Select Block</option>
                       {blocks.map((b) => (

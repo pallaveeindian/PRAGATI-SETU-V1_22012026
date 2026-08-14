@@ -7,16 +7,55 @@ import axios from "axios";
 import { getPlanningDeptApiKey } from "../utils/mappingData";
 
 const PLANNING_DEPT_API_URL =
-  "https://api.up.gov.in/planning/api/insert-aspirational-data";
+  "https://xxx.com/";
+  // "https://epariyojana.up.gov.in/tabp/API/DepAPI.asmx/PushData";
 
 /**
- * Pushes a single block's payload to the Planning Department API.
+ * Helper: Generate SHA-512 Hash natively in the browser
+ * Hash format: UserName(8) + APIKey + DDMMYYYY
+ */
+const generateUserHash = async (apiKey) => {
+  const userName = "8"; // As per API spec
+
+  // Get DDMMYYYY for today
+  const today = new Date();
+  const dd = String(today.getDate()).padStart(2, "0");
+  const mm = String(today.getMonth() + 1).padStart(2, "0");
+  const yyyy = today.getFullYear();
+  const dateStr = `${dd}${mm}${yyyy}`;
+
+  const rawString = `${userName}${apiKey}${dateStr}`;
+
+  // Encode string to buffer
+  const encoder = new TextEncoder();
+  const data = encoder.encode(rawString);
+
+  // Hash using native Web Crypto API (no external libraries needed)
+  const hashBuffer = await crypto.subtle.digest("SHA-512", data);
+
+  // Convert buffer to Hex string
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  const hashHex = hashArray
+    .map((b) => b.toString(16).padStart(2, "0"))
+    .join("");
+
+  return hashHex.toUpperCase();
+};
+
+/**
+ * Helper: Safe Base64 encoding for UTF-8 (Required for Hindi Disclaimer text)
+ */
+const encodeBase64Utf8 = (str) => {
+  return btoa(unescape(encodeURIComponent(str)));
+};
+
+/**
+ * Pushes the ENTIRE array of 108 blocks to the Planning Department API in a single request.
  *
- * @param {Object} payload - The strictly formatted JSON payload built by payloadBuilder.js
+ * @param {Array<Object>} payloads - The array of formatted JSON payloads for all 108 blocks
  * @returns {Promise<Object>} The API response data
  */
-export const pushSingleBlockData = async (payload) => {
-  // Retrieve the API key we extracted from the CSV during initialization
+export const pushBulkDataToPlanningDept = async (payloads) => {
   const apiKey = getPlanningDeptApiKey();
 
   if (!apiKey) {
@@ -25,72 +64,37 @@ export const pushSingleBlockData = async (payload) => {
     );
   }
 
+  if (!payloads || payloads.length === 0) {
+    throw new Error("No data payloads provided for upload.");
+  }
+
   try {
-    const response = await axios.post(PLANNING_DEPT_API_URL, payload, {
-      headers: {
-        "Content-Type": "application/json",
-        // Note: Adjust the exact header key ('x-api-key', 'Authorization', 'ApiKey', etc.)
-        // based on the specific documentation provided by the Planning Dept.
-        "x-api-key": apiKey,
-        Authorization: `Bearer ${apiKey}`,
+    // 1. Generate the dynamic UserHash
+    const userHash = await generateUserHash(apiKey);
+
+    // 2. Stringify the entire array and encode in Base64 (UTF-8 safe)
+    const jsonString = JSON.stringify(payloads);
+    const base64Data = encodeBase64Utf8(jsonString);
+
+    // 3. Prepare parameters for ASMX endpoint (application/x-www-form-urlencoded)
+    const params = new URLSearchParams();
+    params.append("UserHash", userHash);
+    params.append("JSON_Data", base64Data);
+
+    // 4. Execute the POST request
+    const response = await axios.post(
+      PLANNING_DEPT_API_URL,
+      params.toString(),
+      {
+        headers: {
+          "Content-Type": "application/x-www-form-urlencoded",
+        },
       },
-    });
+    );
 
     return response.data;
   } catch (error) {
-    console.error(
-      `Failed to push data for Block Code ${payload.Block_code}:`,
-      error,
-    );
-    throw error; // Rethrow to be handled by the UI component
+    console.error("Failed to push bulk data to Planning Dept:", error);
+    throw error;
   }
-};
-
-/**
- * Sequentially pushes an array of block payloads ONE BY ONE.
- * This is designed to work perfectly with your PDUStatusModal.jsx to show real-time progress.
- *
- * @param {Array<Object>} payloads - Array of JSON payloads for the 108 blocks
- * @param {Function} onProgress - Callback function triggered after every single request
- *                                e.g., (current, total, isSuccess, blockCode) => {}
- * @returns {Promise<Object>} Summary of the batch operation { successCount, failedBlocks }
- */
-export const pushAllBlocksSequentially = async (payloads, onProgress) => {
-  let successCount = 0;
-  const failedBlocks = [];
-  const total = payloads.length;
-
-  for (let i = 0; i < total; i++) {
-    const currentPayload = payloads[i];
-
-    try {
-      await pushSingleBlockData(currentPayload);
-      successCount++;
-
-      // Notify UI of success
-      if (onProgress) {
-        onProgress(i + 1, total, true, currentPayload.Block_code);
-      }
-    } catch (error) {
-      failedBlocks.push({
-        blockCode: currentPayload.Block_code,
-        error: error.message,
-      });
-
-      // Notify UI of failure
-      if (onProgress) {
-        onProgress(i + 1, total, false, currentPayload.Block_code);
-      }
-    }
-
-    // Optional: Add a small delay between requests to prevent overwhelming the external API server
-    await new Promise((resolve) => setTimeout(resolve, 300));
-  }
-
-  return {
-    total,
-    successCount,
-    failedCount: failedBlocks.length,
-    failedBlocks,
-  };
 };

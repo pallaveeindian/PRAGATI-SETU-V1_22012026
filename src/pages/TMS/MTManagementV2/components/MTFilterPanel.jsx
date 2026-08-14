@@ -8,6 +8,7 @@ export default function MTFilterPanel({
   setFilters,
   targetRole, // Expected "dmmu" or "smmu"
   lockedDistrict, // Passed down from useMTList if DMMU
+  lockedBlock,
   lockedTheme, // Passed down from useMTList if SMMU
 }) {
   const isDMMU = targetRole === "dmmu";
@@ -18,6 +19,21 @@ export default function MTFilterPanel({
   const [districtCategories, setDistrictCategories] = useState([]);
   const [districts, setDistricts] = useState([]);
   const [themes, setThemes] = useState([]);
+  const [blocks, setBlocks] = useState([]);
+
+  const isBMMU = targetRole === "bmmu";
+
+  useEffect(() => {
+    if (!filters.district) {
+      setBlocks([]);
+      return;
+    }
+    LOOKUP_API.blocksByDistrict(filters.district, {
+      params: { page_size: 5000 },
+    })
+      .then((res) => setBlocks(res?.data?.results || res?.data || []))
+      .catch(console.error);
+  }, [filters.district]);
 
   // Load Filter Options
   useEffect(() => {
@@ -61,7 +77,8 @@ export default function MTFilterPanel({
     setFilters({
       mandal: "",
       district_category: "",
-      district: isDMMU ? lockedDistrict || "" : "",
+      district: isDMMU || isBMMU ? lockedDistrict || "" : "", // <-- SURGICAL REPLACEMENT
+      block: isBMMU ? lockedBlock || "" : "", // <-- SURGICAL ADDITION
       theme: isSMMU ? lockedTheme || "" : "",
       designation: "",
       gender: "",
@@ -183,6 +200,49 @@ export default function MTFilterPanel({
               {districts.map((d) => (
                 <option key={d.district_id} value={d.district_id}>
                   {d.district_name_en}
+                </option>
+              ))}
+            </select>
+          )}
+        </div>
+
+        {/* ROW 1.5: Block Filter (SURGICAL ADDITION) */}
+        <div className="nic-form-group">
+          <label className="nic-label" htmlFor="block">
+            Block
+            {isBMMU && (
+              <FaLock
+                style={{
+                  marginLeft: "6px",
+                  color: "#ef4444",
+                  fontSize: "11px",
+                }}
+                title="Locked to your assigned block"
+              />
+            )}
+          </label>
+          {isBMMU ? (
+            <div
+              className="nic-input"
+              style={{ background: "#f1f5f9", cursor: "not-allowed" }}
+            >
+              {lockedBlock
+                ? `Block Code: ${lockedBlock}`
+                : "Resolving Geoscope..."}
+            </div>
+          ) : (
+            <select
+              id="block"
+              name="block"
+              className="nic-select"
+              value={filters.block || ""}
+              onChange={handleFilterChange}
+              disabled={!filters.district}
+            >
+              <option value="">All Blocks</option>
+              {blocks.map((b) => (
+                <option key={b.block_id} value={b.block_id}>
+                  {b.block_name_en}
                 </option>
               ))}
             </select>

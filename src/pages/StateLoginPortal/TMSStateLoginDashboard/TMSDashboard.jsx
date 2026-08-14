@@ -96,29 +96,33 @@ const TMSDashboard = () => {
 
           {activeTab === "training_centre_pendencies" && (
             <div className="placeholder-card">
-              <TrainingCenterPendencyPage />
+              <TrainingCenterPendencyPage financialYear={financialYear} />
             </div>
           )}
 
           {activeTab === "batch_progress" && (
             <div className="placeholder-card">
-              <BatchProgressDashboard />
+              <BatchProgressDashboard financialYear={financialYear} />
             </div>
           )}
 
           {activeTab === "batch_certificate_pendency" && (
             <div className="placeholder-card">
-              <DmmuCertificatePendency />
+              <DmmuCertificatePendency financialYear={financialYear} />
             </div>
           )}
 
           {activeTab === "beneficiary_eligibility_attendance" && (
             <div className="placeholder-card">
-              <BeneficiaryAttendanceRatioPage />
+              <BeneficiaryAttendanceRatioPage financialYear={financialYear} />
             </div>
           )}
 
-          {activeTab === "training_request" && <TrainingRequestDashboard />}
+          {activeTab === "training_request" && (
+            <div className="placeholder-card">
+              <TrainingRequestDashboard financialYear={financialYear} />
+            </div>
+          )}
         </div>
       </div>
 

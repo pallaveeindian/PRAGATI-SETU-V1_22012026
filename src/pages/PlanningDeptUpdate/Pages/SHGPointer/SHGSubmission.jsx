@@ -1,15 +1,13 @@
 import React, { useState, useEffect } from "react";
 import { usePDUContext } from "../../context/PDUContext";
 import { buildPlanningApiPayload } from "../../Codes/payloadBuilder";
-import { pushAllBlocksSequentially } from "../../services/planningDeptApi";
+import { pushBulkDataToPlanningDept } from "../../services/planningDeptApi"; // Swapped to the bulk function
 
 // Reusable Components
 import PDUCard from "../../components/PDUCard";
 import PDUButton from "../../components/PDUButton";
 import PDUOfficerForm from "../../components/PDUOfficerForm";
 import PDUStatusModal from "../../components/PDUStatusModal";
-
-// import "./styles/SHGSubmission.css";
 
 export default function SHGSubmission() {
   const {
@@ -22,7 +20,6 @@ export default function SHGSubmission() {
 
   // Modal & Upload State
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [currentBlock, setCurrentBlock] = useState(0);
   const [isUploading, setIsUploading] = useState(false);
   const [isComplete, setIsComplete] = useState(false);
   const [logs, setLogs] = useState([]);
@@ -50,8 +47,7 @@ export default function SHGSubmission() {
     if (!isOfficerDataReady || aspirationalBlocks.length === 0) return;
 
     // 1. Reset Modal State
-    setCurrentBlock(0);
-    setLogs([]);
+    setLogs([{ status: "info", message: "Preparing bulk payload matrix..." }]);
     setIsUploading(true);
     setIsComplete(false);
 
@@ -67,26 +63,29 @@ export default function SHGSubmission() {
         });
       });
 
-      // 3. Execute Sequential Push
-      await pushAllBlocksSequentially(
-        payloads,
-        (current, total, isSuccess, blockCode) => {
-          setCurrentBlock(current);
-          setLogs((prev) => [
-            ...prev,
-            {
-              status: isSuccess ? "success" : "error",
-              message: isSuccess
-                ? `[0511] Successfully pushed data for Block Code: ${blockCode}`
-                : `[0511] FAILED to push data for Block Code: ${blockCode}`,
-            },
-          ]);
+      setLogs((prev) => [
+        ...prev,
+        {
+          status: "info",
+          message: `Generated ${payloads.length} block schemas. Initiating secure transmission.`,
         },
-      );
+      ]);
+
+      // 3. Execute Bulk Push (Single API Call)
+      const response = await pushBulkDataToPlanningDept(payloads);
+
+      // 4. Log Success
+      setLogs((prev) => [
+        ...prev,
+        {
+          status: "success",
+          message: `[0511] SUCCESS. Server Response: ${JSON.stringify(response)}`,
+        },
+      ]);
     } catch (error) {
       setLogs((prev) => [
         ...prev,
-        { status: "error", message: `Critical Error: ${error.message}` },
+        { status: "error", message: `CRITICAL ERROR: ${error.message}` },
       ]);
     } finally {
       setIsUploading(false);
@@ -96,13 +95,24 @@ export default function SHGSubmission() {
 
   const handleCloseModal = () => {
     setIsModalOpen(false);
-    // If we finished an upload, we might want to reset the state for next time
+    // If we finished an upload, reset the state for next time
     if (isComplete) {
-      setCurrentBlock(0);
       setLogs([]);
       setIsComplete(false);
     }
   };
+
+  // Generate a live sample payload using the 1st block in the array
+  const samplePayload =
+    isOfficerDataReady && aspirationalBlocks.length > 0
+      ? buildPlanningApiPayload({
+          lokosDistrictId: aspirationalBlocks[0].lokos_district_id,
+          lokosBlockId: aspirationalBlocks[0].lokos_block_id,
+          indicatorCode: "0511",
+          cumulativeAchievement: aspirationalBlocks[0].memberCount || 0,
+          officerDetails: officerDetails,
+        })
+      : null;
 
   return (
     <div
@@ -228,6 +238,42 @@ export default function SHGSubmission() {
                   </PDUButton>
                 )}
               </div>
+
+              {/* --- Sample Payload Preview --- */}
+              {samplePayload && (
+                <div
+                  style={{
+                    marginTop: "16px",
+                    paddingTop: "16px",
+                    borderTop: "1px solid #e5e7eb",
+                  }}
+                >
+                  <span
+                    style={{
+                      color: "#4b5563",
+                      fontWeight: 600,
+                      display: "block",
+                      marginBottom: "8px",
+                    }}
+                  >
+                    Sample Payload Preview (Block 1):
+                  </span>
+                  <pre
+                    style={{
+                      backgroundColor: "#1f2937",
+                      color: "#a78bfa" /* futuristic purple text */,
+                      padding: "12px",
+                      borderRadius: "8px",
+                      fontSize: "0.8rem",
+                      overflowX: "auto",
+                      margin: 0,
+                      boxShadow: "inset 0 2px 4px rgba(0,0,0,0.3)",
+                    }}
+                  >
+                    {JSON.stringify(samplePayload, null, 2)}
+                  </pre>
+                </div>
+              )}
             </div>
           </PDUCard>
         </div>
@@ -237,7 +283,6 @@ export default function SHGSubmission() {
       <PDUStatusModal
         isOpen={isModalOpen}
         onClose={handleCloseModal}
-        currentBlock={currentBlock}
         totalBlocks={aspirationalBlocks.length || 108}
         isUploading={isUploading}
         isComplete={isComplete}
