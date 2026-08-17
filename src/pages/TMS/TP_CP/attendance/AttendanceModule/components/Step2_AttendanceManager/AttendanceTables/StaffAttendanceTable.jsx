@@ -1,11 +1,16 @@
-// src/pages/TMS/TP_CP/attendance/cpad_per_batch_ekyc.jsx
-import React from "react";
+// src/pages/TMS/TP_CP/attendance/AttendanceModule/components/Step2_AttendanceManager/AttendanceTables/StaffAttendanceTable.jsx
+import React, { useMemo } from "react";
 
 export default function StaffAttendanceTable({
   rows,
   participantPresence,
   onTogglePresence,
 }) {
+  // Calculate exactly how many participants are marked as present
+  const presentCount = useMemo(() => {
+    return rows.filter((row) => !!participantPresence[row.key]).length;
+  }, [rows, participantPresence]);
+
   if (!rows || rows.length === 0) return null;
 
   return (
@@ -23,6 +28,22 @@ export default function StaffAttendanceTable({
         <h5 style={{ color: "#002174", margin: 0 }}>
           Government Staff ({rows.length})
         </h5>
+
+        {/* SURGICAL ADDITION: Highlighted Present Count Tracker */}
+        <div
+          style={{
+            background: "#dcfce7",
+            color: "#166534",
+            padding: "4px 12px",
+            borderRadius: "20px",
+            fontSize: "13px",
+            fontWeight: "700",
+            border: "1px solid #bbf7d0",
+            boxShadow: "0 2px 4px rgba(22, 101, 52, 0.1)",
+          }}
+        >
+          {presentCount} / {rows.length} Present
+        </div>
       </div>
 
       <div

@@ -1,4 +1,4 @@
-// src/pages/TMS/TP_CP/attendance/cpad_per_batch_ekyc.jsx
+// src/pages/TMS/TP_CP/attendance/AttendanceModule/components/Step2_AttendanceManager/DailyAttendanceForm.jsx
 import React, { useState, useMemo } from "react";
 import api from "../../../../../../../api/axios";
 
@@ -45,6 +45,13 @@ export default function DailyAttendanceForm({
 
     return { beneficiaries: b, masterTrainers: mt, staff: s };
   }, [participants]);
+
+  // -------------------------
+  // Calculate Total Present
+  // -------------------------
+  const totalPresentCount = useMemo(() => {
+    return participants.filter((p) => !!participantPresence[p.key]).length;
+  }, [participants, participantPresence]);
 
   // -------------------------
   // Quick Actions (Mark All)
@@ -313,6 +320,46 @@ export default function DailyAttendanceForm({
               participantPresence={participantPresence}
               onTogglePresence={handleTogglePresence}
             />
+
+            {/* OVERALL PRESENT COUNT SUMMARY BADGE */}
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginTop: 16,
+              }}
+            >
+              <div
+                style={{
+                  background: "#ecfdf5",
+                  color: "#065f46",
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: "700",
+                  border: "2px solid #a7f3d0",
+                  boxShadow: "0 2px 4px rgba(6, 95, 70, 0.1)",
+                }}
+              >
+                Overall Present Today: {totalPresentCount} /{" "}
+                {participants.length}
+              </div>
+              <div
+                style={{
+                  background: "#fdf1ec",
+                  color: "#5f0606",
+                  padding: "10px 20px",
+                  borderRadius: "8px",
+                  fontSize: "15px",
+                  fontWeight: "700",
+                  border: "2px solid #f3b2a7",
+                  boxShadow: "0 2px 4px rgba(6, 95, 70, 0.1)",
+                }}
+              >
+                Overall Absent Today: {participants.length - totalPresentCount}{" "}
+                / {participants.length}
+              </div>
+            </div>
           </>
         )}
 

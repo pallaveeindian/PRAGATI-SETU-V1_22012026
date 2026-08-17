@@ -538,7 +538,8 @@ export default function TrainingRequestList() {
                         <th>Partner</th>
                         <th>District</th>
                         <th>Block</th>
-                        <th>Participant Count</th>
+                        <th>Onboarded Participant(s)</th>
+                        <th>Enrolled Participant(s)</th>
                         <th>Financial Year</th>
                         <th>ID</th>
                         <th>Actions</th>
@@ -574,6 +575,7 @@ export default function TrainingRequestList() {
                             <td>{r.district_name}</td>
                             <td>{r.block_name}</td>
                             <td>{r.participant_count}</td>
+                            <td>{r.enrolled_count}</td>
                             <td>{r.financial_year}</td>
                             <td>
                               <strong>{r.id}</strong>
@@ -588,7 +590,7 @@ export default function TrainingRequestList() {
                                 >
                                   View
                                 </button>
-                                {((role === "dmmu" && r.level !== "STATE") ||
+                                {/* {((role === "dmmu" && r.level !== "STATE") ||
                                   role === "smmu") &&
                                   r.status === "BATCHING" && (
                                     <button
@@ -598,7 +600,7 @@ export default function TrainingRequestList() {
                                     >
                                       Delete
                                     </button>
-                                  )}
+                                  )} */}
                               </div>
                             </td>
                           </tr>
@@ -664,7 +666,7 @@ export default function TrainingRequestList() {
                             >
                               View
                             </button>
-                            {((role === "dmmu" && r.level !== "STATE") ||
+                            {/* {((role === "dmmu" && r.level !== "STATE") ||
                               role === "smmu") &&
                               r.status === "BATCHING" && (
                                 <button
@@ -674,7 +676,7 @@ export default function TrainingRequestList() {
                                 >
                                   Delete
                                 </button>
-                              )}
+                              )} */}
                           </div>
                         </div>
                       ))

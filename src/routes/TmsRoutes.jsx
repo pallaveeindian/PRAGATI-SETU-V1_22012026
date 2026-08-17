@@ -230,6 +230,7 @@ export default function TmsRoutes() {
               "training_partner",
               "tp_contact_person",
               "dtp",
+              "state_admin",
             ]}
           />
         }

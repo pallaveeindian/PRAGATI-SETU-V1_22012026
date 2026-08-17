@@ -4,6 +4,7 @@ import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStopwatch } from "@fortawesome/free-solid-svg-icons";
 import BatchExport from "./BatchExport";
+import BatchExportPDF from "./BatchExportPDF";
 
 export default function BatchHeaderActions({
   batchId,
@@ -37,8 +38,13 @@ export default function BatchHeaderActions({
               </button>
             )}
 
-            {/* SURGICAL ADDITION: Excel Export Button */}
-            {batchData && <BatchExport batchData={batchData} />}
+            {/* SURGICAL ADDITION: Excel & PDF Export Buttons */}
+            {batchData && (
+              <>
+                <BatchExport batchData={batchData} />
+                <BatchExportPDF batchData={batchData} />
+              </>
+            )}
 
             <button className="btn-primary" onClick={onRefresh}>
               🔄 Refresh

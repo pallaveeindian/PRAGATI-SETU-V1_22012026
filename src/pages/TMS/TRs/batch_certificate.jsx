@@ -96,7 +96,7 @@ export default function BatchCertificate() {
 
   const [showFinancialModal, setShowFinancialModal] = useState(false);
 
-  const [financialYear, setFinancialYear] = useState("2025-26");
+  const [financialYear, setFinancialYear] = useState("2026-27");
 
   // NEW: State to hold the PDF Blob URL from the backend
   const [generating, setGenerating] = useState(false);

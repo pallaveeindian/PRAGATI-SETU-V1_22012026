@@ -166,7 +166,7 @@ export default function EkycStepMain({
             className="btn btn-sm btn-outline-primary"
             onClick={handleTestConnection}
             disabled={testingConn}
-            style={{ background: "#fff" }}
+            style={{ background: "#002ca3" }}
           >
             {testingConn ? "Testing..." : "Test Scanner Connection"}
           </button>

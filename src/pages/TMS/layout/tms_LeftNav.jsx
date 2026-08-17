@@ -371,13 +371,8 @@ const MENU = {
   state_admin: [
     {
       label: "Dashboard",
-      to: "/tms/state-admin/dashboard",
+      to: "/master/state-dashboard",
       icon: FaTachometerAlt,
-    },
-    {
-      label: "Grievances",
-      to: "/admin/grievances",
-      icon: FaHandsHelping,
     },
   ],
   pmu_admin: [

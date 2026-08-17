@@ -11,6 +11,7 @@ import * as XLSX from "xlsx";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { LOOKUP_API, TMS_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
+import { useNavigate } from "react-router-dom";
 
 // Core Chart.js configuration modules
 import {
@@ -51,7 +52,7 @@ function safeFirst(arr) {
 export default function BatchProgressDashboard({ financialYear }) {
   const { user } = useContext(AuthContext) || {};
   const role = getCanonicalRole(user || {});
-
+  const navigate = useNavigate();
   // --- UI & Filter States ---
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedBlock, setSelectedBlock] = useState("");
@@ -374,6 +375,20 @@ export default function BatchProgressDashboard({ financialYear }) {
       key: "pax_count",
       render: (row) => (
         <div className="num-col fw-bold">{row.pax_count || 0}</div>
+      ),
+    },
+    {
+      header: "History",
+      key: "history",
+      sortable: false,
+      render: (row) => (
+        <button
+          type="button"
+          className="btn-primary"
+          onClick={() => navigate(`/tms/batches/${row.id}/history`)}
+        >
+          Batch History
+        </button>
       ),
     },
   ];

@@ -147,8 +147,63 @@ export default function TrainingRequestDetail() {
   // simple refresh token to trigger useEffect
   const [refreshToken, setRefreshToken] = useState(0);
 
-  // guard against concurrent fetchAll calls (prevents duplicate network calls in StrictMode)
+  // guard against concurrent fetchAll calls
   const inFlightRef = useRef(false);
+
+  // SURGICAL ADDITION: Selection state for participant removal
+  const [selectedParticipants, setSelectedParticipants] = useState(new Set());
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  // SURGICAL ADDITION: Removal Handler
+  const handleRemoveParticipants = async () => {
+    if (selectedParticipants.size === 0) return;
+    const confirmStr = `Are you sure you want to remove ${selectedParticipants.size} participant(s)? They will be sent back to the draft pool.`;
+    if (!window.confirm(confirmStr)) return;
+
+    setIsRemoving(true);
+    try {
+      // SURGICAL REPLACEMENT: Call the new bulk removal API
+      const payload = {
+        tr_id: id, // Extracted from useParams()
+        participant_ids: Array.from(selectedParticipants).join(","),
+      };
+
+      await api.post("/tms/tr-participants/bulk-remove/", payload);
+
+      alert("Participants successfully removed.");
+      setSelectedParticipants(new Set());
+      setRefreshToken((t) => t + 1); // Refresh data
+    } catch (err) {
+      console.error("Failed to remove participants", err);
+      // Extract exact error message from backend (e.g., if engaged in batch)
+      const errMsg =
+        err?.response?.data?.error ||
+        "An error occurred while removing participants.";
+      alert(errMsg);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+  const handleSelectParticipant = (id, checked) => {
+    setSelectedParticipants((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllOnPage = (e) => {
+    const checked = e.target.checked;
+    setSelectedParticipants((prev) => {
+      const next = new Set(prev);
+      paginatedParticipants.forEach((p) => {
+        if (checked) next.add(p.id);
+        else next.delete(p.id);
+      });
+      return next;
+    });
+  };
 
   /* ----------------- training plan fetch (fast path: list with fields) ----------------- */
   async function fetchTrainingPlan(planId) {
@@ -808,6 +863,20 @@ export default function TrainingRequestDetail() {
                           </>
                         )}
 
+                        {/* SURGICAL ADDITION: Remove Button */}
+                        {selectedParticipants.size > 0 && (
+                          <button
+                            className="btn-danger"
+                            onClick={handleRemoveParticipants}
+                            disabled={isRemoving}
+                            style={{ marginLeft: 16 }}
+                          >
+                            {isRemoving
+                              ? "Removing..."
+                              : `Remove Selected (${selectedParticipants.size})`}
+                          </button>
+                        )}
+
                         <div
                           style={{
                             marginLeft: "auto",
@@ -835,6 +904,21 @@ export default function TrainingRequestDetail() {
                           <table className="training-table">
                             <thead>
                               <tr>
+                                {/* SURGICAL ADDITION: Checkbox Header */}
+                                <th
+                                  style={{ width: "40px", textAlign: "center" }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    onChange={handleSelectAllOnPage}
+                                    checked={
+                                      paginatedParticipants.length > 0 &&
+                                      paginatedParticipants.every((p) =>
+                                        selectedParticipants.has(p.id),
+                                      )
+                                    }
+                                  />
+                                </th>
                                 <th>S.No.</th>
                                 <th>District</th>
                                 <th>Block</th>
@@ -853,6 +937,19 @@ export default function TrainingRequestDetail() {
                             <tbody>
                               {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
+                                  {/* SURGICAL ADDITION: Checkbox Cell */}
+                                  <td style={{ textAlign: "center" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedParticipants.has(p.id)}
+                                      onChange={(e) =>
+                                        handleSelectParticipant(
+                                          p.id,
+                                          e.target.checked,
+                                        )
+                                      }
+                                    />
+                                  </td>
                                   <td>
                                     {(currentPage - 1) * rowsPerPage +
                                       index +
@@ -888,6 +985,21 @@ export default function TrainingRequestDetail() {
                           <table className="training-table">
                             <thead>
                               <tr>
+                                {/* SURGICAL ADDITION: Checkbox Header */}
+                                <th
+                                  style={{ width: "40px", textAlign: "center" }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    onChange={handleSelectAllOnPage}
+                                    checked={
+                                      paginatedParticipants.length > 0 &&
+                                      paginatedParticipants.every((p) =>
+                                        selectedParticipants.has(p.id),
+                                      )
+                                    }
+                                  />
+                                </th>
                                 <th>S.No.</th>
                                 <th>Trainer ID</th>
                                 <th>Full Name</th>
@@ -898,6 +1010,19 @@ export default function TrainingRequestDetail() {
                             <tbody>
                               {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
+                                  {/* SURGICAL ADDITION: Checkbox Cell */}
+                                  <td style={{ textAlign: "center" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedParticipants.has(p.id)}
+                                      onChange={(e) =>
+                                        handleSelectParticipant(
+                                          p.id,
+                                          e.target.checked,
+                                        )
+                                      }
+                                    />
+                                  </td>
                                   <td>
                                     {(currentPage - 1) * rowsPerPage +
                                       index +
@@ -929,6 +1054,21 @@ export default function TrainingRequestDetail() {
                           <table className="training-table">
                             <thead>
                               <tr>
+                                {/* SURGICAL ADDITION: Checkbox Header */}
+                                <th
+                                  style={{ width: "40px", textAlign: "center" }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    onChange={handleSelectAllOnPage}
+                                    checked={
+                                      paginatedParticipants.length > 0 &&
+                                      paginatedParticipants.every((p) =>
+                                        selectedParticipants.has(p.id),
+                                      )
+                                    }
+                                  />
+                                </th>
                                 <th>S.No.</th>
                                 <th>Employee ID</th>
                                 <th>Name</th>
@@ -941,6 +1081,19 @@ export default function TrainingRequestDetail() {
                             <tbody>
                               {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
+                                  {/* SURGICAL ADDITION: Checkbox Cell */}
+                                  <td style={{ textAlign: "center" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedParticipants.has(p.id)}
+                                      onChange={(e) =>
+                                        handleSelectParticipant(
+                                          p.id,
+                                          e.target.checked,
+                                        )
+                                      }
+                                    />
+                                  </td>
                                   <td>
                                     {(currentPage - 1) * rowsPerPage +
                                       index +
@@ -1466,6 +1619,28 @@ export default function TrainingRequestDetail() {
   padding:20px;
   text-align:center;
   color:#2b4e72;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .25s ease;
+  font-weight: 600;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 `}</style>
