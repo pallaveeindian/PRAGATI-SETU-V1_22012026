@@ -140,6 +140,8 @@ export default function MTDirectoryConductor() {
                   onViewClick={(trainer) => setViewTrainer(trainer)}
                   onEditClick={handleOpenEdit}
                   onCertificatesClick={(trainer) => setCertTrainer(trainer)}
+                  isBMMU={isBMMU}
+                  isDMMU={isDMMU}
                   isSMMU={!isDMMU && !isBMMU}
                   lockedTheme={lockedTheme}
                 />

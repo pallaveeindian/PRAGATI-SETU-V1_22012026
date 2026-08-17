@@ -572,6 +572,7 @@ export default function MTFormModal({
                       value={formData.designation}
                       onChange={handleChange}
                       required
+                      disabled={isUpdate && !isSMMU}
                     >
                       <option value="">Select Designation</option>
                       {/* SURGICAL REPLACEMENT: RBAC Restricted Designation Selection */}
@@ -593,6 +594,7 @@ export default function MTFormModal({
                       className="nic-select"
                       value={formData.theme}
                       onChange={handleChange}
+                      disabled={isUpdate && !isSMMU}
                     >
                       <option value="">Select Theme</option>
                       {themes.map((t) => (
@@ -612,7 +614,9 @@ export default function MTFormModal({
                       value={formData.empanel_district}
                       onChange={handleChange}
                       required
-                      disabled={isDMMU}
+                      disabled={
+                        isDMMU || isCurrentBMMU || (isUpdate && !isSMMU)
+                      }
                     >
                       <option value="">Select District</option>
                       {districts.map((d) => (
@@ -629,7 +633,11 @@ export default function MTFormModal({
                       className="nic-select"
                       value={formData.empanel_block}
                       onChange={handleChange}
-                      disabled={!formData.empanel_district || isCurrentBMMU}
+                      disabled={
+                        !formData.empanel_district ||
+                        isCurrentBMMU ||
+                        (isUpdate && !isSMMU)
+                      }
                     >
                       <option value="">Select Block</option>
                       {blocks.map((b) => (

@@ -54,7 +54,7 @@ export default function BmmuTargetAchievement() {
   // Derive district and block from the new state
   const userDistrict = geoscope?.districts?.[0] || user?.district_id || "";
   const userBlock = geoscope?.blocks?.[0] || "";
-  
+
   /* ================= FETCH DATA ================= */
   // SURGICAL ADDITION: Accept page parameter
   async function fetchTargetsWithAchievements(page = 1) {

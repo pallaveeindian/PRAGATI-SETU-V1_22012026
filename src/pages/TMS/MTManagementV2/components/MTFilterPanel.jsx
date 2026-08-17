@@ -11,6 +11,7 @@ export default function MTFilterPanel({
   lockedBlock,
   lockedTheme, // Passed down from useMTList if SMMU
 }) {
+  const isBMMU = targetRole === "bmmu";
   const isDMMU = targetRole === "dmmu";
   const isSMMU = targetRole === "smmu";
 
@@ -20,8 +21,6 @@ export default function MTFilterPanel({
   const [districts, setDistricts] = useState([]);
   const [themes, setThemes] = useState([]);
   const [blocks, setBlocks] = useState([]);
-
-  const isBMMU = targetRole === "bmmu";
 
   useEffect(() => {
     if (!filters.district) {
@@ -185,8 +184,11 @@ export default function MTFilterPanel({
               style={{ background: "#f1f5f9", cursor: "not-allowed" }}
             >
               {lockedDistrict
-                ? `District Code: ${lockedDistrict}`
-                : "Resolging Geoscope..."}
+                ? `District: ${
+                    districts.find((d) => d.district_id === lockedDistrict)
+                      ?.district_name_en || "Unknown District"
+                  }`
+                : "Resolving Geoscope..."}
             </div>
           ) : (
             <select
@@ -227,7 +229,11 @@ export default function MTFilterPanel({
               style={{ background: "#f1f5f9", cursor: "not-allowed" }}
             >
               {lockedBlock
-                ? `Block Code: ${lockedBlock}`
+                ? `Block: ${
+                    blocks.find(
+                      (b) => String(b.block_id) === String(lockedBlock),
+                    )?.block_name_en || "Unknown Block"
+                  }`
                 : "Resolving Geoscope..."}
             </div>
           ) : (

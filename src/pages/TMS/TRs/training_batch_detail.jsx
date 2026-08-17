@@ -215,11 +215,13 @@ export default function TrainingBatchDetail() {
                   <CentreDetailFetcherCard centreId={batchData.centre.id} />
 
                   <MasterTrainersCard
+                    batchData={batchData}
                     masterTrainers={
                       batchData.master_trainer_participations ||
                       batchData.master_trainers ||
                       []
                     }
+                    onRefresh={handleRefresh}
                   />
 
                   <ParticipantsSummaryTable

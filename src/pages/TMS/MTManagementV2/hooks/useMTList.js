@@ -196,7 +196,9 @@ export function useMTList(initialFilters = {}) {
     setFilters,
 
     // RBAC Context for UI rendering
+    isBMMU,
     isDMMU,
+    lockedBlock,
     lockedDistrict,
     lockedTheme,
 

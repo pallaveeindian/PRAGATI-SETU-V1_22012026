@@ -25,9 +25,12 @@ export default function MTPendingApprovalsConductor() {
   const { user } = useContext(AuthContext) || {};
   const role = getCanonicalRole(user || {});
 
+  // DMMU Protection Check
+  const isDMMU =
+    role === "dmmu" || role === "2" || String(user?.role_id) === "2";
   // SMMU Protection Check
   const isSMMU =
-    role === "smmu" || role === "1" || String(user?.role_id) === "12";
+    role === "smmu" || role === "3" || String(user?.role_id) === "3";
 
   const [navCollapsed, setNavCollapsed] = useState(false);
 
