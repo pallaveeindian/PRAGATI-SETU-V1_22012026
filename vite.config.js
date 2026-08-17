@@ -46,7 +46,7 @@ export default defineConfig({
   server: {
     proxy: {
       "/api": {
-        target: "http://72.61.255.170:8080",
+        target: "http://127.0.0.1:8000",
         // target: "http://upsrlmtms.upsdc.gov.in",
         changeOrigin: true,
         secure: false,

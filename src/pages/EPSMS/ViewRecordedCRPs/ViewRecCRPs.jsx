@@ -2,7 +2,7 @@
 import React, { useState } from "react";
 import CRPFilters from "./VRCComponents/CRPFilters";
 import CRPTable from "./VRCComponents/CRPTable";
-// import ExportButton from "./VRCComponents/ExportButton";
+import ExportButton from "./VRCComponents/ExportButton"; // <-- Uncomment kiya gaya
 import { FaFilter, FaTable } from "react-icons/fa";
 
 export default function ViewRecCRPs() {
@@ -16,7 +16,6 @@ export default function ViewRecCRPs() {
           <h3>
             <FaFilter className="epsms-icon" /> Filters / Constraints
           </h3>
-
           <CRPFilters onFetch={setFilters} />
         </div>
       </div>
@@ -24,21 +23,21 @@ export default function ViewRecCRPs() {
       {/* Row 2 */}
       <div className="epsms-grid-row one-col">
         <div className="epsms-card">
-          <h3>
-            <FaTable className="epsms-icon" /> CRP Table
-          </h3>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '15px' }}>
+            <h3>
+              <FaTable className="epsms-icon" /> CRP Table
+            </h3>
+            {/* Export Button yahan dikhega */}
+            <div className="epsms-export-row">
+              <ExportButton filters={filters} />
+            </div>
+          </div>
 
           <CRPTable filters={filters} itemsPerPage={25} />
-        </div>
-
-        {/* Export */}
-        <div className="epsms-export-row">
-          {/* <ExportButton filters={filters} /> */}
         </div>
       </div>
 
       <style>{`
-
         .crpform-epsms-dashboard {
           display: flex;
           flex-direction: column;
@@ -47,7 +46,6 @@ export default function ViewRecCRPs() {
         }
 
         /* GRID SYSTEM */
-
         .epsms-grid-row {
           display: grid;
           gap: 18px;
@@ -63,7 +61,6 @@ export default function ViewRecCRPs() {
         }
 
         /* CARD */
-
         .epsms-card {
           background: #ffffff;
           border: 1px solid #f0d6d6;
@@ -81,12 +78,11 @@ export default function ViewRecCRPs() {
         }
 
         /* HEADINGS */
-
         .epsms-card h3 {
           display: flex;
           align-items: center;
           gap: 8px;
-          margin: 0 0 10px 0;
+          margin: 0;
           font-size: 19px;
           font-weight: 700;
           color: #7a0c0c;
@@ -98,73 +94,56 @@ export default function ViewRecCRPs() {
         }
 
         /* EXPORT AREA */
-
         .epsms-export-row {
           display: flex;
           justify-content: flex-end;
-          margin-top: 4px;
           animation: slideUp 0.35s ease;
         }
 
         /* TABLE SCROLL SAFETY */
-
         .epsms-card table {
           min-width: 700px;
         }
 
         /* TABLET */
-
         @media (max-width: 1024px) {
-
           .epsms-grid-row.two-col {
             grid-template-columns: 1fr;
           }
-
           .epsms-card {
             padding: 14px;
           }
-
           .epsms-card h3 {
             font-size: 18px;
           }
-
         }
 
         /* MOBILE */
-
         @media (max-width: 640px) {
-
           .crpform-epsms-dashboard {
             gap: 14px;
           }
-
           .epsms-card {
             padding: 12px;
             border-radius: 10px;
           }
-
           .epsms-card h3 {
             font-size: 16px;
           }
-
           .epsms-export-row {
             justify-content: center;
           }
-
         }
 
         /* ANIMATIONS */
-
         @keyframes fadeIn {
           from { opacity:0; transform: translateY(6px); }
           to { opacity:1; transform: translateY(0); }
         }
-
         @keyframes slideUp {
           from { opacity:0; transform: translateY(12px); }
           to { opacity:1; transform: translateY(0); }
         }
-
       `}</style>
     </div>
   );

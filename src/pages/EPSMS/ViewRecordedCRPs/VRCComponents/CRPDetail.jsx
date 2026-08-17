@@ -37,12 +37,98 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
   const [showAddSection, setShowAddSection] = useState(false);
 
   const [hasRemovedPanchayat, setHasRemovedPanchayat] = useState(false);
+  const [accountInfo, setAccountInfo] = useState({
+    userId: "N/A",
+    password: "N/A",
+  });
 
   const filteredPanchayats = panchayats.filter((p) =>
     (p.panchayat_name_en || "").toLowerCase().includes(search.toLowerCase()),
   );
 
   const currentCrpId = crpData?.master_user_id;
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function resolveAccountInfo() {
+      const directUserId =
+        crpData?.username ||
+        crpData?.login_id ||
+        crpData?.user_id ||
+        crpData?.userId ||
+        null;
+
+      const directPassword =
+        crpData?.password || crpData?.new_password || null;
+
+      const masterUserId =
+        crpData?.master_user_id ||
+        crpData?.master_user ||
+        crpData?.masterUser ||
+        null;
+
+      const fallbackUserId = directUserId || "N/A";
+      const fallbackPassword = directPassword || "N/A";
+
+      if (!masterUserId) {
+        if (isMounted) {
+          setAccountInfo({
+            userId: fallbackUserId,
+            password: fallbackPassword,
+          });
+        }
+        return;
+      }
+
+      try {
+        const userRes = await LOOKUP_API.users.retrieve(masterUserId);
+        const userData = userRes?.data || {};
+
+        if (!isMounted) return;
+
+        setAccountInfo({
+          userId:
+            directUserId ||
+            userData?.username ||
+            userData?.login_id ||
+            userData?.user_id ||
+            userData?.userId ||
+            "N/A",
+          password:
+            directPassword ||
+            userData?.password ||
+            userData?.default_password ||
+            userData?.new_password ||
+            "N/A",
+        });
+      } catch (error) {
+        console.warn("Failed to load CRP account details:", error);
+        if (isMounted) {
+          setAccountInfo({
+            userId: fallbackUserId,
+            password: fallbackPassword,
+          });
+        }
+      }
+    }
+
+    resolveAccountInfo();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [
+    crpData?.master_user_id,
+    crpData?.master_user,
+    crpData?.masterUser,
+    crpData?.username,
+    crpData?.login_id,
+    crpData?.user_id,
+    crpData?.userId,
+    crpData?.password,
+    crpData?.new_password,
+  ]);
 
   // console.log(crpData);
   // Use JSON stringify to prevent infinite loops if parent passes a new object reference on every render
@@ -321,6 +407,12 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
 
             <div className="info-label">Mobile</div>
             <div className="info-value">{crpData.mobile_number}</div>
+
+            <div className="info-label">User ID</div>
+            <div className="info-value">{accountInfo.userId}</div>
+
+            <div className="info-label">Password</div>
+            <div className="info-value">{accountInfo.password}</div>
 
             <div className="info-label">District</div>
             <div className="info-value uppercase">
