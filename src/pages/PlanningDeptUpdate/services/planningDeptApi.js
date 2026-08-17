@@ -7,8 +7,7 @@ import axios from "axios";
 import { getPlanningDeptApiKey } from "../utils/mappingData";
 
 const PLANNING_DEPT_API_URL =
-  "https://xxx.com/";
-  // "https://epariyojana.up.gov.in/tabp/API/DepAPI.asmx/PushData";
+  "https://epariyojana.up.gov.in/tabp/API/DepAPI.asmx/PushData";
 
 /**
  * Helper: Generate SHA-512 Hash natively in the browser
