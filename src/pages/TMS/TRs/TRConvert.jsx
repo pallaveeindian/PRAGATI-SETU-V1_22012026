@@ -235,7 +235,9 @@ export default function TRConvert({ trId }) {
                 <tr>
                   <th style={{ width: "60px", textAlign: "center" }}>S.No</th>
                   <th>Participant Name</th>
-                  <th>Identifier (Code/ID)</th>
+                  <th>
+                    Identifier ID (MemberCode / Trainer ID / Employee Code)
+                  </th>
                   <th>Mobile</th>
                 </tr>
               </thead>

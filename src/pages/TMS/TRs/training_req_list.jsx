@@ -10,6 +10,7 @@ import { getCanonicalRole } from "../../../utils/roleUtils";
 import TrainingReqListFilter from "./training_req_list_filters";
 import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils";
 import TRListExport from "./TRListExport";
+import TRConvert from "./TRConvert";
 
 const CACHE_KEY = "tms_training_requests_cache_v1";
 const USER_MAP_KEY = "tms_user_map_v1";
@@ -112,7 +113,7 @@ export default function TrainingRequestList() {
   const [userMap, setUserMap] = useState(() => loadMap(USER_MAP_KEY));
   const [partnerMap, setPartnerMap] = useState(() => loadMap(PARTNER_MAP_KEY));
   const [planMap, setPlanMap] = useState(() => loadMap(PLAN_MAP_KEY));
-
+  const [convertTrId, setConvertTrId] = useState(null);
   const didRunRef = useRef(false);
 
   /* ---------------- geoscope ---------------- */
@@ -590,6 +591,15 @@ export default function TrainingRequestList() {
                                 >
                                   View
                                 </button>
+                                {r.financial_year === "2025-26" &&
+                                  r.status === "BATCHING" && (
+                                    <button
+                                      className="btnConvert"
+                                      onClick={() => setConvertTrId(r.id)}
+                                    >
+                                      Convert
+                                    </button>
+                                  )}
                                 {/* {((role === "dmmu" && r.level !== "STATE") ||
                                   role === "smmu") &&
                                   r.status === "BATCHING" && (
@@ -666,6 +676,16 @@ export default function TrainingRequestList() {
                             >
                               View
                             </button>
+                            {r.financial_year === "2025-26" &&
+                              r.status === "BATCHING" && (
+                                <button
+                                  className="btnConvert"
+                                  onClick={() => setConvertTrId(r.id)}
+                                  style={{ flex: 1, marginTop: 0 }}
+                                >
+                                  Convert
+                                </button>
+                              )}
                             {/* {((role === "dmmu" && r.level !== "STATE") ||
                               role === "smmu") &&
                               r.status === "BATCHING" && (
@@ -806,9 +826,59 @@ export default function TrainingRequestList() {
                 </div>
               </div>
             </div>
-
-            {/* CSS */}
-            <style>{`
+          </main>
+          <Footer />
+        </div>
+      </div>
+      {/* SURGICAL ADDITION: TR Convert Modal */}
+      {convertTrId && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(2px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+          }}
+          onClick={() => {
+            setConvertTrId(null);
+            setRefreshToken((t) => t + 1); // Refresh the list automatically when closing
+          }}
+        >
+          <div
+            style={{ width: "100%", maxWidth: "800px", position: "relative" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setConvertTrId(null);
+                setRefreshToken((t) => t + 1);
+              }}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "20px",
+                background: "transparent",
+                border: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+                color: "#1e3a8a",
+                zIndex: 10,
+              }}
+              title="Close"
+            >
+              ✖
+            </button>
+            <TRConvert trId={convertTrId} />
+          </div>
+        </div>
+      )}
+      {/* CSS */}
+      <style>{`
 /* BUTTON */
 .btnPrimary{
   background:#3d6ba6;
@@ -839,6 +909,22 @@ export default function TrainingRequestList() {
 .btnView:hover{
   transform: translateY(-6px);
   box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+}
+
+/* SURGICAL ADDITION: Convert Button Styles */
+.btnConvert {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all .25s ease;
+}
+.btnConvert:hover {
+  background: #059669;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 14px rgba(16, 185, 129, 0.15);
 }
 
 /* TABLE */
@@ -1038,10 +1124,6 @@ export default function TrainingRequestList() {
 }
 
 `}</style>
-          </main>
-          <Footer />
-        </div>
-      </div>
     </div>
   );
 }

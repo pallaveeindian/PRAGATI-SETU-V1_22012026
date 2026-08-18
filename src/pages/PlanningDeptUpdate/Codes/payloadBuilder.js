@@ -124,12 +124,10 @@ export const buildPlanningApiPayload = ({
     unit: derivedUnit,
     PeriodNameId: String(indicator.periodicityId),
     LeadDeptNameId: String(indicator.leadDeptId),
-    mon_ach_numirator: Number(numerator).toFixed(2),
-    mon_ach_denominator: Number(denominator).toFixed(2),
-    mon_ach: Number(currentMonthAchievement).toFixed(2),
+    mon_ach_numirator: Number(cumulativeAchievement).toFixed(2),
+    mon_ach_denominator: Number(cumulativeAchievement).toFixed(2),
+    mon_ach: Number(cumulativeAchievement).toFixed(2),
     cum_ach: Number(cumulativeAchievement).toFixed(2),
-    QuarterMonth: getQuarterString(reportDate),
-    SixMonthly: getHalfYearString(reportDate),
     Disclaimer: buildDisclaimer(officerDetails, reportDate),
     FourMonth: "", // As per CSV, no helper needed, leaving empty
   };
