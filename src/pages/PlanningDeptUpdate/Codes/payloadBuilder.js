@@ -125,11 +125,13 @@ export const buildPlanningApiPayload = ({
     PeriodNameId: String(indicator.periodicityId),
     LeadDeptNameId: String(indicator.leadDeptId),
     mon_ach_numirator: Number(cumulativeAchievement).toFixed(2),
-    mon_ach_denominator: Number(cumulativeAchievement).toFixed(2),
+    mon_ach_denominator: "1",
     mon_ach: Number(cumulativeAchievement).toFixed(2),
     cum_ach: Number(cumulativeAchievement).toFixed(2),
     Disclaimer: buildDisclaimer(officerDetails, reportDate),
-    FourMonth: "", // As per CSV, no helper needed, leaving empty
+    FourMonth: "",
+    QuarterMonth: "",
+    SixMonthly: "",
   };
 
   // 4. Omit specifically requested fields
