@@ -139,14 +139,16 @@ export default function DailyAttendanceViewer({
               <table className="table table-compact attendance-table">
                 <thead>
                   <tr>
+                    <th>S.No.</th>
                     <th>Name</th>
                     <th>Role</th>
                     <th>Status</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {selectedAttendance.participant_records.map((r) => (
+                  {selectedAttendance.participant_records.map((r, index) => (
                     <tr key={r.id}>
+                      <td>{index + 1}</td>
                       <td>{r.participant_name}</td>
                       <td>
                         <span className="role-pill">

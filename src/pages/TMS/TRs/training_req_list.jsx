@@ -592,6 +592,7 @@ export default function TrainingRequestList() {
                                   View
                                 </button>
                                 {r.financial_year === "2025-26" &&
+                                  (role === "dmmu" || role === "smmu") &&
                                   r.status === "BATCHING" && (
                                     <button
                                       className="btnConvert"

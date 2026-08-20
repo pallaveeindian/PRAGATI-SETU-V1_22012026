@@ -1,5 +1,5 @@
 // src/pages/TMS/TRs/BatchDetailComponents/MasterTrainersCard.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   FaExchangeAlt,
   FaTimes,
@@ -7,6 +7,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import api, { TMS_API } from "../../../../api/axios";
+import { AuthContext } from "../../../../contexts/AuthContext";
 
 /* ---------------- simple modal ---------------- */
 function Modal({ open, title, onClose, children, width = 800 }) {
@@ -83,7 +84,7 @@ export default function MasterTrainersCard({
   onRefresh,
 }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-
+  const { user } = useContext(AuthContext) || {};
   // Master Trainer List State
   const [mtList, setMtList] = useState([]);
   const [mtTotal, setMtTotal] = useState(0);
@@ -99,9 +100,16 @@ export default function MasterTrainersCard({
   const [mtCheckingId, setMtCheckingId] = useState(null);
   const [isReplacing, setIsReplacing] = useState(false);
 
+  const role = user?.role_id;
+  const isBMMU = role == 1;
+  const isDMMU = role == 2;
+  const isSMMU = role == 3;
+
   // Determine if replacement is allowed (Only for ONGOING or SCHEDULED)
   const canReplace =
-    batchData && ["ONGOING", "SCHEDULED"].includes(batchData.status);
+    batchData &&
+    (isDMMU || isSMMU) &&
+    ["ONGOING", "SCHEDULED"].includes(batchData.status);
 
   /* ---------------- Fetch Themes ---------------- */
   useEffect(() => {

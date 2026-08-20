@@ -32,6 +32,11 @@ export default function TargetVsAchievement({ financialYear }) {
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("");
 
+  // SURGICAL ADDITION: Date Filters State
+  const [exactDate, setExactDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   // --- Lookup Data State ---
   const [apiDistricts, setApiDistricts] = useState([]);
   const [apiThemes, setApiThemes] = useState([]);
@@ -91,6 +96,11 @@ export default function TargetVsAchievement({ financialYear }) {
     if (selectedDistrict) queryParams.append("district_id", selectedDistrict);
     if (selectedTheme) queryParams.append("theme_id", selectedTheme);
 
+    // SURGICAL ADDITION: Append Date Filters
+    if (exactDate) queryParams.append("date", exactDate);
+    if (startDate) queryParams.append("start_date", startDate);
+    if (endDate) queryParams.append("end_date", endDate);
+
     if (viewMode === "target_prcnt") {
       queryParams.append("dist_trgt_prcnt", "1");
     } else if (viewMode === "theme_prcnt" || viewMode === "theme_only_prcnt") {
@@ -113,18 +123,24 @@ export default function TargetVsAchievement({ financialYear }) {
           rawData.forEach((row) => {
             const tName = row.theme_name || "Unknown Theme";
             if (!themeMap[tName]) {
-              themeMap[tName] = { theme_name: tName, theme_target: 0, total_on_boarded: 0 };
+              themeMap[tName] = {
+                theme_name: tName,
+                theme_target: 0,
+                total_on_boarded: 0,
+              };
             }
             themeMap[tName].theme_target += Number(row.theme_target) || 0;
-            themeMap[tName].total_on_boarded += Number(row.total_on_boarded) || 0;
+            themeMap[tName].total_on_boarded +=
+              Number(row.total_on_boarded) || 0;
           });
 
           // Calculate final percentages
           const aggregatedData = Object.values(themeMap).map((item) => ({
             ...item,
-            percentage: item.theme_target > 0
-              ? ((item.total_on_boarded / item.theme_target) * 100).toFixed(1)
-              : 0
+            percentage:
+              item.theme_target > 0
+                ? ((item.total_on_boarded / item.theme_target) * 100).toFixed(1)
+                : 0,
           }));
 
           setApiData(aggregatedData);
@@ -135,7 +151,15 @@ export default function TargetVsAchievement({ financialYear }) {
     } finally {
       setDataLoading(false);
     }
-  }, [financialYear, viewMode, selectedDistrict, selectedTheme]);
+  }, [
+    financialYear,
+    viewMode,
+    selectedDistrict,
+    selectedTheme,
+    exactDate,
+    startDate,
+    endDate,
+  ]);
 
   // Fetch data when filters change
   useEffect(() => {
@@ -158,7 +182,8 @@ export default function TargetVsAchievement({ financialYear }) {
   // ==========================================
   const chartConfigData = useMemo(() => {
     const labels = paginatedData.map((item) => {
-      if (viewMode === "target_prcnt") return item.district_name_en || "Unknown";
+      if (viewMode === "target_prcnt")
+        return item.district_name_en || "Unknown";
       if (viewMode === "theme_only_prcnt") return item.theme_name || "Unknown";
       return `${item.district_name_en || "Unknown"} (${item.theme_name || "-"})`;
     });
@@ -229,17 +254,20 @@ export default function TargetVsAchievement({ financialYear }) {
 
     let csvContent = "";
     if (viewMode === "target_prcnt") {
-      csvContent += "S.No.,District,Total Target,Cadre Onboarded,Achievement %\n";
+      csvContent +=
+        "S.No.,District,Total Target,Cadre Onboarded,Achievement %\n";
       apiData.forEach((row, i) => {
         csvContent += `"${i + 1}","${row.district_name_en || "-"}","${row.total_target}","${row.total_cadre}","${row.percentage}%"\n`;
       });
     } else if (viewMode === "theme_only_prcnt") {
-      csvContent += "S.No.,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
+      csvContent +=
+        "S.No.,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
       apiData.forEach((row, i) => {
         csvContent += `"${i + 1}","${row.theme_name || "-"}","${row.theme_target}","${row.total_on_boarded}","${row.percentage}%"\n`;
       });
     } else {
-      csvContent += "S.No.,District,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
+      csvContent +=
+        "S.No.,District,Theme Name,Theme Target,Total Onboarded,Achievement %\n";
       apiData.forEach((row, i) => {
         csvContent += `"${i + 1}","${row.district_name_en || "-"}","${row.theme_name || "-"}","${row.theme_target}","${row.total_on_boarded}","${row.percentage}%"\n`;
       });
@@ -251,9 +279,11 @@ export default function TargetVsAchievement({ financialYear }) {
     link.setAttribute("href", url);
     link.setAttribute(
       "download",
-      viewMode === "target_prcnt" ? "District_Target_vs_Achievement.csv"
-        : viewMode === "theme_only_prcnt" ? "Theme_Wise_Analytics.csv"
-          : "District_Theme_Achievement.csv"
+      viewMode === "target_prcnt"
+        ? "District_Target_vs_Achievement.csv"
+        : viewMode === "theme_only_prcnt"
+          ? "Theme_Wise_Analytics.csv"
+          : "District_Theme_Achievement.csv",
     );
     document.body.appendChild(link);
     link.click();
@@ -273,7 +303,17 @@ export default function TargetVsAchievement({ financialYear }) {
         render: (row) => {
           const percent = row.percentage || 0;
           return (
-            <span style={{ fontWeight: 700, color: percent >= 100 ? "#16a34a" : percent > 0 ? "#ea580c" : "#64748b" }}>
+            <span
+              style={{
+                fontWeight: 700,
+                color:
+                  percent >= 100
+                    ? "#16a34a"
+                    : percent > 0
+                      ? "#ea580c"
+                      : "#64748b",
+              }}
+            >
               {percent}%
             </span>
           );
@@ -299,7 +339,17 @@ export default function TargetVsAchievement({ financialYear }) {
         render: (row) => {
           const percent = row.percentage || 0;
           return (
-            <span style={{ fontWeight: 700, color: percent >= 100 ? "#16a34a" : percent >= 15 ? "#083785" : "#ea0c0c" }}>
+            <span
+              style={{
+                fontWeight: 700,
+                color:
+                  percent >= 100
+                    ? "#16a34a"
+                    : percent >= 15
+                      ? "#083785"
+                      : "#ea0c0c",
+              }}
+            >
               {percent}%
             </span>
           );
@@ -327,7 +377,17 @@ export default function TargetVsAchievement({ financialYear }) {
         render: (row) => {
           const percent = row.percentage || 0;
           return (
-            <span style={{ fontWeight: 700, color: percent >= 100 ? "#16a34a" : percent >= 15 ? "#083785" : "#ea0c0c" }}>
+            <span
+              style={{
+                fontWeight: 700,
+                color:
+                  percent >= 100
+                    ? "#16a34a"
+                    : percent >= 15
+                      ? "#083785"
+                      : "#ea0c0c",
+              }}
+            >
               {percent}%
             </span>
           );
@@ -357,8 +417,12 @@ export default function TargetVsAchievement({ financialYear }) {
               setSelectedDistrict("");
             }}
           >
-            <option value="target_prcnt">District Target vs Cadre Achievement</option>
-            <option value="theme_prcnt">District & Theme Target vs Achievement</option>
+            <option value="target_prcnt">
+              District Target vs Cadre Achievement
+            </option>
+            <option value="theme_prcnt">
+              District & Theme Target vs Achievement
+            </option>
             <option value="theme_only_prcnt">Theme Wise Analytics</option>
           </select>
         </div>
@@ -397,7 +461,54 @@ export default function TargetVsAchievement({ financialYear }) {
           </div>
         )}
 
-        {(selectedDistrict || selectedTheme) && (
+        {/* SURGICAL ADDITION: Date Filters */}
+        <div className="filter-group">
+          <label>Exact Date</label>
+          <input
+            type="date"
+            value={exactDate}
+            onChange={(e) => {
+              setExactDate(e.target.value);
+              setStartDate(""); // Clear range if exact date is used
+              setEndDate("");
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>From Date</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setExactDate(""); // Clear exact date if range is used
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>To Date</label>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setExactDate("");
+            }}
+            disabled={lookupsLoading || !startDate}
+          />
+        </div>
+
+        {/* SURGICAL UPDATE: Include Date states in Reset Logic */}
+        {(selectedDistrict ||
+          selectedTheme ||
+          exactDate ||
+          startDate ||
+          endDate) && (
           <div
             className="filter-group"
             style={{ justifyContent: "flex-end", paddingBottom: "2px" }}
@@ -407,6 +518,9 @@ export default function TargetVsAchievement({ financialYear }) {
               onClick={() => {
                 setSelectedDistrict("");
                 setSelectedTheme("");
+                setExactDate("");
+                setStartDate("");
+                setEndDate("");
               }}
             >
               Reset Filters
@@ -434,8 +548,10 @@ export default function TargetVsAchievement({ financialYear }) {
       {/* --- TABLE HEADER & EXPORT --- */}
       <div className="table-header-flex">
         <h3>
-          {viewMode === "target_prcnt" ? "District Target vs Cadre Achievement"
-            : viewMode === "theme_only_prcnt" ? "Theme Wise Analytics"
+          {viewMode === "target_prcnt"
+            ? "District Target vs Cadre Achievement"
+            : viewMode === "theme_only_prcnt"
+              ? "Theme Wise Analytics"
               : "District & Theme Target vs Achievement"}
         </h3>
         <button
@@ -535,7 +651,8 @@ export default function TargetVsAchievement({ financialYear }) {
           letter-spacing: 0.5px;
         }
 
-        .filter-group select {
+        .filter-group select,
+        .filter-group input[type="date"] {
           padding: 12px 14px;
           border: 1px solid #cbd5e1;
           border-radius: 8px;
@@ -545,11 +662,22 @@ export default function TargetVsAchievement({ financialYear }) {
           background: #ffffff;
           outline: none;
           transition: all 0.2s ease;
+          width: 100%;
+          box-sizing: border-box;
+          min-height: 40px;
+          font-family: inherit;
         }
 
-        .filter-group select:focus {
+        .filter-group select:focus,
+        .filter-group input[type="date"]:focus {
           border-color: #0092E0;
           box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15);
+        }
+        
+        .filter-group input[type="date"]:disabled {
+          background-color: #e2e8f0;
+          color: #94a3b8;
+          cursor: not-allowed;
         }
 
         .reset-btn {

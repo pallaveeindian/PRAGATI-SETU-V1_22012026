@@ -14,7 +14,7 @@ import {
   FaBullseye,
   FaUsers,
   FaDropbox,
-  FaGraduationCap
+  FaGraduationCap,
 } from "react-icons/fa";
 
 ChartJS.register(ArcElement, Tooltip, Legend);
@@ -25,6 +25,11 @@ export default function CadreSelectionCountPage({ financialYear }) {
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
+
+  // SURGICAL ADDITION: Date Filters State
+  const [exactDate, setExactDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // --- Lookup Data State ---
   const [apiDistricts, setApiDistricts] = useState([]);
@@ -50,9 +55,15 @@ export default function CadreSelectionCountPage({ financialYear }) {
       try {
         const [distRes, themeRes] = await Promise.all([
           LOOKUP_API.districts.list({ page_size: 5000 }),
-          api.get("/tms/public/training-themes/", { params: { page_size: 100 } }),
+          api.get("/tms/public/training-themes/", {
+            params: { page_size: 100 },
+          }),
         ]);
-        setApiDistricts(Array.isArray(distRes?.data) ? distRes.data : distRes?.data?.results || []);
+        setApiDistricts(
+          Array.isArray(distRes?.data)
+            ? distRes.data
+            : distRes?.data?.results || [],
+        );
         setApiThemes(themeRes?.data?.results || themeRes?.data || []);
       } catch (err) {
         console.error("Error fetching lookups:", err);
@@ -102,10 +113,18 @@ export default function CadreSelectionCountPage({ financialYear }) {
 
     if (selectedDistrict) queryParams.append("district_id", selectedDistrict);
     if (selectedTheme) queryParams.append("theme_id", selectedTheme);
-    if (viewMode === "plan" && selectedPlan) queryParams.append("plan_id", selectedPlan);
+    if (viewMode === "plan" && selectedPlan)
+      queryParams.append("plan_id", selectedPlan);
+
+    // SURGICAL ADDITION: Append Date Filters
+    if (exactDate) queryParams.append("date", exactDate);
+    if (startDate) queryParams.append("start_date", startDate);
+    if (endDate) queryParams.append("end_date", endDate);
 
     try {
-      const res = await api.get(`/tms/reports/master-progress/?${queryParams.toString()}`);
+      const res = await api.get(
+        `/tms/reports/master-progress/?${queryParams.toString()}`,
+      );
       if (res.data?.status === "success" && Array.isArray(res.data.data)) {
         const rawData = res.data.data;
         if (rawData.length > 0) {
@@ -119,7 +138,16 @@ export default function CadreSelectionCountPage({ financialYear }) {
     } finally {
       setDataLoading(false);
     }
-  }, [financialYear, viewMode, selectedDistrict, selectedTheme, selectedPlan]);
+  }, [
+    financialYear,
+    viewMode,
+    selectedDistrict,
+    selectedTheme,
+    selectedPlan,
+    exactDate,
+    startDate,
+    endDate,
+  ]); // <-- SURGICAL UPDATE: Added date dependencies
 
   useEffect(() => {
     fetchReportData();
@@ -152,8 +180,16 @@ export default function CadreSelectionCountPage({ financialYear }) {
           label: "Total Onboarded",
           data: values,
           backgroundColor: [
-            "#2563eb", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6",
-            "#06b6d4", "#84cc16", "#f97316", "#ec4899", "#14b8a6",
+            "#2563eb",
+            "#10b981",
+            "#f59e0b",
+            "#ef4444",
+            "#8b5cf6",
+            "#06b6d4",
+            "#84cc16",
+            "#f97316",
+            "#ec4899",
+            "#14b8a6",
           ],
           borderColor: "#ffffff",
           borderWidth: 2,
@@ -166,8 +202,19 @@ export default function CadreSelectionCountPage({ financialYear }) {
     responsive: true,
     maintainAspectRatio: false,
     plugins: {
-      legend: { position: "right", labels: { color: "#334155", font: { family: "inherit", weight: "600" } } },
-      tooltip: { padding: 12, cornerRadius: 8, titleFont: { size: 14 }, bodyFont: { size: 13 } },
+      legend: {
+        position: "right",
+        labels: {
+          color: "#334155",
+          font: { family: "inherit", weight: "600" },
+        },
+      },
+      tooltip: {
+        padding: 12,
+        cornerRadius: 8,
+        titleFont: { size: 14 },
+        bodyFont: { size: 13 },
+      },
     },
   };
 
@@ -175,21 +222,101 @@ export default function CadreSelectionCountPage({ financialYear }) {
   // 4. TABLE COLUMNS SETUP
   // ==========================================
   const columns = [
-    { header: "District", key: "district_name", render: (row) => <span style={{ fontWeight: 700, color: "#0f172a" }}>{row.district_name || "-"}</span> },
-    { header: viewMode === "theme" ? "Theme" : "Training Plan", key: "group_name", render: (row) => <span style={{ fontWeight: 700, color: "#3b82f6" }}>{row.group_name || "-"}</span> },
-    { header: "Target", key: "target", render: (row) => <div className="num-col">{row.target.toLocaleString('en-IN')}</div> },
-    { header: "Total Onboarded", key: "total_onboarded", render: (row) => <div className="num-col" style={{ color: "#0f172a", fontWeight: 700 }}>{row.total_onboarded.toLocaleString('en-IN')}</div> },
-    { header: "Total Batches", key: "total_batches", render: (row) => <div className="num-col">{row.total_batches.toLocaleString('en-IN')}</div> },
-    { header: "DMMU Approved Batches", key: "dmmu_approved_batches", render: (row) => <div className="num-col">{row.dmmu_approved_batches.toLocaleString('en-IN')}</div> },
-    { header: "Ongoing Batches", key: "ongoing_batches", render: (row) => <div className="num-col" style={{ color: "#f59e0b", fontWeight: 600 }}>{row.ongoing_batches.toLocaleString('en-IN')}</div> },
-    { header: "Completed Batches", key: "completed_batches", render: (row) => <div className="num-col" style={{ color: "#16a34a", fontWeight: 600 }}>{row.completed_batches.toLocaleString('en-IN')}</div> },
-    { header: "Total Participants Trained", key: "total_participants_trained", render: (row) => <div className="num-col" style={{ color: "#083A8B", fontWeight: 800 }}>{row.total_participants_trained.toLocaleString('en-IN')}</div> },
+    {
+      header: "District",
+      key: "district_name",
+      render: (row) => (
+        <span style={{ fontWeight: 700, color: "#0f172a" }}>
+          {row.district_name || "-"}
+        </span>
+      ),
+    },
+    {
+      header: viewMode === "theme" ? "Theme" : "Training Plan",
+      key: "group_name",
+      render: (row) => (
+        <span style={{ fontWeight: 700, color: "#3b82f6" }}>
+          {row.group_name || "-"}
+        </span>
+      ),
+    },
+    {
+      header: "Target",
+      key: "target",
+      render: (row) => (
+        <div className="num-col">{row.target.toLocaleString("en-IN")}</div>
+      ),
+    },
+    {
+      header: "Total Onboarded",
+      key: "total_onboarded",
+      render: (row) => (
+        <div className="num-col" style={{ color: "#0f172a", fontWeight: 700 }}>
+          {row.total_onboarded.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      header: "Total Batches",
+      key: "total_batches",
+      render: (row) => (
+        <div className="num-col">
+          {row.total_batches.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      header: "DMMU Approved Batches",
+      key: "dmmu_approved_batches",
+      render: (row) => (
+        <div className="num-col">
+          {row.dmmu_approved_batches.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      header: "Ongoing Batches",
+      key: "ongoing_batches",
+      render: (row) => (
+        <div className="num-col" style={{ color: "#f59e0b", fontWeight: 600 }}>
+          {row.ongoing_batches.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      header: "Completed Batches",
+      key: "completed_batches",
+      render: (row) => (
+        <div className="num-col" style={{ color: "#16a34a", fontWeight: 600 }}>
+          {row.completed_batches.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
+    {
+      header: "Total Participants Trained",
+      key: "total_participants_trained",
+      render: (row) => (
+        <div className="num-col" style={{ color: "#083A8B", fontWeight: 800 }}>
+          {row.total_participants_trained.toLocaleString("en-IN")}
+        </div>
+      ),
+    },
     {
       header: "%age (Trained / Onboarded)",
       key: "percentage",
       render: (row) => (
         <div className="num-col">
-          <span style={{ fontWeight: 700, color: row.percentage >= 100 ? "#16a34a" : row.percentage > 0 ? "#ea580c" : "#64748b" }}>
+          <span
+            style={{
+              fontWeight: 700,
+              color:
+                row.percentage >= 100
+                  ? "#16a34a"
+                  : row.percentage > 0
+                    ? "#ea580c"
+                    : "#64748b",
+            }}
+          >
             {row.percentage}%
           </span>
         </div>
@@ -203,7 +330,10 @@ export default function CadreSelectionCountPage({ financialYear }) {
   const exportToCSV = () => {
     if (!apiData || apiData.length === 0) return;
 
-    let csvContent = "S.No.,District," + (viewMode === "theme" ? "Theme" : "Training Plan") + ",Target,Total Onboarded,Total Batches,DMMU Approved Batches,Ongoing Batches,Completed Batches,Total Participants Trained,%age\n";
+    let csvContent =
+      "S.No.,District," +
+      (viewMode === "theme" ? "Theme" : "Training Plan") +
+      ",Target,Total Onboarded,Total Batches,DMMU Approved Batches,Ongoing Batches,Completed Batches,Total Participants Trained,%age\n";
 
     apiData.forEach((row, i) => {
       csvContent += `"${i + 1}","${row.district_name || "-"}","${row.group_name || "-"}","${row.target}","${row.total_onboarded}","${row.total_batches}","${row.dmmu_approved_batches}","${row.ongoing_batches}","${row.completed_batches}","${row.total_participants_trained}","${row.percentage}%"\n`;
@@ -213,7 +343,10 @@ export default function CadreSelectionCountPage({ financialYear }) {
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
     link.setAttribute("href", url);
-    link.setAttribute("download", `Cadre_Selection_Progress_${viewMode.toUpperCase()}.csv`);
+    link.setAttribute(
+      "download",
+      `Cadre_Selection_Progress_${viewMode.toUpperCase()}.csv`,
+    );
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
@@ -223,38 +356,57 @@ export default function CadreSelectionCountPage({ financialYear }) {
     <div className="analytics-white-card">
       <div className="report-header">
         <h2>Batch-wise Cadre Selection & Progress</h2>
-        <p>Monitor end-to-end programmatic progress from participant onboarding to final training completions.</p>
+        <p>
+          Monitor end-to-end programmatic progress from participant onboarding
+          to final training completions.
+        </p>
       </div>
 
       {/* --- OVERALL STATS CARDS --- */}
       {totals && (
         <div className="metrics-grid">
           <div className="metric-card gradient-blue">
-            <div className="metric-icon"><FaBullseye /></div>
+            <div className="metric-icon">
+              <FaBullseye />
+            </div>
             <div className="metric-info">
               <span className="metric-label">Total Target</span>
-              <span className="metric-value">{totals.target.toLocaleString('en-IN')}</span>
+              <span className="metric-value">
+                {totals.target.toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
           <div className="metric-card gradient-blue">
-            <div className="metric-icon"><FaUsers /></div>
+            <div className="metric-icon">
+              <FaUsers />
+            </div>
             <div className="metric-info">
               <span className="metric-label">Total Onboarded</span>
-              <span className="metric-value">{totals.total_onboarded.toLocaleString('en-IN')}</span>
+              <span className="metric-value">
+                {totals.total_onboarded.toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
           <div className="metric-card gradient-blue">
-            <div className="metric-icon"><FaBoxes /></div>
+            <div className="metric-icon">
+              <FaBoxes />
+            </div>
             <div className="metric-info">
               <span className="metric-label">Total Batches</span>
-              <span className="metric-value">{totals.total_batches.toLocaleString('en-IN')}</span>
+              <span className="metric-value">
+                {totals.total_batches.toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
           <div className="metric-card gradient-blue">
-            <div className="metric-icon"><FaGraduationCap /></div>
+            <div className="metric-icon">
+              <FaGraduationCap />
+            </div>
             <div className="metric-info">
               <span className="metric-label">Participants Trained</span>
-              <span className="metric-value">{totals.total_participants_trained.toLocaleString('en-IN')}</span>
+              <span className="metric-value">
+                {totals.total_participants_trained.toLocaleString("en-IN")}
+              </span>
             </div>
           </div>
         </div>
@@ -278,10 +430,16 @@ export default function CadreSelectionCountPage({ financialYear }) {
 
         <div className="filter-group">
           <label>District</label>
-          <select value={selectedDistrict} onChange={(e) => setSelectedDistrict(e.target.value)} disabled={lookupsLoading}>
+          <select
+            value={selectedDistrict}
+            onChange={(e) => setSelectedDistrict(e.target.value)}
+            disabled={lookupsLoading}
+          >
             <option value="">-- All Districts --</option>
             {apiDistricts.map((d) => (
-              <option key={d.district_id} value={d.district_id}>{d.district_name_en}</option>
+              <option key={d.district_id} value={d.district_id}>
+                {d.district_name_en}
+              </option>
             ))}
           </select>
         </div>
@@ -298,7 +456,9 @@ export default function CadreSelectionCountPage({ financialYear }) {
           >
             <option value="">-- All Themes --</option>
             {apiThemes.map((t) => (
-              <option key={t.id} value={t.id}>{t.theme_name}</option>
+              <option key={t.id} value={t.id}>
+                {t.theme_name}
+              </option>
             ))}
           </select>
         </div>
@@ -313,20 +473,76 @@ export default function CadreSelectionCountPage({ financialYear }) {
             >
               <option value="">-- All Plans --</option>
               {apiPlans.map((p) => (
-                <option key={p.id} value={p.id}>{p.training_name || p.title || p.plan_name}</option>
+                <option key={p.id} value={p.id}>
+                  {p.training_name || p.title || p.plan_name}
+                </option>
               ))}
             </select>
           </div>
         )}
 
-        {(selectedDistrict || selectedTheme || selectedPlan) && (
-          <div className="filter-group" style={{ justifyContent: "flex-end", paddingBottom: "2px" }}>
+        {/* SURGICAL ADDITION: Date Filters */}
+        <div className="filter-group">
+          <label>Exact Date</label>
+          <input
+            type="date"
+            value={exactDate}
+            onChange={(e) => {
+              setExactDate(e.target.value);
+              setStartDate(""); // Clear range if exact date is used
+              setEndDate("");
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>From Date</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setExactDate(""); // Clear exact date if range is used
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>To Date</label>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setExactDate("");
+            }}
+            disabled={lookupsLoading || !startDate}
+          />
+        </div>
+
+        {/* SURGICAL UPDATE: Include Date states in Reset Logic */}
+        {(selectedDistrict ||
+          selectedTheme ||
+          selectedPlan ||
+          exactDate ||
+          startDate ||
+          endDate) && (
+          <div
+            className="filter-group"
+            style={{ justifyContent: "flex-end", paddingBottom: "2px" }}
+          >
             <button
               className="reset-btn"
               onClick={() => {
                 setSelectedDistrict("");
                 setSelectedTheme("");
                 setSelectedPlan("");
+                setExactDate("");
+                setStartDate("");
+                setEndDate("");
               }}
             >
               Reset Filters
@@ -337,7 +553,10 @@ export default function CadreSelectionCountPage({ financialYear }) {
 
       {/* --- CHART SECTION --- */}
       <div className="chart-card">
-        <h3>Distribution of Onboarded Cadre ({viewMode === "theme" ? "Theme-wise" : "Plan-wise"})</h3>
+        <h3>
+          Distribution of Onboarded Cadre (
+          {viewMode === "theme" ? "Theme-wise" : "Plan-wise"})
+        </h3>
         <div className="chart-inner-container">
           {dataLoading ? (
             <div className="empty-state">Loading Chart Data...</div>
@@ -351,8 +570,16 @@ export default function CadreSelectionCountPage({ financialYear }) {
 
       {/* --- TABLE HEADER & EXPORT --- */}
       <div className="table-header-flex">
-        <h3>{viewMode === "theme" ? "Theme Wise Analytics" : "Training Plan Wise Analytics"}</h3>
-        <button className="export-btn" onClick={exportToCSV} disabled={apiData.length === 0 || dataLoading}>
+        <h3>
+          {viewMode === "theme"
+            ? "Theme Wise Analytics"
+            : "Training Plan Wise Analytics"}
+        </h3>
+        <button
+          className="export-btn"
+          onClick={exportToCSV}
+          disabled={apiData.length === 0 || dataLoading}
+        >
           <FaDownload /> Export Excel
         </button>
       </div>
@@ -476,7 +703,8 @@ export default function CadreSelectionCountPage({ financialYear }) {
           letter-spacing: 0.5px;
         }
 
-        .filter-group select {
+        .filter-group select,
+        .filter-group input[type="date"] {
           padding: 12px 14px;
           border: 1px solid #cbd5e1;
           border-radius: 8px;
@@ -486,13 +714,21 @@ export default function CadreSelectionCountPage({ financialYear }) {
           background: #ffffff;
           outline: none;
           transition: all 0.2s ease;
+          box-sizing: border-box;
+          font-family: inherit;
         }
 
-        .filter-group select:focus {
+        .filter-group select:focus,
+        .filter-group input[type="date"]:focus {
           border-color: #0092E0;
           box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15);
         }
-
+        
+        .filter-group input[type="date"]:disabled {
+          background-color: #e2e8f0;
+          color: #94a3b8;
+          cursor: not-allowed;
+        }
         .reset-btn {
           background: #f1f5f9;
           color: #ef4444;
