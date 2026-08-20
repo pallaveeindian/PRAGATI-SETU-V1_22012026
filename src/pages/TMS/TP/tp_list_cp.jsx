@@ -244,6 +244,10 @@ export default function TpListCP() {
         params.created_by = user.id;
       }
 
+      if (role === "training_partner") {
+        params.created_by = user.id;
+      }
+
       try {
         const resp = await TMS_API.trainingPartnerContactPersons.list(params);
         setCps(resp?.data?.results || []);

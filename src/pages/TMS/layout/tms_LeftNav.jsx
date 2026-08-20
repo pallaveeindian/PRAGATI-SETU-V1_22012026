@@ -251,15 +251,36 @@ const MENU = {
           to: "/tms/batches-list/",
           icon: FaAddressBook,
         },
+        // {
+        //   label: "Batch Calendar",
+        //   to: "/tms/batches-list/",
+        //   icon: FaCalendar,
+        // },
+      ],
+    },
+    {
+      label: "TC Management",
+      icon: FaUsers,
+      children: [
         {
-          label: "Batch Calendar",
-          to: "/tms/batches-list/",
-          icon: FaCalendar,
+          label: "TC-ID List",
+          to: "/tms/tp/cp-list",
+          icon: FaUser,
+        },
+        {
+          label: "Register TC-ID",
+          to: "/tms/tp/cp/create",
+          icon: FaUserEdit,
+        },
+        {
+          label: "Assign Centre to TC-ID",
+          to: "/tms/tp/cp/assign",
+          icon: FaUserCheck,
         },
       ],
     },
     {
-      label: "User Management",
+      label: "Account Manager",
       to: "/tms/tp/users",
       icon: FaUsers,
     },

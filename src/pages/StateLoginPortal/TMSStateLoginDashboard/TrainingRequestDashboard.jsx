@@ -1,3 +1,4 @@
+// src/pages/StateLoginPortal/TMSStateLogin/Dashboard/TrainingRequestDashboard.jsx
 import React, { useState, useMemo, useEffect, useCallback } from "react";
 import TablePagination from "../CommonUiComp/TablePagination";
 import TableUI from "../CommonUiComp/TableUI";
@@ -34,6 +35,11 @@ export default function TrainingRequestDashboard({ financialYear }) {
   const [selectedBlock, setSelectedBlock] = useState("");
   const [selectedTheme, setSelectedTheme] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
+
+  // SURGICAL ADDITION: Date Filters State
+  const [exactDate, setExactDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
 
   // --- Lookup Data States ---
   const [districts, setDistricts] = useState([]);
@@ -138,6 +144,11 @@ export default function TrainingRequestDashboard({ financialYear }) {
     if (selectedTheme) queryParams.append("theme_id", selectedTheme);
     if (selectedPlan) queryParams.append("plan_id", selectedPlan);
 
+    // SURGICAL ADDITION: Append Date Filters
+    if (exactDate) queryParams.append("date", exactDate);
+    if (startDate) queryParams.append("start_date", startDate);
+    if (endDate) queryParams.append("end_date", endDate);
+
     try {
       const res = await api.get(
         `/public/cadre-selection-summary/?${queryParams.toString()}`,
@@ -159,6 +170,9 @@ export default function TrainingRequestDashboard({ financialYear }) {
     selectedBlock,
     selectedTheme,
     selectedPlan,
+    exactDate, // <-- SURGICAL UPDATE: Added exactDate
+    startDate, // <-- SURGICAL UPDATE: Added startDate
+    endDate, // <-- SURGICAL UPDATE: Added endDate
   ]);
 
   useEffect(() => {
@@ -413,10 +427,59 @@ export default function TrainingRequestDashboard({ financialYear }) {
           </select>
         </div>
 
+        {/* SURGICAL ADDITION: Date Filters */}
+        <div className="filter-group">
+          <label>Exact Date</label>
+          <input
+            type="date"
+            value={exactDate}
+            onChange={(e) => {
+              setExactDate(e.target.value);
+              setStartDate(""); // Clear range if exact date is used
+              setEndDate("");
+              setPage(1);
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>From Date</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setExactDate(""); // Clear exact date if range is used
+              setPage(1);
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>To Date</label>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setExactDate("");
+              setPage(1);
+            }}
+            disabled={lookupsLoading || !startDate}
+          />
+        </div>
+
+        {/* SURGICAL UPDATE: Include Date states in Reset Logic */}
         {(selectedDistrict ||
           selectedBlock ||
           selectedTheme ||
-          selectedPlan) && (
+          selectedPlan ||
+          exactDate ||
+          startDate ||
+          endDate) && (
           <div
             className="filter-group"
             style={{
@@ -432,6 +495,9 @@ export default function TrainingRequestDashboard({ financialYear }) {
                 setSelectedBlock("");
                 setSelectedTheme("");
                 setSelectedPlan("");
+                setExactDate(""); // <-- SURGICAL ADDITION
+                setStartDate(""); // <-- SURGICAL ADDITION
+                setEndDate(""); // <-- SURGICAL ADDITION
                 setPage(1);
               }}
             >
@@ -535,13 +601,13 @@ export default function TrainingRequestDashboard({ financialYear }) {
 
         .filter-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 180px; }
         .filter-group label { font-size: 13px; font-weight: 700; color: #ffffff; text-transform: uppercase; letter-spacing: 0.5px; }
-        .filter-group select {
+        .filter-group select, .filter-group input[type="date"] {
           padding: 12px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px;
           font-weight: 600; color: #0f172a; outline: none; transition: all 0.2s ease;
+          background: #ffffff; font-family: inherit; box-sizing: border-box; min-height: 40px; width: 100%;
         }
-        .filter-group select:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
-        .filter-group select:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
-
+        .filter-group select:focus, .filter-group input[type="date"]:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
+        .filter-group select:disabled, .filter-group input[type="date"]:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
         .reset-btn { background: #f1f5f9; color: #ef4444; border: 1px solid #fecaca; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; height: 44px; }
         .reset-btn:hover { background: #ef4444; color: #fff; }
 

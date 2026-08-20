@@ -1,5 +1,5 @@
 // src/pages/TMS/MTManagementV2/components/MTFormModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   FaTimes,
   FaUserEdit,
@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 import { LOOKUP_API, TMS_API } from "../../../../api/axios";
 import { useMTForm } from "../hooks/useMTForm";
+import { AuthContext } from "../../../../contexts/AuthContext";
 
 const INITIAL_FORM_STATE = {
   username: "",
@@ -56,12 +57,7 @@ export default function MTFormModal({
   const isUpdate = Boolean(trainerId);
 
   // SURGICAL ADDITION: Role context for form restrictions
-  const { user } =
-    React.useContext(
-      import("../../../../contexts/AuthContext")
-        .then((m) => m.AuthContext)
-        .catch(() => ({})),
-    ) || {};
+  const { user } = useContext(AuthContext) || {};
   const role = user?.role_name?.toLowerCase() || "";
   const isCurrentBMMU = role === "bmmu" || role === "1";
   const isCurrentDMMU = role === "dmmu" || role === "2";

@@ -1,3 +1,4 @@
+// src/pages/StateLoginPortal/TMSStateLoginDashboard/BatchProgressDashboard.jsx
 import React, {
   useState,
   useMemo,
@@ -59,9 +60,21 @@ export default function BatchProgressDashboard({ financialYear }) {
   const [selectedStatus, setSelectedStatus] = useState("");
   const [search, setSearch] = useState("");
 
+  // SURGICAL ADDITION: Theme and Plan Filter States
+  const [selectedTheme, setSelectedTheme] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState("");
+
+  // SURGICAL ADDITION: Date Filters State
+  const [exactDate, setExactDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   // --- Lookup States ---
   const [districts, setDistricts] = useState([]);
   const [blocks, setBlocks] = useState([]);
+  // SURGICAL ADDITION: Theme and Plan Lookup States
+  const [apiThemes, setApiThemes] = useState([]);
+  const [apiPlans, setApiPlans] = useState([]);
   const [lookupsLoading, setLookupsLoading] = useState(false);
 
   // --- Data States ---
@@ -93,10 +106,19 @@ export default function BatchProgressDashboard({ financialYear }) {
     const fetchInitialLookups = async () => {
       setLookupsLoading(true);
       try {
-        const dRes = await LOOKUP_API.districts.list({ page_size: 5000 });
+        const [dRes, tRes] = await Promise.all([
+          LOOKUP_API.districts.list({ page_size: 5000 }),
+          api.get("/tms/public/training-themes/", {
+            params: { page_size: 100 },
+          }), // SURGICAL ADDITION
+        ]);
+
         setDistricts(
           Array.isArray(dRes?.data) ? dRes.data : dRes?.data?.results || [],
         );
+
+        // SURGICAL ADDITION
+        setApiThemes(tRes?.data?.results || tRes?.data || []);
 
         // Auto-lock DMMU District
         if (role === "dmmu") {
@@ -127,6 +149,25 @@ export default function BatchProgressDashboard({ financialYear }) {
       .catch(() => setBlocks([]));
   }, [selectedDistrict, role]);
 
+  // SURGICAL ADDITION: Fetch Plans conditionally based on theme
+  useEffect(() => {
+    if (!selectedTheme) {
+      setApiPlans([]);
+      return;
+    }
+    const fetchPlans = async () => {
+      try {
+        const res = await api.get("/tms/public/training-plans/", {
+          params: { theme: selectedTheme, page_size: 500 },
+        });
+        setApiPlans(res?.data?.results || res?.data || []);
+      } catch (err) {
+        console.error("Error fetching dependent plans:", err);
+      }
+    };
+    fetchPlans();
+  }, [selectedTheme]);
+
   // ==========================================
   // 3. MAIN BATCH FETCH ENGINE
   // ==========================================
@@ -155,13 +196,19 @@ export default function BatchProgressDashboard({ financialYear }) {
         financial_year: financialYear,
         district_id: effectiveDistrict,
         block_id: effectiveBlock,
+        // SURGICAL ADDITION: Append Theme and Plan Filters
+        theme_id: selectedTheme,
+        training_plan_id: selectedPlan,
+        // SURGICAL ADDITION: Append Date Filters
+        exact_date: exactDate,
+        start_date: startDate,
+        end_date: endDate,
         page_size: 5000, // Fetch all for local dashboard metrics mapping
       };
 
-      // Clean empty params
       const cleanParams = Object.fromEntries(
         Object.entries(finalParams).filter(
-          ([, v]) => v !== "" && v !== null && v !== undefined,
+          ([, value]) => value !== "" && value !== null && value !== undefined,
         ),
       );
 
@@ -189,6 +236,11 @@ export default function BatchProgressDashboard({ financialYear }) {
     selectedDistrict,
     selectedBlock,
     selectedStatus,
+    selectedTheme, // <-- SURGICAL UPDATE: Added theme dependency
+    selectedPlan, // <-- SURGICAL UPDATE: Added plan dependency
+    exactDate, // <-- SURGICAL UPDATE: Added exactDate
+    startDate, // <-- SURGICAL UPDATE: Added startDate
+    endDate, // <-- SURGICAL UPDATE: Added endDate
     search,
     role,
     getDefaultScopeParams,
@@ -216,7 +268,6 @@ export default function BatchProgressDashboard({ financialYear }) {
   // ==========================================
   const chartConfigData = useMemo(() => {
     const countsMap = {
-      DRAFTED: 0,
       PENDING: 0,
       ONGOING: 0,
       SCHEDULED: 0,
@@ -497,6 +548,47 @@ export default function BatchProgressDashboard({ financialYear }) {
           </select>
         </div>
 
+        {/* SURGICAL ADDITION: Theme Filter */}
+        <div className="filter-group">
+          <label>Training Theme</label>
+          <select
+            value={selectedTheme}
+            onChange={(e) => {
+              setSelectedTheme(e.target.value);
+              setSelectedPlan(""); // Reset plan when theme changes
+              setPage(1);
+            }}
+            disabled={lookupsLoading}
+          >
+            <option value="">-- All Themes --</option>
+            {apiThemes.map((t) => (
+              <option key={t.id} value={t.id}>
+                {t.theme_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
+        {/* SURGICAL ADDITION: Plan Filter */}
+        <div className="filter-group">
+          <label>Training Plan</label>
+          <select
+            value={selectedPlan}
+            onChange={(e) => {
+              setSelectedPlan(e.target.value);
+              setPage(1);
+            }}
+            disabled={!selectedTheme}
+          >
+            <option value="">-- All Plans --</option>
+            {apiPlans.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.training_name || p.title || p.plan_name}
+              </option>
+            ))}
+          </select>
+        </div>
+
         <div className="filter-group">
           <label>Current Status</label>
           <select
@@ -507,7 +599,6 @@ export default function BatchProgressDashboard({ financialYear }) {
             }}
           >
             <option value="">-- All Statuses --</option>
-            <option value="DRAFT">Saved As Draft</option>
             <option value="PENDING">Pending Approval</option>
             <option value="REJECTED">Rejected</option>
             <option value="ONGOING">Ongoing</option>
@@ -516,6 +607,51 @@ export default function BatchProgressDashboard({ financialYear }) {
             <option value="REVIEW">Under Review</option>
             <option value="CLOSED">Closed</option>
           </select>
+        </div>
+
+        {/* SURGICAL ADDITION: Date Filters */}
+        <div className="filter-group">
+          <label>Exact Date</label>
+          <input
+            type="date"
+            value={exactDate}
+            onChange={(e) => {
+              setExactDate(e.target.value);
+              setStartDate(""); // Clear range if exact date is used
+              setEndDate("");
+              setPage(1);
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>From Date</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setExactDate(""); // Clear exact date if range is used
+              setPage(1);
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>To Date</label>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setExactDate("");
+              setPage(1);
+            }}
+            disabled={lookupsLoading || !startDate}
+          />
         </div>
 
         <div className="filter-group">
@@ -538,12 +674,21 @@ export default function BatchProgressDashboard({ financialYear }) {
             flex: "none",
           }}
         >
-          <button className="reset-btn" onClick={fetchBatches}>
+          <button className="search-btn" onClick={fetchBatches}>
             Search
           </button>
         </div>
 
-        {(selectedDistrict || selectedBlock || selectedStatus || search) &&
+        {/* SURGICAL UPDATE: Include new filters in condition */}
+        {(selectedDistrict ||
+          selectedBlock ||
+          selectedStatus ||
+          selectedTheme ||
+          selectedPlan ||
+          exactDate ||
+          startDate ||
+          endDate ||
+          search) &&
           role !== "dmmu" &&
           role !== "bmmu" && (
             <div
@@ -556,11 +701,15 @@ export default function BatchProgressDashboard({ financialYear }) {
             >
               <button
                 className="reset-btn"
-                style={{ color: "#475569", borderColor: "#cbd5e1" }}
                 onClick={() => {
                   setSelectedDistrict("");
                   setSelectedBlock("");
                   setSelectedStatus("");
+                  setSelectedTheme(""); // <-- SURGICAL ADDITION
+                  setSelectedPlan(""); // <-- SURGICAL ADDITION
+                  setExactDate(""); // <-- SURGICAL ADDITION
+                  setStartDate(""); // <-- SURGICAL ADDITION
+                  setEndDate(""); // <-- SURGICAL ADDITION
                   setSearch("");
                   // fetchBatches triggers on useEffect
                 }}
@@ -665,15 +814,19 @@ export default function BatchProgressDashboard({ financialYear }) {
 
         .filter-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 180px; }
         .filter-group label { font-size: 13px; font-weight: 700; color: #ffffff; text-transform: uppercase; }
-        .filter-group select, .search-input {
+        .filter-group select, .search-input, .filter-group input[type="date"] {
           padding: 12px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px;
           font-weight: 600; color: #0f172a; outline: none; transition: all 0.2s ease; background: #fff;
+          font-family: inherit; box-sizing: border-box; min-height: 40px;
         }
-        .filter-group select:focus, .search-input:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
-        .filter-group select:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
+        .filter-group select:focus, .search-input:focus, .filter-group input[type="date"]:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
+        .filter-group select:disabled, .filter-group input[type="date"]:disabled { background: #e2e8f0; color: #94a3b8; cursor: not-allowed; }
 
-        .reset-btn { background: #f1f5f9; color: #0f172a; border: 1px solid #cbd5e1; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; height: 44px; }
-        .reset-btn:hover { background: #e2e8f0; }
+        .search-btn { background: #ffffff; color: #08398A; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; height: 44px; }
+        .search-btn:hover { background: #16A34A; color: #fff; }        
+
+        .reset-btn { background: #fff; color: #08398A; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; height: 44px; }
+        .reset-btn:hover { background: #8d1212; color: #fff; }
 
         .chart-card { background: #ffffff; border: 3px solid #08398A; border-radius: 12px; padding: 20px; margin-bottom: 30px; }
         .chart-card h3 { margin: 0 0 20px 0; color: #0f172a; font-size: 16px; }

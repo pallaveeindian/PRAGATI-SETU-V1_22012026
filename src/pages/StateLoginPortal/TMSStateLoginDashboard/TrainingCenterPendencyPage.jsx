@@ -33,6 +33,11 @@ export default function TrainingCenterPendencyPage({ financialYear }) {
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedPartner, setSelectedPartner] = useState("");
 
+  // SURGICAL ADDITION: Date Filters State
+  const [exactDate, setExactDate] = useState("");
+  const [startDate, setStartDate] = useState("");
+  const [endDate, setEndDate] = useState("");
+
   // --- Lookup Data State ---
   const [apiDistricts, setApiDistricts] = useState([]);
   const [apiPartners, setApiPartners] = useState([]);
@@ -96,6 +101,11 @@ export default function TrainingCenterPendencyPage({ financialYear }) {
     queryParams.append("financial_year", financialYear);
     queryParams.append("page_size", 1000);
 
+    // SURGICAL ADDITION: Append Date Filters
+    if (exactDate) queryParams.append("date", exactDate);
+    if (startDate) queryParams.append("start_date", startDate);
+    if (endDate) queryParams.append("end_date", endDate);
+
     try {
       const res = await api.get(
         `/tms/reports/centre-summary/?${queryParams.toString()}`,
@@ -108,7 +118,14 @@ export default function TrainingCenterPendencyPage({ financialYear }) {
     } finally {
       setDataLoading(false);
     }
-  }, [selectedDistrict, selectedPartner]);
+  }, [
+    selectedDistrict,
+    selectedPartner,
+    financialYear,
+    exactDate,
+    startDate,
+    endDate,
+  ]);
 
   useEffect(() => {
     fetchReportData();
@@ -355,7 +372,54 @@ export default function TrainingCenterPendencyPage({ financialYear }) {
           </select>
         </div>
 
-        {(selectedDistrict || selectedPartner) && (
+        {/* SURGICAL ADDITION: Date Filters */}
+        <div className="filter-group">
+          <label>Exact Date</label>
+          <input
+            type="date"
+            value={exactDate}
+            onChange={(e) => {
+              setExactDate(e.target.value);
+              setStartDate(""); // Clear range if exact date is used
+              setEndDate("");
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>From Date</label>
+          <input
+            type="date"
+            value={startDate}
+            onChange={(e) => {
+              setStartDate(e.target.value);
+              setExactDate(""); // Clear exact date if range is used
+            }}
+            disabled={lookupsLoading}
+          />
+        </div>
+
+        <div className="filter-group">
+          <label>To Date</label>
+          <input
+            type="date"
+            value={endDate}
+            min={startDate}
+            onChange={(e) => {
+              setEndDate(e.target.value);
+              setExactDate("");
+            }}
+            disabled={lookupsLoading || !startDate}
+          />
+        </div>
+
+        {/* SURGICAL UPDATE: Include Date states in Reset Logic */}
+        {(selectedDistrict ||
+          selectedPartner ||
+          exactDate ||
+          startDate ||
+          endDate) && (
           <div
             className="filter-group"
             style={{ justifyContent: "flex-end", paddingBottom: "2px" }}
@@ -365,6 +429,9 @@ export default function TrainingCenterPendencyPage({ financialYear }) {
               onClick={() => {
                 setSelectedDistrict("");
                 setSelectedPartner("");
+                setExactDate("");
+                setStartDate("");
+                setEndDate("");
               }}
             >
               Reset Filters
@@ -472,12 +539,21 @@ export default function TrainingCenterPendencyPage({ financialYear }) {
 
         .filter-group { display: flex; flex-direction: column; gap: 8px; flex: 1; min-width: 220px; }
         .filter-group label { font-size: 13px; font-weight: 700; color: #ffffff; text-transform: uppercase; }
-        .filter-group select {
+        .filter-group select,
+        .filter-group input[type="date"] {
           padding: 12px 14px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px;
           font-weight: 600; color: #0f172a; outline: none; transition: all 0.2s ease;
+          background: #ffffff; width: 100%; box-sizing: border-box; min-height: 40px;
+          font-family: inherit;
         }
-        .filter-group select:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
-
+        .filter-group select:focus,
+        .filter-group input[type="date"]:focus { border-color: #0092E0; box-shadow: 0 0 0 3px rgba(0, 146, 224, 0.15); }
+        
+        .filter-group input[type="date"]:disabled {
+          background-color: #e2e8f0;
+          color: #94a3b8;
+          cursor: not-allowed;
+        }
         .reset-btn { background: #f1f5f9; color: #ef4444; border: 1px solid #fecaca; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; transition: all 0.2s; }
         .reset-btn:hover { background: #ef4444; color: #fff; }
 

@@ -20,7 +20,7 @@ export default function DashKPI({ data, batchesFilter }) {
   // Destructure with fallbacks to 0
   const {
     total_batches_created = 0,
-    draft_batches = 0,
+    // draft_batches = 0,
     pending_batches = 0,
     scheduled_batches = 0,
     ongoing_batches = 0,
@@ -43,15 +43,15 @@ export default function DashKPI({ data, batchesFilter }) {
       trendText: "Active",
       trendSuffix: "in current FY",
     },
-    {
-      title: "Batches saved as Draft",
-      value: draft_batches,
-      icon: <FaClock />,
-      iconBg: "#fef08a", // Soft Yellow
-      iconColor: "#ca8a04", // Yellow-Brown
-      trendText: "Awaiting",
-      trendSuffix: "approvals",
-    },
+    // {
+    //   title: "Batches saved as Draft",
+    //   value: draft_batches,
+    //   icon: <FaClock />,
+    //   iconBg: "#fef08a", // Soft Yellow
+    //   iconColor: "#ca8a04", // Yellow-Brown
+    //   trendText: "Awaiting",
+    //   trendSuffix: "approvals",
+    // },
     {
       title: "Scheduled Batches",
       value: scheduled_batches,
