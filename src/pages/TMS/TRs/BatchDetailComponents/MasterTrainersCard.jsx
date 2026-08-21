@@ -336,6 +336,7 @@ export default function MasterTrainersCard({
               <option value="BRP">BRP</option>
               <option value="DRP">DRP</option>
               <option value="SRP">SRP</option>
+              <option value="TSA">TSA</option>
             </select>
 
             <input
