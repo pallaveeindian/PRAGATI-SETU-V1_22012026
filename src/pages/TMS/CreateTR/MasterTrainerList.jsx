@@ -17,7 +17,12 @@ const TrainerRow = React.memo(function TrainerRow({
   return (
     <tr key={row.id} className={isSelected ? "row-selected" : ""}>
       <td>
-        <input type="checkbox" checked={!!isSelected} onChange={handleChange} />
+        <input
+          type="checkbox"
+          checked={!!isSelected}
+          onChange={handleChange}
+          style={{ transform: "scale(1.5)", cursor: "pointer" }}
+        />
       </td>
       <td>{row.full_name || row.name || "-"}</td>
       <td>
@@ -144,10 +149,12 @@ export default React.memo(function MasterTrainerList({
             padding: 6,
           }}
         />
-        <p style={{ marginLeft: 10, fontSize: 12, color: "#6c757d" }}>
-          You can search for trainers by name, mobile, theme, empanelled block
-          or district.
-        </p>
+        <strong>
+          <p style={{ marginLeft: 10, fontSize: 15, color: "#000000" }}>
+            You can search for trainers by name, mobile, theme, empanelled block
+            or district.
+          </p>
+        </strong>
         <select
           className="input"
           value={designation}

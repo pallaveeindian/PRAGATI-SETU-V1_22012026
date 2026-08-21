@@ -17,7 +17,12 @@ const StaffRow = React.memo(function StaffRow({ row, isSelected, onToggle }) {
   return (
     <tr key={row.id} className={isSelected ? "row-selected" : ""}>
       <td>
-        <input type="checkbox" checked={!!isSelected} onChange={handleChange} />
+        <input
+          type="checkbox"
+          checked={!!isSelected}
+          onChange={handleChange}
+          style={{ transform: "scale(1.5)", cursor: "pointer" }}
+        />
       </td>
       <td>
         <div style={{ fontWeight: 600 }}>{row.full_name || "-"}</div>
