@@ -604,6 +604,9 @@ export const TMS_API = {
   tpcpCentreDetails: makeCrud("/tms/tpcp_to_centre/details/"),
   trainingPlans: makeCrud("/tms/training-plans/"),
 
+  // Learning Materials
+  learningMaterials: makeCrud("/tms/learning-materials/"),
+
   // 2. Staff Profiles
   // - TMS_API.staff.list({ search: '...', district: 1, designation: '...' }) -> Hits GET /api/v1/tms/staff/
   // - TMS_API.staff.detail('UP-EMP-071') -> Hits GET /api/v1/tms/staff/UP-EMP-071/

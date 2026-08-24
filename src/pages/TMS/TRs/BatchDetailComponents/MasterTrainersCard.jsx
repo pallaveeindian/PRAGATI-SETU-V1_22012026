@@ -100,6 +100,11 @@ export default function MasterTrainersCard({
   const [mtCheckingId, setMtCheckingId] = useState(null);
   const [isReplacing, setIsReplacing] = useState(false);
 
+  // SURGICAL ADDITION: New states for Add/Remove logic
+  const [modalAction, setModalAction] = useState("replace"); // "add" or "replace"
+  const [targetOldMtId, setTargetOldMtId] = useState(null);
+  const [isRemoving, setIsRemoving] = useState(false);
+
   const role = user?.role_id;
   const isBMMU = role == 1;
   const isDMMU = role == 2;
@@ -170,7 +175,7 @@ export default function MasterTrainersCard({
 
   const mtTotalPages = Math.max(1, Math.ceil(mtTotal / mtPageSize));
 
-  /* ---------------- Handle Replacement Selection ---------------- */
+  /* ---------------- Handle Replacement / Addition Selection ---------------- */
   const handleSelectNewMT = async (trainer) => {
     // 1. Check Availability
     setMtCheckingId(trainer.id);
@@ -197,44 +202,94 @@ export default function MasterTrainersCard({
         return;
       }
 
-      // 2. If available, confirm replacement
+      // 2. If available, confirm action
+      const actionText = modalAction === "add" ? "add" : "assign";
       if (
         !window.confirm(
-          `Are you sure you want to assign ${trainer.full_name} to this batch?`,
+          `Are you sure you want to ${actionText}${trainer.full_name} to this batch?`,
         )
       ) {
         return;
       }
 
-      // 3. Execute Replacement API
+      // 3. Execute Unified API
       setIsReplacing(true);
-      const replacePayload = {
+
+      // SURGICAL UPDATE: Dynamic Payload
+      const payload = {
         batch_id: batchData.id,
+        action: modalAction,
         master_trainer_id: trainer.id,
+        old_master_trainer_id:
+          modalAction === "replace" ? targetOldMtId : undefined,
       };
 
-      const replaceResponse = await api.post(
+      const response = await api.post(
         "/tms/batch/replace-master-trainer/",
-        replacePayload,
+        payload,
       );
 
-      if (replaceResponse.data.status === "success") {
-        alert("Master Trainer replaced successfully!");
+      if (response.data.status === "success") {
+        alert(
+          `Master Trainer ${modalAction === "add" ? "added" : "replaced"} successfully!`,
+        );
         setIsModalOpen(false);
         if (typeof onRefresh === "function") {
           onRefresh();
         }
       }
     } catch (err) {
-      console.error("Replacement failed:", err);
+      console.error("Action failed:", err);
       const errorMsg =
         err?.response?.data?.error ||
         err?.response?.data?.message ||
-        "Failed to replace Master Trainer. Please check console.";
+        `Failed to ${modalAction} Master Trainer. Please check console.`;
       alert(errorMsg);
     } finally {
       setMtCheckingId(null);
       setIsReplacing(false);
+    }
+  };
+
+  /* ---------------- SURGICAL ADDITION: Handle Removal ---------------- */
+  const handleRemoveMT = async (trainerId, trainerName) => {
+    if (masterTrainers.length <= 1) {
+      alert(
+        "Removal blocked: A batch must have at least 1 Master Trainer assigned.",
+      );
+      return;
+    }
+
+    if (
+      !window.confirm(
+        `Are you sure you want to remove ${trainerName} from this batch?`,
+      )
+    ) {
+      return;
+    }
+
+    setIsRemoving(true);
+    try {
+      const payload = {
+        batch_id: batchData.id,
+        action: "remove",
+        old_master_trainer_id: trainerId,
+      };
+
+      const response = await api.post(
+        "/tms/batch/replace-master-trainer/",
+        payload,
+      );
+
+      if (response.data.status === "success") {
+        alert("Master Trainer removed successfully!");
+        if (typeof onRefresh === "function") onRefresh();
+      }
+    } catch (err) {
+      console.error("Removal failed:", err);
+      alert(err?.response?.data?.error || "Failed to remove Master Trainer.");
+    } finally {
+      setIsRemoving(false);
     }
   };
 
@@ -246,6 +301,20 @@ export default function MasterTrainersCard({
     <div className="master-trainer-card">
       <div className="master-trainer-heading">
         <span>👨‍🏫 Master Trainer{masterTrainers.length > 1 ? "s" : ""}</span>
+        {/* SURGICAL ADDITION: Add Trainer Button */}
+        {canReplace && (
+          <button
+            className="btn-add-mt"
+            onClick={() => {
+              setModalAction("add");
+              setTargetOldMtId(null);
+              setIsModalOpen(true);
+            }}
+            title="Add an additional Master Trainer"
+          >
+            + Add Trainer
+          </button>
+        )}
       </div>
 
       <div className="master-trainer-list">
@@ -269,15 +338,37 @@ export default function MasterTrainersCard({
                 </div>
               </div>
 
-              {/* Replace Action Button */}
+              {/* SURGICAL UPDATE: Replace and Remove Action Buttons */}
               {canReplace && (
-                <div className="mt-actions">
+                <div
+                  className="mt-actions"
+                  style={{ display: "flex", gap: "8px" }}
+                >
                   <button
                     className="btn-replace"
-                    onClick={() => setIsModalOpen(true)}
+                    onClick={() => {
+                      setModalAction("replace");
+                      setTargetOldMtId(mtData.id);
+                      setIsModalOpen(true);
+                    }}
                     title="Replace this Master Trainer"
+                    disabled={isRemoving}
                   >
                     <FaExchangeAlt /> Replace
+                  </button>
+                  <button
+                    className="btn-remove-mt"
+                    onClick={() =>
+                      handleRemoveMT(mtData.id, mtData.full_name || mtData.name)
+                    }
+                    title={
+                      masterTrainers.length <= 1
+                        ? "Cannot remove the last trainer"
+                        : "Remove this Master Trainer"
+                    }
+                    disabled={isRemoving || masterTrainers.length <= 1}
+                  >
+                    <FaTimes /> Remove
                   </button>
                 </div>
               )}
@@ -286,10 +377,14 @@ export default function MasterTrainersCard({
         })}
       </div>
 
-      {/* ---------------- Replacement Modal ---------------- */}
+      {/* ---------------- SURGICAL UPDATE: Dynamic Replacement/Add Modal ---------------- */}
       <Modal
         open={isModalOpen}
-        title={`Select New Master Trainer for Batch: ${batchData?.code || ""}`}
+        title={
+          modalAction === "add"
+            ? `Add Additional Master Trainer to Batch: ${batchData?.code || ""}`
+            : `Select Replacement Master Trainer for Batch: ${batchData?.code || ""}`
+        }
         onClose={() => !isReplacing && setIsModalOpen(false)}
       >
         <div

@@ -54,6 +54,10 @@ import DmmuTargetAchievement from "../pages/TMS/DMMU/dmmu_tp_tvs";
 import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
 import StaffBatchCreatorDashboard from "../pages/TMS/StaffBatchCreator/StaffBatchCreatorDashboard";
 
+// Learning Materials Module
+import LMList from "../pages/TMS/LearnMat/LMList";
+import AddLM from "../pages/TMS/LearnMat/AddLM";
+
 // Master Trainer Management V2
 import {
   MTDirectoryConductor,
@@ -240,6 +244,25 @@ export default function TmsRoutes() {
           path="batches/:batchId/history"
           element={<TrainingBatchHistory />}
         />
+      </Route>
+      {/* Learning Material Module */}
+      <Route
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "smmu",
+              "dmmu",
+              "bmmu",
+              "training_partner",
+              "tp_contact_person",
+              "dtp",
+              "state_admin",
+            ]}
+          />
+        }
+      >
+        <Route path="learning-materials/list" element={<LMList />} />
+        <Route path="learning-materials/add" element={<AddLM />} />
       </Route>
     </Routes>
   );

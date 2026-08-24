@@ -160,6 +160,11 @@ const MENU = {
           to: "/tms/smmu/create-training-plan",
           icon: FaBook,
         },
+        {
+          label: "Learning Materials",
+          to: "/tms/learning-materials/list",
+          icon: FaDatabase,
+        },
       ],
     },
     {
@@ -238,6 +243,11 @@ const MENU = {
       icon: FaBuilding,
     },
     {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
+    },
+    {
       label: "Training Requests",
       to: "/tms/training-requests",
       icon: FaChartBar,
@@ -307,6 +317,11 @@ const MENU = {
       icon: FaBuilding,
     },
     {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
+    },
+    {
       label: "Training Requests",
       to: "/tms/training-requests",
       icon: FaChartBar,
@@ -361,6 +376,11 @@ const MENU = {
       icon: FaTachometerAlt,
     },
     {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
+    },
+    {
       label: "Grievances",
       to: "/admin/grievances",
       icon: FaHandsHelping,
@@ -371,6 +391,11 @@ const MENU = {
       label: "Dashboard",
       to: "/tms/cp/dashboard",
       icon: FaTachometerAlt,
+    },
+    {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
     },
     {
       label: "Training Batches",
