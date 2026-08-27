@@ -1,6 +1,7 @@
 // src/pages/StateLoginPortal/TMSStateLoginDashboard/TMSDashboard.jsx
 import React, { useState } from "react";
 import TrainingRequestDashboard from "./TrainingRequestDashboard";
+import TMSPortalSummary from "../TMSStateLoginDashboard/TMSPortalSummary";
 import TargetVsAchievement from "../TMSStateLoginDashboard/TargetVsAchievementPage";
 import CadreSelectionCountPage from "./CadreSelectionCountPage";
 import TrainingCenterPendencyPage from "./TrainingCenterPendencyPage";
@@ -15,7 +16,7 @@ const TMSDashboard = () => {
 
   // State for Financial Year (Defaulting to upcoming/current)
   const [financialYear, setFinancialYear] = useState("2026-27");
-  const [activeTab, setActiveTab] = useState("target_vs_achievement");
+  const [activeTab, setActiveTab] = useState("tms_portal_summary");
 
   return (
     <>
@@ -30,6 +31,12 @@ const TMSDashboard = () => {
         />
         {/* Tabs */}
         <div className="tabs-container">
+          <button
+            className={`tab-btn ${activeTab === "tms_portal_summary" ? "active" : ""}`}
+            onClick={() => setActiveTab("tms_portal_summary")}
+          >
+            TMS Portal Summary
+          </button>
           <button
             className={`tab-btn ${activeTab === "target_vs_achievement" ? "active" : ""}`}
             onClick={() => setActiveTab("target_vs_achievement")}
@@ -82,6 +89,12 @@ const TMSDashboard = () => {
 
         {/* Tab Content */}
         <div className="state-tab-content">
+          {activeTab === "tms_portal_summary" && (
+            <div className="placeholder-card">
+              <TMSPortalSummary financialYear={financialYear} />
+            </div>
+          )}
+
           {activeTab === "target_vs_achievement" && (
             <div className="placeholder-card">
               <TargetVsAchievement financialYear={financialYear} />
