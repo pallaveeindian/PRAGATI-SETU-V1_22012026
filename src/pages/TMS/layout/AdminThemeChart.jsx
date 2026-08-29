@@ -3,6 +3,7 @@ import Box from "@mui/material/Box";
 import Typography from "@mui/material/Typography";
 import { BarChart } from "@mui/x-charts/BarChart";
 import { useAnimateBar } from "@mui/x-charts/hooks";
+import { autocompleteClasses } from "@mui/material/Autocomplete";
 
 export function CustomBarElement(props) {
   // SURGICAL FIX: Destructure internal MUI props so they aren't spread to the DOM element
@@ -66,20 +67,36 @@ export default function AdminThemeChart({ data }) {
         }}
       >
         <Typography
-          sx={{ fontSize: "18px", fontWeight: 800, color: "#1e3a8a", mb: 2 }}
+          sx={{
+            fontSize: "23px",
+            fontWeight: 800,
+            color: "#163A63",
+            mb: 3,
+            justifyContent: "center",
+            textAlign: "center",
+            borderBottom: "2px solid #dbe5f0",
+            padding: "13px 10px",
+            letterSpacing: "0.4px",
+            lineHeight: 1.3,
+            textShadow: `
+              0 1px 2px rgba(255, 255, 255, 0.95),
+              0 2px 5px rgba(30, 58, 138, 0.12)
+            `,
+          }}
         >
-          Thematic Targets vs Achievements
+          Theme wise Targets vs Achievements
         </Typography>
 
         <BarChart
           height={350}
           dataset={chartData}
           layout="horizontal"
-          margin={{ top: 20, right: 30, bottom: 20, left: 120 }}
+          margin={{ top: 20, right: 50, bottom: 20, left: 20 }}
           yAxis={[
             {
               scaleType: "band",
               dataKey: "theme_name",
+              width: 100,
               tickLabelStyle: {
                 fill: "#334155",
                 fontWeight: 600,
@@ -92,14 +109,14 @@ export default function AdminThemeChart({ data }) {
               id: "achieved",
               dataKey: "achieved",
               stack: "total",
-              label: "Achieved Batches",
+              label: "Trained Cadre",
               color: "#2563eb",
             },
             {
               id: "remaining",
               dataKey: "remaining_targets",
               stack: "total",
-              label: "Remaining Targets",
+              label: "Remaining Cadre",
               color: "#cbd5e1",
             },
           ]}
@@ -129,8 +146,10 @@ export default function AdminThemeChart({ data }) {
             <tr>
               <th>Theme Name</th>
               <th className="num-col">Assigned Target</th>
-              <th className="num-col">Achieved</th>
-              <th className="num-col">Completion %</th>
+              <th className="num-col">Cadre Onboarded</th>
+              <th className="num-col">Cadre Enrolled in Batches</th>
+              <th className="num-col">Trained Cadre</th>
+              <th className="num-col">Completion % (Onboarded/Target)</th>
             </tr>
           </thead>
           <tbody>
@@ -139,11 +158,26 @@ export default function AdminThemeChart({ data }) {
                 <td className="font-bold theme-label">
                   <span className="dot"></span> {row.theme_name}
                 </td>
-                <td className="num-col">{row.target.toLocaleString()}</td>
-                <td className="num-col font-bold" style={{ color: "#2563eb" }}>
+                <td className="num-col-val">{row.target.toLocaleString()}</td>
+                <td
+                  className="num-col-val font-bold"
+                  style={{ color: "#2563eb" }}
+                >
+                  {row.onboarded.toLocaleString()}
+                </td>
+                <td
+                  className="num-col-val font-bold"
+                  style={{ color: "#2563eb" }}
+                >
+                  {row.enrolled.toLocaleString()}
+                </td>
+                <td
+                  className="num-col-val font-bold"
+                  style={{ color: "#2563eb" }}
+                >
                   {row.achieved.toLocaleString()}
                 </td>
-                <td className="num-col">
+                <td className="num-col-val">
                   <div className="progress-cell">
                     <span className="p-text">{row.percentage}%</span>
                     <div className="p-bar-bg">
@@ -170,6 +204,7 @@ export default function AdminThemeChart({ data }) {
         .theme-label { display: flex; align-items: center; gap: 8px; }
         .dot { width: 8px; height: 8px; background: #2563eb; border-radius: 50%; }
         .num-col { text-align: right; }
+        .num-col-val { text-align: center; }
         .font-bold { font-weight: 700; }
         .progress-cell { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
         .p-text { font-weight: 600; color: #475569; font-size: 13px; min-width: 45px; }

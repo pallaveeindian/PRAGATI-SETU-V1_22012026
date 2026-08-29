@@ -32,12 +32,12 @@ const Footer = () => {
 
       <style>{`
         .footer{
-          background-color:#496d9c;
-          color:white;
-          padding:8px 0;
-          font-size:16px;
-          margin:0;
-          line-height:1.5;
+          background-color: #496D9C;
+          color: white;
+          padding: 8px 0;
+          font-size: 16px;
+          margin: 0;
+          line-height: 1.5;
         }
 
         .marquee{

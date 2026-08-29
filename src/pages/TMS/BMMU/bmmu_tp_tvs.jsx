@@ -89,7 +89,6 @@ export default function BmmuTargetAchievement() {
   // SURGICAL ADDITION: Re-fetch whenever currentPage changes
   useEffect(() => {
     fetchTargetsWithAchievements(currentPage);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [currentPage]);
 
   /* ================= INITIAL LOAD ================= */
@@ -314,7 +313,7 @@ export default function BmmuTargetAchievement() {
 
               {/* PAGINATION */}
               {!loading && filteredData.length > 0 && (
-                <div style={{ marginTop: 10 }}>
+                <div style={{ marginTop: 10, justifyContent: "center", textAlign: "center" }}>
                   Page {currentPage} / {totalPages}
                   <button
                     disabled={currentPage === 1}
@@ -336,212 +335,216 @@ export default function BmmuTargetAchievement() {
           <Footer />
         </div>
       </div>
-      <style>{`/* ========================= */
-            .content-area {
-  display: flex;
-  flex: 1;
-}
+      <style>
+        {
+          `/* ========================= */
+          .content-area {
+            display: flex;
+            flex: 1;D
+          }
 
-/* RIGHT SIDE MAIN AREA */
-.main-area {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-}
+          /* RIGHT SIDE MAIN AREA */
+          .main-area {
+            display: flex;
+            flex-direction: column;
+            flex: 1;
+          }
 
-/* MAIN CONTENT PUSHES FOOTER DOWN */
-.main-area main {
-  flex: 1;
-}
+          /* MAIN CONTENT PUSHES FOOTER DOWN */
+          .main-area main {
+            flex: 1;
+          }
 
-/* FOOTER ALWAYS BOTTOM */
-footer {
-  margin-top: auto;
-}
-/* CARD UI (FILTER BOX) */
-/* ========================= */
-.card-ui {
-  background: #ffffff;
-  padding: 16px;
-  border-radius: 10px;
-  border: 2px solid #a7c6ed;
-  box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
-}
+          /* FOOTER ALWAYS BOTTOM */
+          footer {
+            margin-top: auto;
+          }
+          /* CARD UI (FILTER BOX) */
+          /* ========================= */
+          .card-ui {
+            background: #ffffff;
+            padding: 16px;
+            border-radius: 10px;
+            border: 2px solid #a7c6ed;
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05);
+            margin-bottom: 16px;
+          }
 
-/* ========================= */
-/* INPUTS / SELECT */
-/* ========================= */
-.card-ui select,
-.card-ui input {
-  padding: 8px 10px;
-  border-radius: 6px;
-  border: 1px solid #a7c6ed;
-  font-size: 14px;
-  color: #1e293b;
-  outline: none;
-  min-width: 160px;
-  transition: all 0.2s ease;
-}
+          /* ========================= */
+          /* INPUTS / SELECT */
+          /* ========================= */
+          .card-ui select,
+          .card-ui input {
+            padding: 8px 10px;
+            border-radius: 6px;
+            border: 1px solid #a7c6ed;
+            font-size: 14px;
+            color: #1e293b;
+            outline: none;
+            min-width: 160px;
+            transition: all 0.2s ease;
+          }
 
-.card-ui input:focus,
-.card-ui select:focus {
-  border-color: #3d6ba6;
-  box-shadow: 0 0 0 2px rgba(61, 107, 166, 0.15);
-}
+          .card-ui input:focus,
+          .card-ui select:focus {
+            border-color: #3d6ba6;
+            box-shadow: 0 0 0 2px rgba(61, 107, 166, 0.15);
+          }
 
-/* ========================= */
-/* BUTTONS */
-/* ========================= */
-.card-ui button {
-  background: #3d6ba6;
-  color: #fff;
-  border: none;
-  padding: 7px 14px;
-  border-radius: 6px;
-  cursor: pointer;
-  font-size: 14px;
-  transition: all 0.25s ease;
-}
+          /* ========================= */
+          /* BUTTONS */
+          /* ========================= */
+          .card-ui button {
+            background: #3d6ba6;
+            color: #fff;
+            border: none;
+            padding: 7px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            transition: all 0.25s ease;
+          }
 
-.card-ui button:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0,0,0,0.15);
-}
+          .card-ui button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+          }
 
-/* EXPORT BUTTON (GREEN) */
-.card-ui button:nth-child(5) {
-  background: #10b981;
-}
+          /* EXPORT BUTTON (GREEN) */
+          .card-ui button:nth-child(5) {
+            background: #10b981;
+          }
 
-/* ========================= */
-/* TABLE */
-/* ========================= */
-.training-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 14px;
-  margin-top: 10px;
-}
+          /* ========================= */
+          /* TABLE */
+          /* ========================= */
+          .training-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 14px;
+            margin-top: 10px;
+          }
 
-/* HEADER */
-.training-table thead {
-  background: #3d6ba6;
-  color: #fff;
-}
+          /* HEADER */
+          .training-table thead {
+            background: #3d6ba6;
+            color: #fff;
+          }
 
-.training-table th {
-  padding: 10px;
-  text-align: left;
-  font-weight: 600;
-}
+          .training-table th {
+            padding: 10px;
+            text-align: left;
+            font-weight: 600;
+          }
 
-/* BODY */
-.training-table td {
-  padding: 12px 10px;
-  border-bottom: 1px solid #e4ecf5;
-}
+          /* BODY */
+          .training-table td {
+            padding: 12px 10px;
+            border-bottom: 1px solid #e4ecf5;
+          }
 
-/* ROW COLORS */
-.training-table tbody tr {
-  background: #f8fbff;
-}
+          /* ROW COLORS */
+          .training-table tbody tr {
+            background: #f8fbff;
+          }
 
-.training-table tbody tr:nth-child(even) {
-  background: #edf4fb;
-}
+          .training-table tbody tr:nth-child(even) {
+            background: #edf4fb;
+          }
 
-/* HOVER EFFECT */
-.training-table tbody tr:hover {
-  background: #e4ecf5;
-  transition: background 0.2s;
-}
+          /* HOVER EFFECT */
+          .training-table tbody tr:hover {
+            background: #e4ecf5;
+            transition: background 0.2s;
+          }
 
-/* ========================= */
-/* PROGRESS BADGE */
-/* ========================= */
-.progress-badge {
-  padding: 4px 10px;
-  border-radius: 999px;
-  font-size: 12px;
-  font-weight: 700;
-}
+          /* ========================= */
+          /* PROGRESS BADGE */
+          /* ========================= */
+          .progress-badge {
+            padding: 4px 10px;
+            border-radius: 999px;
+            font-size: 12px;
+            font-weight: 700;
+          }
 
-.progress-good {
-  background: #dcfce7;
-  color: #166534;
-}
+          .progress-good {
+            background: #dcfce7;
+            color: #166534;
+          }
 
-.progress-mid {
-  background: #fef3c7;
-  color: #92400e;
-}
+          .progress-mid {
+            background: #fef3c7;
+            color: #92400e;
+          }
 
-.progress-zero {
-  background: #f1f5f9;
-  color: #475569;
-}
+          .progress-zero {
+            background: #f1f5f9;
+            color: #475569;
+          }
 
-/* ========================= */
-/* PAGINATION */
-/* ========================= */
-.pagination {
-  margin-top: 12px;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
+          /* ========================= */
+          /* PAGINATION */
+          /* ========================= */
+          .pagination {
+            margin-top: 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+          }
 
-.pagination button {
-  background: #e4ecf5;
-  border: none;
-  padding: 6px 10px;
-  border-radius: 6px;
-  cursor: pointer;
-  color: #2b4e72;
-  margin-left: 4px;
-}
+          .pagination button {
+            background: #e4ecf5;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            color: #2b4e72;
+            margin-left: 4px;
+          }
 
-.pagination button:hover:not(:disabled) {
-  background: #a7c6ed;
-}
+          .pagination button:hover:not(:disabled) {
+            background: #a7c6ed;
+          }
 
-.pagination button:disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-}
+          .pagination button:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+          }
 
-/* ========================= */
-/* MOBILE VIEW */
-/* ========================= */
-.mobile-card-list {
-  display: none;
-}
+          /* ========================= */
+          /* MOBILE VIEW */
+          /* ========================= */
+          .mobile-card-list {
+            display: none;
+          }
 
-@media (max-width: 768px) {
-  .training-table {
-    display: none;
-  }
+          @media (max-width: 768px) {
+            .training-table {
+              display: none;
+            }
 
-  .mobile-card-list {
-    display: block;
-  }
+            .mobile-card-list {
+              display: block;
+            }
 
-  .mobile-card {
-    background: #f8fbff;
-    border: 1px solid #a7c6ed;
-    border-radius: 10px;
-    padding: 14px;
-    margin-bottom: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.05);
-    font-size: 14px;
-    color: #2b4e72;
-  }
+            .mobile-card {
+              background: #f8fbff;
+              border: 1px solid #a7c6ed;
+              border-radius: 10px;
+              padding: 14px;
+              margin-bottom: 12px;
+              box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+              font-size: 14px;
+              color: #2b4e72;
+            }
 
-  .mobile-card div {
-    margin-bottom: 6px;
-  }
-}`}</style>
+            .mobile-card div {
+              margin-bottom: 6px;
+            }
+          }`
+        }
+      </style>
     </div>
   );
 }

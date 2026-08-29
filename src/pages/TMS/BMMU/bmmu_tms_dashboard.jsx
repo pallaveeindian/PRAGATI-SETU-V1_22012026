@@ -85,16 +85,16 @@ export default function BmmuTmsDashboard() {
               ) : dashboardData ? (
                 <div className="admin-grid-layout">
                   {/* 1. KPI Cards */}
-                  <AdminDashKPI data={dashboardData.kpi_cards} />
+                  <AdminDashKPI data={dashboardData} />
 
-                  {/* 2. Demographics Bifurcation */}
-                  <AdminParticipantDemographics
-                    data={dashboardData.participant_bifurcation}
-                  />
-
-                  {/* 3. Theme Wise Performance Chart */}
+                  {/* 2. Theme Wise Performance Chart */}
                   <AdminThemeChart
                     data={dashboardData.theme_wise_performance}
+                  />
+
+                  {/* 3. Demographics Bifurcation */}
+                  <AdminParticipantDemographics
+                    data={dashboardData.participant_bifurcation}
                   />
                 </div>
               ) : null}
@@ -105,12 +105,12 @@ export default function BmmuTmsDashboard() {
       </div>
 
       <style>{`
-        .content-area { display: flex; flex: 1; min-height: 0; background: #fff; }
+        .content-area { display: flex; flex: 1; min-height: 0; background: linear-gradient(to bottom, #fff 0%, #fff 35%, #496D9C 90%, #496D9C 100%);}
         .main-area { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         .admin-dashboard-main { flex: 1; overflow-y: auto; }
         footer { flex-shrink: 0; margin-top: auto; }
 
-        .dashboard-content-pad { padding: 0 24px 30px 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+        .dashboard-content-pad { padding: 30px 60px 30px 60px; max-width: 100%px; margin: 0 auto; width: 100%; }
         
         .admin-grid-layout { display: flex; flex-direction: column; gap: 20px; }
 

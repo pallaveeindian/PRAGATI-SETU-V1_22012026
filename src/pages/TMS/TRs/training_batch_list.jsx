@@ -1,6 +1,6 @@
 // src/pages/TMS/TRs/TrainingBatchList.jsx
 import React, { useContext, useEffect, useState, useRef } from "react";
-import { useNavigate, useParams } from "react-router-dom";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
@@ -70,6 +70,7 @@ export default function TrainingBatchList() {
   const { id: requestId } = useParams();
   const isRequestScoped = Boolean(requestId);
   const navigate = useNavigate();
+  const location = useLocation();
   const [search, setSearch] = useState("");
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -104,6 +105,9 @@ export default function TrainingBatchList() {
     currentPage * rowsPerPage,
   );
 
+  const queryParams = new URLSearchParams(location.search);
+  const initialStatus = queryParams.get("status") || "";
+
   const [filters, setFilters] = useState({
     mandal_id: "",
     district_category_id: "",
@@ -113,7 +117,7 @@ export default function TrainingBatchList() {
     centre_id: "",
     partner: "",
     level: "",
-    status: "",
+    status: initialStatus,
     training_type: "",
     batch_type: "",
     theme: "",
@@ -132,31 +136,67 @@ export default function TrainingBatchList() {
 
   const didInitRef = useRef(false);
 
-  function getGeoscope() {
+  async function ensureUserGeoscope(userId) {
+    if (!userId) return null;
+
     try {
-      const raw = localStorage.getItem(GEOSCOPE_KEY);
-      return raw ? JSON.parse(raw) : null;
-    } catch {
-      return null;
+      const cached = JSON.parse(
+        localStorage.getItem("ps_user_geoscope") || "null",
+      );
+
+      if (cached) return cached;
+    } catch {}
+
+    try {
+      const resp = await LOOKUP_API.userGeoscopeByUserId(userId);
+
+      if (resp?.data) {
+        localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
+        return resp.data;
+      }
+    } catch (error) {
+      console.error("Failed to load user geoscope:", error);
     }
+
+    return null;
   }
 
   function safeFirst(arr) {
     return Array.isArray(arr) && arr.length ? arr[0] : null;
   }
 
-  function getDefaultScopeParams() {
+  async function getDefaultScopeParams() {
     if (requestId) return { request: requestId };
-    const geo = getGeoscope() || {};
+
+    const geo = (await ensureUserGeoscope(user?.id)) || {};
+
     const blockId = geo.block_id || safeFirst(geo.blocks);
+
     const districtId = geo.district_id || safeFirst(geo.districts);
 
-    if (role === "bmmu" && blockId) return { block_id: blockId };
-    if (role === "dmmu" && districtId) return { district_id: districtId };
-    if (role === "training_partner") return { partner: tpPartnerId };
-    if (role === "dtp")
-      return { district_id: dtpDistrictId, partner: dtpPartnerId };
-    if (role === "smmu" && filters.theme) return { theme_id: filters.theme };
+    if (role === "bmmu" && blockId) {
+      return { block_id: blockId };
+    }
+
+    if (role === "dmmu" && districtId) {
+      return { district_id: districtId };
+    }
+
+    if (role === "training_partner") {
+      return { partner: tpPartnerId };
+    }
+
+    if (role === "dtp") {
+      return {
+        district_id: dtpDistrictId,
+        partner: dtpPartnerId,
+      };
+    }
+
+    if (role === "smmu" && filters.theme) {
+      return { theme_id: filters.theme };
+    }
+
     return {};
   }
 
@@ -272,21 +312,27 @@ export default function TrainingBatchList() {
   }, [role, user]);
 
   useEffect(() => {
-    if (role !== "dmmu") return;
-    const geo = getGeoscope() || {};
-    const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
-    if (!dmmuDistrictId) return;
+    if (role !== "dmmu" || !user?.id) return;
 
-    setFilters((f) => {
-      if (f.district_id) return f;
-      return {
-        ...f,
-        district_id: dmmuDistrictId,
-        block_id: "",
-        aspirational_only: false,
-      };
-    });
-  }, [role]);
+    (async () => {
+      const geo = (await ensureUserGeoscope(user.id)) || {};
+
+      const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
+
+      if (!dmmuDistrictId) return;
+
+      setFilters((f) => {
+        if (f.district_id) return f;
+
+        return {
+          ...f,
+          district_id: String(dmmuDistrictId),
+          block_id: "",
+          aspirational_only: false,
+        };
+      });
+    })();
+  }, [role, user?.id]);
 
   useEffect(() => {
     if (role === "bmmu") return;
@@ -323,7 +369,7 @@ export default function TrainingBatchList() {
       if (isRequestScoped) {
         finalParams = { request_id: requestId, page_size: 500 };
       } else {
-        const baseParams = getDefaultScopeParams();
+        const baseParams = await getDefaultScopeParams();
         let effectiveFilters = filters;
 
         if (role === "bmmu") {

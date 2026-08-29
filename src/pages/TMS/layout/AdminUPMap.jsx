@@ -1,63 +1,25 @@
-// src\pages\TMS\layout\AdminDistrictMap.jsx
+// src\pages\TMS\layout\AdminUPMap.jsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { LOOKUP_API } from "../../../api/axios";
-import { FaMapMarkerAlt, FaSpinner, FaTrophy } from "react-icons/fa";
+import UPMapSVG from "../Maps/UP Map/UPMap";
+import { FaTrophy } from "react-icons/fa";
 
-export default function AdminDistrictMap({
-  districtId,
-  data = [], // Expected: [{ block_id, block_name, onboarded, enrolled, achieved }]
+export default function AdminUPMap({
+  data = [], // Expected: [{ district_id, district_name, target, onboarded, enrolled, achieved }]
+  activeDistrictId,
+  onDistrictSelect,
 }) {
-  const [districtName, setDistrictName] = useState(null);
-  const [MapComponent, setMapComponent] = useState(null);
-  const [loadingMap, setLoadingMap] = useState(true);
-
-  const [hoveredBlockId, setHoveredBlockId] = useState(null);
+  const [hoveredDistrictId, setHoveredDistrictId] = useState(null);
   const [mousePos, setMousePos] = useState({ x: 0, y: 0 });
-
+  const [isMapHovering, setIsMapHovering] = useState(false);
   const mapContainerRef = useRef(null);
   const tableContainerRef = useRef(null);
   const rowRefs = useRef({});
 
-  // 1. Resolve District Name from ID
+  // 1. Auto-scroll table when hovering over the Map
   useEffect(() => {
-    if (!districtId) return;
-    setLoadingMap(true);
-    setDistrictName(null);
-    setMapComponent(null);
+    if (!isMapHovering || !hoveredDistrictId) return;
 
-    LOOKUP_API.districts
-      .retrieve(districtId, { fields: "district_name_en" })
-      .then((res) => {
-        const name = res?.data?.district_name_en;
-        if (name) setDistrictName(name.toUpperCase());
-      })
-      .catch((e) => console.error("Failed to load district name", e));
-  }, [districtId]);
-
-  // 2. Lazy Load the Specific District SVG Map
-  useEffect(() => {
-    if (!districtName) return;
-
-    const loadMap = async () => {
-      try {
-        const module = await import(
-          `../../LDMS/District Maps/${districtName}/${districtName}.jsx`
-        );
-        setMapComponent(() => module.default);
-      } catch (err) {
-        console.error(`District map SVG for ${districtName} not found.`, err);
-      } finally {
-        setLoadingMap(false);
-      }
-    };
-
-    loadMap();
-  }, [districtName]);
-
-  // 3. Auto-scroll table when hovering over the Map
-  useEffect(() => {
-    if (!hoveredBlockId) return;
-    const row = rowRefs.current[hoveredBlockId];
+    const row = rowRefs.current[hoveredDistrictId];
     const container = tableContainerRef.current;
 
     if (!row || !container) return;
@@ -67,40 +29,31 @@ export default function AdminDistrictMap({
     const containerHeight = container.clientHeight;
     const targetScroll = rowTop - containerHeight / 2 + rowHeight / 2;
 
-    container.scrollTo({ top: targetScroll, behavior: "smooth" });
-  }, [hoveredBlockId]);
+    container.scrollTo({
+      top: targetScroll,
+      behavior: "smooth",
+    });
+  }, [hoveredDistrictId, isMapHovering]);
 
-  // 4. Sort data descending by 'onboarded' and extract Tooltip Data
+  // 2. Sort data descending by 'onboarded' and extract Tooltip Data
   const sortedData = useMemo(() => {
     if (!data || !Array.isArray(data)) return [];
-    // Create a copy and sort by onboarded descending
     return [...data].sort((a, b) => (b.onboarded || 0) - (a.onboarded || 0));
   }, [data]);
 
   const tooltipData = useMemo(() => {
-    if (!hoveredBlockId || !sortedData) return null;
+    if (!hoveredDistrictId || !sortedData) return null;
     return (
-      sortedData.find((d) => Number(d.block_id) === hoveredBlockId) || {
-        block_id: hoveredBlockId,
-        block_name: "Unknown Block",
+      sortedData.find((d) => Number(d.district_id) === hoveredDistrictId) || {
+        district_id: hoveredDistrictId,
+        district_name: "Unknown District",
+        target: 0,
         onboarded: 0,
         enrolled: 0,
         achieved: 0,
       }
     );
-  }, [hoveredBlockId, sortedData]);
-
-  if (!districtId) {
-    return (
-      <div className="muted-box">
-        <FaMapMarkerAlt
-          size={24}
-          style={{ marginBottom: 10, color: "#cbd5e1" }}
-        />
-        <p>No district selected to display map.</p>
-      </div>
-    );
-  }
+  }, [hoveredDistrictId, sortedData]);
 
   // Helper for Top 3 Trophies
   const renderTrophy = (index) => {
@@ -111,7 +64,7 @@ export default function AdminDistrictMap({
   };
 
   return (
-    <div className="admin-district-map-wrapper">
+    <div className="admin-upmap-wrapper">
       {/* LEFT: MAP SECTION */}
       <div
         className="admin-map-section"
@@ -125,33 +78,36 @@ export default function AdminDistrictMap({
           });
         }}
       >
-        {loadingMap ? (
-          <div className="map-loader">
-            <FaSpinner className="spin-icon" size={28} />
-            <span>Loading {districtName || "District"} Map...</span>
-          </div>
-        ) : MapComponent ? (
-          <MapComponent
-            onHover={(mapData) => {
-              setHoveredBlockId(mapData ? Number(mapData.id) : null);
-            }}
-            // SURGICAL UPDATE: Disabled block selection click logic entirely
-            onSelect={() => {}}
-          />
-        ) : (
-          <div className="map-loader error">
-            Map unavailable for {districtName}
-          </div>
-        )}
+        <UPMapSVG
+          onHover={(mapData) => {
+            setIsMapHovering(!!mapData);
+            setHoveredDistrictId(mapData ? Number(mapData.id) : null);
+          }}
+          onDistrictSelect={(id) => {
+            if (id && onDistrictSelect) {
+              onDistrictSelect(
+                activeDistrictId === Number(id) ? null : Number(id),
+              );
+            }
+          }}
+        />
 
         {/* CUSTOM TOOLTIP */}
-        {tooltipData && hoveredBlockId && (
+        {tooltipData && hoveredDistrictId && (
           <div
             className="admin-map-tooltip"
             style={{ left: mousePos.x, top: mousePos.y }}
           >
-            <div className="tt-header">{tooltipData.block_name || "Block"}</div>
+            <div className="tt-header">
+              {tooltipData.district_name || "District"}
+            </div>
             <div className="tt-body">
+              <div className="tt-row">
+                <span>Total Target:</span>
+                <strong style={{ color: "#0f172a" }}>
+                  {tooltipData.target || 0}
+                </strong>
+              </div>
               <div className="tt-row">
                 <span>Onboarded:</span>
                 <strong style={{ color: "#3b82f6" }}>
@@ -171,6 +127,7 @@ export default function AdminDistrictMap({
                 </strong>
               </div>
             </div>
+            <div className="tt-footer">Click to view Block-wise data</div>
           </div>
         )}
       </div>
@@ -181,7 +138,8 @@ export default function AdminDistrictMap({
           <thead>
             <tr>
               <th style={{ width: "5%" }}>#</th>
-              <th style={{ width: "35%" }}>Block Name</th>
+              <th style={{ width: "30%" }}>District</th>
+              <th className="num-col">Target</th>
               <th className="num-col">Onboarded</th>
               <th className="num-col">Enrolled</th>
               <th className="num-col">Achieved</th>
@@ -191,28 +149,38 @@ export default function AdminDistrictMap({
             {sortedData.length === 0 ? (
               <tr>
                 <td
-                  colSpan={5}
+                  colSpan={6}
                   style={{
                     textAlign: "center",
                     padding: "40px",
                     color: "#64748b",
                   }}
                 >
-                  No block-level metrics available for this district.
+                  No district metrics available.
                 </td>
               </tr>
             ) : (
-              sortedData.map((b, i) => {
-                const isHovered = hoveredBlockId === Number(b.block_id);
-                const isTop3 = i < 3 && (b.onboarded || 0) > 0;
+              sortedData.map((d, i) => {
+                const isHovered = hoveredDistrictId === Number(d.district_id);
+                const isSelected = activeDistrictId === Number(d.district_id);
+                const isTop3 = i < 3 && (d.onboarded || 0) > 0;
 
                 return (
                   <tr
-                    key={b.block_id}
-                    ref={(el) => (rowRefs.current[b.block_id] = el)}
-                    className={`hover-only-row ${isHovered ? "hovered-row" : ""} ${isTop3 ? "top-3-row" : ""}`}
-                    onMouseEnter={() => setHoveredBlockId(Number(b.block_id))}
-                    onMouseLeave={() => setHoveredBlockId(null)}
+                    key={d.district_id}
+                    ref={(el) => (rowRefs.current[d.district_id] = el)}
+                    className={`clickable-row ${isHovered ? "hovered-row" : ""} ${
+                      isSelected ? "selected-row" : ""
+                    } ${isTop3 ? "top-3-row" : ""}`}
+                    onMouseEnter={() =>
+                      setHoveredDistrictId(Number(d.district_id))
+                    }
+                    onMouseLeave={() => setHoveredDistrictId(null)}
+                    onClick={() =>
+                      onDistrictSelect(
+                        isSelected ? null : Number(d.district_id),
+                      )
+                    }
                   >
                     <td style={{ fontWeight: 800, color: "#475569" }}>
                       {i + 1}
@@ -224,30 +192,36 @@ export default function AdminDistrictMap({
                           alignItems: "center",
                           gap: "8px",
                           fontWeight: 700,
-                          color: "#0f172a",
+                          color: isSelected ? "#1d4ed8" : "#0f172a",
                         }}
                       >
-                        {b.block_name}
+                        {d.district_name}
                         {isTop3 && renderTrophy(i)}
                       </div>
                     </td>
                     <td
                       className="num-col font-bold"
+                      style={{ color: "#64748b" }}
+                    >
+                      {d.target || 0}
+                    </td>
+                    <td
+                      className="num-col font-bold"
                       style={{ color: "#2563eb" }}
                     >
-                      {b.onboarded || 0}
+                      {d.onboarded || 0}
                     </td>
                     <td
                       className="num-col font-bold"
                       style={{ color: "#d97706" }}
                     >
-                      {b.enrolled || 0}
+                      {d.enrolled || 0}
                     </td>
                     <td
                       className="num-col font-bold"
                       style={{ color: "#16a34a" }}
                     >
-                      {b.achieved || 0}
+                      {d.achieved || 0}
                     </td>
                   </tr>
                 );
@@ -259,8 +233,8 @@ export default function AdminDistrictMap({
 
       {/* --- STYLES --- */}
       <style>{`
-        .admin-district-map-wrapper {
-          display: grid; grid-template-columns: 1fr 1.2fr; gap: 20px; height: 550px; width: 100%;
+        .admin-upmap-wrapper {
+          display: grid; grid-template-columns: 1.2fr 1fr; gap: 20px; height: 550px; width: 100%;
         }
         
         .admin-map-section {
@@ -272,13 +246,8 @@ export default function AdminDistrictMap({
         
         /* Map SVG Hover Targeting */
         .admin-map-section svg path { transition: fill 0.2s, stroke 0.2s; }
-        .admin-map-section svg path:hover { fill: #3b82f6 !important; stroke: #1e3a8a !important; stroke-width: 1.5px; cursor: crosshair !important; }
+        .admin-map-section svg path:hover { fill: #3b82f6 !important; stroke: #1e3a8a !important; stroke-width: 1.5px; cursor: pointer !important; }
         
-        .map-loader { display: flex; flex-direction: column; align-items: center; color: #3b82f6; font-weight: 600; gap: 12px; }
-        .map-loader.error { color: #ef4444; }
-        .spin-icon { animation: spin 1s linear infinite; }
-        @keyframes spin { 100% { transform: rotate(360deg); } }
-
         /* Custom Absolute Tooltip */
         .admin-map-tooltip {
           position: absolute; background: #ffffff; border: 1px solid #bae6fd; border-radius: 8px;
@@ -289,6 +258,7 @@ export default function AdminDistrictMap({
         .tt-body { padding: 12px 14px; display: flex; flex-direction: column; gap: 8px; }
         .tt-row { display: flex; justify-content: space-between; font-size: 13px; color: #475569; font-weight: 500; }
         .tt-row strong { font-size: 14px; }
+        .tt-footer { background: #dcfce7; color: #166534; font-size: 10px; font-weight: 700; text-align: center; padding: 6px; text-transform: uppercase; border-top: 1px solid #bbf7d0; }
 
         /* Table Section */
         .admin-map-table-section {
@@ -306,20 +276,19 @@ export default function AdminDistrictMap({
         .num-col { text-align: right !important; }
         .font-bold { font-weight: 800; }
 
-        /* Interactive Rows (Hover Only) */
-        .hover-only-row { transition: background-color 0.2s ease; cursor: default; }
-        .hover-only-row:hover, .hovered-row { background: #f8fafc; }
+        /* Interactive Rows */
+        .clickable-row { transition: background-color 0.2s ease; cursor: pointer; }
+        .clickable-row:hover, .hovered-row { background: #f8fafc; }
+        .selected-row { background: #eff6ff !important; border-left: 4px solid #2563eb; }
         
         /* Top 3 Highlight */
         .top-3-row { background: #fdfaf0; }
         .top-3-row:hover, .top-3-row.hovered-row { background: #fef3c7; }
 
-        .muted-box { padding: 40px; text-align: center; color: #64748b; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; }
-
         @media (max-width: 1024px) {
-          .admin-district-map-wrapper { grid-template-columns: 1fr; height: auto; }
-          .admin-map-section { height: 400px; }
-          .admin-map-table-section { max-height: 400px; }
+          .admin-upmap-wrapper { grid-template-columns: 1fr; height: auto; }
+          .admin-map-section { height: 450px; }
+          .admin-map-table-section { max-height: 450px; }
         }
       `}</style>
     </div>

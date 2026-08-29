@@ -143,7 +143,29 @@ export default function AdminParticipantDemographics({ data }) {
 
       <style>{`
         .demographics-wrapper { width: 100%; margin-bottom: 30px; }
-        .demo-main-title { font-size: 20px; font-weight: 800; color: #1e3a8a; margin: 0 0 16px 0; }
+        .demo-main-title {
+            display: table;
+            width: 100%;
+            margin: 0 auto 18px auto;
+            justify-content: center;
+            text-align: center;
+            font-size: 22px;
+            font-weight: 800;
+            color: #12365A;
+            padding: 8px 16px;
+            line-height: 1.3;
+            letter-spacing: 0.2px;
+
+            background: rgba(255, 255, 255, 0.88);
+            border: 1px solid rgba(255, 255, 255, 0.95);
+            border-radius: 10px;
+
+            box-shadow:
+                0 3px 10px rgba(24, 55, 91, 0.12),
+                inset 0 1px 0 rgba(255, 255, 255, 0.95);
+
+            text-shadow: 0 1px 1px rgba(255, 255, 255, 0.7);
+        }
         
         .demo-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 20px; align-items: start; }
         

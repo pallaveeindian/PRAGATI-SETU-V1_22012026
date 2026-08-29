@@ -1,748 +1,227 @@
 // src/pages/TMS/SMMU/smmu_tms_dashboard.jsx
-import React, { useEffect, useState, useContext, useRef } from "react";
-import TmsLeftNav from "../layout/tms_LeftNav";
-// import TopNav from "../layout/tms_TopNav";
+import React, { useEffect, useState, useContext } from "react";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
+import LeftNav from "../layout/tms_LeftNav";
+import TMSDashHeader from "../layout/TMSDashHeader";
+
+// Reusable Components
+import AdminDashKPI from "../layout/AdminDashKPI";
+import AdminThemeChart from "../layout/AdminThemeChart";
+import AdminParticipantDemographics from "../layout/AdminParticipantDemographics";
+import AdminDistrictMap from "../layout/AdminDistrictMap";
+import AdminUPMap from "../layout/AdminUPMap";
+
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API, LOOKUP_API } from "../../../api/axios";
-import { useNavigate } from "react-router-dom";
+import api from "../../../api/axios";
 
-import { getCanonicalRole } from "../../../utils/roleUtils";
-import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils"; // or same file
-
-const GEOSCOPE_KEY = "ps_user_geoscope";
-const DASHBOARD_CACHE_KEY = "tms_smmu_dashboard_cache_v1";
-
-/**
- * Resolve an "effective" user id:
- *  - prefer user.id from AuthContext
- *  - then check localStorage geoscope.user_id (DashboardHome pattern)
- *  - fallback: return null (server-side will use token user)
- */
-async function resolveEffectiveUserId(user) {
-  if (user && (user.id || user.user_id)) {
-    return user.id ?? user.user_id;
-  }
-  try {
-    const raw = window.localStorage.getItem(GEOSCOPE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (parsed && parsed.user_id) return parsed.user_id;
-    }
-  } catch (e) {
-    // ignore
-  }
-  try {
-    const uid = user?.id ?? user?.user_id ?? null;
-    if (uid) {
-      const res = await LOOKUP_API.userGeoscopeByUserId(uid);
-      const payload = res?.data ?? res;
-      if (payload) {
-        try {
-          window.localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(payload));
-        } catch (e) { }
-        if (payload.user_id) return payload.user_id;
-      }
-    }
-  } catch (e) {
-    // ignore
-  }
-  return null;
-}
-
-/**
- * Simple "random step" number animation hook.
- * Animates from 0 (or from fromVal) to toVal with small random increments.
- */
-function useAnimatedNumber(toVal, ms = 900) {
-  const [display, setDisplay] = useState(0);
-  const rafRef = useRef(null);
-  const startedRef = useRef(false);
-
-  useEffect(() => {
-    // animate only when toVal is number
-    if (typeof toVal !== "number" || Number.isNaN(toVal)) {
-      setDisplay(toVal);
-      return;
-    }
-    // small no-op if value hasn't changed
-    if (display === toVal && startedRef.current) return;
-
-    const start = Date.now();
-    const duration = ms;
-    const from = Number(display) || 0;
-    startedRef.current = true;
-
-    function step() {
-      const t = Math.min(1, (Date.now() - start) / duration);
-      // ease-out-ish — use sqrt
-      const eased = Math.sqrt(t);
-      const current = Math.round(from + (toVal - from) * eased);
-      setDisplay(current);
-      if (t < 1) {
-        rafRef.current = requestAnimationFrame(step);
-      } else {
-        // ensure final
-        setDisplay(toVal);
-      }
-    }
-    rafRef.current = requestAnimationFrame(step);
-
-    return () => {
-      if (rafRef.current) cancelAnimationFrame(rafRef.current);
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [toVal]);
-
-  return display;
-}
-
-/**
- * SMMU Dashboard — KPIs + paginated Assigned Targets with progress column
- *
- * Only displays targets created by this SMMU user (uses created_by filter).
- * Uses caching for KPIs / lists in localStorage; a Refresh button forces re-fetch.
- */
 export default function SmmuTmsDashboard() {
   const { user } = useContext(AuthContext) || {};
-  const roleKey = getCanonicalRole(user);
-  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
-  const navigate = useNavigate();
+
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
 
-  const [effectiveUserId, setEffectiveUserId] = useState(null);
+  // Core Scoping & Filters
+  const [financialYear, setFinancialYear] = useState("2026-27");
+  const [selectedDistrictId, setSelectedDistrictId] = useState(null); // Enables Drill-down filtering
 
-  // real values
-  const [kpis, setKpis] = useState({
-    themes: 0,
-    plans: 0,
-    partners: 0,
-    targets: 0,
-  });
-  const [loadingKpis, setLoadingKpis] = useState(false);
+  const [dashboardData, setDashboardData] = useState(null);
 
-  // animated displays
-  const animThemes = useAnimatedNumber(kpis.themes, 900);
-  const animPlans = useAnimatedNumber(kpis.plans, 900);
-  const animPartners = useAnimatedNumber(kpis.partners, 900);
-  const animTargets = useAnimatedNumber(kpis.targets, 900);
+  // Fetch Unified Dashboard Metrics
+  const fetchDashboardMetrics = async () => {
+    // Only execute if user is SMMU
+    if (!user?.id || user?.role_id !== 3) return;
 
-  // Assigned targets table
-  const [targets, setTargets] = useState([]);
-  const [loadingTargets, setLoadingTargets] = useState(false);
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(10);
-  const [totalTargets, setTotalTargets] = useState(0);
+    setLoading(true);
+    setError(null);
 
-  // helpers: local cache of partners/plans/themes to map ids -> names
-  const [partnersMap, setPartnersMap] = useState({});
-  const [plansMap, setPlansMap] = useState({});
-  const [themesList, setThemesList] = useState([]);
-
-  // cache control state
-  const [usingCache, setUsingCache] = useState(false);
-  const [refreshing, setRefreshing] = useState(false);
-
-  // load effective user on mount, then load dashboard data (preferring cache)
-  useEffect(() => {
-    (async () => {
-      const uid = await resolveEffectiveUserId(user);
-      setEffectiveUserId(uid);
-
-      // try read cache
-      const cacheRaw = localStorage.getItem(DASHBOARD_CACHE_KEY);
-      if (cacheRaw) {
-        try {
-          const parsed = JSON.parse(cacheRaw);
-          if (parsed && parsed.kpis) {
-            setKpis(parsed.kpis);
-            setPartnersMap(parsed.partnersMap || {});
-            setPlansMap(parsed.plansMap || {});
-            setThemesList(parsed.themesList || []);
-            setUsingCache(true);
-          }
-        } catch (e) {
-          console.warn("dashboard cache corrupted — ignoring");
-          localStorage.removeItem(DASHBOARD_CACHE_KEY);
-        }
-      }
-
-      // fetch targets (scoped) always (so table is fresh) but KPIs may use cache
-      await fetchTargets(page, pageSize, uid);
-      // If we didn't load cache, fetch Kpis now
-      if (!cacheRaw) {
-        await fetchKpis(uid, true);
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [user]);
-
-  // re-fetch targets when page / pageSize changes
-  useEffect(() => {
-    fetchTargets(page, pageSize, effectiveUserId);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, effectiveUserId]);
-
-  // ---------- API data fetching / caching ----------
-
-  // fetch Kpis and supporting lists; if saveCache=true store results in localStorage
-  async function fetchKpis(uidForTargets = null, saveCache = false) {
-    setLoadingKpis(true);
     try {
-      // 1) themes list (we need theme ids to call plans per-theme)
-      const themesRes = await TMS_API.trainingThemes.list({ limit: 500 }); // get all themes
-      const themes =
-        (themesRes?.data?.results ?? themesRes?.results ?? []) || [];
-      // 2) for each theme fetch plans (theme-specific)
-      const plansCollected = [];
-      for (const th of themes) {
-        try {
-          const resp = await TMS_API.trainingPlans.list({
-            theme: th.id,
-            limit: 500,
-          });
-          const arr = (resp?.data?.results ?? resp?.results ?? []) || [];
-          arr.forEach((p) => plansCollected.push(p));
-        } catch (e) {
-          console.warn("trainingPlans for theme", th.id, e);
-        }
+      const params = { financial_year: financialYear };
+
+      // If a district is clicked on the map, apply it to the API filter!
+      if (selectedDistrictId) {
+        params.district_id = selectedDistrictId;
       }
 
-      // 3) training partners (full list) to map ids->names and also count
-      const partnersResp = await TMS_API.trainingPartners.list({
-        limit: 10000,
+      const response = await api.get("/tms/admin/dashboard-metrics/", {
+        params,
       });
-      const partnersArr =
-        (partnersResp?.data?.results ?? partnersResp?.results ?? []) || [];
-
-      // 4) targets count (scoped to this smmu user)
-      const targetsParams = uidForTargets
-        ? { created_by: uidForTargets, limit: 1 }
-        : { limit: 1 };
-      const targetsRes =
-        await TMS_API.trainingPartnerTargets.list(targetsParams);
-
-      const newKpis = {
-        themes: themes.length,
-        plans: plansCollected.length,
-        partners:
-          partnersResp?.data?.count ??
-          partnersResp?.count ??
-          partnersArr.length,
-        targets: targetsRes?.data?.count ?? targetsRes?.count ?? 0,
-      };
-
-      // build maps
-      const pMap = {};
-      partnersArr.forEach((p) => {
-        pMap[p.id] = p;
-      });
-      const plMap = {};
-      plansCollected.forEach((p) => {
-        plMap[p.id] = p;
-      });
-
-      setKpis(newKpis);
-      setPartnersMap(pMap);
-      setPlansMap(plMap);
-      setThemesList(themes);
-
-      if (saveCache) {
-        try {
-          localStorage.setItem(
-            DASHBOARD_CACHE_KEY,
-            JSON.stringify({
-              ts: Date.now(),
-              kpis: newKpis,
-              partnersMap: pMap,
-              plansMap: plMap,
-              themesList: themes,
-            }),
-          );
-          setUsingCache(true);
-        } catch (e) {
-          console.warn("failed to write dashboard cache", e);
-        }
-      } else {
-        // if we're refreshing explicitly, replace cache with latest
-        try {
-          localStorage.setItem(
-            DASHBOARD_CACHE_KEY,
-            JSON.stringify({
-              ts: Date.now(),
-              kpis: newKpis,
-              partnersMap: pMap,
-              plansMap: plMap,
-              themesList: themes,
-            }),
-          );
-          setUsingCache(false);
-        } catch (e) {
-          // ignore
-        }
-      }
+      setDashboardData(response.data);
     } catch (err) {
-      console.error("fetchKpis", err);
+      console.error("Failed to load SMMU dashboard metrics:", err);
+      setError(
+        "Failed to compile state analytics. Ensure your account is mapped to a Training Theme.",
+      );
     } finally {
-      setLoadingKpis(false);
+      setLoading(false);
     }
-  }
-
-  // fetch paginated targets (only those created_by effectiveUser)
-  async function fetchTargets(pageToFetch = 1, limit = 10, uid = null) {
-    setLoadingTargets(true);
-    try {
-      const offset = (pageToFetch - 1) * limit;
-      const params = { limit, offset };
-      if (uid) params.created_by = uid;
-
-      const res = await TMS_API.trainingPartnerTargets.list(params);
-      const data = res?.data ?? res;
-      const results = data?.results ?? res?.results ?? [];
-
-      // hydrate partner name & plan name from our maps (fallback to embedded fields)
-      const hydrated = results.map((t) => {
-        const partnerObj = partnersMap[t.partner] || t.partner_obj || null;
-        const planObj =
-          plansMap[t.training_plan] || t.training_plan_obj || null;
-        return {
-          ...t,
-          partner_name:
-            partnerObj?.name ||
-            t.partner_name ||
-            (partnerObj && partnerObj.name) ||
-            String(t.partner),
-          training_plan_name:
-            planObj?.training_name || t.training_plan_name || null,
-        };
-      });
-
-      setTargets(hydrated);
-      setTotalTargets(data?.count ?? res?.count ?? 0);
-    } catch (err) {
-      console.error("fetchTargets", err);
-      setTargets([]);
-      setTotalTargets(0);
-    } finally {
-      setLoadingTargets(false);
-    }
-  }
-
-  // Refresh button: force re-fetch of APIs and update cache
-  async function handleRefresh() {
-    setRefreshing(true);
-    try {
-      const uid = effectiveUserId;
-      // refetch everything and save into cache
-      await fetchKpis(uid, true);
-      // after kpis/partners/plans updated, fetch paginated targets so table is consistent
-      await fetchTargets(page, pageSize, uid);
-      setUsingCache(false);
-    } catch (e) {
-      console.error("dashboard refresh failed", e);
-    } finally {
-      setRefreshing(false);
-    }
-  }
-
-  // small helper to compute progress column
-  function computeProgress(t) {
-    const achieved =
-      t.achieved_count ?? t.achieved_batches ?? t.achieved ?? null;
-    const target = t.target_count ?? null;
-    if (achieved == null || target == null || target === 0) return "—";
-    const pct = Math.round((Number(achieved) / Number(target)) * 100);
-    return `${achieved}/${target} (${pct}%)`;
-  }
-
-  // UI variables
-  const totalPages = Math.max(1, Math.ceil(totalTargets / pageSize));
-  const cardStyle = {
-    background: "#fff",
-    borderRadius: 8,
-    padding: 18,
-    boxShadow: "0 2px 8px rgba(10,20,40,0.04)",
-    minWidth: 160,
   };
-  const small = { color: "#6c757d", fontSize: 13 };
 
-  // render partner cell: prefer partner_name set on target, otherwise map lookup
-  function renderPartnerName(t) {
-    if (t.partner_name) return t.partner_name;
-    const pid = t.partner;
-    if (partnersMap && partnersMap[pid])
-      return partnersMap[pid].name || String(pid);
-    return String(pid);
-  }
+  useEffect(() => {
+    fetchDashboardMetrics();
+  }, [user?.id, financialYear, selectedDistrictId]);
 
   return (
     <div className="app-shell">
       <Header />
       <div className="content-area">
-        <TmsLeftNav
+        <LeftNav
           collapsed={navCollapsed}
           onToggle={() => setNavCollapsed((v) => !v)}
         />
         <div className="main-area">
-          {/* <TopNav
-          left={<div className="app-title">Pragati Setu — TMS (SMMU)</div>}
-        /> */}
+          <main className="admin-dashboard-main">
+            {/* Unified Parallax Header */}
+            <TMSDashHeader
+              partnerName="SMMU State Executive Dashboard"
+              username={user?.first_name || user?.username || "SMMU Officer"}
+              financialYear={financialYear}
+              setFinancialYear={setFinancialYear}
+              loading={loading}
+              theme="tms"
+            />
 
-          <main className="dashboard-main">
-            <div className="dashboard-container">
-              {/* HEADER */}
-              <div className="dashboard-header">
-                {/* <h2 className="dashboard-title">{roleMessage}</h2> */}
-
-                <div className="dashboard-user">
-                  <div>
-                    {user?.first_name ? `Welcome, ${user.first_name}` : "Welcome"}
-                  </div>
-
-                  <button
-                    className="btn primary-btn"
-                    onClick={handleRefresh}
-                    disabled={refreshing}
-                  >
-                    {refreshing
-                      ? "Refreshing…"
-                      : usingCache
-                        ? "Refresh Dashboard"
-                        : "Refresh"}
-                  </button>
+            <div className="dashboard-content-pad">
+              {error ? (
+                <div className="alert-danger">
+                  <span style={{ fontSize: 20, marginRight: 8 }}>⚠</span>
+                  {error}
                 </div>
-              </div>
-
-              {/* KPI CARDS */}
-              <div className="kpi-grid">
-                <div className="kpi-card">
-                  <div className="kpi-number">
-                    {loadingKpis ? "…" : animTargets}
-                  </div>
-                  <div className="kpi-title">My Partner Targets</div>
-                  <div className="kpi-desc">Targets created by you</div>
+              ) : loading && !dashboardData ? (
+                <div className="loading-state">
+                  <div className="spinner"></div>
+                  <p>
+                    Compiling comprehensive state-wide analytics for{" "}
+                    {financialYear}...
+                  </p>
+                  <small>
+                    This may take a moment while we aggregate 75 districts.
+                  </small>
                 </div>
+              ) : dashboardData ? (
+                <div className="admin-grid-layout fade-in">
+                  {/* 1. KPI Cards */}
+                  <AdminDashKPI data={dashboardData} />
 
-                <div className="kpi-card">
-                  <div className="kpi-number">
-                    {loadingKpis ? "…" : animPlans}
-                  </div>
-                  <div className="kpi-title">Training Plans</div>
-                  <div className="kpi-desc">
-                    Total modules (All themes)
-                  </div>
-                </div>
-
-                <div className="kpi-card">
-                  <div className="kpi-number">
-                    {loadingKpis ? "…" : animThemes}
-                  </div>
-                  <div className="kpi-title">Training Themes</div>
-                  <div className="kpi-desc">Training Module categories</div>
-                </div>
-
-                <div className="kpi-card">
-                  <div className="kpi-number">
-                    {loadingKpis ? "…" : animPartners}
-                  </div>
-                  <div className="kpi-title">Training Partners</div>
-                  <div className="kpi-desc">Registered partners</div>
-                </div>
-              </div>
-
-              {/* MAIN GRID */}
-              <div className="dashboard-grid">
-                {/* QUICK ACTIONS */}
-                <div className="dashboard-card">
-                  <h3>Quick Actions</h3>
-
-                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    <button
-                      onClick={() => navigate("/tms/smmu/partner-targets")}
-                      className="btn primary-btn"
-                    >
-                      Create Partner Targets
-                    </button>
-
-                    <button
-                      onClick={() => navigate("/tms/batches-list/")}
-                      className="btn primary-btn"
-                    >
-                      All Training Batches
-                    </button>
-                  </div>
-
-                  <div style={{ marginTop: 16 }}>
-                    <h4>Recent activity</h4>
-                    <div className="small-text">
-                      No recent activity tracked yet — use the Create Partner
-                      Targets screen to assign targets to partners.
+                  {/* 2. Map & Geographic Distribution */}
+                  <div className="dashboard-card-wrapper">
+                    <div className="card-header">
+                      <h3>
+                        {selectedDistrictId
+                          ? "District Map & Block Distribution"
+                          : "State Map & District Distribution"}
+                      </h3>
+                      <p>
+                        {selectedDistrictId
+                          ? "Currently viewing block-level structure for the selected district."
+                          : "Click on a district to drill down and filter the entire dashboard by that district."}
+                      </p>
                     </div>
-                  </div>
-                </div>
-
-                {/* TARGET LIST */}
-                <aside className="dashboard-card">
-                  <h4>My Assigned Targets</h4>
-
-                  <div className="small-text" style={{ marginBottom: 12 }}>
-                    Paginated list of targets created by you (progress = targets
-                    vs achieved).
-                  </div>
-
-                  <div style={{ maxHeight: 360, overflow: "auto" }}>
-                    {loadingTargets ? (
-                      <div className="small-text">Loading targets…</div>
-                    ) : targets.length ? (
-                      <table className="targets-table">
-                        <thead>
-                          <tr>
-                            <th>Partner</th>
-                            <th>Scope</th>
-                            <th style={{ width: 120 }}>FY</th>
-                            <th style={{ width: 140 }}>Progress</th>
-                          </tr>
-                        </thead>
-
-                        <tbody>
-                          {targets.map((t) => (
-                            <tr key={t.id}>
-                              <td>{renderPartnerName(t)}</td>
-
-                              <td>
-                                {t.target_type}
-
-                                {t.target_type === "MODULE" &&
-                                  (t.training_plan_name ||
-                                    (plansMap[t.training_plan] &&
-                                      plansMap[t.training_plan].training_name))
-                                  ? ` — ${t.training_plan_name ||
-                                  plansMap[t.training_plan].training_name
-                                  }`
-                                  : t.theme
-                                    ? ` — ${t.theme}`
-                                    : ""}
-
-                                {t.target_type === "DISTRICT" && t.district_name
-                                  ? ` — ${t.district_name}`
-                                  : ""}
-                              </td>
-
-                              <td>{t.financial_year || "—"}</td>
-
-                              <td>{computeProgress(t)}</td>
-                            </tr>
-                          ))}
-                        </tbody>
-                      </table>
-                    ) : (
-                      <div className="small-text">No assigned targets.</div>
+                    {selectedDistrictId && (
+                      <div className="drilldown-banner slide-down">
+                        <div className="banner-text">
+                          <strong>
+                            Currently viewing District-Level Analytics.
+                          </strong>{" "}
+                          Metrics are filtered exclusively to the selected
+                          district.
+                        </div>
+                        <button
+                          className="btn-clear-filter"
+                          onClick={() => setSelectedDistrictId(null)}
+                        >
+                          &larr; Clear Filter & Return to State View
+                        </button>
+                      </div>
                     )}
-                  </div>
-
-                  {/* PAGINATION */}
-                  <div className="pagination">
-                    <button
-                      className="btn primary-btn"
-                      onClick={() => setPage((p) => Math.max(1, p - 1))}
-                      disabled={page <= 1}
-                    >
-                      Prev
-                    </button>
-
-                    <div className="small-text">
-                      Page {page} / {totalPages}
+                    <div className="card-body">
+                      {selectedDistrictId ? (
+                        <AdminDistrictMap
+                          districtId={selectedDistrictId}
+                          data={dashboardData.block_wise_stats || []}
+                        />
+                      ) : (
+                        <AdminUPMap
+                          data={dashboardData.district_wise_stats || []}
+                          activeDistrictId={selectedDistrictId}
+                          onDistrictSelect={setSelectedDistrictId}
+                        />
+                      )}
                     </div>
-
-                    <button
-                      className="btn primary-btn"
-                      onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
-                      disabled={page >= totalPages}
-                    >
-                      Next
-                    </button>
-
-                    <select
-                      value={pageSize}
-                      onChange={(e) => {
-                        setPageSize(Number(e.target.value));
-                        setPage(1);
-                      }}
-                      className="input-outline"
-                    >
-                      <option value={5}>5</option>
-                      <option value={10}>10</option>
-                      <option value={25}>25</option>
-                    </select>
                   </div>
-                </aside>
-              </div>
+
+                  {/* 3. Demographics Bifurcation */}
+                  <AdminParticipantDemographics
+                    data={dashboardData.participant_bifurcation}
+                  />
+
+                  <AdminThemeChart
+                    data={dashboardData.theme_wise_performance}
+                  />
+                </div>
+              ) : null}
             </div>
           </main>
           <Footer />
         </div>
       </div>
-      <style>{`/* MAIN DASHBOARD */
 
- .content-area {
-  display: flex;
-  flex: 1;              /*  pushes footer down */
-  min-width: 0;         /*  prevents overflow bug */
-}
+      <style>{`
+        .content-area { display: flex; flex: 1; min-height: 0; background: linear-gradient(to bottom, #fff 0%, #fff 35%, #496D9C 90%, #496D9C 100%);}
+        .main-area { display: flex; flex-direction: column; flex: 1; min-width: 0; }
+        .admin-dashboard-main { flex: 1; overflow-y: auto; }
+        footer { flex-shrink: 0; margin-top: auto; }
 
-.dashboard-main {
-  padding: 18px;
-  flex: 1;
-}
+        .dashboard-content-pad { padding: 30px 60px 30px 60px; max-width: 100%px; margin: 0 auto; width: 100%; }
+        
+        .admin-grid-layout { display: flex; flex-direction: column; gap: 24px; }
 
-.dashboard-container {
-  max-width: 1100px;
-  margin: 20px auto;
-  padding: 0 16px;
-}
+        /* Card Wrappers */
+        .dashboard-card-wrapper {
+          background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0;
+          box-shadow: 0 4px 20px rgba(0,0,0,0.03); overflow: hidden; margin-bottom: 8px;
+        }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: #1e3a8a; }
+        .card-header h3 { margin: 0 0 6px 0; font-size: 18px; font-weight: 800; color: #fff; }
+        .card-header p { margin: 0; font-size: 13px; color: #fff; font-weight: 500; }
+        .card-body { padding: 24px; }
 
-/* HEADER */
-.dashboard-header {
-  display: flex;
-  gap: 16px;
-  align-items: center;
-  margin-bottom: 16px;
-}
+        /* Drill-down Banner */
+        .drilldown-banner {
+          display: flex; justify-content: space-between; align-items: center;
+          background: #eff6ff; border: 1px solid #bfdbfe; border-left: 4px solid #2563eb;
+          padding: 14px 20px; border-radius: 8px; margin-bottom: 24px;
+        }
+        .banner-text { color: #1e3a8a; font-size: 14px; }
+        .btn-clear-filter {
+          background: #2563eb; color: #fff; border: none; padding: 8px 16px; border-radius: 6px;
+          font-size: 13px; font-weight: 700; cursor: pointer; transition: all 0.2s;
+        }
+        .btn-clear-filter:hover { background: #1d4ed8; transform: translateY(-1px); box-shadow: 0 4px 6px rgba(37,99,235,0.2); }
 
-.dashboard-title {
-  margin: 0;
-  color: #2b4e72;
-}
+        .alert-danger {
+          background: #fef2f2; border: 1px solid #f87171; color: #b91c1c;
+          padding: 16px; border-radius: 12px; font-weight: 600; display: flex; align-items: center;
+        }
+        
+        .loading-state {
+          display: flex; flex-direction: column; align-items: center; justify-content: center;
+          padding: 80px 20px; color: #64748b; font-weight: 500; text-align: center;
+        }
+        .spinner {
+          width: 36px; height: 36px; border: 3px solid #e2e8f0; border-top-color: #2563eb;
+          border-radius: 50%; animation: spin 1s linear infinite; margin-bottom: 16px;
+        }
 
-.dashboard-user {
-  margin-left: auto;
-  display: flex;
-  gap: 12px;
-  align-items: center;
-  color: #5a8cc2;
-  font-size: 13px;
-}
-
-/* KPI GRID */
-.kpi-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
-  gap: 12px;
-  margin-bottom: 18px;
-}
-
-.kpi-card {
-  background: #fff;
-  border: 2px solid #a7c6ed;
-  border-radius: 10px;
-  padding: 16px;
-  transition: all 0.2s ease;
-}
-
-.kpi-card:hover {
-  background: #e4ecf5;
-}
-
-.kpi-number {
-  font-size: 28px;
-  font-weight: 700;
-  color: #2b4e72;
-}
-
-.kpi-title {
-  margin-top: 6px;
-  font-weight: 700;
-  color: #3d6ba6;
-}
-
-.kpi-desc {
-  font-size: 12px;
-  color: #5a8cc2;
-}
-
-/* MAIN GRID */
-.dashboard-grid {
-  display: grid;
-  grid-template-columns: 1fr 420px;
-  gap: 20px;
-}
-
-/* CARDS */
-.dashboard-card {
-  background: #fff;
-  border-radius: 10px;
-  border: 2px solid #a7c6ed;
-  padding: 16px;
-}
-
-/* QUICK ACTION BUTTON */
-.primary-btn {
-  background:#3d6ba6;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  padding:6px 14px;
-  cursor:pointer;
-  transition:all .25s ease;
-}
-
-.primary-btn:hover {
-  transform:translateY(-3px);
-  box-shadow:0 6px 12px rgba(0,0,0,0.15);
-}
-
-/* TABLE */
-.targets-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 13px;
-}
-
-.targets-table thead {
-  background: #e4ecf5;
-}
-
-.targets-table th {
-  text-align: left;
-  padding: 8px 6px;
-  border-bottom: 2px solid #a7c6ed;
-  color: #2b4e72;
-}
-
-.targets-table td {
-  padding: 8px 6px;
-  border-bottom: 1px solid #e4ecf5;
-}
-
-.targets-table tr:hover {
-  background: #e4ecf5;
-}
-
-/* PAGINATION */
-.pagination {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  margin-top: 12px;
-}
-
-.pagination select {
-  margin-left: auto;
-  padding: 6px;
-}
-
-/* SMALL TEXT */
-.small-text {
-  font-size: 13px;
-  color: #5a8cc2;
-}
-
-.input-outline{
-border: 2px solid #3d6ba6;
-outline: 'none'
-}
-`}</style>
+        /* Animations */
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes slideDown { from { opacity: 0; transform: translateY(-10px); } to { opacity: 1; transform: translateY(0); } }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        .slide-down { animation: slideDown 0.3s ease-out forwards; }
+      `}</style>
     </div>
   );
 }

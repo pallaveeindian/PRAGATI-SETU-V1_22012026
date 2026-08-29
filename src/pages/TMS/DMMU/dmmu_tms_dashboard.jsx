@@ -143,7 +143,7 @@ export default function DmmuTmsDashboard() {
               ) : dashboardData ? (
                 <div className="admin-grid-layout fade-in">
                   {/* 1. KPI Cards */}
-                  <AdminDashKPI data={dashboardData.kpi_cards} />
+                  <AdminDashKPI data={dashboardData} />
 
                   {/* 2. District Map & Block Metrics */}
                   <div className="dashboard-card-wrapper">
@@ -157,26 +157,20 @@ export default function DmmuTmsDashboard() {
                     <div className="card-body">
                       <AdminDistrictMap
                         districtId={districtId}
-                        data={dashboardData.block_wise_metrics || []}
-                        activeBlockId={selectedBlockId}
-                        onBlockSelect={setSelectedBlockId}
+                        data={dashboardData.block_wise_stats || []}
                       />
                     </div>
                   </div>
 
                   {/* 3. Demographics Bifurcation */}
-                  <div className="dashboard-card-wrapper">
-                    <AdminParticipantDemographics
-                      data={dashboardData.participant_bifurcation}
-                    />
-                  </div>
+                  <AdminParticipantDemographics
+                    data={dashboardData.participant_bifurcation}
+                  />
 
                   {/* 4. Theme Wise Performance Chart */}
-                  <div className="dashboard-card-wrapper">
-                    <AdminThemeChart
-                      data={dashboardData.theme_wise_performance}
-                    />
-                  </div>
+                  <AdminThemeChart
+                    data={dashboardData.theme_wise_performance}
+                  />
                 </div>
               ) : null}
             </div>
@@ -186,12 +180,12 @@ export default function DmmuTmsDashboard() {
       </div>
 
       <style>{`
-        .content-area { display: flex; flex: 1; min-height: 0; background: #fff; }
+        .content-area { display: flex; flex: 1; min-height: 0; background: linear-gradient(to bottom, #fff 0%, #fff 35%, #496D9C 90%, #496D9C 100%);}
         .main-area { display: flex; flex-direction: column; flex: 1; min-width: 0; }
         .admin-dashboard-main { flex: 1; overflow-y: auto; }
         footer { flex-shrink: 0; margin-top: auto; }
 
-        .dashboard-content-pad { padding: 0 24px 30px 24px; max-width: 1400px; margin: 0 auto; width: 100%; }
+        .dashboard-content-pad { padding: 30px 60px 30px 60px; max-width: 100%px; margin: 0 auto; width: 100%; }
         
         .admin-grid-layout { display: flex; flex-direction: column; gap: 24px; }
 
@@ -200,9 +194,9 @@ export default function DmmuTmsDashboard() {
           background: #ffffff; border-radius: 16px; border: 1px solid #e2e8f0;
           box-shadow: 0 4px 20px rgba(0,0,0,0.03); overflow: hidden; margin-bottom: 8px;
         }
-        .card-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: #f8fafc; }
-        .card-header h3 { margin: 0 0 6px 0; font-size: 18px; font-weight: 800; color: #1e3a8a; }
-        .card-header p { margin: 0; font-size: 13px; color: #64748b; font-weight: 500; }
+        .card-header { padding: 20px 24px; border-bottom: 1px solid #f1f5f9; background: #1e3a8a; }
+        .card-header h3 { margin: 0 0 6px 0; font-size: 18px; font-weight: 800; color: #fff; }
+        .card-header p { margin: 0; font-size: 13px; color: #fff; font-weight: 500; }
         .card-body { padding: 24px; }
 
         /* Drill-down Banner */
