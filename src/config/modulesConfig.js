@@ -17,7 +17,7 @@ export const MODULES_CONFIG = [
     color: "#2a56cf",
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: "2026-09-01T16:00:00",
+    maintenanceUntil: null,
   },
   {
     id: "crp",
@@ -28,7 +28,7 @@ export const MODULES_CONFIG = [
     color: "#f59e0b",
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: "2026-09-01T16:00:00",
+    maintenanceUntil: null,
   },
   {
     id: "ldms",
@@ -63,7 +63,7 @@ export const MODULES_CONFIG = [
     color: "#ea6733",
     path: "/module-login?module=epsms",
     level: "Block",
-    maintenanceUntil: "2026-09-01T16:00:00",
+    maintenanceUntil: null,
   },
   {
     id: "prerna",

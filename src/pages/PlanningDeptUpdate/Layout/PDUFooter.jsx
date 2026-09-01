@@ -1,3 +1,4 @@
+// src\pages\PlanningDeptUpdate\Layout\PDUFooter.jsx
 import React from "react";
 // Assumes you have these assets. Adjust paths as necessary.
 import ps_logo from "../../../assets/PS_TRANS.png";

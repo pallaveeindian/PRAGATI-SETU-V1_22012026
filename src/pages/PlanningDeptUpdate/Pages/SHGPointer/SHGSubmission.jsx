@@ -1,7 +1,9 @@
+// src\pages\PlanningDeptUpdate\Pages\SHGPointer\SHGSubmission.jsx
 import React, { useState, useEffect } from "react";
 import { usePDUContext } from "../../context/PDUContext";
 import { buildPlanningApiPayload } from "../../Codes/payloadBuilder";
-import { pushBulkDataToPlanningDept } from "../../services/planningDeptApi"; // Swapped to the bulk function
+import { pushBulkDataToPlanningDept } from "../../services/planningDeptApi";
+import { syncLocalAspirationalData } from "../../services/uppldApi";
 
 // Reusable Components
 import PDUCard from "../../components/PDUCard";
@@ -71,15 +73,28 @@ export default function SHGSubmission() {
         },
       ]);
 
-      // 3. Execute Bulk Push (Single API Call)
+      // 3. Execute Bulk Push to UP Planning Dept (Single API Call)
       const response = await pushBulkDataToPlanningDept(payloads);
+      setLogs((prev) => [
+        ...prev,
+        { status: "success", message: `[0511] PLANNING DEPT API SUCCESS.` },
+      ]);
 
-      // 4. Log Success
+      // 4. Sync exact same payload to our Local Django Backend
+      setLogs((prev) => [
+        ...prev,
+        {
+          status: "info",
+          message: "Synchronizing identical payload to Local Server...",
+        },
+      ]);
+      const localResponse = await syncLocalAspirationalData(payloads);
+
       setLogs((prev) => [
         ...prev,
         {
           status: "success",
-          message: `[0511] SUCCESS. Server Response: ${JSON.stringify(response)}`,
+          message: `[0511] LOCAL DB SUCCESS. ${localResponse.message || "Stored successfully."}`,
         },
       ]);
     } catch (error) {

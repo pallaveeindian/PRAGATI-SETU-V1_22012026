@@ -32,6 +32,7 @@ export default function StaffBatchCreatorDashboard() {
   const [trDetails, setTrDetails] = useState(null);
   const [unallocatedStaff, setUnallocatedStaff] = useState([]);
   const [trainingPlanDays, setTrainingPlanDays] = useState(0);
+  const [trainingPlanName, setTrainingPlanName] = useState("");
 
   // --- User Selection States ---
   const [selectedStaffIds, setSelectedStaffIds] = useState([]);
@@ -64,6 +65,7 @@ export default function StaffBatchCreatorDashboard() {
           );
           const planData = planResp?.data ?? planResp;
           setTrainingPlanDays(planData?.no_of_days || 1);
+          setTrainingPlanName(planData?.training_name || "");
         }
 
         // B. Fetch All Participants for this TR
@@ -223,6 +225,7 @@ export default function StaffBatchCreatorDashboard() {
             <TRSummaryHeader
               trDetails={trDetails}
               totalUnallocated={unallocatedStaff.length}
+              trainingPlanName={trainingPlanName}
             />
 
             <div

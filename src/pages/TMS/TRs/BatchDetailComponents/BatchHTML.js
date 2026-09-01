@@ -1,3 +1,4 @@
+// src/pages/TMS/TRs/BatchDetailComponents/BatchHTML.js
 function fmtDate(iso) {
   if (!iso) return "N/A";
   try {
@@ -31,15 +32,21 @@ export const generateBatchHTML = (batchData) => {
   // Regular Participants
   if (batchData.batch_type === "COMBINED") {
     (batchData.combined_batch_details || []).forEach((d) => {
-      (d.participants || []).forEach((p) =>
+      (d.participants || []).forEach((p) => {
+        // SURGICAL FIX: Extract the underlying person object first
+        const person = p.beneficiary || p.trainer || p.staff || p;
+
         partsList.push({
           id: p.id,
-          name: p.name || p.full_name || p.member_name || "Unknown",
-          role: "Combined Participant",
-          mobile: p.mobile || p.mobile_no || "-",
-          district: p.district_name_en || "-",
-        }),
-      );
+          name:
+            person.name || person.full_name || person.member_name || "Unknown",
+          role: "Participant",
+          mobile: person.mobile || person.mobile_no || "-",
+          district: person.district_name_en || "-",
+          block: person.block_name_en || "-",
+          panchayat: person.panchayat_name_en || "-",
+        });
+      });
     });
   } else if (isStaff) {
     (batchData.staff_participations || []).forEach((p) =>
@@ -69,6 +76,8 @@ export const generateBatchHTML = (batchData) => {
         role: "Beneficiary",
         mobile: p.beneficiary?.mobile || "-",
         district: p.beneficiary?.district_name_en || "-",
+        block: p.beneficiary?.block_name_en || "-",
+        panchayat: p.beneficiary?.panchayat_name_en || "-",
       }),
     );
   }
@@ -293,6 +302,8 @@ export const generateBatchHTML = (batchData) => {
                   <th>Role</th>
                   <th>Mobile</th>
                   <th>District</th>
+                  <th>Block</th>
+                  <th>Panchayat</th>
                 </tr>
               </thead>
               <tbody>
@@ -305,6 +316,8 @@ export const generateBatchHTML = (batchData) => {
                     <td>${p.role}</td>
                     <td>${p.mobile}</td>
                     <td>${p.district}</td>
+                    <td>${p.block || "-"}</td>
+                    <td>${p.panchayat || "-"}</td>
                   </tr>
                 `,
                   )

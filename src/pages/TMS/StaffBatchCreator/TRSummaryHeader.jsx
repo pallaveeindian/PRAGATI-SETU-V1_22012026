@@ -1,7 +1,7 @@
 // src/pages/TMS/StaffBatchCreator/TRSummaryHeader.jsx
 import React from "react";
 
-const TRSummaryHeader = ({ trDetails, totalUnallocated }) => {
+const TRSummaryHeader = ({ trDetails, totalUnallocated, trainingPlanName }) => {
   if (!trDetails) return null;
 
   const trId = trDetails.id || "-";
@@ -10,6 +10,7 @@ const TRSummaryHeader = ({ trDetails, totalUnallocated }) => {
   // Depending on your API serializer, the plan name might be nested or flat.
   // Fallback to Plan ID if the name isn't immediately available on the TR object.
   const planName =
+    trainingPlanName ||
     trDetails.training_plan_name ||
     trDetails.training_plan?.training_name ||
     `Plan ID: ${trDetails.training_plan || "-"}`;

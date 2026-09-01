@@ -48,64 +48,142 @@ const CentreSelectionTable = ({
   }, [partnerId]);
 
   // ==========================================
+  // LOCATION HELPERS - API RESPONSE STRUCTURE
+  // ==========================================
+
+  const getDistrictId = (centre) =>
+    centre?.district_full?.district_id ??
+    centre?.district_id ??
+    centre?.district ??
+    "";
+
+  const getDistrictName = (centre) =>
+    centre?.district_full?.district_name_en ??
+    centre?.district_name_en ??
+    centre?.district_name ??
+    "";
+
+  const getBlockId = (centre) =>
+    centre?.block_full?.block_id ?? centre?.block_id ?? centre?.block ?? "";
+
+  const getBlockName = (centre) =>
+    centre?.block_full?.block_name_en ??
+    centre?.block_name_en ??
+    centre?.block_name ??
+    "";
+
+  const getPanchayatId = (centre) =>
+    centre?.panchayat_full?.panchayat_id ??
+    centre?.panchayat_id ??
+    centre?.panchayat ??
+    "";
+
+  const getPanchayatName = (centre) =>
+    centre?.panchayat_full?.panchayat_name_en ??
+    centre?.panchayat_name_en ??
+    centre?.panchayat_name ??
+    "";
+
+  const getVillageId = (centre) =>
+    centre?.village_full?.village_id ??
+    centre?.village_id ??
+    centre?.village ??
+    "";
+
+  const getVillageName = (centre) =>
+    centre?.village_full?.village_name_english ??
+    centre?.village_name_english ??
+    centre?.village_name ??
+    "";
+
+  // ==========================================
   // 2. DYNAMIC DROPDOWN EXTRACTION
   // ==========================================
-  // Extract unique locations from the actual centre data to populate dropdowns locally
 
   const availableDistricts = useMemo(() => {
     const map = new Map();
-    centres.forEach((c) => {
-      const dId = c.district?.district_id || c.district_id || c.district;
-      const dName = c.district?.district_name_en || c.district_name || dId;
-      if (dId && !map.has(String(dId))) map.set(String(dId), dName);
+
+    centres.forEach((centre) => {
+      const id = getDistrictId(centre);
+      const name = getDistrictName(centre);
+
+      if (id && name && !map.has(String(id))) {
+        map.set(String(id), name);
+      }
     });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [centres]);
 
   const availableBlocks = useMemo(() => {
     if (!filterDistrict) return [];
+
     const map = new Map();
-    centres.forEach((c) => {
-      const dId = String(
-        c.district?.district_id || c.district_id || c.district,
-      );
-      if (dId === filterDistrict) {
-        const bId = c.block?.block_id || c.block_id || c.block;
-        const bName = c.block?.block_name_en || c.block_name || bId;
-        if (bId && !map.has(String(bId))) map.set(String(bId), bName);
+
+    centres.forEach((centre) => {
+      const districtId = String(getDistrictId(centre));
+
+      if (districtId === String(filterDistrict)) {
+        const id = getBlockId(centre);
+        const name = getBlockName(centre);
+
+        if (id && name && !map.has(String(id))) {
+          map.set(String(id), name);
+        }
       }
     });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [centres, filterDistrict]);
 
   const availablePanchayats = useMemo(() => {
     if (!filterBlock) return [];
+
     const map = new Map();
-    centres.forEach((c) => {
-      const bId = String(c.block?.block_id || c.block_id || c.block);
-      if (bId === filterBlock) {
-        const pId = c.panchayat?.panchayat_id || c.panchayat_id || c.panchayat;
-        const pName = c.panchayat?.panchayat_name_en || c.panchayat_name || pId;
-        if (pId && !map.has(String(pId))) map.set(String(pId), pName);
+
+    centres.forEach((centre) => {
+      const blockId = String(getBlockId(centre));
+
+      if (blockId === String(filterBlock)) {
+        const id = getPanchayatId(centre);
+        const name = getPanchayatName(centre);
+
+        if (id && name && !map.has(String(id))) {
+          map.set(String(id), name);
+        }
       }
     });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [centres, filterBlock]);
 
   const availableVillages = useMemo(() => {
     if (!filterPanchayat) return [];
+
     const map = new Map();
-    centres.forEach((c) => {
-      const pId = String(
-        c.panchayat?.panchayat_id || c.panchayat_id || c.panchayat,
-      );
-      if (pId === filterPanchayat) {
-        const vId = c.village?.village_id || c.village_id || c.village;
-        const vName = c.village?.village_name_english || c.village_name || vId;
-        if (vId && !map.has(String(vId))) map.set(String(vId), vName);
+
+    centres.forEach((centre) => {
+      const panchayatId = String(getPanchayatId(centre));
+
+      if (panchayatId === String(filterPanchayat)) {
+        const id = getVillageId(centre);
+        const name = getVillageName(centre);
+
+        if (id && name && !map.has(String(id))) {
+          map.set(String(id), name);
+        }
       }
     });
-    return Array.from(map.entries()).map(([id, name]) => ({ id, name }));
+
+    return Array.from(map.entries())
+      .map(([id, name]) => ({ id, name }))
+      .sort((a, b) => a.name.localeCompare(b.name));
   }, [centres, filterPanchayat]);
 
   // Handle Cascading Resets
@@ -135,30 +213,35 @@ const CentreSelectionTable = ({
   // ==========================================
   const filteredCentres = useMemo(() => {
     return centres.filter((c) => {
-      // Location Filters
-      const cDist = String(
-        c.district?.district_id || c.district_id || c.district || "",
-      );
-      const cBlock = String(c.block?.block_id || c.block_id || c.block || "");
-      const cPanch = String(
-        c.panchayat?.panchayat_id || c.panchayat_id || c.panchayat || "",
-      );
-      const cVill = String(
-        c.village?.village_id || c.village_id || c.village || "",
-      );
+      const cDist = String(getDistrictId(c));
+      const cBlock = String(getBlockId(c));
+      const cPanch = String(getPanchayatId(c));
+      const cVill = String(getVillageId(c));
 
-      if (filterDistrict && cDist !== filterDistrict) return false;
-      if (filterBlock && cBlock !== filterBlock) return false;
-      if (filterPanchayat && cPanch !== filterPanchayat) return false;
-      if (filterVillage && cVill !== filterVillage) return false;
+      if (filterDistrict && cDist !== String(filterDistrict)) return false;
+      if (filterBlock && cBlock !== String(filterBlock)) return false;
+      if (filterPanchayat && cPanch !== String(filterPanchayat)) return false;
+      if (filterVillage && cVill !== String(filterVillage)) return false;
 
       // Text Search
       if (searchTerm) {
         const lowerSearch = searchTerm.toLowerCase();
-        const vName = (c.venue_name || "").toLowerCase();
-        const vAddr = (c.venue_address || "").toLowerCase();
-        if (!vName.includes(lowerSearch) && !vAddr.includes(lowerSearch))
+
+        const searchableText = [
+          c.venue_name,
+          c.venue_address,
+          getDistrictName(c),
+          getBlockName(c),
+          getPanchayatName(c),
+          getVillageName(c),
+        ]
+          .filter(Boolean)
+          .join(" ")
+          .toLowerCase();
+
+        if (!searchableText.includes(lowerSearch)) {
           return false;
+        }
       }
 
       return true;
@@ -329,10 +412,10 @@ const CentreSelectionTable = ({
                 const isSelected = selectedCentre?.id === centre.id;
 
                 const locParts = [
-                  centre.district?.district_name_en ||
-                    centre.district_name ||
-                    "",
-                  centre.block?.block_name_en || centre.block_name || "",
+                  getDistrictName(centre),
+                  getBlockName(centre),
+                  getPanchayatName(centre),
+                  getVillageName(centre),
                 ]
                   .filter(Boolean)
                   .join(" / ");

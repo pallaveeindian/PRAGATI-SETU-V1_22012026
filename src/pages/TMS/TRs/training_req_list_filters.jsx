@@ -35,6 +35,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
     partner_id: "",
     theme_id: "",
     training_plan_id: "",
+    type_of_training: "",
 
     status: "",
     training_type: "",
@@ -426,6 +427,23 @@ export default function TrainingReqListFilter({ user, onApply }) {
               ))}
             </select>
           )}
+
+          {/* ===== Training Type (Residential / Non-residential) ===== */}
+          <select
+            className="filter-input"
+            value={filters.type_of_training}
+            onChange={(e) =>
+              setFilters((f) => ({
+                ...f,
+                type_of_training: e.target.value,
+              }))
+            }
+          >
+            <option value="">Type of Training</option>
+            <option value="RES">Residential</option>
+            <option value="NON RES">Non-residential</option>
+            <option value="OTHER">Other</option>
+          </select>
 
           {/* ===== Status ===== */}
           <select

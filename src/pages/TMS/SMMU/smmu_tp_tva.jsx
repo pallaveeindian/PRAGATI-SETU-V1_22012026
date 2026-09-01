@@ -24,6 +24,7 @@ export default function SmmuTargetAchievement() {
   const [searchPartner, setSearchPartner] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
+  const [selectedTrainingType, setSelectedTrainingType] = useState("");
 
   // Dropdown Options State
   const [districts, setDistricts] = useState([]);
@@ -53,6 +54,7 @@ export default function SmmuTargetAchievement() {
         year: financialYear,
         district: selectedDistrict || undefined,
         training_plan: selectedPlan || undefined,
+        training_plan__type_of_training: selectedTrainingType || undefined,
         page: page,
         themes: themeString, // SURGICAL FIX: Send to backend
         partner_name: searchPartner || undefined, // SURGICAL FIX: Send to backend
@@ -120,24 +122,20 @@ export default function SmmuTargetAchievement() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  /* ---------------- Data Processing & Filtering ---------------- */
-
+  /* ================= PROCESS DATA ================= */
   const processedData = useMemo(() => {
     return targetsData.map((row) => {
       const partnerName = row.partner?.name || "Unknown Partner";
       const planName = row.training_plan?.training_name || "—";
       const districtName = row.district?.district_name_en || "—";
+      const themeName = row.theme || "—";
+      const fYear = row.financial_year || "—";
 
-      const themeName =
-        row.theme || row.training_plan?.theme?.theme_name || null;
-
-      const achievedCount =
-        row.achievements?.reduce(
-          (sum, a) => sum + (a.batches_completed || 0),
-          0,
-        ) || 0;
-
+      // These are directly provided by the updated backend serializer
       const targetCount = row.target_count || 0;
+      const achievedCount = row.achievement_count || 0;
+      const batchesCompleted = row.batches_completed || 0;
+
       const progressPct =
         targetCount > 0 ? Math.round((achievedCount / targetCount) * 100) : 0;
 
@@ -146,9 +144,11 @@ export default function SmmuTargetAchievement() {
         partnerName,
         planName,
         districtName,
-        theme: themeName,
+        themeName,
+        fYear,
         targetCount,
         achievedCount,
+        batchesCompleted,
         progressPct,
       };
     });
@@ -174,6 +174,7 @@ export default function SmmuTargetAchievement() {
           year: financialYear,
           district: selectedDistrict || undefined,
           training_plan: selectedPlan || undefined,
+          training_plan__type_of_training: selectedTrainingType || undefined,
           themes: themeString, // Fix: Ensure excel export applies user themes too!
           partner_name: searchPartner || undefined, // Fix: Search term
           export: "excel",
@@ -212,8 +213,8 @@ export default function SmmuTargetAchievement() {
           >
             <div
               style={{
-                maxWidth: 1200,
-                margin: "20px auto",
+                maxWidth: "100%",
+                margin: "20px 20px",
               }}
             >
               {/* FILTERS & EXPORT COMPONENT */}
@@ -357,6 +358,41 @@ export default function SmmuTargetAchievement() {
                         marginBottom: "4px",
                       }}
                     >
+                      Type of Training
+                    </label>
+
+                    <select
+                      value={selectedTrainingType}
+                      onChange={(e) => {
+                        setSelectedTrainingType(e.target.value);
+                        setCurrentPage(1);
+                      }}
+                      style={{
+                        width: "220px",
+                        padding: "8px",
+                        borderRadius: "6px",
+                        border: "1px solid #a7c6ed",
+                      }}
+                    >
+                      <option value="">All Training Types</option>
+
+                      <option value="RES">Residential</option>
+
+                      <option value="NON RES">Non-residential</option>
+
+                      <option value="OTHER">Other</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label
+                      style={{
+                        display: "block",
+                        fontSize: "13px",
+                        fontWeight: "600",
+                        color: "#2b4e72",
+                        marginBottom: "4px",
+                      }}
+                    >
                       Search Partner
                     </label>
                     <input
@@ -432,12 +468,15 @@ export default function SmmuTargetAchievement() {
                   <table className="training-table">
                     <thead>
                       <tr>
-                        <th style={{ width: "60px" }}>S.No.</th>
-                        <th>Partner</th>
-                        <th>Module / Plan</th>
+                        <th>S.No</th>
+                        <th>Training Partner</th>
+                        <th>Training Plan</th>
                         <th>District</th>
+                        <th>Theme</th>
+                        <th>Financial Year</th>
                         <th>Target</th>
-                        <th>Achieved</th>
+                        <th>Achievement Count</th>
+                        <th>Batches Completed</th>
                         <th>Progress</th>
                       </tr>
                     </thead>
@@ -464,66 +503,42 @@ export default function SmmuTargetAchievement() {
                       ) : (
                         paginatedData.map((r, index) => (
                           <tr key={r.id}>
-                            <td style={{ color: "#64748b", fontWeight: "500" }}>
+                            <td>
                               {(currentPage - 1) * rowsPerPage + index + 1}
                             </td>
-                            <td style={{ fontWeight: "600", color: "#1e293b" }}>
-                              {r.partnerName}
-                            </td>
+
                             <td>
-                              <div
-                                style={{ fontSize: "14px", color: "#0f172a" }}
-                              >
-                                {r.planName}
-                              </div>
-                              <div
-                                style={{ fontSize: "12px", color: "#64748b" }}
-                              >
-                                Theme: {r.theme || "—"}
-                              </div>
+                              <span className="partner-name">
+                                {r.partnerName}
+                              </span>
                             </td>
+
+                            <td>{r.planName}</td>
+
                             <td>{r.districtName}</td>
-                            <td
-                              style={{ fontWeight: "bold", color: "#3d6ba6" }}
-                            >
-                              {r.targetCount}
-                            </td>
-                            <td
-                              style={{ fontWeight: "bold", color: "#10b981" }}
-                            >
-                              {r.achievedCount}
-                            </td>
+
+                            <td>{r.themeName}</td>
+
+                            <td>{r.fYear}</td>
+
+                            <td>{r.targetCount}</td>
+
+                            <td>{r.achievedCount}</td>
+
+                            <td>{r.batchesCompleted}</td>
+
                             <td>
-                              <div
-                                style={{
-                                  display: "flex",
-                                  alignItems: "center",
-                                  gap: "8px",
-                                }}
+                              <span
+                                className={`progress-badge ${
+                                  r.progressPct >= 80
+                                    ? "progress-good"
+                                    : r.progressPct > 0
+                                      ? "progress-mid"
+                                      : "progress-zero"
+                                }`}
                               >
-                                <span
-                                  style={{
-                                    fontSize: "12px",
-                                    fontWeight: "700",
-                                    padding: "3px 8px",
-                                    borderRadius: "99px",
-                                    background:
-                                      r.progressPct >= 100
-                                        ? "#dcfce7"
-                                        : r.progressPct > 0
-                                          ? "#fef3c7"
-                                          : "#f1f5f9",
-                                    color:
-                                      r.progressPct >= 100
-                                        ? "#166534"
-                                        : r.progressPct > 0
-                                          ? "#92400e"
-                                          : "#475569",
-                                  }}
-                                >
-                                  {r.progressPct}%
-                                </span>
-                              </div>
+                                {r.progressPct}%
+                              </span>
                             </td>
                           </tr>
                         ))

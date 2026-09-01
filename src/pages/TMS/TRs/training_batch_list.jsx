@@ -122,6 +122,7 @@ export default function TrainingBatchList() {
     batch_type: "",
     theme: "",
     training_plan: "",
+    type_of_training: "",
     financial_year: "2026-27",
   });
 
@@ -753,6 +754,23 @@ export default function TrainingBatchList() {
                       </select>
                     )}
 
+                    {/* ===== Training Type (Residential / Non-residential) ===== */}
+                    <select
+                      className="filter-input"
+                      value={filters.type_of_training}
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          type_of_training: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Type of Training</option>
+                      <option value="RES">Residential</option>
+                      <option value="NON RES">Non-residential</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+
                     <select
                       className="filter-input"
                       onChange={(e) =>
@@ -1047,6 +1065,17 @@ export default function TrainingBatchList() {
                                   )}
                                 {role === "dtp" &&
                                   ["DRAFT", "REJECTED"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteBatch(b.id)}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                {role === "smmu" &&
+                                  ["ONGOING"].includes(
                                     String(b.status).toUpperCase(),
                                   ) && (
                                     <button
