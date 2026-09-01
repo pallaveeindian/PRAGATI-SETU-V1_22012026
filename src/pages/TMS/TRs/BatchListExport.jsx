@@ -36,11 +36,12 @@ export default function BatchListExport({ batches }) {
         "Partner",
         "Block",
         "District",
+        "Pendency Status",
         "Count",
       ]);
 
-      // 3. Merge Super Header across all 12 columns (A to L)
-      worksheet.mergeCells("A1:L1");
+      // 3. Merge Super Header across all 13 columns (A to M)
+      worksheet.mergeCells("A1:M1");
 
       // 4. Apply Exact Image Styling
       // Super Header Style (Dark Blue background, White Text)
@@ -73,7 +74,7 @@ export default function BatchListExport({ batches }) {
         right: { style: "thin", color: { argb: "FF000000" } },
       };
 
-      const cols = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+      const cols = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L", "M"];
       cols.forEach((col) => {
         const cell = worksheet.getCell(`${col}2`);
         cell.fill = lightBlueFill;
@@ -96,6 +97,7 @@ export default function BatchListExport({ batches }) {
         { key: "partner", width: 25 },
         { key: "block", width: 20 },
         { key: "district", width: 20 },
+        { key: "pendency_status", width: 40 },
         { key: "count", width: 10 },
       ];
 
@@ -119,6 +121,7 @@ export default function BatchListExport({ batches }) {
           partnerName,
           blockName,
           districtName,
+          b.pendency_status,
           b.pax_count || 0,
         ]);
 

@@ -411,7 +411,7 @@ export default function TrainingBatchList() {
               ([, v]) => v !== "" && v !== false,
             ),
           ),
-          page_size: 500,
+          page_size: "MAX",
         };
       }
 
@@ -891,6 +891,7 @@ export default function TrainingBatchList() {
                         <th>Block</th>
                         <th>District</th>
                         <th>Assigned Trainers</th>
+                        <th>Pendency Status</th>
                         <th>Count</th>
                         <th>Action</th>
                       </tr>
@@ -958,6 +959,11 @@ export default function TrainingBatchList() {
                                     </div>
                                   ))
                                 : "-"}
+                            </td>
+                            <td
+                              style={{ textAlign: "center", fontWeight: "600" }}
+                            >
+                              {b.pendency_status || "-"}
                             </td>
                             <td
                               style={{ textAlign: "center", fontWeight: "600" }}

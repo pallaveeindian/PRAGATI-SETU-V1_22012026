@@ -5,7 +5,7 @@ import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
-import { TMS_API, LOOKUP_API } from "../../../api/axios";
+import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
 import TrainingReqListFilter from "./training_req_list_filters";
 import { ROLE_WELCOME_MESSAGES } from "../../../utils/roleUtils";
@@ -115,6 +115,73 @@ export default function TrainingRequestList() {
   const [planMap, setPlanMap] = useState(() => loadMap(PLAN_MAP_KEY));
   const [convertTrId, setConvertTrId] = useState(null);
   const didRunRef = useRef(false);
+
+  // SURGICAL ADDITION: Multi-select state & handlers
+  const [selectedTrs, setSelectedTrs] = useState([]);
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedTrs(requests.map((r) => r.id));
+    } else {
+      setSelectedTrs([]);
+    }
+  };
+
+  const handleSelectOne = (e, id) => {
+    if (e.target.checked) {
+      setSelectedTrs((prev) => [...prev, id]);
+    } else {
+      setSelectedTrs((prev) => prev.filter((trId) => trId !== id));
+    }
+  };
+
+  const handleMarkBacklog = async () => {
+    if (
+      !window.confirm(
+        `Are you sure you want to mark ${selectedTrs.length} request(s) as Backlog?`,
+      )
+    )
+      return;
+    setLoading(true);
+    try {
+      // Patch is_old=True for all selected TRs concurrently
+      await Promise.all(
+        selectedTrs.map((id) =>
+          api.patch(`/tms/training-requests/${id}/`, { is_old: true }),
+        ),
+      );
+      alert("Successfully marked as Backlog Batches.");
+      setSelectedTrs([]);
+      setRefreshToken((t) => t + 1); // Refresh the list automatically
+    } catch (error) {
+      console.error(error);
+      alert("Failed to mark requests as Backlog.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper to verify if all selected items are NOT STATE level
+  const selectedTrObjects = requests.filter((r) => selectedTrs.includes(r.id));
+  const isSelectionValidForBacklog =
+    selectedTrs.length > 0 &&
+    selectedTrObjects.every((r) => {
+      const isNonState = String(r.level).toUpperCase() !== "STATE";
+      const isBatching = String(r.status).toUpperCase() === "BATCHING";
+
+      // Roles 1, 2, 3 → Only NON-backlog requests
+      if ([1, 2, 3].includes(Number(user?.role_id))) {
+        return isNonState && r.is_old === false && isBatching;
+      }
+
+      // Role 13 → Only backlog requests
+      if (Number(user?.role_id) === 13) {
+        return isNonState && r.is_old === true && isBatching;
+      }
+
+      // Other roles
+      return false;
+    });
 
   /* ---------------- geoscope ---------------- */
   async function ensureUserGeoscope() {
@@ -281,6 +348,7 @@ export default function TrainingRequestList() {
 
       setTotalCount(resp?.data?.count || 0);
       setRequests(items);
+      setSelectedTrs([]);
       await fetchAndStoreLookupMaps(items);
     } catch (e) {
       console.error("Filtered fetch failed", e);
@@ -496,6 +564,28 @@ export default function TrainingRequestList() {
                 <div
                   style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
                 >
+                  {/* SURGICAL ADDITION: Backlog Action Buttons */}
+                  {isSelectionValidForBacklog &&
+                    [1, 2, 3].includes(Number(user?.role_id)) && (
+                      <button
+                        className="Backlogbtn"
+                        style={{ background: "#f59e0b" }}
+                        onClick={handleMarkBacklog}
+                      >
+                        Mark for Backlog Batches
+                      </button>
+                    )}
+
+                  {isSelectionValidForBacklog &&
+                    Number(user?.role_id) === 13 && (
+                      <button
+                        className="Backlogbtn"
+                        onClick={() => navigate("#")}
+                      >
+                        Create Backlog batch
+                      </button>
+                    )}
+
                   {/* EXPORT BUTTON */}
                   <TRListExport fetchData={fetchAllForExport} />
 
@@ -531,6 +621,17 @@ export default function TrainingRequestList() {
                   <table className="training-table">
                     <thead>
                       <tr>
+                        <th style={{ width: "40px" }}>
+                          <input
+                            type="checkbox"
+                            checked={
+                              requests.length > 0 &&
+                              selectedTrs.length === requests.length
+                            }
+                            onChange={handleSelectAll}
+                            style={{ cursor: "pointer" }}
+                          />
+                        </th>
                         <th>S.No.</th>
                         <th>Theme</th>
                         <th>Plan</th>
@@ -558,7 +659,20 @@ export default function TrainingRequestList() {
                         </tr>
                       ) : (
                         requests.map((r, index) => (
-                          <tr key={r.id}>
+                          <tr
+                            key={r.id}
+                            className={
+                              r.is_old === true ? "backlog-training-row" : ""
+                            }
+                          >
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={selectedTrs.includes(r.id)}
+                                onChange={(e) => handleSelectOne(e, r.id)}
+                                style={{ cursor: "pointer" }}
+                              />
+                            </td>
                             <td>
                               {(currentPage - 1) * rowsPerPage + index + 1}
                             </td>
@@ -566,11 +680,26 @@ export default function TrainingRequestList() {
                             <td>{r.training_plan_name}</td>
                             <td>{r.level}</td>
                             <td>
-                              <span
-                                className={`status-badge status-${String(r.status).toLowerCase()}`}
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                }}
                               >
-                                {r.status}
-                              </span>
+                                <span
+                                  className={`status-badge status-${String(r.status).toLowerCase()}`}
+                                >
+                                  {r.status}
+                                </span>
+
+                                {r.is_old === true && (
+                                  <span className="backlog-badge">
+                                    ★ Backlog
+                                  </span>
+                                )}
+                              </div>
                             </td>
                             <td>{r.partner_name}</td>
                             <td>{r.district_name}</td>
@@ -630,7 +759,35 @@ export default function TrainingRequestList() {
                       <div className="mobile-card">No training requests</div>
                     ) : (
                       requests.map((r, index) => (
-                        <div key={r.id} className="mobile-card">
+                        <div
+                          key={r.id}
+                          className={`mobile-card ${
+                            r.is_old === true ? "backlog-mobile-card" : ""
+                          }`}
+                        >
+                          {r.is_old === true && (
+                            <div className="backlog-mobile-header">
+                              <span className="backlog-badge">★ Backlog</span>
+                            </div>
+                          )}
+                          <div
+                            style={{
+                              marginBottom: "8px",
+                              paddingBottom: "8px",
+                              borderBottom: "1px solid #e4ecf5",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedTrs.includes(r.id)}
+                              onChange={(e) => handleSelectOne(e, r.id)}
+                              style={{ transform: "scale(1.2)" }}
+                            />
+                            <strong>Select Request</strong>
+                          </div>
                           <div>
                             <strong>S.No:</strong>{" "}
                             {(currentPage - 1) * rowsPerPage + index + 1}
@@ -1124,6 +1281,104 @@ export default function TrainingRequestList() {
   }
 }
 
+/* =========================================
+   BACKLOG TRAINING REQUEST HIGHLIGHT
+========================================= */
+
+/* Desktop table row */
+.training-table tbody tr.backlog-training-row {
+  background: #fffbeb !important;
+  box-shadow: inset 0 0 0 2px #d4a017;
+}
+
+/* Gold border for every cell */
+.training-table tbody tr.backlog-training-row td {
+  border-top: 2px solid #d4a017;
+  border-bottom: 2px solid #d4a017;
+}
+
+/* Left gold edge */
+.training-table tbody tr.backlog-training-row td:first-child {
+  border-left: 2px solid #d4a017;
+  border-radius: 8px 0 0 8px;
+}
+
+/* Right gold edge */
+.training-table tbody tr.backlog-training-row td:last-child {
+  border-right: 2px solid #d4a017;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Keep backlog identity visible on hover */
+.training-table tbody tr.backlog-training-row:hover {
+  background: #fef3c7 !important;
+}
+
+/* Backlog Gold Badge */
+.backlog-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  padding: 4px 10px;
+
+  background: linear-gradient(
+    135deg,
+    #fff7cc,
+    #facc15,
+    #d4a017
+  );
+
+  color: #713f12;
+  border: 1px solid #b8860b;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+
+  box-shadow: 0 2px 5px rgba(180, 130, 0, 0.2);
+}
+
+/* Mobile backlog card */
+.backlog-mobile-card {
+  background: #fffbeb !important;
+  border: 2px solid #d4a017 !important;
+
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(212, 160, 23, 0.2);
+}
+
+/* Mobile badge positioning */
+.backlog-mobile-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.Backlogbtn {
+background-color: #16a34a;
+color: #ffffff;
+border: 1px solid #15803d;
+padding: 8px 16px;
+border-radius: 6px;
+font-size: 13px;
+font-weight: 600;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+transition: all 0.2s;
+height: 32px;
+}
+
+.Backlogbtn:hover:not(:disabled) {
+background-color: #15803d;
+box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);
+transform: translateY(-1px);
+}
 `}</style>
     </div>
   );
