@@ -1,0 +1,171 @@
+{
+    "default": {
+    "title": "Portal Update Board",
+    "title_hi": "पोर्टल अपडेट बोर्ड",
+    "subtitle": "Latest updates across all modules",
+    "subtitle_hi": "सभी मॉड्यूल के नवीनतम अपडेट",
+    "items": [
+        {
+        "id": 1,
+        "title": "System Scheduled Maintenance",
+        "title_hi": "सिस्टम निर्धारित रखरखाव",
+        "date": "12 Sept 2026",
+        "time": "09:30 AM",
+        "description": "Planned maintenance window for server optimization and security patching.",
+        "description_hi": "सर्वर अनुकूलन और सुरक्षा पैचिंग के लिए नियोजित रखरखाव।"
+        },
+        {
+        "id": 2,
+        "title": "Suksham Udhyam Sakhi Mobile App V2.1 Release",
+        "title_hi": "सुक्षम उद्यम सखी मोबाइल ऐप V2.1 रिलीज़",
+        "date": "24 Aug 2026",
+        "time": "12:30 PM",
+        "description": "The latest version of the Suksham Udhyam Sakhi mobile app is now available on the portal for download.",
+        "description_hi": "सुक्षम उद्यम सखी मोबाइल ऐप का नवीनतम संस्करण अब पोर्टल पर डाउनलोड के लिए उपलब्ध है।"
+        },
+        {
+        "id": 3,
+        "title": "UI Accessibility Improvements",
+        "title_hi": "UI एक्सेसिबिलिटी सुधार",
+        "date": "25 Aug 2026",
+        "time": "02:15 PM",
+        "description": "High-contrast mode and screen reader compatibility improvements have been deployed globally.",
+        "description_hi": "हाई-कंट्रास्ट मोड और स्क्रीन रीडर संगतता सुधार विश्व स्तर पर लागू किए गए हैं।"
+        },
+        {
+        "id": 4,
+        "title": "Helpdesk Ticketing Integration",
+        "title_hi": "हेल्पडेस्क टिकटिंग एकीकरण",
+        "date": "26 Aug 2026",
+        "time": "11:00 AM",
+        "description": "Users can now raise support tickets directly from the portal's quick action menu.",
+        "description_hi": "उपयोगकर्ता अब सीधे पोर्टल के क्विक एक्शन मेनू से सपोर्ट टिकट जनरेट कर सकते हैं।"
+        },
+        {
+        "id": 5,
+        "title": "Updated User Manuals",
+        "title_hi": "अपडेटेड उपयोगकर्ता नियमावली",
+        "date": "28 Aug 2026",
+        "time": "09:00 AM",
+        "description": "New PDF guides and video tutorials have been added to the Resources section.",
+        "description_hi": "संसाधन अनुभाग में नए पीडीएफ गाइड और वीडियो ट्यूटोरियल जोड़े गए हैं।"
+        }
+    ]
+    },
+    "tms": {
+    "title": "TMS Update Board",
+    "title_hi": "टीएमएस अपडेट बोर्ड",
+    "subtitle": "Training Management System",
+    "subtitle_hi": "प्रशिक्षण प्रबंधन प्रणाली",
+    "items": [
+        {
+        "id": 1,
+        "title": "New User Manual Resource Section",
+        "title_hi": "नया यूजर मैनुअल संसाधन अनुभाग",
+        "date": "01 Sep 2026",
+        "time": "10:00 AM",
+        "description": "A new user manual resource section has been added for the TMS portal.",
+        "description_hi": "टीएमएस पोर्टल में एक नया यूजर मैनुअल संसाधन अनुभाग जोड़ा गया है।"
+        },
+        {
+        "id": 2,
+        "title": "Master Trainer Management Rule",
+        "title_hi": "मास्टर ट्रेनर प्रबंधन नियम",
+        "date": "01 Sep 2026",
+        "time": "10:30 AM",
+        "description": "Master trainer addition, deletion, and replacement on every batch are allowed until batch e-KYC is completed.",
+        "description_hi": "प्रत्येक बैच पर मास्टर ट्रेनर को जोड़ना, हटाना और बदलना तब तक अनुमति है जब तक बैच का ई-केवाईसी नहीं हो जाता।"
+        },
+        {
+        "id": 3,
+        "title": "Residential/Non-Residential Filter",
+        "title_hi": "आवासीय/गैर-आवासीय फ़िल्टर",
+        "date": "01 Sep 2026",
+        "time": "11:00 AM",
+        "description": "Residential or non-residential training request batch filters are now available throughout the portal.",
+        "description_hi": "पोर्टल पर हर जगह आवासीय या गैर-आवासीय प्रशिक्षण अनुरोध बैच फ़िल्टर उपलब्ध करा दिए गए हैं।"
+        },
+        {
+        "id": 4,
+        "title": "Batch Deletion at State Level",
+        "title_hi": "राज्य स्तर पर बैच विलोपन",
+        "date": "01 Sep 2026",
+        "time": "11:30 AM",
+        "description": "Batch deletion option is available at the state level; each SMM can delete the batches of thier Theme.",
+        "description_hi": "राज्य स्तर पर बैच हटाने का विकल्प उपलब्ध है, प्रत्येक SMM अपने स्वयं के बैच हटा सकता है।"
+        },
+        {
+        "id": 5,
+        "title": "Learning Material Upload Feature",
+        "title_hi": "अध्ययन सामग्री अपलोड सुविधा",
+        "date": "01 Sep 2026",
+        "time": "12:00 PM",
+        "description": "Learning materials uploaded from the state level are now available for download on all other logins.",
+        "description_hi": "राज्य स्तर से अपलोड की गई अध्ययन सामग्री अब अन्य सभी लॉगिन पर डाउनलोड के लिए उपलब्ध है।"
+        },
+        {
+        "id": 6,
+        "title": "Brand New Analytics Dashboard",
+        "title_hi": "बिल्कुल नया एनालिटिक्स डैशबोर्ड",
+        "date": "01 Sep 2026",
+        "time": "12:30 PM",
+        "description": "A brand new analytics dashboard has been added for BMM, DMM, and SMM levels.",
+        "description_hi": "सभी स्तरों (BMM, DMM और SMM) के लिए एक बिल्कुल नया एनालिटिक्स डैशबोर्ड जोड़ा गया है।"
+        },
+        {
+        "id": 7,
+        "title": "Beneficiary Lokos Profile Fetch",
+        "title_hi": "लाभार्थी लोकोस प्रोफाइल फ़ेच",
+        "date": "01 Sep 2026",
+        "time": "01:00 PM",
+        "description": "Beneficiary Lokos profile fetch option is now available at the time of attendance.",
+        "description_hi": "उपस्थिति दर्ज करते समय लाभार्थी लोकोस प्रोफाइल फ़ेच करने का विकल्प उपलब्ध है।"
+        },
+        {
+        "id": 8,
+        "title": "Panchayat & Village in Batch Creation",
+        "title_hi": "बैच निर्माण में पंचायत और गाँव",
+        "date": "01 Sep 2026",
+        "time": "01:30 PM",
+        "description": "Beneficiaries' panchayat and village details are now available during batch creation.",
+        "description_hi": "बैच बनाते समय लाभार्थियों की पंचायत और गाँव की जानकारी उपलब्ध कराई गई है।"
+        },
+        {
+        "id": 9,
+        "title": "Central Batch Date Locking",
+        "title_hi": "केंद्रीय बैच तिथि लॉकिंग",
+        "date": "01 Sep 2026",
+        "time": "09:00 AM",
+        "description": "Batch dates are now centrally locked to ensure wrong computer dates are not considered.",
+        "description_hi": "गलत कंप्यूटर तिथि को रोकने के लिए अब बैच की तारीखों को केंद्रीय रूप से लॉक कर दिया गया है।"
+        },
+        {
+        "id": 10,
+        "title": "Updated Absence Rule for Batches",
+        "title_hi": "बैच के लिए अपडेटेड अनुपस्थिति नियम",
+        "date": "01 Sep 2026",
+        "time": "09:30 AM",
+        "description": "For a 9-day batch, only 2 days of absence are now permitted as per department rules.",
+        "description_hi": "विभाग के नियम के अनुसार 9 दिन के बैच पर अब केवल 2 दिन की अनुपस्थिति की अनुमति है।"
+        },
+        {
+        "id": 11,
+        "title": "Block Level BRP Registration",
+        "title_hi": "ब्लॉक स्तरीय BRP पंजीकरण",
+        "date": "01 Sep 2026",
+        "time": "10:00 AM",
+        "description": "Block-level BRP registration and district-level approval module have been added.",
+        "description_hi": "ब्लॉक स्तरीय BRP पंजीकरण और जिला स्तर पर अनुमोदन मॉड्यूल जोड़ दिया गया है।"
+        },
+        {
+        "id": 12,
+        "title": "Backlog Batch Training Marking",
+        "title_hi": "बैकलॉग बैच प्रशिक्षण अंकन",
+        "date": "01 Sep 2026",
+        "time": "10:30 AM",
+        "description": "Backlog batch training request marking module has been successfully added.",
+        "description_hi": "बैकलॉग बैच प्रशिक्षण अनुरोध अंकन मॉड्यूल जोड़ दिया गया है।"
+        }
+    ]
+    }
+}
