@@ -1,0 +1,642 @@
+{
+  "default": {
+    "title": "Portal Update Board",
+    "title_hi": "पोर्टल अपडेट बोर्ड",
+    "subtitle": "Latest updates across all modules",
+    "subtitle_hi": "सभी मॉड्यूल के नवीनतम अपडेट",
+    "items": [
+      {
+        "id": 1,
+        "title": "System Scheduled Maintenance",
+        "title_hi": "सिस्टम निर्धारित रखरखाव",
+        "date": "20 Aug 2026",
+        "time": "09:30 AM",
+        "description": "Planned maintenance window for server optimization and security patching.",
+        "description_hi": "सर्वर अनुकूलन और सुरक्षा पैचिंग के लिए नियोजित रखरखाव।"
+      },
+      {
+        "id": 2,
+        "title": "New Reporting Dashboard",
+        "title_hi": "नया रिपोर्टिंग डैशबोर्ड",
+        "date": "18 Aug 2026",
+        "time": "04:45 PM",
+        "description": "Improved analytics view with district-wise progress summaries and status filters.",
+        "description_hi": "जिलेवार प्रगति सारांश और स्थिति फिल्टर के साथ बेहतर एनालिटिक्स दृश्य।"
+      },
+      {
+        "id": 3,
+        "title": "Security Policy Update",
+        "title_hi": "सुरक्षा नीति अपडेट",
+        "date": "21 Aug 2026",
+        "time": "10:00 AM",
+        "description": "Mandatory password reset policy and two-factor authentication implemented for all users.",
+        "description_hi": "सभी उपयोगकर्ताओं के लिए अनिवार्य पासवर्ड रीसेट नीति और टू-फैक्टर ऑथेंटिकेशन लागू किया गया है।"
+      },
+      {
+        "id": 4,
+        "title": "Mobile App V2.1 Release",
+        "title_hi": "मोबाइल ऐप V2.1 रिलीज़",
+        "date": "24 Aug 2026",
+        "time": "12:30 PM",
+        "description": "The latest version of the field app is now available on the portal for download.",
+        "description_hi": "फ़ील्ड ऐप का नवीनतम संस्करण अब पोर्टल पर डाउनलोड के लिए उपलब्ध है।"
+      },
+      {
+        "id": 5,
+        "title": "UI Accessibility Improvements",
+        "title_hi": "UI एक्सेसिबिलिटी सुधार",
+        "date": "25 Aug 2026",
+        "time": "02:15 PM",
+        "description": "High-contrast mode and screen reader compatibility improvements have been deployed globally.",
+        "description_hi": "हाई-कंट्रास्ट मोड और स्क्रीन रीडर संगतता सुधार विश्व स्तर पर लागू किए गए हैं।"
+      },
+      {
+        "id": 6,
+        "title": "Helpdesk Ticketing Integration",
+        "title_hi": "हेल्पडेस्क टिकटिंग एकीकरण",
+        "date": "26 Aug 2026",
+        "time": "11:00 AM",
+        "description": "Users can now raise support tickets directly from the portal's quick action menu.",
+        "description_hi": "उपयोगकर्ता अब सीधे पोर्टल के क्विक एक्शन मेनू से सपोर्ट टिकट जनरेट कर सकते हैं।"
+      },
+      {
+        "id": 7,
+        "title": "Server Migration Alert",
+        "title_hi": "सर्वर माइग्रेशन अलर्ट",
+        "date": "27 Aug 2026",
+        "time": "11:45 PM",
+        "description": "Minor downtime expected tonight due to database migration to faster cloud instances.",
+        "description_hi": "तेज़ क्लाउड इंस्टेंस में डेटाबेस माइग्रेशन के कारण आज रात मामूली डाउनटाइम की उम्मीद है।"
+      },
+      {
+        "id": 8,
+        "title": "Updated User Manuals",
+        "title_hi": "अपडेटेड उपयोगकर्ता नियमावली",
+        "date": "28 Aug 2026",
+        "time": "09:00 AM",
+        "description": "New PDF guides and video tutorials have been added to the Resources section.",
+        "description_hi": "संसाधन अनुभाग में नए पीडीएफ गाइड और वीडियो ट्यूटोरियल जोड़े गए हैं।"
+      }
+    ]
+  },
+  "tms": {
+    "title": "TMS Update Board",
+    "title_hi": "टीएमएस अपडेट बोर्ड",
+    "subtitle": "Training Management System",
+    "subtitle_hi": "प्रशिक्षण प्रबंधन प्रणाली",
+    "items": [
+      {
+        "id": 1,
+        "title": "Training Calendar Published",
+        "title_hi": "प्रशिक्षण कैलेंडर प्रकाशित",
+        "date": "20 Aug 2026",
+        "time": "10:15 AM",
+        "description": "The updated training calendar for the next batch cycle has been uploaded for all districts.",
+        "description_hi": "अगले बैच चक्र के लिए अपडेट किया गया प्रशिक्षण कैलेंडर सभी जिलों के लिए अपलोड कर दिया गया है।"
+      },
+      {
+        "id": 2,
+        "title": "Batch Renewal Reminder",
+        "title_hi": "बैच नवीनीकरण अनुस्मारक",
+        "date": "19 Aug 2026",
+        "time": "01:50 PM",
+        "description": "Please review and renew the remaining training batches before the upcoming review window.",
+        "description_hi": "कृपया आगामी समीक्षा विंडो से पहले शेष प्रशिक्षण बैचों की समीक्षा करें और उनका नवीनीकरण करें।"
+      },
+      {
+        "id": 3,
+        "title": "Trainer Certification Module",
+        "title_hi": "प्रशिक्षक प्रमाणन मॉड्यूल",
+        "date": "22 Aug 2026",
+        "time": "03:30 PM",
+        "description": "New module added to track, upload, and verify master trainer certifications.",
+        "description_hi": "मास्टर ट्रेनर प्रमाणपत्रों को ट्रैक, अपलोड और सत्यापित करने के लिए नया मॉड्यूल जोड़ा गया।"
+      },
+      {
+        "id": 4,
+        "title": "Attendance Sync Issue Fixed",
+        "title_hi": "उपस्थिति सिंक समस्या का समाधान",
+        "date": "23 Aug 2026",
+        "time": "08:45 AM",
+        "description": "Resolved a bug causing delays in syncing biometric attendance from training centers.",
+        "description_hi": "प्रशिक्षण केंद्रों से बायोमेट्रिक उपस्थिति सिंक होने में देरी करने वाले बग को ठीक कर दिया गया है।"
+      },
+      {
+        "id": 5,
+        "title": "Feedback Form Redesign",
+        "title_hi": "फीडबैक फॉर्म नया डिज़ाइन",
+        "date": "24 Aug 2026",
+        "time": "11:15 AM",
+        "description": "Post-training feedback forms have been shortened to improve trainee response rates.",
+        "description_hi": "प्रशिक्षु प्रतिक्रिया दर में सुधार करने के लिए पोस्ट-ट्रेनिंग फीडबैक फॉर्म को छोटा कर दिया गया है।"
+      },
+      {
+        "id": 6,
+        "title": "Venue Resource Booking",
+        "title_hi": "कार्यक्रम स्थल संसाधन बुकिंग",
+        "date": "25 Aug 2026",
+        "time": "01:00 PM",
+        "description": "Facility managers can now block projectors, whiteboards, and seating online.",
+        "description_hi": "सुविधा प्रबंधक अब ऑनलाइन प्रोजेक्टर, व्हाइटबोर्ड और बैठने की व्यवस्था बुक कर सकते हैं।"
+      },
+      {
+        "id": 7,
+        "title": "Training Budget Allocation",
+        "title_hi": "प्रशिक्षण बजट आवंटन",
+        "date": "26 Aug 2026",
+        "time": "04:30 PM",
+        "description": "Q3 budget limits for block-level capacity building have been updated in the system.",
+        "description_hi": "ब्लॉक-स्तरीय क्षमता निर्माण के लिए Q3 बजट सीमा सिस्टम में अपडेट कर दी गई है।"
+      },
+      {
+        "id": 8,
+        "title": "New Livelihood Module Added",
+        "title_hi": "नया आजीविका मॉड्यूल जोड़ा गया",
+        "date": "27 Aug 2026",
+        "time": "10:00 AM",
+        "description": "Curriculum for 'Advanced Agri-Tech Practices' is now available for batch mapping.",
+        "description_hi": "'उन्नत एग्री-टेक अभ्यास' का पाठ्यक्रम अब बैच मैपिंग के लिए उपलब्ध है।"
+      }
+    ]
+  },
+  "ldms": {
+    "title": "LDMS Update Board",
+    "title_hi": "एलडीएमएस अपडेट बोर्ड",
+    "subtitle": "Livelihood Data Management System",
+    "subtitle_hi": "आजीविका डेटा प्रबंधन प्रणाली",
+    "items": [
+      {
+        "id": 1,
+        "title": "Data Verification Window Open",
+        "title_hi": "डेटा सत्यापन विंडो खुली",
+        "date": "20 Aug 2026",
+        "time": "11:00 AM",
+        "description": "The latest livelihood records are available for district-level verification.",
+        "description_hi": "नवीनतम आजीविका रिकॉर्ड जिला-स्तरीय सत्यापन के लिए उपलब्ध हैं।"
+      },
+      {
+        "id": 2,
+        "title": "SHG Data Integration",
+        "title_hi": "एसएचजी डेटा एकीकरण",
+        "date": "21 Aug 2026",
+        "time": "02:15 PM",
+        "description": "Self Help Group livelihood profiles have been successfully synced with the central database.",
+        "description_hi": "स्वयं सहायता समूह की आजीविका प्रोफ़ाइल सफलतापूर्वक केंद्रीय डेटाबेस के साथ सिंक कर दी गई है।"
+      },
+      {
+        "id": 3,
+        "title": "Offline Sync Issue Resolved",
+        "title_hi": "ऑफ़लाइन सिंक समस्या हल हो गई",
+        "date": "23 Aug 2026",
+        "time": "11:45 AM",
+        "description": "Resolved the bug preventing offline data capture from syncing properly upon reconnection.",
+        "description_hi": "इंटरनेट दोबारा कनेक्ट होने पर ऑफ़लाइन डेटा सिंक न होने की समस्या को ठीक कर दिया गया है।"
+      },
+      {
+        "id": 4,
+        "title": "Livestock Survey Launched",
+        "title_hi": "पशुधन सर्वेक्षण शुरू",
+        "date": "24 Aug 2026",
+        "time": "09:30 AM",
+        "description": "A new data collection form for the annual livestock asset survey is now live.",
+        "description_hi": "वार्षिक पशुधन संपत्ति सर्वेक्षण के लिए एक नया डेटा संग्रह फॉर्म अब लाइव है।"
+      },
+      {
+        "id": 5,
+        "title": "Duplicate Record Flagging",
+        "title_hi": "डुप्लिकेट रिकॉर्ड फ़्लैगिंग",
+        "date": "25 Aug 2026",
+        "time": "03:00 PM",
+        "description": "Automated deduplication algorithm enabled to highlight overlapping beneficiary records.",
+        "description_hi": "अतिव्यापी लाभार्थी रिकॉर्ड को उजागर करने के लिए स्वचालित डिडुप्लिकेशन एल्गोरिदम सक्षम किया गया।"
+      },
+      {
+        "id": 6,
+        "title": "Market Linkage Dashboard",
+        "title_hi": "मार्केट लिंकेज डैशबोर्ड",
+        "date": "26 Aug 2026",
+        "time": "01:20 PM",
+        "description": "Added new charts visualizing local market linkages and producer group sales.",
+        "description_hi": "स्थानीय बाजार जुड़ाव और उत्पादक समूह की बिक्री को दर्शाने वाले नए चार्ट जोड़े गए।"
+      },
+      {
+        "id": 7,
+        "title": "Crop Yield Estimator",
+        "title_hi": "फसल उपज अनुमानक",
+        "date": "27 Aug 2026",
+        "time": "10:45 AM",
+        "description": "New calculator tool added to estimate potential crop yields based on input data.",
+        "description_hi": "इनपुट डेटा के आधार पर संभावित फसल उपज का अनुमान लगाने के लिए नया कैलकुलेटर टूल जोड़ा गया।"
+      },
+      {
+        "id": 8,
+        "title": "API Webhook for Partners",
+        "title_hi": "साझेदारों के लिए एपीआई वेबहुक",
+        "date": "28 Aug 2026",
+        "time": "04:10 PM",
+        "description": "External NGO partners can now receive real-time data updates via secure webhooks.",
+        "description_hi": "बाहरी एनजीओ भागीदार अब सुरक्षित वेबहुक के माध्यम से वास्तविक समय डेटा अपडेट प्राप्त कर सकते हैं।"
+      }
+    ]
+  },
+  "crp": {
+    "title": "CRP-EP Update Board",
+    "title_hi": "सीआरपी-ईपी अपडेट बोर्ड",
+    "subtitle": "Enterprise Tracking Updates",
+    "subtitle_hi": "उद्यम ट्रैकिंग अपडेट",
+    "items": [
+      {
+        "id": 1,
+        "title": "Coverage Mapping Refresh",
+        "title_hi": "कवरेज मैपिंग रिफ्रेश",
+        "date": "21 Aug 2026",
+        "time": "08:30 AM",
+        "description": "The Panchayat mapping list has been refreshed for all district teams and field facilitators.",
+        "description_hi": "सभी जिला टीमों और फील्ड फैसिलिटेटर्स के लिए पंचायत मैपिंग सूची को रीफ्रेश कर दिया गया है।"
+      },
+      {
+        "id": 2,
+        "title": "Target Achievement Tracker",
+        "title_hi": "लक्ष्य प्राप्ति ट्रैकर",
+        "date": "22 Aug 2026",
+        "time": "04:00 PM",
+        "description": "New visual tracker deployed to help CRP-EPs monitor their monthly enterprise formation targets.",
+        "description_hi": "सीआरपी-ईपी को उनके मासिक उद्यम गठन लक्ष्यों की निगरानी में मदद करने के लिए नया विज़ुअल ट्रैकर तैनात किया गया है।"
+      },
+      {
+        "id": 3,
+        "title": "Geo-Tagging Mandate",
+        "title_hi": "जियो-टैगिंग अनिवार्य",
+        "date": "23 Aug 2026",
+        "time": "10:15 AM",
+        "description": "All new enterprise registrations must now include mandatory GPS coordinates.",
+        "description_hi": "सभी नए उद्यम पंजीकरणों में अब अनिवार्य जीपीएस निर्देशांक (GPS) शामिल होने चाहिए।"
+      },
+      {
+        "id": 4,
+        "title": "Case Study Upload Portal",
+        "title_hi": "केस स्टडी अपलोड पोर्टल",
+        "date": "24 Aug 2026",
+        "time": "02:30 PM",
+        "description": "CRPs can now submit success stories and photographs directly through the tracking portal.",
+        "description_hi": "सीआरपी अब सीधे ट्रैकिंग पोर्टल के माध्यम से सफलता की कहानियां और तस्वीरें जमा कर सकते हैं।"
+      },
+      {
+        "id": 5,
+        "title": "Attrition Alert System",
+        "title_hi": "निष्क्रियता अलर्ट सिस्टम",
+        "date": "25 Aug 2026",
+        "time": "11:00 AM",
+        "description": "Automated alerts configured for enterprises showing zero activity for three consecutive months.",
+        "description_hi": "लगातार तीन महीनों तक शून्य गतिविधि दिखाने वाले उद्यमों के लिए स्वचालित अलर्ट कॉन्फ़िगर किए गए हैं।"
+      },
+      {
+        "id": 6,
+        "title": "Kit Distribution Logs",
+        "title_hi": "किट वितरण लॉग",
+        "date": "26 Aug 2026",
+        "time": "09:45 AM",
+        "description": "Added functionality to track the distribution of starter kits to newly formed enterprises.",
+        "description_hi": "नवगठित उद्यमों को स्टार्टर किट के वितरण को ट्रैक करने की कार्यक्षमता जोड़ी गई।"
+      },
+      {
+        "id": 7,
+        "title": "Performance Ranking View",
+        "title_hi": "प्रदर्शन रैंकिंग दृश्य",
+        "date": "27 Aug 2026",
+        "time": "01:15 PM",
+        "description": "Block-wise CRP performance leaderboards have been activated to encourage peer learning.",
+        "description_hi": "सहकर्मी सीखने को प्रोत्साहित करने के लिए ब्लॉक-वार सीआरपी प्रदर्शन लीडरबोर्ड सक्रिय किए गए हैं।"
+      },
+      {
+        "id": 8,
+        "title": "Mobile Interface Optimized",
+        "title_hi": "मोबाइल इंटरफ़ेस अनुकूलित",
+        "date": "28 Aug 2026",
+        "time": "03:50 PM",
+        "description": "The enterprise registration form has been optimized for faster loading on slow 3G networks.",
+        "description_hi": "धीमे 3G नेटवर्क पर तेजी से लोड करने के लिए उद्यम पंजीकरण फॉर्म को अनुकूलित किया गया है।"
+      }
+    ]
+  },
+  "mou": {
+    "title": "MOU Update Board",
+    "title_hi": "एमओयू अपडेट बोर्ड",
+    "subtitle": "Enterprise MOU Management",
+    "subtitle_hi": "उद्यम एमओयू प्रबंधन",
+    "items": [
+      {
+        "id": 1,
+        "title": "Agreement Review Cycle",
+        "title_hi": "समझौता समीक्षा चक्र",
+        "date": "21 Aug 2026",
+        "time": "11:25 AM",
+        "description": "The next agreement review cycle has started with a renewed checklist and compliance format.",
+        "description_hi": "अगला समझौता समीक्षा चक्र एक नई चेकलिस्ट और अनुपालन प्रारूप के साथ शुरू हो गया है।"
+      },
+      {
+        "id": 2,
+        "title": "Digital Signature Integration",
+        "title_hi": "डिजिटल हस्ताक्षर एकीकरण",
+        "date": "24 Aug 2026",
+        "time": "10:30 AM",
+        "description": "E-sign capability added for faster remote approval of standard vendor MOUs.",
+        "description_hi": "मानक वेंडर एमओयू के तेज़ रिमोट अनुमोदन के लिए ई-साइन क्षमता जोड़ी गई।"
+      },
+      {
+        "id": 3,
+        "title": "Upcoming Renewals Alert",
+        "title_hi": "आगामी नवीनीकरण अलर्ट",
+        "date": "25 Aug 2026",
+        "time": "09:00 AM",
+        "description": "Automated 30-day and 60-day expiry notifications activated for all active partnerships.",
+        "description_hi": "सभी सक्रिय साझेदारियों के लिए स्वचालित 30-दिन और 60-दिन की समाप्ति सूचनाएं सक्रिय कर दी गई हैं।"
+      },
+      {
+        "id": 4,
+        "title": "Vendor Onboarding Form",
+        "title_hi": "वेंडर ऑनबोर्डिंग फॉर्म",
+        "date": "26 Aug 2026",
+        "time": "02:45 PM",
+        "description": "A new self-service portal is live for third-party vendors to submit MOU details.",
+        "description_hi": "तृतीय-पक्ष विक्रेताओं को एमओयू विवरण जमा करने के लिए एक नया स्व-सेवा पोर्टल लाइव है।"
+      },
+      {
+        "id": 5,
+        "title": "Legal Compliance Update",
+        "title_hi": "कानूनी अनुपालन अपडेट",
+        "date": "27 Aug 2026",
+        "time": "11:30 AM",
+        "description": "Section 4(b) of the standard template has been updated to reflect new tax regulations.",
+        "description_hi": "मानक टेम्पलेट की धारा 4(b) को नए कर नियमों को दर्शाने के लिए अद्यतन किया गया है।"
+      },
+      {
+        "id": 6,
+        "title": "Historical Archive Migration",
+        "title_hi": "ऐतिहासिक पुरालेख प्रवास",
+        "date": "28 Aug 2026",
+        "time": "04:00 PM",
+        "description": "All MOUs from 2022-2024 have been successfully migrated to the deep-storage archive.",
+        "description_hi": "2022-2024 के सभी एमओयू को डीप-स्टोरेज आर्काइव में सफलतापूर्वक माइग्रेट कर दिया गया है।"
+      },
+      {
+        "id": 7,
+        "title": "Dispute Resolution Log",
+        "title_hi": "विवाद समाधान लॉग",
+        "date": "29 Aug 2026",
+        "time": "10:15 AM",
+        "description": "A secure logging system has been introduced to track MOU breaches and dispute settlements.",
+        "description_hi": "एमओयू उल्लंघनों और विवाद निपटान को ट्रैक करने के लिए एक सुरक्षित लॉगिंग सिस्टम पेश किया गया है।"
+      },
+      {
+        "id": 8,
+        "title": "Multi-Language Templates",
+        "title_hi": "बहु-भाषा टेम्पलेट्स",
+        "date": "30 Aug 2026",
+        "time": "01:30 PM",
+        "description": "Standard MOU drafts are now available in Hindi, Marathi, and Tamil for local partners.",
+        "description_hi": "स्थानीय साझेदारों के लिए मानक एमओयू ड्राफ्ट अब हिंदी, मराठी और तमिल में उपलब्ध हैं।"
+      }
+    ]
+  },
+  "epsms": {
+    "title": "EPSMS Update Board",
+    "title_hi": "ईपीएसएमएस अपडेट बोर्ड",
+    "subtitle": "Enterprise Sakhi Management System",
+    "subtitle_hi": "उद्यम सखी प्रबंधन प्रणाली",
+    "items": [
+      {
+        "id": 1,
+        "title": "Monthly MIS Report Published",
+        "title_hi": "मासिक एमआईएस रिपोर्ट प्रकाशित",
+        "date": "22 Aug 2026",
+        "time": "09:00 AM",
+        "description": "The revised monthly monitoring report is now available for block and district officers.",
+        "description_hi": "संशोधित मासिक निगरानी रिपोर्ट अब ब्लॉक और जिला अधिकारियों के लिए उपलब्ध है।"
+      },
+      {
+        "id": 2,
+        "title": "Honorarium Disbursement Status",
+        "title_hi": "मानदेय संवितरण स्थिति",
+        "date": "23 Aug 2026",
+        "time": "01:00 PM",
+        "description": "Added a new tracking tab to view the real-time status of Enterprise Sakhi honorarium payments.",
+        "description_hi": "एंटरप्राइज सखी मानदेय भुगतान की रीयल-टाइम स्थिति देखने के लिए एक नया ट्रैकिंग टैब जोड़ा गया।"
+      },
+      {
+        "id": 3,
+        "title": "Travel Allowance Claims",
+        "title_hi": "यात्रा भत्ता दावें",
+        "date": "24 Aug 2026",
+        "time": "11:45 AM",
+        "description": "Sakhis can now upload bus/train tickets directly via the app for faster travel reimbursement.",
+        "description_hi": "सखियां अब तेजी से यात्रा प्रतिपूर्ति के लिए ऐप के माध्यम से सीधे बस/ट्रेन टिकट अपलोड कर सकती हैं।"
+      },
+      {
+        "id": 4,
+        "title": "Grievance Redressal Portal",
+        "title_hi": "शिकायत निवारण पोर्टल",
+        "date": "25 Aug 2026",
+        "time": "03:15 PM",
+        "description": "A dedicated channel for Sakhis to anonymously report field issues has been activated.",
+        "description_hi": "सखियों के लिए क्षेत्र के मुद्दों की गुमनाम रूप से रिपोर्ट करने के लिए एक समर्पित चैनल सक्रिय किया गया है।"
+      },
+      {
+        "id": 5,
+        "title": "Digital ID Card Generation",
+        "title_hi": "डिजिटल आईडी कार्ड जनरेशन",
+        "date": "26 Aug 2026",
+        "time": "10:30 AM",
+        "description": "Verified Sakhis can now download their official digital ID cards with QR codes.",
+        "description_hi": "सत्यापित सखियां अब क्यूआर कोड (QR) के साथ अपना आधिकारिक डिजिटल आईडी कार्ड डाउनलोड कर सकती हैं।"
+      },
+      {
+        "id": 6,
+        "title": "Refresher Training Schedule",
+        "title_hi": "पुनश्चर्या प्रशिक्षण अनुसूची",
+        "date": "27 Aug 2026",
+        "time": "02:00 PM",
+        "description": "The September roster for virtual financial literacy refresher courses has been posted.",
+        "description_hi": "वर्चुअल वित्तीय साक्षरता पुनश्चर्या पाठ्यक्रमों के लिए सितंबर का रोस्टर पोस्ट कर दिया गया है।"
+      },
+      {
+        "id": 7,
+        "title": "Baseline Target Setting",
+        "title_hi": "बेसलाइन लक्ष्य निर्धारण",
+        "date": "28 Aug 2026",
+        "time": "09:15 AM",
+        "description": "Supervisors can now set individualized monthly outreach targets for their respective Sakhis.",
+        "description_hi": "पर्यवेक्षक अब अपनी संबंधित सखियों के लिए व्यक्तिगत मासिक आउटरीच लक्ष्य निर्धारित कर सकते हैं।"
+      },
+      {
+        "id": 8,
+        "title": "Success Story Highlight",
+        "title_hi": "सफलता की कहानी हाइलाइट",
+        "date": "29 Aug 2026",
+        "time": "12:45 PM",
+        "description": "A new 'Sakhi Spotlight' section added to the dashboard to showcase high performers.",
+        "description_hi": "उच्च प्रदर्शन करने वालों को प्रदर्शित करने के लिए डैशबोर्ड में एक नया 'सखी स्पॉटलाइट' अनुभाग जोड़ा गया है।"
+      }
+    ]
+  },
+  "admin": {
+    "title": "Admin Update Board",
+    "title_hi": "एडमिन अपडेट बोर्ड",
+    "subtitle": "Master Administration",
+    "subtitle_hi": "मास्टर प्रशासन",
+    "items": [
+      {
+        "id": 1,
+        "title": "Role Access Review",
+        "title_hi": "भूमिका पहुंच समीक्षा",
+        "date": "22 Aug 2026",
+        "time": "07:50 AM",
+        "description": "Administrative access review completed for all senior-level nodes and support users.",
+        "description_hi": "सभी वरिष्ठ स्तर के नोड्स और समर्थन उपयोगकर्ताओं के लिए प्रशासनिक पहुंच समीक्षा पूरी हो गई है।"
+      },
+      {
+        "id": 2,
+        "title": "Audit Log Export Feature",
+        "title_hi": "ऑडिट लॉग निर्यात सुविधा",
+        "date": "24 Aug 2026",
+        "time": "12:00 PM",
+        "description": "System administrators can now export detailed system activity audit logs in CSV format.",
+        "description_hi": "सिस्टम एडमिनिस्ट्रेटर अब विस्तृत सिस्टम गतिविधि ऑडिट लॉग सीएसवी (CSV) प्रारूप में निर्यात कर सकते हैं।"
+      },
+      {
+        "id": 3,
+        "title": "Bulk User Upload",
+        "title_hi": "थोक उपयोगकर्ता अपलोड",
+        "date": "25 Aug 2026",
+        "time": "10:15 AM",
+        "description": "New Excel template added for mapping and uploading multiple users to specific blocks.",
+        "description_hi": "विशिष्ट ब्लॉकों में एकाधिक उपयोगकर्ताओं को मैप करने और अपलोड करने के लिए नया एक्सेल टेम्प्लेट जोड़ा गया।"
+      },
+      {
+        "id": 4,
+        "title": "API Key Rotation",
+        "title_hi": "एपीआई (API) कुंजी रोटेशन",
+        "date": "26 Aug 2026",
+        "time": "01:30 PM",
+        "description": "All external API integration keys have been rotated. Please update your client headers.",
+        "description_hi": "सभी बाहरी एपीआई एकीकरण कुंजियाँ घुमा दी गई हैं। कृपया अपने क्लाइंट हेडर अपडेट करें।"
+      },
+      {
+        "id": 5,
+        "title": "Session Timeout Config",
+        "title_hi": "सत्र टाइमआउट कॉन्फ़िगरेशन",
+        "date": "27 Aug 2026",
+        "time": "09:00 AM",
+        "description": "Idle session timeout has been reduced from 30 minutes to 15 minutes for enhanced security.",
+        "description_hi": "उन्नत सुरक्षा के लिए निष्क्रिय सत्र टाइमआउट को 30 मिनट से घटाकर 15 मिनट कर दिया गया है।"
+      },
+      {
+        "id": 6,
+        "title": "Automated Backups",
+        "title_hi": "स्वचालित बैकअप",
+        "date": "28 Aug 2026",
+        "time": "02:45 AM",
+        "description": "Database backup frequency increased to every 4 hours. Retention period set to 90 days.",
+        "description_hi": "डेटाबेस बैकअप की आवृत्ति बढ़ाकर हर 4 घंटे कर दी गई। प्रतिधारण अवधि 90 दिन निर्धारित की गई।"
+      },
+      {
+        "id": 7,
+        "title": "IP Whitelisting Enabled",
+        "title_hi": "आईपी ​​व्हाइटलिस्टिंग सक्षम",
+        "date": "29 Aug 2026",
+        "time": "11:20 AM",
+        "description": "Access to the super-admin panel is now restricted strictly to whitelisted office IPs.",
+        "description_hi": "सुपर-एडमिन पैनल तक पहुंच अब सख्ती से व्हाइटलिस्टेड कार्यालय आईपी तक ही सीमित है।"
+      },
+      {
+        "id": 8,
+        "title": "Storage Capacity Alert",
+        "title_hi": "भंडारण क्षमता चेतावनी",
+        "date": "30 Aug 2026",
+        "time": "04:50 PM",
+        "description": "AWS S3 storage limit increased by 5TB to accommodate rising multimedia case study uploads.",
+        "description_hi": "बढ़ते मल्टीमीडिया केस स्टडी अपलोड को समायोजित करने के लिए एडब्ल्यूएस एस3 (AWS S3) स्टोरेज सीमा 5TB बढ़ा दी गई है।"
+      }
+    ]
+  },
+  "pmuadmin": {
+    "title": "PMU Admin Update Board",
+    "title_hi": "पीएमयू एडमिन अपडेट बोर्ड",
+    "subtitle": "Project Management Unit",
+    "subtitle_hi": "परियोजना प्रबंधन इकाई (PMU)",
+    "items": [
+      {
+        "id": 1,
+        "title": "Monitoring Dashboard Updated",
+        "title_hi": "निगरानी डैशबोर्ड अपडेट किया गया",
+        "date": "23 Aug 2026",
+        "time": "09:15 AM",
+        "description": "The PMU monitoring dashboard has been refreshed with the latest project progress indicators.",
+        "description_hi": "पीएमयू मॉनिटरिंग डैशबोर्ड को नवीनतम परियोजना प्रगति संकेतकों के साथ ताज़ा किया गया है।"
+      },
+      {
+        "id": 2,
+        "title": "Quarterly Review Metrics",
+        "title_hi": "त्रैमासिक समीक्षा मेट्रिक्स",
+        "date": "25 Aug 2026",
+        "time": "10:00 AM",
+        "description": "Q3 performance metrics and milestone tracking have been enabled in the master view for PMU members.",
+        "description_hi": "पीएमयू सदस्यों के लिए मास्टर व्यू में Q3 प्रदर्शन मेट्रिक्स और मील का पत्थर ट्रैकिंग सक्षम किया गया है।"
+      },
+      {
+        "id": 3,
+        "title": "Donor Reporting Export",
+        "title_hi": "डोनर रिपोर्टिंग निर्यात",
+        "date": "26 Aug 2026",
+        "time": "01:45 PM",
+        "description": "One-click generation of World Bank and internal donor compliance reports is now live.",
+        "description_hi": "विश्व बैंक और आंतरिक डोनर अनुपालन रिपोर्टों का एक-क्लिक निर्माण अब लाइव है।"
+      },
+      {
+        "id": 4,
+        "title": "Budget Utilization Matrix",
+        "title_hi": "बजट उपयोग मैट्रिक्स",
+        "date": "27 Aug 2026",
+        "time": "11:10 AM",
+        "description": "Real-time state and district-level budget utilization heatmaps have been integrated.",
+        "description_hi": "वास्तविक समय राज्य और जिला-स्तरीय बजट उपयोग हीटमैप को एकीकृत किया गया है।"
+      },
+      {
+        "id": 5,
+        "title": "Risk Mitigation Logs",
+        "title_hi": "जोखिम न्यूनीकरण लॉग",
+        "date": "28 Aug 2026",
+        "time": "03:30 PM",
+        "description": "The enterprise risk registry has been updated with new impact mitigation strategies.",
+        "description_hi": "उद्यम जोखिम रजिस्ट्री को नई प्रभाव न्यूनीकरण रणनीतियों के साथ अद्यतन किया गया है।"
+      },
+      {
+        "id": 6,
+        "title": "Procurement Plan Approvals",
+        "title_hi": "खरीद योजना स्वीकृति",
+        "date": "29 Aug 2026",
+        "time": "09:50 AM",
+        "description": "Annual procurement plans for physical assets can now be approved via the PMU dashboard.",
+        "description_hi": "भौतिक संपत्तियों के लिए वार्षिक खरीद योजनाओं को अब पीएमयू डैशबोर्ड के माध्यम से स्वीकृत किया जा सकता है।"
+      },
+      {
+        "id": 7,
+        "title": "State-wise Performance Review",
+        "title_hi": "राज्यवार प्रदर्शन समीक्षा",
+        "date": "30 Aug 2026",
+        "time": "02:15 PM",
+        "description": "Consolidated slide decks for the upcoming multi-state review meeting are available for download.",
+        "description_hi": "आगामी बहु-राज्य समीक्षा बैठक के लिए समेकित स्लाइड डेक डाउनलोड के लिए उपलब्ध हैं।"
+      },
+      {
+        "id": 8,
+        "title": "Steering Committee Notes",
+        "title_hi": "संचालन समिति के नोट्स",
+        "date": "31 Aug 2026",
+        "time": "10:00 AM",
+        "description": "Minutes and action items from the latest national steering committee have been archived.",
+        "description_hi": "नवीनतम राष्ट्रीय संचालन समिति के कार्यवृत्त और कार्रवाई योग्य वस्तुओं को संग्रहीत किया गया है।"
+      }
+    ]
+  }
+}

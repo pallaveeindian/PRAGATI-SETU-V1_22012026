@@ -3,6 +3,7 @@ import React, { useContext } from "react";
 import { useSearchParams } from "react-router-dom";
 import { AuthContext } from "../../contexts/AuthContext";
 import LoadingModal from "../../components/ui/LoadingModal";
+import NewsBoard from "./NewsBoard";
 
 // Module Components
 import TmsLogin from "./TmsLogin";
@@ -51,7 +52,7 @@ export default function LoginParent() {
       break;
     case "admin":
       content = <StateLogin />;
-      theme = "green"; 
+      theme = "green";
       break;
     default:
       content = <TmsLogin />;
@@ -63,7 +64,15 @@ export default function LoginParent() {
     <div className={`login-page theme-${theme}`}>
       <LoadingModal open={loading} title="Logging in" />
 
-      <div className="overlay">{content}</div>
+      <div className="auth-shell">
+        <aside className="news-panel">
+          <NewsBoard module={module} theme={theme} />
+        </aside>
+
+        <div className="login-panel">
+          <div className="overlay">{content}</div>
+        </div>
+      </div>
 
       <style>{`
       .login-page {
@@ -75,6 +84,37 @@ export default function LoginParent() {
         font-family: 'Abel', sans-serif;
         background: #0f172a;
         transition: background 0.6s ease;
+        padding: 15px;
+      }
+
+      .auth-shell {
+        position: relative;
+        z-index: 2;
+        width: min(1280px, 100%);
+        min-height: 760px;
+        display: grid;
+        grid-template-columns: 1.15fr 0.85fr;
+        gap: 10px;
+        
+        
+        overflow: hidden;
+        
+      }
+
+      .news-panel {
+        display: flex;
+        align-items: stretch;
+        
+        padding: 15px;
+       
+      }
+
+      .login-panel {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 15px;
+       
       }
 
       .overlay {
@@ -86,7 +126,7 @@ export default function LoginParent() {
 
       /* BASE FORM STYLES */
       .login-form {
-        width: 460px;
+        width: min(460px, 100%);
         background: rgba(255, 255, 255, 0.95);
         border-radius: 12px;
         padding: 36px 32px;
@@ -334,7 +374,21 @@ export default function LoginParent() {
       .theme-purple .form-input { background: rgba(255,255,255,0.6); }
       .theme-purple .form-input:focus { border-color: #9333ea; background: #fff;}
 
+      @media (max-width: 980px) {
+        .auth-shell {
+          grid-template-columns: 1fr;
+          min-height: auto;
+        }
+
+        .news-panel {
+          border-right: none;
+          border-bottom: 1px solid rgba(255, 255, 255, 0.12);
+        }
+      }
+
       @media (max-width: 520px) {
+        .login-page { padding: 16px; }
+        .news-panel, .login-panel { padding: 16px; }
         .login-form { width: 92%; padding: 24px 20px; }
       }
         /* --- ORANGE THEME (EPSMS) --- */
