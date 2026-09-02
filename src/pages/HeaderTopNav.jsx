@@ -207,6 +207,11 @@ export default function TopNavigation() {
                     What's New
                   </Link>
                 </li>
+                <li>
+                  <Link to="/Download-Updates" onClick={closeMenu}>
+                    Download Updates
+                  </Link>
+                </li>
               </ul>
             </li>
 

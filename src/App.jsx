@@ -27,6 +27,7 @@ import UserManual from "./pages/UserManual";
 import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
 import PublicReports from "./pages/PublicReports";
 import WhatsNew from "./pages/WhatsNew";
+import DownloadUpdates from "./pages/DownloadUpdates.jsx";
 
 // Grievance Portal
 import RegisterGrievance from "./pages/RegisterGrievance.jsx";
@@ -137,6 +138,7 @@ export default function App() {
           element={<FrequentlyAskedQuestions />}
         />
         <Route path="/what's-new" element={<WhatsNew />} />
+        <Route path="/download-updates" element={<DownloadUpdates />} />
         <Route path="/public-reports" element={<PublicReports />} />
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
 
