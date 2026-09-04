@@ -188,7 +188,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
     }
 
     LOOKUP_API.blocks
-      .list({ district_id: filters.district_id })
+      .list({ district_id: filters.district_id, page_size: 100 })
       .then((r) => {
         let data = r?.data?.results || [];
         if (filters.aspirational_only) {
