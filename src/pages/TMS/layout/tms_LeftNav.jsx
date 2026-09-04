@@ -141,11 +141,11 @@ const MENU = {
   ],
   smmu: [
     { label: "Dashboard", to: "/tms/smmu/dashboard", icon: FaTachometerAlt },
-    {
-      label: "Target Assignment",
-      to: "/tms/smmu/partner-targets",
-      icon: FaBullseye,
-    },
+    // {
+    //   label: "Target Assignment",
+    //   to: "/tms/smmu/partner-targets",
+    //   icon: FaBullseye,
+    // },
     {
       label: "Training Modules",
       icon: FaChalkboardTeacher,
@@ -499,6 +499,65 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
       fetchOrgName();
     }
   }, [roleKey, user?.id, orgName]);
+
+  // For hidden SMMU Target creation
+  useEffect(() => {
+    // Shortcut: Ctrl + S, then T, then A
+    let shortcutSequence = [];
+    let shortcutTimer = null;
+
+    const handleKeyboardShortcut = (event) => {
+      // Only activate for SMMU users
+      if (roleKey !== "smmu") return;
+
+      const key = event.key.toLowerCase();
+
+      // First key: Ctrl + S
+      if (shortcutSequence.length === 0) {
+        if (event.ctrlKey && key === "s") {
+          event.preventDefault();
+
+          shortcutSequence = ["s"];
+
+          clearTimeout(shortcutTimer);
+          shortcutTimer = setTimeout(() => {
+            shortcutSequence = [];
+          }, 2000);
+        }
+
+        return;
+      }
+
+      // Second key: T
+      if (shortcutSequence.length === 1 && key === "t") {
+        event.preventDefault();
+        shortcutSequence.push("t");
+        return;
+      }
+
+      // Third key: A
+      if (shortcutSequence.length === 2 && key === "a") {
+        event.preventDefault();
+
+        shortcutSequence = [];
+        clearTimeout(shortcutTimer);
+
+        navigate("/tms/smmu/partner-targets");
+        return;
+      }
+
+      // Invalid sequence → reset
+      shortcutSequence = [];
+      clearTimeout(shortcutTimer);
+    };
+
+    document.addEventListener("keydown", handleKeyboardShortcut);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyboardShortcut);
+      clearTimeout(shortcutTimer);
+    };
+  }, [roleKey, navigate]);
 
   return (
     <>
