@@ -1,5 +1,5 @@
 // src/pages/TMS/StaffBatchCreator/StaffSelectionTable.jsx
-import React, { useState, useMemo } from "react";
+import React, { useState, useMemo, useEffect } from "react";
 
 const StaffSelectionTable = ({
   staffPool = [],
@@ -11,12 +11,17 @@ const StaffSelectionTable = ({
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
 
-  // 1. Handle Search Filtering Locally
+  // 1. Isolate ONLY the selected staff members
+  const selectedStaffObjects = useMemo(() => {
+    return staffPool.filter((staff) => selectedIds.includes(staff.id));
+  }, [staffPool, selectedIds]);
+
+  // 2. Handle Search Filtering Locally (Now includes Source TR ID)
   const filteredStaff = useMemo(() => {
-    if (!searchTerm) return staffPool;
+    if (!searchTerm) return selectedStaffObjects;
     const lowerSearch = searchTerm.toLowerCase();
 
-    return staffPool.filter((staff) => {
+    return selectedStaffObjects.filter((staff) => {
       const nameMatch = (staff.full_name || "")
         .toLowerCase()
         .includes(lowerSearch);
@@ -26,11 +31,13 @@ const StaffSelectionTable = ({
       const designationMatch = (staff.designation || "")
         .toLowerCase()
         .includes(lowerSearch);
-      return nameMatch || empIdMatch || designationMatch;
-    });
-  }, [staffPool, searchTerm]);
+      const trIdMatch = String(staff.source_tr_id || "").includes(lowerSearch);
 
-  // 2. Handle Pagination
+      return nameMatch || empIdMatch || designationMatch || trIdMatch;
+    });
+  }, [selectedStaffObjects, searchTerm]);
+
+  // 3. Handle Pagination
   const totalPages = Math.ceil(filteredStaff.length / rowsPerPage);
 
   const paginatedStaff = useMemo(() => {
@@ -39,53 +46,31 @@ const StaffSelectionTable = ({
     return filteredStaff.slice(start, end);
   }, [filteredStaff, currentPage]);
 
-  // 3. Selection Handlers
-  const isMaxReached = selectedIds.length >= maxAllowed;
-
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      // Only select up to the maxAllowed limit
-      const currentAvailableSpace = maxAllowed - selectedIds.length;
-
-      if (currentAvailableSpace <= 0) return;
-
-      // Grab IDs from current page that are NOT already selected
-      const pageIdsToAdd = paginatedStaff
-        .map((s) => s.id)
-        .filter((id) => !selectedIds.includes(id));
-
-      // Slice it to not exceed the absolute limit
-      const safeIdsToAdd = pageIdsToAdd.slice(0, currentAvailableSpace);
-
-      onSelectionChange([...selectedIds, ...safeIdsToAdd]);
-    } else {
-      // Uncheck all from CURRENT PAGE
-      const pageIds = paginatedStaff.map((s) => s.id);
-      const newSelected = selectedIds.filter((id) => !pageIds.includes(id));
-      onSelectionChange(newSelected);
+  // Reset pagination if search changes or if last item on page is removed
+  useEffect(() => {
+    if (currentPage > totalPages && totalPages > 0) {
+      setCurrentPage(totalPages);
     }
+  }, [totalPages, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm]);
+
+  // 4. Removal Handler
+  const handleRemoveRow = (id) => {
+    onSelectionChange(selectedIds.filter((rowId) => rowId !== id));
   };
 
-  const handleSelectRow = (id) => {
-    if (selectedIds.includes(id)) {
-      // Remove
-      onSelectionChange(selectedIds.filter((rowId) => rowId !== id));
-    } else {
-      // Add (if space permits)
-      if (isMaxReached) {
-        alert(
-          `You cannot select more than ${maxAllowed} participants per batch.`,
-        );
-        return;
-      }
-      onSelectionChange([...selectedIds, id]);
+  const handleClearAll = () => {
+    if (
+      window.confirm(
+        "Are you sure you want to remove all selected participants?",
+      )
+    ) {
+      onSelectionChange([]);
     }
   };
-
-  // Determine if all items on the *current page* are selected
-  const isAllOnPageSelected =
-    paginatedStaff.length > 0 &&
-    paginatedStaff.every((s) => selectedIds.includes(s.id));
 
   return (
     <div
@@ -105,28 +90,55 @@ const StaffSelectionTable = ({
           justifyContent: "space-between",
           alignItems: "center",
           backgroundColor: "#f8fafc",
+          flexWrap: "wrap",
+          gap: "12px",
         }}
       >
-        <h4 style={{ margin: 0, color: "#1e293b", fontSize: "15px" }}>
-          Staff Participant Pool
-        </h4>
-        <input
-          type="text"
-          placeholder="Search Name, Emp ID, Designation..."
-          value={searchTerm}
-          onChange={(e) => {
-            setSearchTerm(e.target.value);
-            setCurrentPage(1); // Reset to page 1 on search
-          }}
-          style={{
-            padding: "8px 12px",
-            border: "1px solid #cbd5e1",
-            borderRadius: "6px",
-            fontSize: "13px",
-            width: "260px",
-            outline: "none",
-          }}
-        />
+        <div>
+          <h4 style={{ margin: 0, color: "#1e293b", fontSize: "15px" }}>
+            Final Selected Batch Pool
+          </h4>
+          <span style={{ fontSize: "12px", color: "#64748b" }}>
+            Review and manage the participants assigned to this batch.
+          </span>
+        </div>
+
+        <div style={{ display: "flex", gap: "12px", alignItems: "center" }}>
+          {selectedIds.length > 0 && (
+            <button
+              onClick={handleClearAll}
+              style={{
+                background: "transparent",
+                color: "#ef4444",
+                border: "1px solid #fca5a5",
+                padding: "6px 12px",
+                borderRadius: "6px",
+                fontSize: "12px",
+                fontWeight: "600",
+                cursor: "pointer",
+                transition: "background 0.2s",
+              }}
+              onMouseEnter={(e) => (e.target.style.background = "#fef2f2")}
+              onMouseLeave={(e) => (e.target.style.background = "transparent")}
+            >
+              Clear All
+            </button>
+          )}
+          <input
+            type="text"
+            placeholder="Search TR ID, Name, Emp ID..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            style={{
+              padding: "8px 12px",
+              border: "1px solid #cbd5e1",
+              borderRadius: "6px",
+              fontSize: "13px",
+              width: "240px",
+              outline: "none",
+            }}
+          />
+        </div>
       </div>
 
       {/* Table Area */}
@@ -140,18 +152,10 @@ const StaffSelectionTable = ({
         >
           <thead style={{ backgroundColor: "#f1f5f9", color: "#475569" }}>
             <tr>
-              <th style={{ ...styles.th, width: "40px", textAlign: "center" }}>
-                <input
-                  type="checkbox"
-                  onChange={handleSelectAll}
-                  checked={isAllOnPageSelected}
-                  disabled={
-                    filteredStaff.length === 0 ||
-                    (isMaxReached && !isAllOnPageSelected)
-                  }
-                  style={{ cursor: isMaxReached ? "not-allowed" : "pointer" }}
-                />
+              <th style={{ ...styles.th, width: "60px", textAlign: "center" }}>
+                Action
               </th>
+              <th style={styles.th}>Source TR ID</th>
               <th style={styles.th}>Employee ID</th>
               <th style={styles.th}>Full Name</th>
               <th style={styles.th}>Designation</th>
@@ -159,45 +163,80 @@ const StaffSelectionTable = ({
             </tr>
           </thead>
           <tbody>
-            {paginatedStaff.length === 0 ? (
+            {selectedIds.length === 0 ? (
               <tr>
                 <td
-                  colSpan="5"
+                  colSpan="6"
                   style={{
                     textAlign: "center",
-                    padding: "32px",
+                    padding: "40px",
+                    color: "#64748b",
+                    fontStyle: "italic",
+                  }}
+                >
+                  No staff members selected yet. Please select participants from
+                  the pool above.
+                </td>
+              </tr>
+            ) : paginatedStaff.length === 0 ? (
+              <tr>
+                <td
+                  colSpan="6"
+                  style={{
+                    textAlign: "center",
+                    padding: "40px",
                     color: "#64748b",
                   }}
                 >
-                  {staffPool.length === 0
-                    ? "No unallocated staff available."
-                    : "No staff matches your search."}
+                  No selected staff matches your search.
                 </td>
               </tr>
             ) : (
-              paginatedStaff.map((staff) => {
-                const isSelected = selectedIds.includes(staff.id);
-                const isDisabled = isMaxReached && !isSelected;
-
+              paginatedStaff.map((staff, index) => {
                 return (
                   <tr
                     key={staff.id}
                     style={{
-                      backgroundColor: isSelected ? "#eff6ff" : "transparent",
                       borderBottom: "1px solid #f1f5f9",
                       transition: "background-color 0.2s",
                     }}
+                    onMouseEnter={(e) =>
+                      (e.currentTarget.style.backgroundColor = "#f8fafc")
+                    }
+                    onMouseLeave={(e) =>
+                      (e.currentTarget.style.backgroundColor = "transparent")
+                    }
                   >
                     <td style={{ ...styles.td, textAlign: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={isSelected}
-                        onChange={() => handleSelectRow(staff.id)}
-                        disabled={isDisabled}
+                      <button
+                        onClick={() => handleRemoveRow(staff.id)}
+                        title="Remove from batch"
                         style={{
-                          cursor: isDisabled ? "not-allowed" : "pointer",
+                          background: "#fee2e2",
+                          color: "#dc2626",
+                          border: "1px solid #fca5a5",
+                          borderRadius: "4px",
+                          width: "24px",
+                          height: "24px",
+                          display: "flex",
+                          alignItems: "center",
+                          justifyContent: "center",
+                          cursor: "pointer",
+                          fontWeight: "bold",
+                          margin: "0 auto",
                         }}
-                      />
+                      >
+                        &times;
+                      </button>
+                    </td>
+                    <td
+                      style={{
+                        ...styles.td,
+                        fontWeight: "700",
+                        color: "#3b82f6",
+                      }}
+                    >
+                      #{staff.source_tr_id || "-"}
                     </td>
                     <td
                       style={{
@@ -235,7 +274,7 @@ const StaffSelectionTable = ({
           }}
         >
           <span style={{ fontSize: "13px", color: "#64748b" }}>
-            Showing {paginatedStaff.length} of {filteredStaff.length} results
+            Showing {paginatedStaff.length} of {filteredStaff.length} selected
           </span>
           <div style={{ display: "flex", gap: "8px" }}>
             <button

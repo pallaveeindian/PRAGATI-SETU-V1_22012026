@@ -3,6 +3,7 @@ import React from "react";
 
 const StaffPreviewModal = ({
   trDetails,
+  selectedTrIds = [], // SURGICAL ADDITION: Accept array of TR IDs
   selectedCount,
   centre,
   startDate,
@@ -141,6 +142,45 @@ const StaffPreviewModal = ({
           <div style={styles.row}>
             <span style={styles.label}>Training Plan:</span>
             <span style={styles.value}>{planName}</span>
+          </div>
+
+          {/* SURGICAL ADDITION: Multi-TR Transparency Display */}
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              borderBottom: "1px solid #f1f5f9",
+              paddingBottom: "10px",
+              alignItems: "flex-start",
+            }}
+          >
+            <span style={styles.label}>Pooled Training Requests:</span>
+            <div
+              style={{
+                display: "flex",
+                flexWrap: "wrap",
+                gap: "6px",
+                justifyContent: "flex-end",
+                maxWidth: "60%",
+              }}
+            >
+              {selectedTrIds.map((id) => (
+                <span
+                  key={id}
+                  style={{
+                    background: "#eff6ff",
+                    color: "#3b82f6",
+                    padding: "2px 8px",
+                    borderRadius: "4px",
+                    fontSize: "12px",
+                    fontWeight: "600",
+                    border: "1px solid #bfdbfe",
+                  }}
+                >
+                  #{id}
+                </span>
+              ))}
+            </div>
           </div>
 
           <div style={styles.row}>

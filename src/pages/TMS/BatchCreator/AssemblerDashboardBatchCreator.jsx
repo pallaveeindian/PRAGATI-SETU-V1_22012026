@@ -424,6 +424,9 @@ const AssemblerDashboardBatchCreator = () => {
     (batchType === "SEPARATE" &&
       filters.participantType !== "Trainer" &&
       !filters.block) ||
+    (batchType === "COMBINED" &&
+      filters.participantType !== "Trainer" &&
+      (!Array.isArray(filters.block) || filters.block.length < 2)) ||
     !filters.startDate;
 
   return (
@@ -672,7 +675,12 @@ const AssemblerDashboardBatchCreator = () => {
                             filters.participantType !== "Trainer" &&
                             !filters.block
                           ? "⚠ A Block must be selected for a Separate Batch."
-                          : "✓ Configuration is valid."}
+                          : batchType === "COMBINED" &&
+                              filters.participantType !== "Trainer" &&
+                              (!Array.isArray(filters.block) ||
+                                filters.block.length < 2)
+                            ? "⚠ At least 2 Blocks must be selected for a Combined Batch."
+                            : "✓ Configuration is valid."}
               </div>
 
               <button
