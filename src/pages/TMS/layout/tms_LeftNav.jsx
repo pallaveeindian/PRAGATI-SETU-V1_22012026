@@ -269,6 +269,11 @@ const MENU = {
       ],
     },
     {
+      label: "TMS Portal Summary",
+      to: "/tms/tp/tms-portal-summary",
+      icon: FaChartBar,
+    },
+    {
       label: "TC Management",
       icon: FaUsers,
       children: [

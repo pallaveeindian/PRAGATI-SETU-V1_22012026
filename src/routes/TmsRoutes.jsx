@@ -29,6 +29,7 @@ import TpCpAssignment from "../pages/TMS/TP/tp_cp_assignment";
 import TpTrainingRequestClosure from "../pages/TMS/TP/tp_tr_closure";
 import TpCreateBatch from "../pages/TMS/TP/tp_create_batch";
 import TPUserMgmnt from "../pages/TMS/TP/UserMgmnt";
+import TpTmsSummary from "../pages/TMS/TP/tp_tmsSummary";
 
 // DTP Screens
 import DTPDashboard from "../pages/TMS/DTP/DTPDashboard";
@@ -144,6 +145,7 @@ export default function TmsRoutes() {
           path="tp/staff-batch-creator/:paramTrId"
           element={<StaffBatchCreatorDashboard />}
         />
+        <Route path="tp/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
       <Route
         element={<ProtectedRoute allowedRoles={["training_partner", "dtp"]} />}
