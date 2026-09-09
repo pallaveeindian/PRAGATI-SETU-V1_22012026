@@ -1,3 +1,4 @@
+// src\pages\PlanningDeptUpdate\components\PDUBarChart.jsx
 import * as React from "react";
 import { useTheme, styled } from "@mui/material/styles";
 import Typography from "@mui/material/Typography";
@@ -44,8 +45,8 @@ export default function PDUBarChart({
             id: "seriesData",
             dataKey: seriesKey,
             stack: "stackData",
-            valueFormatter: (value) => `${value}%`,
-            barLabel: (v) => `${v.value}%`,
+            valueFormatter: (value) => `${value}`,
+            barLabel: (v) => `${v.value}`,
           },
         ]}
         layout="horizontal"

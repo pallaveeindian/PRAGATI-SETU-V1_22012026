@@ -119,9 +119,9 @@ export default function PDUDashboard() {
             seriesKey="shgCount"
             height={400}
             // Dynamic thresholds based on general UP data spread
-            thresholds={[10000, 20000]}
+            thresholds={[25000, 30000]}
             colors={["#ef4444", "#f59e0b", "#3b82f6"]} // Red, Yellow, Blue
-            legendLabels={["< 10k SHGs", "10k - 20k SHGs", "> 20k SHGs"]}
+            legendLabels={["< 25k SHGs", "25k - 30k SHGs", "> 30k SHGs"]}
           />
         </div>
 

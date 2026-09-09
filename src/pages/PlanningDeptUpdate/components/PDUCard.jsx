@@ -1,3 +1,4 @@
+// src\pages\PlanningDeptUpdate\components\PDUCard.jsx
 import React from "react";
 import "./styles/PDUCard.css";
 

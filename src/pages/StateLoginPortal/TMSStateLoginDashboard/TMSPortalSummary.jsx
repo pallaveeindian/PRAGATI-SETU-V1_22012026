@@ -1,7 +1,7 @@
 // src\pages\StateLoginPortal\TMSStateLoginDashboard\TMSPortalSummary.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { FaDownload, FaSpinner, FaChartBar, FaSearch } from "react-icons/fa";
-import api from "../../../api/axios";
+import api, { TMS_API } from "../../../api/axios";
 
 export default function TMSPortalSummary({ financialYear }) {
   // State
@@ -11,6 +11,39 @@ export default function TMSPortalSummary({ financialYear }) {
 
   // Search State
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Theme & Plan Filter State
+  const [selectedTheme, setSelectedTheme] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState("");
+  const [themesList, setThemesList] = useState([]);
+  const [plansList, setPlansList] = useState([]);
+
+  // Fetch Themes and Plans on Mount
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      try {
+        const [themesRes, plansRes] = await Promise.all([
+          TMS_API.trainingThemes.list({ limit: 500 }),
+          TMS_API.trainingPlans.list({ limit: 500 }),
+        ]);
+        setThemesList(themesRes?.data?.results || themesRes?.data || []);
+        setPlansList(plansRes?.data?.results || plansRes?.data || []);
+      } catch (error) {
+        console.error("Failed to load themes/plans:", error);
+      }
+    };
+    fetchDropdownData();
+  }, []);
+
+  // Dynamically filter plans based on selected theme
+  const filteredPlans = useMemo(() => {
+    if (!selectedTheme) return plansList;
+    return plansList.filter(
+      (p) =>
+        String(p.theme) === String(selectedTheme) ||
+        String(p.theme?.id) === String(selectedTheme),
+    );
+  }, [plansList, selectedTheme]);
 
   // Fetch Report Data
   const fetchReport = useCallback(async () => {
@@ -22,7 +55,11 @@ export default function TMSPortalSummary({ financialYear }) {
 
     try {
       const response = await api.get("/tms/reports/portal-summary/", {
-        params: { financial_year: financialYear },
+        params: {
+          financial_year: financialYear,
+          theme: selectedTheme || undefined,
+          training_plan: selectedPlan || undefined,
+        },
       });
       if (response.data?.status === "success") {
         setReportData(response.data);
@@ -38,7 +75,7 @@ export default function TMSPortalSummary({ financialYear }) {
     } finally {
       setLoading(false);
     }
-  }, [financialYear]);
+  }, [financialYear, selectedTheme, selectedPlan]);
 
   useEffect(() => {
     fetchReport();
@@ -225,6 +262,37 @@ export default function TMSPortalSummary({ financialYear }) {
               </div>
 
               <div className="st-right">
+                <div className="filter-group">
+                  <select
+                    value={selectedTheme}
+                    onChange={(e) => {
+                      setSelectedTheme(e.target.value);
+                      setSelectedPlan(""); // Automatically reset plan when theme changes
+                    }}
+                  >
+                    <option value="">All Themes</option>
+                    {themesList.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.theme_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <select
+                    value={selectedPlan}
+                    onChange={(e) => setSelectedPlan(e.target.value)}
+                  >
+                    <option value="">All Plans</option>
+                    {filteredPlans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.training_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <button
                   className="btn-export"
                   onClick={handleExportExcel}

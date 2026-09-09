@@ -88,6 +88,12 @@ export default function PDUHeader({ onBurgerClick }) {
           <Link to="/upsrlm-planning/state/rf-pointer" className="pdu-nav-item">
             Pointer 2: RF Received (0512)
           </Link>
+          <Link
+            to="/upsrlm-planning/state/push-history"
+            className="pdu-nav-item"
+          >
+            Push History
+          </Link>
         </div>
       </nav>
 

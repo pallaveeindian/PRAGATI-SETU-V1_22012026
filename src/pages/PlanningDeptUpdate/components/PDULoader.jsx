@@ -1,3 +1,4 @@
+// src\pages\PlanningDeptUpdate\components\PDULoader.jsx
 import React from "react";
 import "./styles/PDULoader.css";
 import psLogo from "../../../assets/PS_LOGO_SQUARED.jpg";
