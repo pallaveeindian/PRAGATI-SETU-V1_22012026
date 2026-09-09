@@ -14,12 +14,19 @@ function fmtDate(iso) {
 export default function ParticipantsSummaryTable({
   displayedParticipants,
   isTrainerTraining,
+  isStaffBatch = false, // SURGICAL ADDITION: Prop to identify STAFF batches
 }) {
   return (
     <div>
       <h3 className="participants-title">
-        👥 {isTrainerTraining ? "Batch Trainers" : "Participants"} (
-        {displayedParticipants.length})
+        {/* SURGICAL FIX: Dynamic Title based on participant type */}
+        {"👥 "}
+        {isTrainerTraining
+          ? "Trainers for Training"
+          : isStaffBatch
+            ? "UPSRLM Staff Members"
+            : "Participants for Training"}{" "}
+        ({displayedParticipants.length})
       </h3>
 
       <div
@@ -49,6 +56,8 @@ export default function ParticipantsSummaryTable({
           >
             <tr>
               <th className="thStyle">S.No.</th>
+              {/* SURGICAL ADDITION: Employee ID for Staff */}
+              {isStaffBatch && <th className="thStyle">Emp ID</th>}
               <th className="thStyle">Name</th>
               <th className="thStyle">Mobile</th>
               <th className="thStyle">Gender</th>
@@ -57,7 +66,14 @@ export default function ParticipantsSummaryTable({
               <th className="thStyle">Attendance</th>
               <th className="thStyle">Status</th>
 
-              {isTrainerTraining ? (
+              {/* SURGICAL FIX: Dynamic Headers based on type */}
+              {isStaffBatch ? (
+                <>
+                  <th className="thStyle">Designation</th>
+                  <th className="thStyle">Theme</th>
+                  <th className="thStyle">Total Cost (₹)</th>
+                </>
+              ) : isTrainerTraining ? (
                 <>
                   <th className="thStyle">Designation</th>
                   <th className="thStyle">Replaced</th>
@@ -78,7 +94,7 @@ export default function ParticipantsSummaryTable({
             {displayedParticipants.length === 0 ? (
               <tr>
                 <td
-                  colSpan={10}
+                  colSpan={isStaffBatch ? 12 : 11}
                   style={{
                     textAlign: "center",
                     padding: 20,
@@ -108,6 +124,11 @@ export default function ParticipantsSummaryTable({
                     }
                   >
                     <td className="tdStyle">{index + 1}</td>
+
+                    {/* SURGICAL ADDITION: Employee ID for Staff */}
+                    {isStaffBatch && (
+                      <td className="tdStyle">{p.employee_id || "-"}</td>
+                    )}
 
                     <td className="table-cell table-cell-bold">
                       {p.full_name || p.member_name || "-"}
@@ -154,7 +175,23 @@ export default function ParticipantsSummaryTable({
                       )}
                     </td>
 
-                    {isTrainerTraining ? (
+                    {isStaffBatch ? (
+                      <>
+                        <td className="tdStyle">{p.designation || "-"}</td>
+                        <td className="tdStyle">
+                          {p.theme?.theme_name || "-"}
+                        </td>
+                        <td className="tdStyle">
+                          {p.total_cost ? (
+                            <strong style={{ color: "#166534" }}>
+                              ₹{p.total_cost}
+                            </strong>
+                          ) : (
+                            "-"
+                          )}
+                        </td>
+                      </>
+                    ) : isTrainerTraining ? (
                       <>
                         <td className="tdStyle">
                           {p.designation || "-"} -{" "}
@@ -167,7 +204,6 @@ export default function ParticipantsSummaryTable({
                         >
                           {p.is_replaced ? "Yes" : "No"}
                         </td>
-                        {/* --- SURGICAL ADDITION --- */}
                         <td className="tdStyle">
                           {p.total_cost ? (
                             <strong style={{ color: "#166534" }}>
@@ -183,7 +219,6 @@ export default function ParticipantsSummaryTable({
                         <td className="tdStyle">{p.age || "-"}</td>
                         <td className="tdStyle">{p.pld_status || "-"}</td>
                         <td className="tdStyle">{p.social_category || "-"}</td>
-                        {/* --- SURGICAL ADDITION --- */}
                         <td className="tdStyle">
                           {p.total_cost ? (
                             <strong style={{ color: "#166534" }}>

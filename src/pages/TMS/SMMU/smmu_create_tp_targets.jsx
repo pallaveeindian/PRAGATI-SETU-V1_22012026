@@ -67,7 +67,7 @@ export default function SmmuCreatePartnerTargets() {
     district_id: "",
     theme: "",
     target_count: "",
-    financial_year: "2023-24",
+    financial_year: "2026-27",
     notes: "",
   });
 
@@ -101,12 +101,14 @@ export default function SmmuCreatePartnerTargets() {
     assignedTargetsFull.forEach((t) => {
       const pid = t.training_plan || t.training_plan_id || null;
       const fy = t.financial_year || "2026-27"; // Fallback to handle legacy targets
+      const did = t.district || t.district_id || null;
 
-      if (!pid) return;
+      if (!pid || !did) return;
 
-      if (!m[pid]) m[pid] = {}; // Initialize nested object for the plan
+      if (!m[pid]) m[pid] = {};
+      if (!m[pid][fy]) m[pid][fy] = {};
 
-      m[pid][fy] = {
+      m[pid][fy][did] = {
         partnerId: t.partner,
         partnerName: partnersById[t.partner]?.name || t.partner_name || null,
         targetId: t.id,
@@ -464,24 +466,29 @@ export default function SmmuCreatePartnerTargets() {
     }
   }
 
-  // plan click: select plan unless it's assigned to another partner for the same FY
+  // plan click: select plan unless it's assigned for the same FY & District
   function onPlanClick(plan) {
-    const currentFY = form.financial_year || "2023-24";
-    const assigned = assignedPlanMap[plan.id]?.[currentFY];
+    const currentFY = form.financial_year || "2026-27";
+    const currentDistrict = form.district_id;
 
-    // if assigned to other partner in this FY and not editing that target, block
-    if (
-      assigned &&
-      (!editingTarget ||
-        String(editingTarget.training_plan) !== String(plan.id) ||
-        editingTarget.financial_year !== currentFY)
-    ) {
-      // show a gentle message
-      setMessage({
-        type: "error",
-        text: `This module is already assigned to ${assigned.partnerName || "another partner"} for FY ${currentFY}.`,
-      });
-      return;
+    if (currentDistrict) {
+      const assigned = assignedPlanMap[plan.id]?.[currentFY]?.[currentDistrict];
+
+      // if assigned to this District in this FY and not editing that target, block
+      if (
+        assigned &&
+        (!editingTarget ||
+          String(editingTarget.training_plan) !== String(plan.id) ||
+          String(editingTarget.district) !== String(currentDistrict) ||
+          editingTarget.financial_year !== currentFY)
+      ) {
+        // show a gentle message
+        setMessage({
+          type: "error",
+          text: `This module is already assigned to ${assigned.partnerName || "another partner"} for this District in FY ${currentFY}.`,
+        });
+        return;
+      }
     }
 
     setForm((f) => ({
@@ -572,6 +579,23 @@ export default function SmmuCreatePartnerTargets() {
       Number(form.target_count) < 0
     )
       return setMessage({ type: "error", text: "Enter valid batch count" });
+
+    // SURGICAL ADDITION: Final duplicate check before submit
+    const currentFY = form.financial_year;
+    const currentDistrict = form.district_id;
+    const currentPlan = form.training_plan_id;
+    const assigned =
+      assignedPlanMap[currentPlan]?.[currentFY]?.[currentDistrict];
+
+    if (
+      assigned &&
+      (!editingTarget || editingTarget.id !== assigned.targetId)
+    ) {
+      return setMessage({
+        type: "error",
+        text: `Target already exists for this Module and District (Assigned to ${assigned.partnerName || "another partner"}). Please select a different District or edit the existing target.`,
+      });
+    }
 
     setSaving(true);
 
@@ -814,14 +838,23 @@ export default function SmmuCreatePartnerTargets() {
 
                         <tbody>
                           {filteredPlans.map((p) => {
-                            const currentFY = form.financial_year || "2023-24";
-                            const assigned = assignedPlanMap[p.id]?.[currentFY];
+                            const currentFY = form.financial_year || "2026-27";
+                            const currentDistrict = form.district_id;
+
+                            // Only consider it "assigned" in the UI if a district is selected and matches
+                            const assigned = currentDistrict
+                              ? assignedPlanMap[p.id]?.[currentFY]?.[
+                                  currentDistrict
+                                ]
+                              : null;
                             const isAssigned = Boolean(assigned);
 
                             const isAssignedToThisEditingTarget =
                               editingTarget &&
                               String(editingTarget.training_plan) ===
                                 String(p.id) &&
+                              String(editingTarget.district) ===
+                                String(currentDistrict) &&
                               editingTarget.financial_year === currentFY;
 
                             const rowClickable =
@@ -933,13 +966,23 @@ export default function SmmuCreatePartnerTargets() {
                         >
                           <option value="">-- select module --</option>
                           {plans.map((m) => {
-                            const assigned = assignedPlanMap[m.id];
+                            const currentFY = form.financial_year || "2026-27";
+                            const currentDistrict = form.district_id;
+
+                            const assigned = currentDistrict
+                              ? assignedPlanMap[m.id]?.[currentFY]?.[
+                                  currentDistrict
+                                ]
+                              : null;
                             const isAssigned = Boolean(assigned);
                             const isAssignedToThisEditingTarget =
                               editingTarget &&
-                              (editingTarget.training_plan === m.id ||
-                                String(editingTarget.training_plan) ===
-                                  String(m.id));
+                              String(editingTarget.training_plan) ===
+                                String(m.id) &&
+                              String(editingTarget.district) ===
+                                String(currentDistrict) &&
+                              editingTarget.financial_year === currentFY;
+
                             return (
                               <option
                                 key={m.id}
@@ -950,7 +993,7 @@ export default function SmmuCreatePartnerTargets() {
                               >
                                 {m.training_name}
                                 {isAssigned
-                                  ? ` — Assigned to ${assigned.partnerName || "partner"}`
+                                  ? ` — Assigned for this District to ${assigned.partnerName || "partner"}`
                                   : ""}
                               </option>
                             );
@@ -1088,8 +1131,6 @@ export default function SmmuCreatePartnerTargets() {
                         className="palette-input"
                       >
                         <option value="">-- select financial year --</option>
-                        <option>2024-25</option>
-                        <option>2025-26</option>
                         <option>2026-27</option>
                       </select>
                     </div>
@@ -1227,8 +1268,6 @@ export default function SmmuCreatePartnerTargets() {
                               style={{ flex: 1 }}
                             >
                               <option value="">All Financial Years</option>
-                              <option value="2024-25">2024-25</option>
-                              <option value="2025-26">2025-26</option>
                               <option value="2026-27">2026-27</option>
                             </select>
 

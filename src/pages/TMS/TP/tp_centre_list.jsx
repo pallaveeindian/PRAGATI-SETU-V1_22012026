@@ -61,7 +61,7 @@ function saveCache(payload) {
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload }),
     );
-  } catch { }
+  } catch {}
 }
 
 /* ---------------- partner resolver ---------------- */
@@ -72,7 +72,7 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch { }
+  } catch {}
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -385,7 +385,7 @@ export default function TpCentreList() {
         localStorage.getItem("ps_user_geoscope") || "null",
       );
       if (cached) return cached;
-    } catch { }
+    } catch {}
 
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(userId);
@@ -393,7 +393,7 @@ export default function TpCentreList() {
         localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
         return resp.data;
       }
-    } catch { }
+    } catch {}
     return null;
   }
 
@@ -433,6 +433,31 @@ export default function TpCentreList() {
       fetchCentres(refreshToken > 0);
     }
   }, [user?.id, refreshToken]);
+
+  async function handleDeleteCentre(id, name) {
+    if (
+      !window.confirm(
+        `Are you absolutely sure you want to permanently delete the centre "${name}"? This action cannot be undone.`,
+      )
+    ) {
+      return;
+    }
+
+    try {
+      await TMS_API.trainingPartnerCentres.destroy(id);
+      alert(`Centre "${name}" deleted successfully.`);
+
+      // Clear cache and refresh the list
+      localStorage.removeItem(CACHE_KEY);
+      setRefreshToken((t) => t + 1);
+    } catch (err) {
+      alert(
+        err?.response?.data?.detail ||
+          err?.response?.data?.message ||
+          "Failed to delete centre. Please try again.",
+      );
+    }
+  }
 
   async function handleViewCentre(id) {
     setViewLoadingId(id);
@@ -550,6 +575,23 @@ export default function TpCentreList() {
                             >
                               <FaEdit /> Edit
                             </button>
+
+                            {/* SURGICAL ADDITION: Delete button strictly for Training Partners */}
+                            {user?.role_id === 4 && (
+                              <button
+                                className="tp-btn-outline"
+                                style={{
+                                  color: "#ef4444",
+                                  backgroundColor: "#fff",
+                                  borderColor: "#ef4444",
+                                }}
+                                onClick={() =>
+                                  handleDeleteCentre(c.id, c.venue_name)
+                                }
+                              >
+                                Delete
+                              </button>
+                            )}
                           </div>
                         </td>
                       </tr>

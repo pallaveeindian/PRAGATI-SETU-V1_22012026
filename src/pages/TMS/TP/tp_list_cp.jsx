@@ -1,3 +1,4 @@
+// src\pages\TMS\TP\tp_list_cp.jsx
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
@@ -241,6 +242,10 @@ export default function TpListCP() {
 
       if (role === "dtp" && currentDistrictId) {
         params.district_id = currentDistrictId;
+        params.created_by = user.id;
+      }
+
+      if (role === "training_partner") {
         params.created_by = user.id;
       }
 

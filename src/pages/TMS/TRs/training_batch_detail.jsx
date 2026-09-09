@@ -87,7 +87,6 @@ export default function TrainingBatchDetail() {
   const displayedParticipants = useMemo(() => {
     if (!batchData) return [];
 
-    // --- SURGICAL ADDITION: Create a quick lookup map for costs ---
     const costsMap = {};
     (batchData.participant_costs || []).forEach((c) => {
       const pId = c.batch_beneficiary || c.batch_trainer;
@@ -102,7 +101,7 @@ export default function TrainingBatchDetail() {
     ) {
       batchData.combined_batch_details.forEach((detail) => {
         (detail.participants || []).forEach((p) => {
-          const person = p.beneficiary || p.trainer || p;
+          const person = p.beneficiary || p.trainer || p.staff || p;
           participants.push({
             ...person,
             attendance_summary: p.attendance_summary,
@@ -111,6 +110,13 @@ export default function TrainingBatchDetail() {
           });
         });
       });
+    } else if (batchData?.participant_type === "STAFF") {
+      participants = (batchData.staff_participations || []).map((sp) => ({
+        ...(sp.staff || {}),
+        attendance_summary: sp.attendance_summary,
+        participation_id: sp.id,
+        total_cost: costsMap[sp.id],
+      }));
     } else if (isTrainerTraining) {
       participants = (batchData.trainer_participations || []).map((tp) => ({
         ...(tp.trainer || {}),
@@ -177,6 +183,7 @@ export default function TrainingBatchDetail() {
                 onDownloadCert={() =>
                   navigate(`/tms/download-certificate/${batchId}`)
                 }
+                batchData={batchData}
               />
 
               {!batchData ? (
@@ -208,16 +215,19 @@ export default function TrainingBatchDetail() {
                   <CentreDetailFetcherCard centreId={batchData.centre.id} />
 
                   <MasterTrainersCard
+                    batchData={batchData}
                     masterTrainers={
                       batchData.master_trainer_participations ||
                       batchData.master_trainers ||
                       []
                     }
+                    onRefresh={handleRefresh}
                   />
 
                   <ParticipantsSummaryTable
                     displayedParticipants={displayedParticipants}
                     isTrainerTraining={isTrainerTraining}
+                    isStaffBatch={batchData.participant_type === "STAFF"}
                   />
 
                   <DailyAttendanceViewer

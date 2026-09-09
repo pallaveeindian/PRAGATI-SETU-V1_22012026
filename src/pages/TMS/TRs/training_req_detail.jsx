@@ -147,8 +147,63 @@ export default function TrainingRequestDetail() {
   // simple refresh token to trigger useEffect
   const [refreshToken, setRefreshToken] = useState(0);
 
-  // guard against concurrent fetchAll calls (prevents duplicate network calls in StrictMode)
+  // guard against concurrent fetchAll calls
   const inFlightRef = useRef(false);
+
+  // SURGICAL ADDITION: Selection state for participant removal
+  const [selectedParticipants, setSelectedParticipants] = useState(new Set());
+  const [isRemoving, setIsRemoving] = useState(false);
+
+  // SURGICAL ADDITION: Removal Handler
+  const handleRemoveParticipants = async () => {
+    if (selectedParticipants.size === 0) return;
+    const confirmStr = `Are you sure you want to remove ${selectedParticipants.size} participant(s)? They will be sent back to the draft pool.`;
+    if (!window.confirm(confirmStr)) return;
+
+    setIsRemoving(true);
+    try {
+      // SURGICAL REPLACEMENT: Call the new bulk removal API
+      const payload = {
+        tr_id: id, // Extracted from useParams()
+        participant_ids: Array.from(selectedParticipants).join(","),
+      };
+
+      await api.post("/tms/tr-participants/bulk-remove/", payload);
+
+      alert("Participants successfully removed.");
+      setSelectedParticipants(new Set());
+      setRefreshToken((t) => t + 1); // Refresh data
+    } catch (err) {
+      console.error("Failed to remove participants", err);
+      // Extract exact error message from backend (e.g., if engaged in batch)
+      const errMsg =
+        err?.response?.data?.error ||
+        "An error occurred while removing participants.";
+      alert(errMsg);
+    } finally {
+      setIsRemoving(false);
+    }
+  };
+  const handleSelectParticipant = (id, checked) => {
+    setSelectedParticipants((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
+  const handleSelectAllOnPage = (e) => {
+    const checked = e.target.checked;
+    setSelectedParticipants((prev) => {
+      const next = new Set(prev);
+      paginatedParticipants.forEach((p) => {
+        if (checked) next.add(p.id);
+        else next.delete(p.id);
+      });
+      return next;
+    });
+  };
 
   /* ----------------- training plan fetch (fast path: list with fields) ----------------- */
   async function fetchTrainingPlan(planId) {
@@ -539,31 +594,83 @@ export default function TrainingRequestDetail() {
     await openParticipantModal("Beneficiary Detail", p);
   }
 
-  async function onViewTrainer(p) {
-    const trainerId = p.trainer || p.id;
-    try {
-      const resp = await TMS_API.masterTrainers.retrieve(trainerId);
-      const payload = resp?.data ?? resp ?? null;
+  async function onViewParticipant(p, type) {
+    if (type === "TRAINER") {
+      const trainerId = p.master_trainer_id || p.trainer || p.id;
+      try {
+        const resp = await TMS_API.masterTrainers.retrieve(trainerId);
+        const payload = resp?.data ?? resp ?? null;
 
-      // Format trainer display fields: id, full_name, mobile_no, aadhaar_no, remarks, registered_on
-      const disp = {
-        "Trainer ID": payload?.id ?? trainerId,
-        "Full Name": payload?.full_name ?? payload?.name ?? "-",
-        Mobile: payload?.mobile_no ?? "-",
-        Aadhaar: payload?.aadhaar_no ?? "-",
-        Remarks: payload?.remarks ?? "-",
-        "Registered On": fmtDate(payload?.registered_on),
-      };
-      openParticipantModal("Trainer Detail", disp);
-    } catch (e) {
-      // fallback to showing the row data
-      const disp = {
-        "Trainer ID": p.trainer || p.id,
-        "Full Name": p.full_name || "-",
-        Mobile: p.mobile_no || "-",
-        "Registered On": fmtDate(p.registered_on),
-      };
-      openParticipantModal("Trainer Detail", disp);
+        const disp = {
+          "Trainer ID": payload?.id ?? trainerId,
+          "Full Name": payload?.full_name ?? payload?.name ?? "-",
+          Mobile: payload?.mobile_no ?? "-",
+          Aadhaar: payload?.aadhaar_no ?? "-",
+          Remarks: payload?.remarks ?? "-",
+          "Registered On": fmtDate(payload?.registered_on),
+        };
+        openParticipantModal("Trainer Detail", disp);
+      } catch (e) {
+        const disp = {
+          "Trainer ID": trainerId,
+          "Full Name": p.full_name || "-",
+          Mobile: p.mobile_no || "-",
+          "Registered On": fmtDate(p.registered_on),
+        };
+        openParticipantModal("Trainer Detail", disp);
+      }
+    } else if (type === "STAFF") {
+      const employeeId = p.employee_id || p.staff || p.id;
+
+      try {
+        const resp = await TMS_API.staff.retrieve(employeeId);
+        const payload = resp?.data ?? resp ?? {};
+
+        const disp = {
+          "Employee ID": payload?.employee_id ?? employeeId,
+          "Full Name": payload?.full_name ?? "-",
+          Designation: payload?.designation ?? "-",
+          Theme: payload?.theme_name ?? "-",
+          District:
+            payload?.district_name_en ??
+            payload?.district_name ??
+            staffDistrictFallback ??
+            "-",
+          Block: payload?.block_name_en ?? payload?.block_name ?? "-",
+          Mobile: payload?.mobile ?? "-",
+          Email: payload?.email ?? "-",
+          Gender: payload?.gender ?? "-",
+          "Social Category": payload?.social_category ?? "-",
+          Remarks: payload?.remarks ?? "-",
+          "Registered On": fmtDate(payload?.registered_on),
+        };
+
+        openParticipantModal("Staff Detail", disp);
+      } catch (e) {
+        const staffDistrictFallback =
+          p.district_name_en ||
+          p.district_name ||
+          p.district_id ||
+          trLocNames?.district ||
+          tr?.district ||
+          "-";
+
+        const disp = {
+          "Employee ID": employeeId,
+          "Full Name": p.full_name || "-",
+          Designation: p.designation || "-",
+          Theme: p.theme_name || "-",
+          District: staffDistrictFallback,
+          Block: p.block_name_en || p.block_name || p.block_id || "-",
+          Mobile: p.mobile || "-",
+          Email: p.email || "-",
+          Gender: p.gender || "-",
+          "Social Category": p.social_category || "-",
+          "Registered On": fmtDate(p.registered_on),
+        };
+
+        openParticipantModal("Staff Detail", disp);
+      }
     }
   }
 
@@ -756,6 +863,20 @@ export default function TrainingRequestDetail() {
                           </>
                         )}
 
+                        {/* SURGICAL ADDITION: Remove Button */}
+                        {selectedParticipants.size > 0 && (
+                          <button
+                            className="btn-danger"
+                            onClick={handleRemoveParticipants}
+                            disabled={isRemoving}
+                            style={{ marginLeft: 16 }}
+                          >
+                            {isRemoving
+                              ? "Removing..."
+                              : `Remove Selected (${selectedParticipants.size})`}
+                          </button>
+                        )}
+
                         <div
                           style={{
                             marginLeft: "auto",
@@ -783,7 +904,26 @@ export default function TrainingRequestDetail() {
                           <table className="training-table">
                             <thead>
                               <tr>
+                                {/* SURGICAL ADDITION: Checkbox Header */}
+                                <th
+                                  style={{ width: "40px", textAlign: "center" }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    onChange={handleSelectAllOnPage}
+                                    checked={
+                                      paginatedParticipants.length > 0 &&
+                                      paginatedParticipants.every((p) =>
+                                        selectedParticipants.has(p.id),
+                                      )
+                                    }
+                                  />
+                                </th>
                                 <th>S.No.</th>
+                                <th>District</th>
+                                <th>Block</th>
+                                <th>Panchayat</th>
+                                <th>Village</th>
                                 <th>SHG Code</th>
                                 <th>Member Code</th>
                                 <th>Name</th>
@@ -794,15 +934,31 @@ export default function TrainingRequestDetail() {
                                 <th>View</th>
                               </tr>
                             </thead>
-
                             <tbody>
                               {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
+                                  {/* SURGICAL ADDITION: Checkbox Cell */}
+                                  <td style={{ textAlign: "center" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedParticipants.has(p.id)}
+                                      onChange={(e) =>
+                                        handleSelectParticipant(
+                                          p.id,
+                                          e.target.checked,
+                                        )
+                                      }
+                                    />
+                                  </td>
                                   <td>
                                     {(currentPage - 1) * rowsPerPage +
                                       index +
                                       1}
                                   </td>
+                                  <td>{p.district_name_en || "-"}</td>
+                                  <td>{p.block_name_en || "-"}</td>
+                                  <td>{p.panchayat_name_en || "-"}</td>
+                                  <td>{p.village_name_english || "-"}</td>
                                   <td>{p.lokos_shg_code}</td>
                                   <td>{p.lokos_member_code}</td>
                                   <td>{p.member_name}</td>
@@ -823,11 +979,27 @@ export default function TrainingRequestDetail() {
                             </tbody>
                           </table>
                         </div>
-                      ) : (
+                      ) : (tr.training_type || "").toUpperCase() ===
+                        "TRAINER" ? (
                         <div className="table-container">
                           <table className="training-table">
                             <thead>
                               <tr>
+                                {/* SURGICAL ADDITION: Checkbox Header */}
+                                <th
+                                  style={{ width: "40px", textAlign: "center" }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    onChange={handleSelectAllOnPage}
+                                    checked={
+                                      paginatedParticipants.length > 0 &&
+                                      paginatedParticipants.every((p) =>
+                                        selectedParticipants.has(p.id),
+                                      )
+                                    }
+                                  />
+                                </th>
                                 <th>S.No.</th>
                                 <th>Trainer ID</th>
                                 <th>Full Name</th>
@@ -835,10 +1007,22 @@ export default function TrainingRequestDetail() {
                                 <th>View</th>
                               </tr>
                             </thead>
-
                             <tbody>
                               {paginatedParticipants.map((p, index) => (
                                 <tr key={p.id}>
+                                  {/* SURGICAL ADDITION: Checkbox Cell */}
+                                  <td style={{ textAlign: "center" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedParticipants.has(p.id)}
+                                      onChange={(e) =>
+                                        handleSelectParticipant(
+                                          p.id,
+                                          e.target.checked,
+                                        )
+                                      }
+                                    />
+                                  </td>
                                   <td>
                                     {(currentPage - 1) * rowsPerPage +
                                       index +
@@ -852,7 +1036,82 @@ export default function TrainingRequestDetail() {
                                   <td>
                                     <button
                                       className="view-btn"
-                                      onClick={() => onViewTrainer(p)}
+                                      onClick={() =>
+                                        onViewParticipant(p, "TRAINER")
+                                      }
+                                    >
+                                      View
+                                    </button>
+                                  </td>
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      ) : (
+                        // SURGICAL ADDITION: STAFF Table Layout
+                        <div className="table-container">
+                          <table className="training-table">
+                            <thead>
+                              <tr>
+                                {/* SURGICAL ADDITION: Checkbox Header */}
+                                <th
+                                  style={{ width: "40px", textAlign: "center" }}
+                                >
+                                  <input
+                                    type="checkbox"
+                                    onChange={handleSelectAllOnPage}
+                                    checked={
+                                      paginatedParticipants.length > 0 &&
+                                      paginatedParticipants.every((p) =>
+                                        selectedParticipants.has(p.id),
+                                      )
+                                    }
+                                  />
+                                </th>
+                                <th>S.No.</th>
+                                <th>Employee ID</th>
+                                <th>Name</th>
+                                <th>Designation</th>
+                                <th>Theme</th>
+                                <th>District</th>
+                                <th>View</th>
+                              </tr>
+                            </thead>
+                            <tbody>
+                              {paginatedParticipants.map((p, index) => (
+                                <tr key={p.id}>
+                                  {/* SURGICAL ADDITION: Checkbox Cell */}
+                                  <td style={{ textAlign: "center" }}>
+                                    <input
+                                      type="checkbox"
+                                      checked={selectedParticipants.has(p.id)}
+                                      onChange={(e) =>
+                                        handleSelectParticipant(
+                                          p.id,
+                                          e.target.checked,
+                                        )
+                                      }
+                                    />
+                                  </td>
+                                  <td>
+                                    {(currentPage - 1) * rowsPerPage +
+                                      index +
+                                      1}
+                                  </td>
+                                  <td>{p.employee_id || "-"}</td>
+                                  <td>{p.full_name || "-"}</td>
+                                  <td>{p.designation || "-"}</td>
+                                  <td>{p.theme_name || "-"}</td>
+                                  <td>
+                                    {p.district_name_en || p.district_id || "-"}
+                                  </td>
+                                  <td>
+                                    <button
+                                      className="view-btn"
+                                      onClick={() =>
+                                        onViewParticipant(p, "STAFF")
+                                      }
                                     >
                                       View
                                     </button>
@@ -918,11 +1177,18 @@ export default function TrainingRequestDetail() {
                                     <th>Member Code</th>
                                     <th>Name</th>
                                   </>
-                                ) : (
+                                ) : (tr?.training_type || "").toUpperCase() ===
+                                  "TRAINER" ? (
                                   <>
                                     <th>Trainer ID</th>
                                     <th>Full Name</th>
                                     <th>Mobile</th>
+                                  </>
+                                ) : (
+                                  <>
+                                    <th>Employee ID</th>
+                                    <th>Name</th>
+                                    <th>Designation</th>
                                   </>
                                 )}
                                 <th>Batch Code</th>
@@ -941,10 +1207,18 @@ export default function TrainingRequestDetail() {
                                       <td>{p.member_name || "-"}</td>
                                     </>
                                   ) : (
+                                      tr?.training_type || ""
+                                    ).toUpperCase() === "TRAINER" ? (
                                     <>
                                       <td>{p.master_trainer_id || p.id}</td>
                                       <td>{p.full_name || "-"}</td>
                                       <td>{p.mobile_no || "-"}</td>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <td>{p.employee_id || "-"}</td>
+                                      <td>{p.full_name || "-"}</td>
+                                      <td>{p.designation || "-"}</td>
                                     </>
                                   )}
                                   <td
@@ -1106,7 +1380,36 @@ export default function TrainingRequestDetail() {
                     )}
 
                     {/* ACTION BUTTONS */}
-                    <div style={{ marginTop: 12 }}></div>
+                    <div
+                      style={{
+                        marginTop: 24,
+                        display: "flex",
+                        justifyContent: "flex-end",
+                      }}
+                    >
+                      {isTP &&
+                        (tr?.training_type || "").toUpperCase() === "STAFF" &&
+                        tr?.status === "BATCHING" && (
+                          <button
+                            className="btn-primary"
+                            style={{
+                              padding: "12px 24px",
+                              fontSize: "15px",
+                              fontWeight: "600",
+                              background:
+                                "linear-gradient(135deg, #16a34a 0%, #15803d 100%)",
+                              boxShadow: "0 4px 12px rgba(22, 163, 74, 0.2)",
+                            }}
+                            onClick={() =>
+                              navigate(`/tms/tp/staff-batch-creator/${id}`, {
+                                state: { trId: id },
+                              })
+                            }
+                          >
+                            Create Staff Batch
+                          </button>
+                        )}
+                    </div>
                   </>
                 )}
               </div>
@@ -1316,6 +1619,28 @@ export default function TrainingRequestDetail() {
   padding:20px;
   text-align:center;
   color:#2b4e72;
+}
+
+.btn-danger {
+  background: #ef4444;
+  color: #fff;
+  border: none;
+  padding: 7px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  transition: all .25s ease;
+  font-weight: 600;
+}
+
+.btn-danger:hover:not(:disabled) {
+  background: #dc2626;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+}
+
+.btn-danger:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
 }
 
 `}</style>

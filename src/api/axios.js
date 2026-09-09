@@ -604,6 +604,14 @@ export const TMS_API = {
   tpcpCentreDetails: makeCrud("/tms/tpcp_to_centre/details/"),
   trainingPlans: makeCrud("/tms/training-plans/"),
 
+  // Learning Materials
+  learningMaterials: makeCrud("/tms/learning-materials/"),
+
+  // 2. Staff Profiles
+  // - TMS_API.staff.list({ search: '...', district: 1, designation: '...' }) -> Hits GET /api/v1/tms/staff/
+  // - TMS_API.staff.detail('UP-EMP-071') -> Hits GET /api/v1/tms/staff/UP-EMP-071/
+  staff: makeCrud("/tms/staff/"),
+
   // ------------------------------------
   // User Management
   // ------------------------------------
@@ -650,6 +658,7 @@ export const TMS_API = {
 
   trBeneficiaries: makeCrud("/tms/training-request-beneficiaries/"),
   trTrainers: makeCrud("/tms/training-request-trainers/"),
+  trStaff: makeCrud("/tms/training-request-staff/"),
 
   // For BMMU TMS Dashboard
   trainingRequestBeneficiaries: makeCrud(
@@ -840,6 +849,16 @@ export const TMS_API = {
       api.delete(
         `/tms/mt/${encodeURIComponent(trainerId)}/certificates/${encodeURIComponent(certId)}/delete/`,
       ),
+
+    // List Master Trainer Profile Statuses (includes nested trainer depth=1)
+    // Supports params: { status: 'PENDING', district_id: 123 }
+    profileStatusList: (params) =>
+      api.get("/tms/master-trainer-status/list/", { params }),
+
+    // Approve or Reject a Master Trainer Profile
+    // Expects payload: { master_trainer_id: 12, status: "VERIFIED"|"REJECTED", remarks: "..." }
+    verifyProfile: (data) =>
+      api.patch("/tms/master-trainer-status/verify/", data),
   },
 };
 

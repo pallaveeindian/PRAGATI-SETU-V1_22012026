@@ -104,6 +104,22 @@ export default function DmmuBatchReview() {
   const [mtSelections, setMtSelections] = useState([]); // Array of selected MT objects
   const [mtCheckingId, setMtCheckingId] = useState(null);
 
+  const [mtThemeFilter, setMtThemeFilter] = useState("");
+  const [mtDesignationFilter, setMtDesignationFilter] = useState("");
+  const [availableThemes, setAvailableThemes] = useState([]);
+
+  useEffect(() => {
+    const fetchThemes = async () => {
+      try {
+        const response = await TMS_API.trainingThemes.list({ page_size: 100 });
+        setAvailableThemes(response?.data?.results || []);
+      } catch (err) {
+        console.error("Failed to fetch themes:", err);
+      }
+    };
+    fetchThemes();
+  }, []);
+
   // Actions State
   const [isSaving, setIsSaving] = useState(false);
   const [revertModalOpen, setRevertModalOpen] = useState(false);
@@ -127,12 +143,11 @@ export default function DmmuBatchReview() {
     loadBatch();
   }, [batchId]);
 
-  /* ---------------- fetch master trainers (Backend Search) ---------------- */
+  /* ---------------- fetch master trainers ---------------- */
   useEffect(() => {
     const fetchMTs = async () => {
       setMtLoading(true);
       try {
-        // SURGICAL FIX: Pass search string to the backend to search the whole database
         const params = {
           page: mtPage,
           page_size: mtPageSize,
@@ -140,6 +155,13 @@ export default function DmmuBatchReview() {
 
         if (mtSearch.trim()) {
           params.search = mtSearch.trim();
+        }
+
+        if (mtThemeFilter) {
+          params.theme = mtThemeFilter;
+        }
+        if (mtDesignationFilter) {
+          params.designation = mtDesignationFilter;
         }
 
         const response = await TMS_API.masterTrainers.list(params);
@@ -152,20 +174,17 @@ export default function DmmuBatchReview() {
       }
     };
 
-    // SURGICAL FIX: Debounce the API call by 400ms so it doesn't spam the server while typing
     const timeoutId = setTimeout(() => {
       fetchMTs();
     }, 400);
 
     return () => clearTimeout(timeoutId);
-  }, [mtPage, mtPageSize, mtSearch]);
+  }, [mtPage, mtPageSize, mtSearch, mtThemeFilter, mtDesignationFilter]);
 
-  // SURGICAL FIX: Reset to page 1 whenever the search query changes
   useEffect(() => {
     setMtPage(1);
-  }, [mtSearch]);
+  }, [mtSearch, mtThemeFilter, mtDesignationFilter]);
 
-  // We now rely on the backend for searching, so we just map the fetched list directly
   const filteredMtList = mtList;
 
   const mtTotalPages = Math.max(1, Math.ceil(mtTotal / mtPageSize));
@@ -182,15 +201,42 @@ export default function DmmuBatchReview() {
     // Check Availability
     setMtCheckingId(trainer.id);
     try {
-      // SURGICAL FIX: Use the new dedicated availability endpoint
-      const response = await api.get(`/tms/mt/${trainer.id}/availability/`);
-      const { is_available, busy_reason } = response.data;
-      console.log(response.data);
+      // SURGICAL FIX: Build precise query params for both start and end dates
+      const queryParams = new URLSearchParams();
+      if (batch?.start_date) queryParams.append("start_date", batch.start_date);
+      if (batch?.end_date) queryParams.append("end_date", batch.end_date);
+
+      const queryString = queryParams.toString()
+        ? `?${queryParams.toString()}`
+        : "";
+
+      // Call the strict overlap-checking API
+      const response = await api.get(
+        `/tms/mt/${trainer.id}/availability/${queryString}`,
+      );
+      const {
+        is_available,
+        busy_reason,
+        busy_type,
+        training_request_id,
+        district_name_en,
+        block_name_en,
+      } = response.data;
+
+      console.log("Availability Response:", response.data);
 
       if (!is_available) {
-        alert(
-          `Master Trainer ${trainer.full_name} is UNAVAILABLE:\n\n${busy_reason}`,
-        );
+        let alertMessage = `Master Trainer ${trainer.full_name} is UNAVAILABLE:\n\n${busy_reason}`;
+
+        // Append TR details if they are busy in the BATCHING phase
+        if (busy_type === "TRAINING_REQUEST") {
+          alertMessage += `\n\nTraining Request Details:`;
+          alertMessage += `\n• ID: ${training_request_id || "N/A"}`;
+          alertMessage += `\n• District: ${district_name_en || "N/A"}`;
+          alertMessage += `\n• Block: ${block_name_en || "N/A"}`;
+        }
+
+        alert(alertMessage);
         return;
       }
 
@@ -266,7 +312,9 @@ export default function DmmuBatchReview() {
     }
   };
   const paxCount =
-    (batch?.beneficiary?.length || 0) + (batch?.trainer?.length || 0);
+    (batch?.beneficiary?.length || 0) +
+    (batch?.trainer?.length || 0) +
+    (batch?.staff?.length || 0);
 
   const handleViewBatch = async (batchId) => {
     try {
@@ -367,10 +415,10 @@ export default function DmmuBatchReview() {
                   </h3>
 
                   <button
-                    className="btn-sm btn-flat"
+                    className="btn-sm primary"
                     onClick={() => handleViewBatch(batchId)}
                   >
-                    View Complete Batch Details
+                    <strong>View Complete Batch Details</strong>
                   </button>
                 </div>
 
@@ -573,13 +621,40 @@ export default function DmmuBatchReview() {
                   </div>
 
                   <div style={{ display: "flex", gap: "10px" }}>
+                    <select
+                      className="input"
+                      value={mtThemeFilter}
+                      onChange={(e) => setMtThemeFilter(e.target.value)}
+                      style={{ minWidth: "140px" }}
+                    >
+                      <option value="">All Themes</option>
+                      {availableThemes.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.theme_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      className="input"
+                      value={mtDesignationFilter}
+                      onChange={(e) => setMtDesignationFilter(e.target.value)}
+                      style={{ minWidth: "120px" }}
+                    >
+                      <option value="">All Designations</option>
+                      <option value="BRP">BRP</option>
+                      <option value="DRP">DRP</option>
+                      <option value="SRP">SRP</option>
+                      <option value="TSA">TSA</option>
+                    </select>
+
                     <input
                       type="text"
                       className="input"
                       placeholder="Search name or mobile..."
                       value={mtSearch}
                       onChange={(e) => setMtSearch(e.target.value)}
-                      style={{ minWidth: "250px" }}
+                      style={{ minWidth: "200px" }}
                     />
                   </div>
                 </div>

@@ -35,6 +35,22 @@ const MENU = {
   bmmu: [
     { label: "Dashboard", to: "/tms/bmmu/dashboard", icon: FaTachometerAlt },
     {
+      label: "Master Trainer DB",
+      icon: FaBuilding,
+      children: [
+        {
+          label: "All Trainer list",
+          to: "/tms/bmmu/master-trainers",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Master Trainer Registration Status",
+          to: "/tms/master-trainers/status",
+          icon: FaBook,
+        },
+      ],
+    },
+    {
       label: "Create Training Request",
       to: "/tms/create-training-request",
       icon: FaBook,
@@ -69,11 +85,22 @@ const MENU = {
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
-    // {
-    //   label: "Master Trainer DB",
-    //   to: "/tms/dmmu/master-trainers",
-    //   icon: FaBuilding,
-    // },
+    {
+      label: "Master Trainer DB",
+      icon: FaBuilding,
+      children: [
+        {
+          label: "All Trainer list",
+          to: "/tms/dmmu/master-trainers",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Master Trainer Registration Status",
+          to: "/tms/master-trainers/status",
+          icon: FaBook,
+        },
+      ],
+    },
     {
       label: "Create Training Request",
       to: "/tms/create-training-request",
@@ -114,11 +141,11 @@ const MENU = {
   ],
   smmu: [
     { label: "Dashboard", to: "/tms/smmu/dashboard", icon: FaTachometerAlt },
-    {
-      label: "Target Assignment",
-      to: "/tms/smmu/partner-targets",
-      icon: FaBullseye,
-    },
+    // {
+    //   label: "Target Assignment",
+    //   to: "/tms/smmu/partner-targets",
+    //   icon: FaBullseye,
+    // },
     {
       label: "Training Modules",
       icon: FaChalkboardTeacher,
@@ -132,6 +159,11 @@ const MENU = {
           label: "Add New Module",
           to: "/tms/smmu/create-training-plan",
           icon: FaBook,
+        },
+        {
+          label: "Learning Materials",
+          to: "/tms/learning-materials/list",
+          icon: FaDatabase,
         },
       ],
     },
@@ -147,6 +179,11 @@ const MENU = {
         {
           label: "Pending Certificate Approval",
           to: "/tms/smmu/master-trainers/approvals",
+          icon: FaBook,
+        },
+        {
+          label: "Master Trainer Registration Status",
+          to: "/tms/master-trainers/status",
           icon: FaBook,
         },
       ],
@@ -206,6 +243,11 @@ const MENU = {
       icon: FaBuilding,
     },
     {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
+    },
+    {
       label: "Training Requests",
       to: "/tms/training-requests",
       icon: FaChartBar,
@@ -219,15 +261,41 @@ const MENU = {
           to: "/tms/batches-list/",
           icon: FaAddressBook,
         },
+        // {
+        //   label: "Batch Calendar",
+        //   to: "/tms/batches-list/",
+        //   icon: FaCalendar,
+        // },
+      ],
+    },
+    {
+      label: "TMS Portal Summary",
+      to: "/tms/tp/tms-portal-summary",
+      icon: FaChartBar,
+    },
+    {
+      label: "TC Management",
+      icon: FaUsers,
+      children: [
         {
-          label: "Batch Calendar",
-          to: "/tms/batches-list/",
-          icon: FaCalendar,
+          label: "TC-ID List",
+          to: "/tms/tp/cp-list",
+          icon: FaUser,
+        },
+        {
+          label: "Register TC-ID",
+          to: "/tms/tp/cp/create",
+          icon: FaUserEdit,
+        },
+        {
+          label: "Assign Centre to TC-ID",
+          to: "/tms/tp/cp/assign",
+          icon: FaUserCheck,
         },
       ],
     },
     {
-      label: "User Management",
+      label: "Account Manager",
       to: "/tms/tp/users",
       icon: FaUsers,
     },
@@ -252,6 +320,11 @@ const MENU = {
       label: "Register New Centre",
       to: "/tms/tp/centre/new",
       icon: FaBuilding,
+    },
+    {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
     },
     {
       label: "Training Requests",
@@ -308,6 +381,11 @@ const MENU = {
       icon: FaTachometerAlt,
     },
     {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
+    },
+    {
       label: "Grievances",
       to: "/admin/grievances",
       icon: FaHandsHelping,
@@ -318,6 +396,11 @@ const MENU = {
       label: "Dashboard",
       to: "/tms/cp/dashboard",
       icon: FaTachometerAlt,
+    },
+    {
+      label: "Learning Materials",
+      to: "/tms/learning-materials/list",
+      icon: FaDatabase,
     },
     {
       label: "Training Batches",
@@ -339,13 +422,8 @@ const MENU = {
   state_admin: [
     {
       label: "Dashboard",
-      to: "/tms/state-admin/dashboard",
+      to: "/master/state-dashboard",
       icon: FaTachometerAlt,
-    },
-    {
-      label: "Grievances",
-      to: "/admin/grievances",
-      icon: FaHandsHelping,
     },
   ],
   pmu_admin: [
@@ -426,6 +504,65 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
       fetchOrgName();
     }
   }, [roleKey, user?.id, orgName]);
+
+  // For hidden SMMU Target creation
+  useEffect(() => {
+    // Shortcut: Ctrl + S, then T, then A
+    let shortcutSequence = [];
+    let shortcutTimer = null;
+
+    const handleKeyboardShortcut = (event) => {
+      // Only activate for SMMU users
+      if (roleKey !== "smmu") return;
+
+      const key = event.key.toLowerCase();
+
+      // First key: Ctrl + S
+      if (shortcutSequence.length === 0) {
+        if (event.ctrlKey && key === "s") {
+          event.preventDefault();
+
+          shortcutSequence = ["s"];
+
+          clearTimeout(shortcutTimer);
+          shortcutTimer = setTimeout(() => {
+            shortcutSequence = [];
+          }, 2000);
+        }
+
+        return;
+      }
+
+      // Second key: T
+      if (shortcutSequence.length === 1 && key === "t") {
+        event.preventDefault();
+        shortcutSequence.push("t");
+        return;
+      }
+
+      // Third key: A
+      if (shortcutSequence.length === 2 && key === "a") {
+        event.preventDefault();
+
+        shortcutSequence = [];
+        clearTimeout(shortcutTimer);
+
+        navigate("/tms/smmu/partner-targets");
+        return;
+      }
+
+      // Invalid sequence → reset
+      shortcutSequence = [];
+      clearTimeout(shortcutTimer);
+    };
+
+    document.addEventListener("keydown", handleKeyboardShortcut);
+
+    return () => {
+      document.removeEventListener("keydown", handleKeyboardShortcut);
+      clearTimeout(shortcutTimer);
+    };
+  }, [roleKey, navigate]);
 
   return (
     <>
@@ -589,7 +726,6 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
     #0167b6 52%,
     #0093e1 100%
   );
-  border-right: 1px solid #e5e7eb;
   display: flex;
   flex-direction: column;
   transition: width 0.25s ease;
@@ -769,6 +905,7 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   border: none;
   background: #002073;
   border-top: 1px solid #e5e7eb;
+  border-radius: 0px;
   cursor: pointer;
   font-size: 14px;
   color: #fff;

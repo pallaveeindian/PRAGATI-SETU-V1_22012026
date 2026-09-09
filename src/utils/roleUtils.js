@@ -12,6 +12,7 @@ export const ROLE_ID_MAP = {
   10: "dcnrlm",
   11: "tp_contact_person",
   13: "dtp",
+  14: "smm_uppld",
 };
 
 export const ROLE_WELCOME_MESSAGES = {
@@ -27,6 +28,7 @@ export const ROLE_WELCOME_MESSAGES = {
   state_admin: "State Admin Panel",
   pmu_admin: "PMU Admin Panel",
   dcnrlm: "DCNRLM Dashboard",
+  smm_uppld: "UPPLD Dashboard",
 };
 
 /**
@@ -77,6 +79,7 @@ export function getCanonicalRole(obj = {}) {
     if (nameStr.includes("crp_ld")) return "crp_ld";
     if (nameStr.includes("state_admin")) return "state_admin";
     if (nameStr.includes("pmu_admin")) return "pmu_admin";
+    if (nameStr.includes("smm_uppld")) return "smm_uppld";
   }
 
   // 4) fallback: try geoscope in localStorage

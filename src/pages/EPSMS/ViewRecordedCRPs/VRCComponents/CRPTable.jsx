@@ -11,11 +11,10 @@ import {
   FaMapMarkerAlt,
 } from "react-icons/fa";
 import CRPDetails from "./CRPDetail";
-export default function CRPTable({ filters }) {
+export default function CRPTable({ filters, itemsPerPage = 15, }) {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(false);
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 50;
   const [selectedCRP, setSelectedCRP] = useState(null);
   const [showModal, setShowModal] = useState(false);
   const [refreshTrigger, setRefreshTrigger] = useState(0);
@@ -40,6 +39,7 @@ export default function CRPTable({ filters }) {
       try {
         const res = await EPSAKHI_API.crpPanchList({
           ...filters,
+          limit:1000,
           page_size: 1000,
         });
 

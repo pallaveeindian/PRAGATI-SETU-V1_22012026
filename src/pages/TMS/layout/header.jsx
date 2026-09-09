@@ -176,14 +176,16 @@ const Header = () => {
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">
-            <h3>Change Password</h3>
+            <h3 style={{ color: "#000D2E", textAlign: "center" }}>
+              Please Change your Password
+            </h3>
 
             {step === 1 && (
               <>
                 <input
                   type="password"
                   name="oldPassword"
-                  placeholder="Old Password"
+                  placeholder="System Generated Password"
                   value={form.oldPassword}
                   onChange={handleChange}
                 />

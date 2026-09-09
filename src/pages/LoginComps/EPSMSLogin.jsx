@@ -12,159 +12,175 @@ import { AUTH_API } from "../../api/axios";
 import esmLogo from "../../assets/ems_logo.png";
 
 const ROLE_SMM_ROUTE = {
-    default: "epsms/smm/dashboard",
+  default: "epsms/smm/dashboard",
 };
 const ALLOWED_USERNAME = "SMM_NONFARMLH";
 const ALLOWED_ROLE_ID = 3;
 
 const schema = yup.object({
-    username: yup.string().required("Enter username"),
-    password: yup.string().required("Enter password"),
+  username: yup.string().required("Enter username"),
+  password: yup.string().required("Enter password"),
 });
 
 export default function EPSMSLogin() {
-    const { login } = useContext(AuthContext);
-    const navigate = useNavigate();
+  const { login } = useContext(AuthContext);
+  const navigate = useNavigate();
 
-    const [captchaImage, setCaptchaImage] = useState("");
-    const [captchaValue, setCaptchaValue] = useState("");
-    const [captchaError, setCaptchaError] = useState("");
-    const [showPassword, setShowPassword] = useState(false);
-    const [failedAttempts, setFailedAttempts] = useState(0);
-    const MAX_ATTEMPTS = 4;
+  const [captchaImage, setCaptchaImage] = useState("");
+  const [captchaValue, setCaptchaValue] = useState("");
+  const [captchaError, setCaptchaError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
+  const [failedAttempts, setFailedAttempts] = useState(0);
+  const MAX_ATTEMPTS = 4;
 
-    const {
-        register,
-        handleSubmit,
-        formState: { errors },
-    } = useForm({
-        resolver: yupResolver(schema),
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm({
+    resolver: yupResolver(schema),
+  });
+
+  const loadCaptcha = async () => {
+    try {
+      const res = await AUTH_API.captcha();
+      setCaptchaImage(res.data.image);
+    } catch (err) {
+      console.error("Captcha load failed", err);
+    }
+  };
+
+  useEffect(() => {
+    loadCaptcha();
+  }, []);
+
+  const onSubmit = async (data) => {
+    setCaptchaError("");
+
+    // Inject the Admin userType required for the EPSMS portal
+    const result = await login({
+      ...data,
+      userType: "Admin",
+      captcha: captchaValue,
     });
 
-    const loadCaptcha = async () => {
-        try {
-            const res = await AUTH_API.captcha();
-            setCaptchaImage(res.data.image);
-        } catch (err) {
-            console.error("Captcha load failed", err);
-        }
-    };
+    if (!result?.success) {
+      const errorDetail =
+        result?.error?.detail || "Login failed. Please try again.";
+      const isCaptchaIssue = errorDetail.toLowerCase().includes("captcha");
 
-    useEffect(() => {
-        loadCaptcha();
-    }, []);
+      if (!isCaptchaIssue) setFailedAttempts((prev) => prev + 1);
 
-    const onSubmit = async (data) => {
-        setCaptchaError("");
+      setCaptchaError(errorDetail);
+      setCaptchaValue("");
+      loadCaptcha();
+      return;
+    }
 
-        // Inject the Admin userType required for the EPSMS portal
-        const result = await login({
-            ...data,
-            userType: "Admin",
-            captcha: captchaValue,
-        });
+    setFailedAttempts(0);
+    const backendUser = getUser();
+    const backendRoleId = Number(backendUser?.role_id ?? backendUser?.role);
 
-        if (!result?.success) {
-            const errorDetail =
-                result?.error?.detail || "Login failed. Please try again.";
-            const isCaptchaIssue = errorDetail.toLowerCase().includes("captcha");
+    if ((backendUser?.username || "").trim() !== ALLOWED_USERNAME) {
+      alert(
+        "Only the NONFARM LH THEMATIC EXPERT account is allowed to log in here.",
+      );
+      return;
+    }
 
-            if (!isCaptchaIssue) setFailedAttempts((prev) => prev + 1);
+    if (backendRoleId !== ALLOWED_ROLE_ID) {
+      alert("Only role ID 3 (SMMU) is allowed for this portal.");
+      return;
+    }
 
-            setCaptchaError(errorDetail);
-            setCaptchaValue("");
-            loadCaptcha();
-            return;
-        }
+    navigate(`/epsms/smm/dashboard`);
+  };
 
-        setFailedAttempts(0);
-        const backendUser = getUser();
-        const backendRoleId = Number(backendUser?.role_id ?? backendUser?.role);
+  return (
+    <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
+      <div className="logo-header">
+        <img src={esmLogo} alt="EPSMS Logo" className="app-logo" />
+      </div>
 
-        if ((backendUser?.username || "").trim() !== ALLOWED_USERNAME) {
-            alert("Only the NONFARM LH THEMATIC EXPERT account is allowed to log in here.");
-            return;
-        }
+      <div className="form-header-text">
+        <h2>UDHYAM SAKHI MANAGEMENT SYSTEM PORTAL (EPSMS)</h2>
 
-        if (backendRoleId !== ALLOWED_ROLE_ID) {
-            alert("Only role ID 3 (SMMU) is allowed for this portal.");
-            return;
-        }
+        <p
+          style={{
+            fontWeight: "900",
+            fontSize: "16px",
+            color: "#d32f2f",
+            marginTop: "10px",
+            marginBottom: "10px",
+            textTransform: "uppercase",
+            letterSpacing: "0.5px",
+          }}
+        >
+          ONLY SMM NON FARM LH CAN LOG IN
+        </p>
+      </div>
 
-        navigate(`/epsms/smm/dashboard`);
-    };
+      <label className="block-label">Username</label>
+      <input className="form-input" {...register("username")} />
 
-    return (
-        <form className="login-form" onSubmit={handleSubmit(onSubmit)}>
-            <div className="logo-header">
-                <img src={esmLogo} alt="EPSMS Logo" className="app-logo" />
-            </div>
+      <label className="block-label">Password</label>
+      <div className="password-wrapper">
+        <input
+          className="form-input"
+          type={showPassword ? "text" : "password"}
+          autoComplete="off"
+          {...register("password")}
+        />
+        <span
+          className="eye-icon"
+          onClick={() => setShowPassword(!showPassword)}
+        >
+          {showPassword ? <FaEyeSlash /> : <FaEye />}
+        </span>
+      </div>
 
-            <div className="form-header-text">
-                <h2>UDHYAM SAKHI MANAGEMENT SYSTEM PORTAL (EPSMS)</h2>
-            </div>
+      {failedAttempts > 0 &&
+        failedAttempts < MAX_ATTEMPTS &&
+        !captchaError?.toLowerCase().includes("captcha") && (
+          <div className="error">
+            Wrong password. Attempts left: {MAX_ATTEMPTS - failedAttempts}
+          </div>
+        )}
 
-            <label className="block-label">Username</label>
-            <input className="form-input" {...register("username")} />
+      <label className="block-label">Captcha</label>
+      <div className="captcha-wrapper">
+        <div className="captcha-image">
+          <img
+            src={captchaImage || undefined}
+            alt="captcha"
+            style={{ width: 180, height: 50 }}
+          />
+          <button type="button" onClick={loadCaptcha}>
+            Refresh
+          </button>
+        </div>
+        <input
+          type="text"
+          className="form-input captcha-input"
+          placeholder="Enter captcha"
+          style={{ textTransform: "uppercase" }}
+          value={captchaValue}
+          onChange={(e) => setCaptchaValue(e.target.value)}
+        />
+      </div>
 
-            <label className="block-label">Password</label>
-            <div className="password-wrapper">
-                <input
-                    className="form-input"
-                    type={showPassword ? "text" : "password"}
-                    autoComplete="off"
-                    {...register("password")}
-                />
-                <span
-                    className="eye-icon"
-                    onClick={() => setShowPassword(!showPassword)}
-                >
-                    {showPassword ? <FaEyeSlash /> : <FaEye />}
-                </span>
-            </div>
+      {captchaError && <p className="error">{captchaError}</p>}
 
-            {failedAttempts > 0 &&
-                failedAttempts < MAX_ATTEMPTS &&
-                !captchaError?.toLowerCase().includes("captcha") && (
-                    <div className="error">
-                        Wrong password. Attempts left: {MAX_ATTEMPTS - failedAttempts}
-                    </div>
-                )}
+      {failedAttempts >= MAX_ATTEMPTS &&
+        !captchaError?.toLowerCase().includes("captcha") && (
+          <div className="error">
+            Password incorrect. Too many failed attempts.
+          </div>
+        )}
 
-            <label className="block-label">Captcha</label>
-            <div className="captcha-wrapper">
-                <div className="captcha-image">
-                    <img
-                        src={captchaImage || undefined}
-                        alt="captcha"
-                        style={{ width: 180, height: 50 }}
-                    />
-                    <button type="button" onClick={loadCaptcha}>
-                        Refresh
-                    </button>
-                </div>
-                <input
-                    type="text"
-                    className="form-input captcha-input"
-                    placeholder="Enter captcha"
-                    style={{ textTransform: "uppercase" }}
-                    value={captchaValue}
-                    onChange={(e) => setCaptchaValue(e.target.value)}
-                />
-            </div>
-
-            {captchaError && <p className="error">{captchaError}</p>}
-
-            {failedAttempts >= MAX_ATTEMPTS &&
-                !captchaError?.toLowerCase().includes("captcha") && (
-                    <div className="error">
-                        Password incorrect. Too many failed attempts.
-                    </div>
-                )}
-
-            <button className="log-in" type="submit">
-                Log In
-            </button>
-        </form>
-    );
+      <button className="log-in" type="submit">
+        Log In
+      </button>
+    </form>
+  );
 }

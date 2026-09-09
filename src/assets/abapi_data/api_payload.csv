@@ -1,0 +1,25 @@
+﻿Sr,Column Name,DataType,Example,Remark
+1,year,varchar(7),2023-24,Current Session
+2,month,int,4,4=April
+3,div_code,varchar(3),00,Division Code as LG Directory
+4,dist_code,varchar(4),119,District Code as LG Directory
+5,Block_code,varchar(4),1169,Block Code as LG Directory
+6,prog_code,varchar(5),0101,Indicator Code
+7,ProgHeadCode,varchar(2),01,First two characters of Program Code
+8,unit,varchar(50),Percentage,Percentage/Number
+9,PeriodNameId,varchar(1),1,Periodicty Id
+10,LeadDeptNameId,varchar(2),1,Department Id
+11,mon_ach_numirator,"decimal(18,2)",00.00,Numeric Value upto 2 decimal places
+12,mon_ach_denominator,"decimal(18,2)",00.00,Numeric Value upto 2 decimal places
+13,mon_ach,"decimal(18,2)",00.00,Current Month Achievement upto 2 decimal places
+14,cum_ach,"decimal(18,2)",00.00,Cumulative Achievement till the current month upto 2 decimal places
+15,QuarterMonth,varchar(15),Q1 Apr to Jun,Data Period
+16,SixMonthly,varchar(15),B1 Apr to Sept,Data Period
+17,Disclaimer,nvarchar(500),"मैं MR. ABC,DESIGNATION,DEPARTMENT NAME ,MOBILE प्रमाणित करता /करती हूँ कि उपर्युक्त डाटा/सूचना का विवरण परीक्षित कर मेरे द्वारा दिनांक 05/04/2024 को पुष्टि की जाती है|","Replace Mr. ABC by the officer name,                                                  designation by officer's designation                                                                      department name by officer's department                                                              Mobile number by officer's mobile number"
+18,FourMonth,varchar(15),F1 Apr to Jul,Data Period
+,,,,
+,,,,
+,,,,
+,,,,
+,,,,
+API KEY:  B68F21A2091442ECB2F92ABCF397012C41B0348BF3714DF9BF1D7C04574A1F2D,,,,

@@ -26,21 +26,26 @@ export default function BatchListExport({ batches }) {
       // Row 2: Column Headers
       const headerRow = worksheet.addRow([
         "S.No.",
+        "Financial Year",
         "Batch Code",
         "Status",
-        "Participant Type",
         "Start Date",
         "End Date",
+        "Level",
+        "Participant Type",
+        "Theme",
+        "Training Plan",
         "Batch Type",
-        "Centre",
         "Partner",
-        "Block",
         "District",
+        "Block",
+        "Centre",
+        "Pendency Status",
         "Count",
       ]);
 
-      // 3. Merge Super Header across all 12 columns (A to L)
-      worksheet.mergeCells("A1:L1");
+      // 3. Merge Super Header across all 13 columns (A to M)
+      worksheet.mergeCells("A1:Q1");
 
       // 4. Apply Exact Image Styling
       // Super Header Style (Dark Blue background, White Text)
@@ -73,7 +78,25 @@ export default function BatchListExport({ batches }) {
         right: { style: "thin", color: { argb: "FF000000" } },
       };
 
-      const cols = ["A", "B", "C", "D", "E", "F", "G", "H", "I", "J", "K", "L"];
+      const cols = [
+        "A",
+        "B",
+        "C",
+        "D",
+        "E",
+        "F",
+        "G",
+        "H",
+        "I",
+        "J",
+        "K",
+        "L",
+        "M",
+        "N",
+        "O",
+        "P",
+        "Q",
+      ];
       cols.forEach((col) => {
         const cell = worksheet.getCell(`${col}2`);
         cell.fill = lightBlueFill;
@@ -86,39 +109,49 @@ export default function BatchListExport({ batches }) {
       // 5. Set Optimal Column Widths
       worksheet.columns = [
         { key: "sno", width: 8 },
+        { key: "fy", width: 16 },
         { key: "code", width: 22 },
         { key: "status", width: 16 },
-        { key: "participant_type", width: 18 },
         { key: "start_date", width: 15 },
         { key: "end_date", width: 15 },
+        { key: "level", width: 16 },
+        { key: "participant_type", width: 18 },
+        { key: "theme", width: 18 },
+        { key: "training_plan", width: 22 },
         { key: "batch_type", width: 16 },
-        { key: "centre", width: 30 },
         { key: "partner", width: 25 },
-        { key: "block", width: 20 },
         { key: "district", width: 20 },
+        { key: "block", width: 20 },
+        { key: "centre", width: 30 },
+        { key: "pendency_status", width: 40 },
         { key: "count", width: 10 },
       ];
 
       // 6. Add Data Rows
       batches.forEach((b, index) => {
-        const centreName =
-          b.centre?.venue_name || b.centre?.partner?.name || "-";
+        const centreName = b.centre?.venue_name;
         const partnerName = b.centre?.partner?.name || "-";
         const blockName = b.block?.block_name_en || "-";
         const districtName = b.district?.district_name_en || "-";
-
+        const themeName = b.training_plan?.theme?.theme_name || "-";
+        const trainingPlanName = b.training_plan?.training_name || "-";
         const row = worksheet.addRow([
           index + 1,
+          b.financial_year || "-",
           b.code || "-",
           b.status || "-",
-          b.participant_type || "-",
           b.start_date || "-",
           b.end_date || "-",
+          b.level || "-",
+          b.participant_type || "-",
+          themeName,
+          trainingPlanName,
           b.batch_type || "-",
-          centreName,
           partnerName,
-          blockName,
           districtName,
+          blockName,
+          centreName,
+          b.pendency_status,
           b.pax_count || 0,
         ]);
 

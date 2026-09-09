@@ -1,6 +1,5 @@
-// src\pages\TMS\BatchCreator\ParticipantsTableFilter.jsx
 import React, { useState, useEffect, useRef, useContext } from "react";
-import { LOOKUP_API } from "../../../api/axios";
+import api, { LOOKUP_API } from "../../../api/axios";
 import { AuthContext } from "../../../contexts/AuthContext";
 
 const ParticipantTableFilters = ({
@@ -20,11 +19,63 @@ const ParticipantTableFilters = ({
   const [blocks, setBlocks] = useState([]);
   const [panchayats, setPanchayats] = useState([]);
   const [villages, setVillages] = useState([]);
+
   // Custom Dropdown states for Panchayat
   const [isPanchayatOpen, setIsPanchayatOpen] = useState(false);
   const [panchayatPageSize, setPanchayatPageSize] = useState(5000);
   const panchayatRef = useRef(null);
   const { user } = useContext(AuthContext);
+
+  // =====================================================================
+  // SURGICAL ADDITION: STRICT SYSTEM TIME VERIFICATION (ANTI-TAMPERING)
+  // =====================================================================
+  const [isTimeTampered, setIsTimeTampered] = useState(false);
+  const [actualDateStr, setActualDateStr] = useState("");
+
+  useEffect(() => {
+    const verifySystemTime = async () => {
+      try {
+        // SURGICAL UPDATE: Fetch trusted IST time from internal backend to bypass CORS
+        const response = await api.get("/tms/server-time/");
+        const data = response.data;
+
+        // Extract strict YYYY-MM-DD from the trusted server
+        const serverDateStr = data.date_time.substring(0, 10);
+
+        // Get local PC date strictly formatted to YYYY-MM-DD in IST
+        const localDate = new Date();
+        const formatter = new Intl.DateTimeFormat("en-CA", {
+          timeZone: "Asia/Kolkata",
+          year: "numeric",
+          month: "2-digit",
+          day: "2-digit",
+        });
+
+        const parts = formatter.formatToParts(localDate);
+        const localYear = parts.find((p) => p.type === "year").value;
+        const localMonth = parts.find((p) => p.type === "month").value;
+        const localDay = parts.find((p) => p.type === "day").value;
+        const localFormattedStr = `${localYear}-${localMonth}-${localDay}`;
+
+        if (serverDateStr !== localFormattedStr) {
+          setIsTimeTampered(true);
+          setActualDateStr(serverDateStr);
+        } else {
+          setIsTimeTampered(false);
+        }
+      } catch (error) {
+        console.warn(
+          "Time verification API blocked or failed. Proceeding cautiously.",
+        );
+      }
+    };
+
+    // Check immediately on mount, then continuously poll every 5 seconds
+    verifySystemTime();
+    const interval = setInterval(verifySystemTime, 5000);
+    return () => clearInterval(interval);
+  }, []);
+  // =====================================================================
 
   // Close custom dropdown when clicking outside
   useEffect(() => {
@@ -163,12 +214,6 @@ const ParticipantTableFilters = ({
     return minDate.toISOString().split("T")[0];
   };
 
-  const getMaxStartDate = () => {
-    const maxDate = new Date();
-    maxDate.setDate(maxDate.getDate() + 7);
-    return maxDate.toISOString().split("T")[0];
-  };
-
   const handleStartDateChange = (dateValue) => {
     handleValueChange("startDate", dateValue);
 
@@ -281,6 +326,85 @@ const ParticipantTableFilters = ({
   return (
     <div style={containerStyle}>
       {/* ============================================== */}
+      {/* SURGICAL ADDITION: TIME TAMPERING BLOCKER MODAL */}
+      {/* ============================================== */}
+      {isTimeTampered && (
+        <div className="time-lock-overlay">
+          <div className="time-lock-modal">
+            <div className="pulse-icon">⚠️</div>
+            <h2 style={{ color: "#dc2626", marginTop: 0, fontSize: "22px" }}>
+              System Clock Mismatch Detected!
+            </h2>
+            <p
+              style={{ color: "#334155", fontSize: "15px", lineHeight: "1.5" }}
+            >
+              Security protocols require your system clock to match the current{" "}
+              <strong>Uttar Pradesh (IST)</strong> date to create batches and
+              assign participants.
+            </p>
+            <div className="date-compare">
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <strong>Actual Live Date:</strong>
+                <span style={{ color: "#16a34a", fontWeight: "700" }}>
+                  {actualDateStr}
+                </span>
+              </div>
+              <div style={{ display: "flex", justifyContent: "space-between" }}>
+                <strong>Your PC Date:</strong>
+                <span style={{ color: "#dc2626", fontWeight: "700" }}>
+                  {new Date().toLocaleDateString("en-CA", {
+                    timeZone: "Asia/Kolkata",
+                  })}
+                </span>
+              </div>
+            </div>
+            <p
+              style={{ fontSize: "13px", color: "#64748b", marginTop: "20px" }}
+            >
+              Please update your PC's Date and Time settings to sync with the
+              automatic internet time.
+              <br />
+              <br />
+              <strong>
+                This screen will disappear automatically once fixed.
+              </strong>
+            </p>
+          </div>
+          <style>{`
+            .time-lock-overlay {
+              position: fixed; inset: 0; background: rgba(15, 23, 42, 0.85); backdrop-filter: blur(8px);
+              display: flex; align-items: center; justify-content: center; z-index: 999999;
+            }
+            .time-lock-modal {
+              background: white; border-top: 6px solid #dc2626; border-radius: 12px;
+              padding: 30px; max-width: 500px; text-align: left; 
+              box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+              animation: popIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            }
+            .pulse-icon { 
+              font-size: 48px; margin-bottom: 16px; text-align: center; 
+              animation: pulseRed 1.5s infinite; 
+            }
+            .date-compare { 
+              background: #f8fafc; padding: 16px; border-radius: 8px; margin-top: 20px; 
+              font-size: 15px; display: flex; flex-direction: column; gap: 10px; 
+              border: 1px dashed #cbd5e1; 
+            }
+            @keyframes popIn { 
+              from { opacity: 0; transform: scale(0.8); } 
+              to { opacity: 1; transform: scale(1); } 
+            }
+            @keyframes pulseRed { 
+              0% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0 rgba(220, 38, 38, 0)); } 
+              50% { transform: scale(1.15); opacity: 0.8; filter: drop-shadow(0 0 10px rgba(220, 38, 38, 0.6)); } 
+              100% { transform: scale(1); opacity: 1; filter: drop-shadow(0 0 0 rgba(220, 38, 38, 0)); } 
+            }
+          `}</style>
+        </div>
+      )}
+      {/* ============================================== */}
+
+      {/* ============================================== */}
       {/* SECTION 1: BATCH STRUCTURAL SELECTABLES        */}
       {/* ============================================== */}
       <h4
@@ -336,7 +460,6 @@ const ParticipantTableFilters = ({
             type="date"
             style={inputStyle}
             min={getMinStartDate()}
-            max={getMaxStartDate()}
             value={filters.startDate || ""}
             onChange={(e) => handleStartDateChange(e.target.value)}
           />
@@ -419,125 +542,6 @@ const ParticipantTableFilters = ({
 
         {filters.participantType === "Beneficiary" && (
           <>
-            {/* <div ref={panchayatRef} style={{ position: "relative" }}>
-              <label style={labelStyle}>
-                Panchayat ({verifiedPanchayats.length})
-              </label>
-              <div
-                style={{
-                  ...selectStyle,
-                  background: isCombined ? "#f3f4f6" : "#fff",
-                  cursor: isCombined ? "not-allowed" : "pointer",
-                  display: "flex",
-                  justifyContent: "space-between",
-                  alignItems: "center",
-                }}
-                onClick={() =>
-                  !isCombined && setIsPanchayatOpen(!isPanchayatOpen)
-                }
-              >
-                <span
-                  style={{
-                    flex: 1,
-                    overflow: "hidden",
-                    textOverflow: "ellipsis",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  {isCombined
-                    ? "Not Available for Combined Batch"
-                    : selectedPanchayatLabel}
-                </span>
-                <span
-                  style={{
-                    fontSize: "10px",
-                    color: "#6b7280",
-                    marginLeft: "4px",
-                  }}
-                >
-                  ▼
-                </span>
-              </div>
-
-              {isPanchayatOpen && !isCombined && (
-                <div
-                  style={{
-                    position: "absolute",
-                    top: "100%",
-                    left: 0,
-                    right: 0,
-                    zIndex: 50,
-                    background: "#fff",
-                    border: "1px solid #d1d5db",
-                    borderRadius: "8px",
-                    boxShadow: "0 4px 6px -1px rgba(0,0,0,0.1)",
-                    maxHeight: "200px",
-                    overflowY: "auto",
-                    marginTop: "4px",
-                  }}
-                >
-                  <div
-                    style={{
-                      padding: "8px 12px",
-                      cursor: "pointer",
-                      fontSize: "14px",
-                      background: !filters.panchayat
-                        ? "#f3f4f6"
-                        : "transparent",
-                    }}
-                    onClick={() => {
-                      handleValueChange("panchayat", "");
-                      handleValueChange("village", "");
-                      setIsPanchayatOpen(false);
-                    }}
-                  >
-                    All
-                  </div>
-                  {paginatedPanchayats.map((item, idx) => {
-                    const val = getPanchayatValue(item);
-                    const label = getPanchayatLabel(item);
-                    const isSelected =
-                      String(filters.panchayat) === String(val);
-                    return (
-                      <div
-                        key={idx}
-                        style={{
-                          padding: "8px 12px",
-                          cursor: "pointer",
-                          fontSize: "14px",
-                          background: isSelected ? "#2563eb" : "transparent",
-                          color: isSelected ? "#fff" : "#000",
-                        }}
-                        onClick={() => {
-                          handleValueChange("panchayat", val);
-                          handleValueChange("village", "");
-                          setIsPanchayatOpen(false);
-                        }}
-                      >
-                        {label}
-                      </div>
-                    );
-                  })}
-                </div>
-              )}
-            </div> */}
-
-            {/* <div>
-              <label style={labelStyle}>Village</label>
-              <select
-                style={selectStyle}
-                value={filters.village || ""}
-                onChange={(e) => handleValueChange("village", e.target.value)}
-              >
-                <option value="">All</option>
-                {verifiedVillages.map((item, idx) => (
-                  <option key={idx} value={getVillageValue(item)}>
-                    {getVillageLabel(item)}
-                  </option>
-                ))}
-              </select>
-            </div> */}
-
             <div>
               <label style={labelStyle}>Age Range</label>
               <select

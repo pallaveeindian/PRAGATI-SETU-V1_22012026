@@ -3,7 +3,9 @@ import React from "react";
 import ShgListTable from "../../Dashboard/ShgListTable";
 import ShgMemberListTable from "../../Dashboard/ShgMemberListTable";
 import MasterTrainerList from "./MasterTrainerList";
+import StaffList from "./StaffList";
 import { LOOKUP_API } from "../../../api/axios";
+import { Underline } from "docx";
 
 // Internal Sub-component for SHG Member rendering
 function MemberListArea({
@@ -83,6 +85,8 @@ export default function Step2Participants({
   preloadReloadToken,
   selectedTrainerIds,
   onToggleTrainer,
+  onToggleStaff,
+  selectedStaffIds,
 }) {
   const headerGradient = {
     background: "linear-gradient(90deg, #e4ecf5, #a7c6ed)",
@@ -115,13 +119,15 @@ export default function Step2Participants({
     cursor: "pointer",
   };
 
-  // IMPLEMENTATION OF TR PARTICIPANT MINIMUM LIMIT - 5
+  // IMPLEMENTATION OF TR PARTICIPANT MINIMUM LIMIT - 1
   const currentCount =
     form.training_type === "BENEFICIARY"
-      ? selectedBeneficiaries.length
-      : selectedTrainerIds.size;
+      ? selectedBeneficiaries?.length || 0
+      : form.training_type === "TRAINER"
+        ? selectedTrainerIds?.size || 0
+        : selectedStaffIds?.size || 0;
 
-  const hasEnough = currentCount >= 5;
+  const hasEnough = currentCount >= 1;
 
   React.useEffect(() => {
     if (roleKey === "smmu") {
@@ -207,9 +213,10 @@ export default function Step2Participants({
             const val = e.target.value;
             setForm((f) => ({ ...f, training_type: val }));
 
-            if (val === "TRAINER" || val === "STAFF") {
+            if (val === "TRAINER") {
               fetchMasterTrainersByDistrict(true);
             }
+            // Note: If val === "STAFF", StaffList.jsx triggers its own fetch automatically.
           }}
           style={{
             outline: "2px solid #3d6ba6",
@@ -255,14 +262,41 @@ export default function Step2Participants({
       {form.training_type === "BENEFICIARY" && (
         <h3
           style={{
-            fontSize: 16,
-            color: "#6c757d",
+            fontSize: 18,
+            color: "#000000",
             marginBottom: 12,
             textAlign: "center",
           }}
         >
-          Please Click SHG List button below to navigate back to SHG List after
-          you have selected the members below.
+          <span>कैडर का चयन करने के लिए</span>
+          <span
+            style={{
+              fontSize: 18,
+              fontWeight: 1000,
+              color: "#8a0000",
+              marginBottom: 12,
+              textAlign: "center",
+            }}
+          >
+            {" "}
+            SHG List{" "}
+          </span>
+          <span>
+            टैब पर क्लिक करें। इसके बाद प्रतिभागियों का चयन करें और
+            <span
+              style={{
+                fontSize: 18,
+                fontWeight: 1000,
+                color: "#8a0000",
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {" "}
+              यह प्रक्रिया तब तक दोहराएँ, जब तक सभी प्रतिभागी योजना में चयनित न
+              हो जाएँ।
+            </span>
+          </span>
         </h3>
       )}
       {form.training_type === "BENEFICIARY" ? (
@@ -277,7 +311,7 @@ export default function Step2Participants({
                   background: participantSubStep === 0 ? "#0b2540" : "#f5f7fa",
                   color: participantSubStep === 0 ? "#fff" : "#0b2540",
                   cursor: "pointer",
-                  fontWeight: 600,
+                  fontWeight: 1000,
                 }}
               >
                 1 — Block
@@ -292,12 +326,13 @@ export default function Step2Participants({
               style={{
                 padding: "6px 10px",
                 borderRadius: 8,
+                border: "3px solid #3d6ba6",
                 background: participantSubStep === 1 ? "#0b2540" : "#f5f7fa",
                 color: participantSubStep === 1 ? "#fff" : "#0b2540",
                 cursor:
                   roleKey === "dmmu" && !blockId ? "not-allowed" : "pointer",
                 opacity: roleKey === "dmmu" && !blockId ? 0.5 : 1,
-                fontWeight: 600,
+                fontWeight: 1000,
               }}
             >
               {roleKey === "dmmu" ? "2 — SHG list" : "1 — SHG list"}
@@ -311,6 +346,7 @@ export default function Step2Participants({
               style={{
                 padding: "6px 10px",
                 borderRadius: 8,
+                border: "3px solid #3da642",
                 background: participantSubStep === 2 ? "#0b2540" : "#f5f7fa",
                 color: participantSubStep === 2 ? "#fff" : "#0b2540",
                 cursor:
@@ -318,7 +354,7 @@ export default function Step2Participants({
                     ? "not-allowed"
                     : "pointer",
                 opacity: roleKey === "dmmu" && !selectedShgForMembers ? 0.5 : 1,
-                fontWeight: 600,
+                fontWeight: 1000,
               }}
             >
               {roleKey === "dmmu" ? "3 — Members" : "2 — Members"}
@@ -599,9 +635,12 @@ export default function Step2Participants({
           />
         </div>
       ) : form.training_type === "STAFF" ? (
-        <div className="muted" style={{ padding: 20 }}>
-          {/* SURGICAL ADDITION: Placeholder for STAFF selection view */}
-          Staff selection will be available once the Staff data is integrated.
+        <div>
+          <StaffList
+            user={user}
+            onToggleStaff={onToggleStaff}
+            selectedIds={selectedStaffIds}
+          />
         </div>
       ) : null}
     </>

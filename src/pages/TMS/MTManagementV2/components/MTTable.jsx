@@ -1,5 +1,5 @@
 // src/pages/TMS/MTManagementV2/components/MTTable.jsx
-import React from "react";
+import React, { useEffect } from "react";
 import {
   FaEye,
   FaEdit,
@@ -19,9 +19,23 @@ export default function MTTable({
   onViewClick,
   onEditClick,
   onCertificatesClick,
+  isBMMU,
+  isDMMU,
   isSMMU,
   lockedTheme,
 }) {
+  // <-- SURGICAL ADDITION: RBAC Edit Logic -->
+  const canEditTrainer = (designation) => {
+    const desig = String(designation).toUpperCase();
+    if (isBMMU) return desig === "BRP";
+    if (isDMMU) return desig === "BRP" || desig === "DRP";
+    return true; // SMMU can edit all
+  };
+
+  useEffect(() => {
+    console.log(isBMMU, " - ", isDMMU, " - ", isSMMU);
+  }, []);
+
   // Helper to render a boolean TOT status badge
   const renderTotBadge = (label, value) => {
     const isActive = value === 1 || value === true;
@@ -146,21 +160,23 @@ export default function MTTable({
                           <FaEye /> View
                         </button>
 
-                        <button
-                          className="nic-btn-action btn-edit"
-                          onClick={() => onEditClick(trainer)}
-                          title="Edit Basic Details"
-                        >
-                          <FaEdit /> Edit
-                        </button>
-
+                        {canEditTrainer(trainer.designation) && (
+                          <button
+                            className="nic-btn-action btn-edit"
+                            onClick={() => onEditClick(trainer)}
+                            title="Edit Basic Details"
+                          >
+                            <FaEdit /> Edit
+                          </button>
+                        )}
+                        {/* 
                         <button
                           className="nic-btn-action btn-cert"
                           onClick={() => onCertificatesClick(trainer)}
                           title="Manage & Upload Certificates"
                         >
                           <FaFileContract /> Certs
-                        </button>
+                        </button> */}
                       </div>
                     </td>
                   </tr>

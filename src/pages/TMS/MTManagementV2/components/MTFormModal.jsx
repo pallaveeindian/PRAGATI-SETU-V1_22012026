@@ -1,5 +1,5 @@
 // src/pages/TMS/MTManagementV2/components/MTFormModal.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useContext } from "react";
 import {
   FaTimes,
   FaUserEdit,
@@ -12,6 +12,7 @@ import {
 } from "react-icons/fa";
 import { LOOKUP_API, TMS_API } from "../../../../api/axios";
 import { useMTForm } from "../hooks/useMTForm";
+import { AuthContext } from "../../../../contexts/AuthContext";
 
 const INITIAL_FORM_STATE = {
   username: "",
@@ -54,6 +55,12 @@ export default function MTFormModal({
   lockedTheme,
 }) {
   const isUpdate = Boolean(trainerId);
+
+  // SURGICAL ADDITION: Role context for form restrictions
+  const { user } = useContext(AuthContext) || {};
+  const role = user?.role_name?.toLowerCase() || "";
+  const isCurrentBMMU = role === "bmmu" || role === "1";
+  const isCurrentDMMU = role === "dmmu" || role === "2";
 
   // 1. Form & UI State
   const [formData, setFormData] = useState({ ...INITIAL_FORM_STATE });
@@ -155,7 +162,8 @@ export default function MTFormModal({
       // Creation Mode Initialization
       setFormData({
         ...INITIAL_FORM_STATE,
-        empanel_district: isDMMU ? lockedDistrict : "",
+        empanel_district: isDMMU || isCurrentBMMU ? lockedDistrict : "",
+        empanel_block: isCurrentBMMU ? user?.block_id : "", // Assuming block_id is in user object, otherwise fetched via geoscope
         theme: isSMMU ? lockedTheme : "",
       });
     }
@@ -388,7 +396,7 @@ export default function MTFormModal({
                 <div className="nic-form-grid">
                   <div className="nic-form-group">
                     <label className="nic-label">
-                      Username (Auto-Generated if blank){" "}
+                      Username (MANDATORY){" "}
                       {!isUpdate && (
                         <span className="text-muted">(Min 4 chars)</span>
                       )}
@@ -401,7 +409,7 @@ export default function MTFormModal({
                       onChange={handleChange}
                       disabled={isUpdate}
                       placeholder={
-                        isUpdate ? "" : "Leave blank for auto-generation"
+                        isUpdate ? "" : "Please enter Username for Trainer ID"
                       }
                     />
                   </div>
@@ -560,11 +568,20 @@ export default function MTFormModal({
                       value={formData.designation}
                       onChange={handleChange}
                       required
+                      disabled={isUpdate && !isSMMU}
                     >
                       <option value="">Select Designation</option>
-                      <option value="BRP">BRP</option>
-                      <option value="DRP">DRP</option>
-                      <option value="SRP">SRP</option>
+                      {/* SURGICAL REPLACEMENT: RBAC Restricted Designation Selection */}
+                      {isCurrentBMMU && <option value="BRP">BRP</option>}
+                      {isCurrentDMMU && <option value="DRP">DRP</option>}
+                      {!isCurrentBMMU && !isCurrentDMMU && (
+                        <>
+                          <option value="BRP">BRP</option>
+                          <option value="DRP">DRP</option>
+                          <option value="SRP">SRP</option>
+                          <option value="TSA">TSA</option>
+                        </>
+                      )}
                     </select>
                   </div>
                   <div className="nic-form-group">
@@ -574,6 +591,7 @@ export default function MTFormModal({
                       className="nic-select"
                       value={formData.theme}
                       onChange={handleChange}
+                      disabled={isUpdate && !isSMMU}
                     >
                       <option value="">Select Theme</option>
                       {themes.map((t) => (
@@ -593,7 +611,9 @@ export default function MTFormModal({
                       value={formData.empanel_district}
                       onChange={handleChange}
                       required
-                      disabled={isDMMU}
+                      disabled={
+                        isDMMU || isCurrentBMMU || (isUpdate && !isSMMU)
+                      }
                     >
                       <option value="">Select District</option>
                       {districts.map((d) => (
@@ -610,7 +630,11 @@ export default function MTFormModal({
                       className="nic-select"
                       value={formData.empanel_block}
                       onChange={handleChange}
-                      disabled={!formData.empanel_district}
+                      disabled={
+                        !formData.empanel_district ||
+                        isCurrentBMMU ||
+                        (isUpdate && !isSMMU)
+                      }
                     >
                       <option value="">Select Block</option>
                       {blocks.map((b) => (

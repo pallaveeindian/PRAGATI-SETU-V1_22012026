@@ -1,6 +1,8 @@
 // src/pages/TMS/MTManagementV2/hooks/useMTForm.js
-import { useState, useCallback } from "react";
+import { useState, useCallback, useContext } from "react";
 import { TMS_API } from "../../../../api/axios";
+import { AuthContext } from "../../../../contexts/AuthContext";
+import { getCanonicalRole } from "../../../../utils/roleUtils";
 
 /**
  * Custom Hook for handling Master Trainer Creation and Updating
@@ -12,6 +14,11 @@ export function useMTForm({ onSuccess } = {}) {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState(null);
   const [successData, setSuccessData] = useState(null); // Stores credentials like generated username/password
+
+  const { user } = useContext(AuthContext) || {};
+  const role = getCanonicalRole(user || {});
+  const isBMMU = role === "bmmu" || role === "1";
+  const isDMMU = role === "dmmu" || role === "2";
 
   /**
    * Internal Validation Engine
@@ -25,15 +32,6 @@ export function useMTForm({ onSuccess } = {}) {
       if (!payload.full_name || payload.full_name.trim().length < 3) {
         errors.push("Full Name is required and must be at least 3 characters.");
       }
-    }
-
-    if (
-      !isUpdate &&
-      (!payload.username || payload.username.trim().length < 4)
-    ) {
-      errors.push(
-        "Username is required for new Master Trainers (min 4 chars).",
-      );
     }
 
     // 2. Sensitive Numbers
@@ -129,12 +127,27 @@ export function useMTForm({ onSuccess } = {}) {
         // 4. Handle Success
         const responseData = response.data || {};
 
+        // SURGICAL REPLACEMENT: Override success message based on RBAC rules
+        let displayMessage =
+          responseData.message || "Operation Completed Successfully!";
+        if (!isUpdate && (isBMMU || isDMMU)) {
+          displayMessage =
+            "Your trainer registration request has been created. Please check the registration tab for verification status.";
+        }
+
         // Capture generated credentials or reset passwords if returned by API
         if (responseData.password || responseData.new_password) {
           setSuccessData({
             username: responseData.username || formDataObj.username,
             password: responseData.password || responseData.new_password,
-            message: responseData.message,
+            message: displayMessage,
+          });
+        } else if (!isUpdate && (isBMMU || isDMMU)) {
+          // Even if no password is returned, show the alert for BMMU/DMMU creations
+          setSuccessData({
+            username: formDataObj.username || "Auto-Generated",
+            password: "Pending Approval",
+            message: displayMessage,
           });
         }
 

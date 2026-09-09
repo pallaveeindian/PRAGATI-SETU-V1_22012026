@@ -29,6 +29,7 @@ import TpCpAssignment from "../pages/TMS/TP/tp_cp_assignment";
 import TpTrainingRequestClosure from "../pages/TMS/TP/tp_tr_closure";
 import TpCreateBatch from "../pages/TMS/TP/tp_create_batch";
 import TPUserMgmnt from "../pages/TMS/TP/UserMgmnt";
+import TpTmsSummary from "../pages/TMS/TP/tp_tmsSummary";
 
 // DTP Screens
 import DTPDashboard from "../pages/TMS/DTP/DTPDashboard";
@@ -52,10 +53,17 @@ import SmmuTargetAchievement from "../pages/TMS/SMMU/smmu_tp_tva";
 import BmmuTargetAchievement from "../pages/TMS/BMMU/bmmu_tp_tvs";
 import DmmuTargetAchievement from "../pages/TMS/DMMU/dmmu_tp_tvs";
 import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
+import StaffBatchCreatorDashboard from "../pages/TMS/StaffBatchCreator/StaffBatchCreatorDashboard";
+
+// Learning Materials Module
+import LMList from "../pages/TMS/LearnMat/LMList";
+import AddLM from "../pages/TMS/LearnMat/AddLM";
+
 // Master Trainer Management V2
 import {
   MTDirectoryConductor,
   MTPendingApprovalsConductor,
+  MTProfileRegistrationsConductor,
 } from "../pages/TMS/MTManagementV2";
 
 export default function TmsRoutes() {
@@ -95,6 +103,16 @@ export default function TmsRoutes() {
         />
       </Route>
 
+      {/* MT APPROVAL */}
+      <Route
+        element={<ProtectedRoute allowedRoles={["bmmu", "dmmu", "smmu"]} />}
+      >
+        <Route
+          path="/master-trainers/status"
+          element={<MTProfileRegistrationsConductor />}
+        />
+      </Route>
+
       {/* DMMU Routes */}
       <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
         <Route path="dmmu/dashboard" element={<DmmuTmsDashboard />} />
@@ -116,11 +134,18 @@ export default function TmsRoutes() {
           element={<BmmuCreateTrainingPlan />}
         />
         <Route path="bmmu/tp-TvA" element={<BmmuTargetAchievement />} />
+        {/* MT Management V2 (DMMU is geoscope locked by the component automatically) */}
+        <Route path="bmmu/master-trainers" element={<MTDirectoryConductor />} />
       </Route>
 
       {/* Training Partner Routes */}
       <Route element={<ProtectedRoute allowedRoles="training_partner" />}>
         <Route path="tp/dashboard" element={<TpDashboard />} />
+        <Route
+          path="tp/staff-batch-creator/:paramTrId"
+          element={<StaffBatchCreatorDashboard />}
+        />
+        <Route path="tp/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
       <Route
         element={<ProtectedRoute allowedRoles={["training_partner", "dtp"]} />}
@@ -211,6 +236,7 @@ export default function TmsRoutes() {
               "training_partner",
               "tp_contact_person",
               "dtp",
+              "state_admin",
             ]}
           />
         }
@@ -220,6 +246,25 @@ export default function TmsRoutes() {
           path="batches/:batchId/history"
           element={<TrainingBatchHistory />}
         />
+      </Route>
+      {/* Learning Material Module */}
+      <Route
+        element={
+          <ProtectedRoute
+            allowedRoles={[
+              "smmu",
+              "dmmu",
+              "bmmu",
+              "training_partner",
+              "tp_contact_person",
+              "dtp",
+              "state_admin",
+            ]}
+          />
+        }
+      >
+        <Route path="learning-materials/list" element={<LMList />} />
+        <Route path="learning-materials/add" element={<AddLM />} />
       </Route>
     </Routes>
   );

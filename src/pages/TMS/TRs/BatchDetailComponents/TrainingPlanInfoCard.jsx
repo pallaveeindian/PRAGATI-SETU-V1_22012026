@@ -28,13 +28,6 @@ export default function TrainingPlanInfoCard({ batchData }) {
         </div>
 
         <div className="info-tile">
-          <span className="info-label">Batch Status</span>
-          <span className="info-value highlight">
-            {batchData.status || "-"}
-          </span>
-        </div>
-
-        <div className="info-tile">
           <span className="info-label">Training Name</span>
           <span className="info-value">
             {trainingPlan.training_name || "-"}

@@ -1,3 +1,4 @@
+// src/page/TMS/layout/TMSDashHeader.jsx
 import React from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faChartColumn, faUserCircle } from "@fortawesome/free-solid-svg-icons";
@@ -9,14 +10,42 @@ export default function TMSDashHeader({
   financialYear,
   setFinancialYear,
   loading,
+  theme = "tms",
 }) {
+  const overlayThemes = {
+    tms: "linear-gradient(135deg, #002174, #0092e194)",
+
+    home: "linear-gradient(135deg, #632f05, rgba(249,115,22,.60))",
+
+    ldms: "linear-gradient(135deg, #4A0410, rgba(220,38,38,.60))",
+
+    epsms: "linear-gradient(135deg, #14532D, rgba(22,163,74,.60))",
+  };
+
+  const overlayBackground = overlayThemes[theme] || overlayThemes.tms;
+
+  const waveThemes = {
+    tms: ["rgba(37,99,235,.25)", "rgba(59,130,246,.45)"],
+
+    home: ["rgba(249,115,22,.25)", "rgba(251,146,60,.45)"],
+
+    ldms: ["rgba(185,28,28,.25)", "rgba(239,68,68,.45)"],
+
+    epsms: ["rgba(22,163,74,.25)", "rgba(34,197,94,.45)"],
+  };
+
+  const waveColors = waveThemes[theme] || waveThemes.tms;
+
   return (
     <div
       className="dashboard-header-wrapper"
       style={{ backgroundImage: `url(${HeaderBg})` }}
     >
       {/* TMS BLUE OVERLAY */}
-      <div className="header-overlay" />
+      <div
+        className="header-overlay"
+        style={{ background: overlayBackground }}
+      />
 
       <div className="header-content">
         {/* Top Right: User Info */}
@@ -68,19 +97,9 @@ export default function TMSDashHeader({
 
           <g className="parallaxonde">
             {/* TMS Blue Wave Accents */}
-            <use
-              href="#onda"
-              x="48"
-              y="0"
-              fill="rgba(37, 99, 235, 0.25)"
-            />{" "}
+            <use href="#onda" x="48" y="0" fill={waveColors[0]} />{" "}
             {/* Primary Blue */}
-            <use
-              href="#onda"
-              x="48"
-              y="3"
-              fill="rgba(59, 130, 246, 0.45)"
-            />{" "}
+            <use href="#onda" x="48" y="3" fill={waveColors[1]} />{" "}
             {/* Lighter Blue */}
             <use href="#onda" x="48" y="5" fill="rgba(255, 255, 255, 0.6)" />
             {/* FINAL WHITE WAVE matching the body background */}
@@ -98,17 +117,13 @@ export default function TMSDashHeader({
           background-repeat: no-repeat;
           overflow: hidden;
           color: #ffffff;
+          margin-bottom: 15px;
         }
 
         /* BLUE TRANSPARENT OVERLAY */
         .header-overlay {
           position: absolute;
           inset: 0;
-          background: linear-gradient(
-            135deg,
-            #002174, /* Dark blue */
-            #0092e194  /* Primary blue */
-          );
           z-index: 1;
         }
 

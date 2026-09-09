@@ -116,6 +116,11 @@ export default function TopNavigation() {
               </span>
               <ul className="dropdown-menu">
                 <li>
+                  <Link to="/upsrlm-planning/login" onClick={closeMenu}>
+                    UP Aspirational Blocks Dashboard
+                  </Link>
+                </li>
+                <li>
                   <Link to="/beneficiary-profiling" onClick={closeMenu}>
                     Beneficiary Profiling
                   </Link>

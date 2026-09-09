@@ -1,0 +1,168 @@
+.pdu-dashboard-container {
+    padding: 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 32px;
+    max-width: 1600px;
+    margin: 0 auto;
+    min-height: 100vh;
+}
+
+/* Centered state for loaders and errors */
+.pdu-dashboard-center {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background-color: #f3f4f6;
+}
+
+.pdu-error-box {
+    background-color: #fef2f2;
+    border: 1px solid #f87171;
+    padding: 30px;
+    border-radius: 12px;
+    text-align: center;
+    color: #991b1b;
+    box-shadow: 0 4px 6px rgba(239, 68, 68, 0.1);
+}
+
+.pdu-error-box h2 {
+    margin-top: 0;
+}
+
+/* Header */
+.pdu-dashboard-header {
+    position: relative;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 28px 34px;
+    border-radius: 24px;
+    overflow: hidden;
+
+    background: #fff;
+
+    backdrop-filter: blur(18px);
+    -webkit-backdrop-filter: blur(18px);
+
+    border: 1px solid rgba(56, 163, 197, 0.18);
+
+    box-shadow:
+        0 10px 30px rgba(53, 63, 124, 0.08),
+        inset 0 1px 0 rgba(255, 255, 255, 0.8);
+}
+
+/* Decorative Glow */
+.pdu-dashboard-header::before {
+    content: "";
+    position: absolute;
+    width: 280px;
+    height: 280px;
+    top: -120px;
+    right: -90px;
+    border-radius: 50%;
+
+    background: radial-gradient(circle,
+            rgba(56, 163, 197, 0.18) 0%,
+            transparent 70%);
+}
+
+/* Decorative Accent */
+.pdu-dashboard-header::after {
+    content: "";
+    position: absolute;
+    left: 34px;
+    bottom: 0;
+    width: 120px;
+    height: 4px;
+    border-radius: 999px;
+
+    background: linear-gradient(90deg,
+            #38A3C5,
+            #353F7C);
+}
+
+.pdu-dashboard-title {
+    margin: 0;
+
+    font-size: 2.2rem;
+    font-weight: 800;
+    line-height: 1.15;
+    letter-spacing: -0.04em;
+
+    color: #1f2d5a;
+}
+
+.pdu-dashboard-subtitle {
+    margin-top: 12px;
+
+    max-width: 760px;
+
+    font-size: 1.05rem;
+    line-height: 1.75;
+    font-weight: 500;
+
+    color: #5b6474;
+}
+
+/* KPI Grid - 4 Columns */
+.pdu-dashboard-kpi-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+    gap: 24px;
+}
+
+/* Charts Grid - 2 Columns */
+.pdu-dashboard-charts-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+    gap: 24px;
+}
+
+.pdu-chart-card {
+    background-color: #ffffff;
+    border-radius: 12px;
+    padding: 24px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+}
+
+.pdu-chart-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background-color: #f9fafb;
+    border: 2px dashed #d1d5db;
+}
+
+/* Sections */
+.pdu-dashboard-section {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.pdu-section-title {
+    margin: 0;
+    font-size: 1.4rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+@media (max-width: 768px) {
+
+    .pdu-dashboard-header {
+        padding: 22px;
+        border-radius: 18px;
+    }
+
+    .pdu-dashboard-title {
+        font-size: 1.75rem;
+    }
+
+    .pdu-dashboard-subtitle {
+        font-size: 0.95rem;
+        line-height: 1.6;
+    }
+}

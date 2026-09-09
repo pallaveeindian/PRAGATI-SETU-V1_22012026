@@ -113,7 +113,7 @@ const AssemblerDashboardBatchCreator = () => {
     ) {
       setParticipantData((prev) => ({
         ...prev,
-        totalLimit: 40,
+        totalLimit: 50,
       }));
     } else {
       setParticipantData({ selectedParticipants: [], totalLimit: 0 });
@@ -246,7 +246,7 @@ const AssemblerDashboardBatchCreator = () => {
 
           if (!id) return;
 
-          if ((!blockId) && filterBlockArray.length > 0) {
+          if (!blockId && filterBlockArray.length > 0) {
             blockId = filterBlockArray[idx % filterBlockArray.length];
           }
 
@@ -411,6 +411,23 @@ const AssemblerDashboardBatchCreator = () => {
     () => selectedTrainees.map((t) => t.id),
     [selectedTrainees],
   );
+
+  // SURGICAL ADDITION: Target logic checks
+  const isTargetMet =
+    achievementData.target > 0 &&
+    achievementData.achievement >= achievementData.target;
+
+  const isBtnDisabled =
+    isTargetMet ||
+    participantData.selectedParticipants.length < 20 ||
+    participantData.selectedParticipants.length > 50 ||
+    (batchType === "SEPARATE" &&
+      filters.participantType !== "Trainer" &&
+      !filters.block) ||
+    (batchType === "COMBINED" &&
+      filters.participantType !== "Trainer" &&
+      (!Array.isArray(filters.block) || filters.block.length < 2)) ||
+    !filters.startDate;
 
   return (
     <>
@@ -638,87 +655,51 @@ const AssemblerDashboardBatchCreator = () => {
                 borderTop: "1px solid #f1f5f9",
               }}
             >
-              {/* SURGICAL FIX: Validation message for participant limits, block selection & start date */}
+              {/* SURGICAL FIX: Validation message for participant limits, block selection, start date & TARGET ACHIEVEMENT */}
               <div
                 style={{
                   fontSize: "14px",
                   fontWeight: "600",
-                  color:
-                    participantData.selectedParticipants.length >= 20 &&
-                    participantData.selectedParticipants.length <= 40 &&
-                    (batchType !== "SEPARATE" ||
-                      filters.participantType === "Trainer" ||
-                      filters.block) &&
-                    filters.startDate // <-- Start Date Check added here
-                      ? "#16a34a"
-                      : "#ef4444",
+                  color: !isBtnDisabled ? "#16a34a" : "#ef4444",
                 }}
               >
-                {!filters.startDate
-                  ? "⚠ Start Date is required." // <-- Start Date Warning added here
-                  : participantData.selectedParticipants.length < 20
-                    ? "⚠ Minimum 20 participants required to form a batch."
-                    : participantData.selectedParticipants.length > 40
-                      ? "⚠ Maximum 40 participants allowed per batch."
-                      : batchType === "SEPARATE" &&
-                          filters.participantType !== "Trainer" &&
-                          !filters.block
-                        ? "⚠ A Block must be selected for a Separate Batch."
-                        : "✓ Configuration is valid."}
+                {isTargetMet
+                  ? "⚠ Target for this Training Plan has already been achieved. Batch creation disabled."
+                  : !filters.startDate
+                    ? "⚠ Start Date is required."
+                    : participantData.selectedParticipants.length < 20
+                      ? "⚠ Minimum 20 participants required to form a batch."
+                      : participantData.selectedParticipants.length > 50
+                        ? "⚠ Maximum 50 participants allowed per batch."
+                        : batchType === "SEPARATE" &&
+                            filters.participantType !== "Trainer" &&
+                            !filters.block
+                          ? "⚠ A Block must be selected for a Separate Batch."
+                          : batchType === "COMBINED" &&
+                              filters.participantType !== "Trainer" &&
+                              (!Array.isArray(filters.block) ||
+                                filters.block.length < 2)
+                            ? "⚠ At least 2 Blocks must be selected for a Combined Batch."
+                            : "✓ Configuration is valid."}
               </div>
 
               <button
                 onClick={() => setIsPreviewOpen(true)}
-                disabled={
-                  participantData.selectedParticipants.length < 20 ||
-                  participantData.selectedParticipants.length > 40 ||
-                  (batchType === "SEPARATE" &&
-                    filters.participantType !== "Trainer" &&
-                    !filters.block) ||
-                  !filters.startDate // <-- Disabling condition added here
-                }
+                disabled={isBtnDisabled}
                 style={{
-                  background:
-                    participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" &&
-                      filters.participantType !== "Trainer" &&
-                      !filters.block) ||
-                    !filters.startDate
-                      ? "#cbd5e1"
-                      : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
-                  color:
-                    participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" &&
-                      filters.participantType !== "Trainer" &&
-                      !filters.block) ||
-                    !filters.startDate
-                      ? "#94a3b8"
-                      : "#ffffff",
+                  background: isBtnDisabled
+                    ? "#cbd5e1"
+                    : "linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%)",
+                  color: isBtnDisabled ? "#94a3b8" : "#ffffff",
                   padding: "12px 32px",
                   border: "none",
                   borderRadius: "8px",
                   fontWeight: "600",
                   fontSize: "14px",
-                  boxShadow:
-                    participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" &&
-                      filters.participantType !== "Trainer" &&
-                      !filters.block) ||
-                    !filters.startDate
-                      ? "none"
-                      : "0 4px 12px rgba(37, 99, 235, 0.15)",
-                  cursor:
-                    participantData.selectedParticipants.length < 20 ||
-                    participantData.selectedParticipants.length > 40 ||
-                    (batchType === "SEPARATE" &&
-                      filters.participantType !== "Trainer" &&
-                      !filters.block) ||
-                    !filters.startDate
-                      ? "not-allowed"
-                      : "pointer",
+                  boxShadow: isBtnDisabled
+                    ? "none"
+                    : "0 4px 12px rgba(37, 99, 235, 0.15)",
+                  cursor: isBtnDisabled ? "not-allowed" : "pointer",
                   transition: "all 0.2s cubic-bezier(0.4, 0, 0.2, 1)",
                 }}
               >

@@ -221,7 +221,6 @@ export default function ShgListTable({
           display: "flex",
           gap: 10,
           marginBottom: 14,
-          flexWrap: "wrap",
         }}
       >
         <select

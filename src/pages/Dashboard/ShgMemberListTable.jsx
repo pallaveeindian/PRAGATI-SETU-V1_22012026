@@ -425,6 +425,7 @@ export default function ShgMemberListTable({
                           type="checkbox"
                           checked={!!isSelected}
                           onChange={(e) => handleToggleRow(m, e.target.checked)}
+                          style={{ transform: "scale(1.5)", cursor: "pointer" }}
                         />
                       </td>
 

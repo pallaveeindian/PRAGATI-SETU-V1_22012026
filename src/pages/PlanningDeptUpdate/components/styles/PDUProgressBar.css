@@ -1,0 +1,75 @@
+/* 
+ * pdu-progress-container: The wrapper 
+ */
+.pdu-progress-container {
+    width: 100%;
+    margin: 20px auto;
+    font-family: "Lucida Grande", Tahoma, Verdana, sans-serif;
+}
+
+/* 
+ * pdu-progress-header: Holds the label and the percentage text 
+ */
+.pdu-progress-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    padding: 0 4px;
+}
+
+.pdu-progress-label {
+    font-weight: 600;
+    color: #4b5563;
+    font-size: 14px;
+}
+
+.pdu-progress-stats {
+    font-size: 13px;
+    color: #6b7280;
+    font-weight: bold;
+    background: #f3f4f6;
+    padding: 4px 8px;
+    border-radius: 4px;
+}
+
+/* 
+ * pdu-progress-track: The dark background holding the bar 
+ * Adapted from the dark theme reference to stand out inside light components
+ */
+.pdu-progress-track {
+    padding: 4px;
+    background: rgba(0, 0, 0, 0.7); /* Deep dark background */
+    border-radius: 6px;
+    box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.5), 0 1px rgba(255, 255, 255, 0.8);
+    width: 100%;
+}
+
+/* 
+ * pdu-progress-fill: The glossy moving bar. 
+ * The background-color and width are injected inline via React for smooth dynamic updates.
+ */
+.pdu-progress-fill {
+    height: 16px;
+    border-radius: 4px;
+    
+    /* Glossy reflection effect exactly from reference */
+    background-image: -webkit-linear-gradient(top, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
+    background-image: -moz-linear-gradient(top, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
+    background-image: -o-linear-gradient(top, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
+    background-image: linear-gradient(to bottom, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.05));
+    
+    /* Smooth transition for width and color */
+    -webkit-transition: 0.4s linear;
+    -moz-transition: 0.4s linear;
+    -o-transition: 0.4s linear;
+    transition: 0.4s linear;
+    -webkit-transition-property: width, background-color;
+    -moz-transition-property: width, background-color;
+    -o-transition-property: width, background-color;
+    transition-property: width, background-color;
+    
+    /* Inner/Outer shadow exactly from reference */
+    -webkit-box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
+    box-shadow: 0 0 1px 1px rgba(0, 0, 0, 0.25), inset 0 1px rgba(255, 255, 255, 0.1);
+}

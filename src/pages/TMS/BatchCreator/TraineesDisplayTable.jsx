@@ -305,10 +305,15 @@ const ParticipantTable = ({
                 ) : (
                   <>
                     <th style={thStyle}>Name</th>
+                    <th style={thStyle}>LokOS Member ID</th>
+                    <th style={thStyle}>LokOS SHG ID</th>
                     <th style={thStyle}>Mobile</th>
                     <th style={thStyle}>Gender</th>
                     <th style={thStyle}>Category</th>
+                    <th style={thStyle}>District</th>
                     <th style={thStyle}>Block</th>
+                    <th style={thStyle}>Panchayat</th>
+                    <th style={thStyle}>Village</th>
                     <th style={thStyle}>Training Request ID</th>
                   </>
                 )}
@@ -350,7 +355,8 @@ const ParticipantTable = ({
                             row.participant_name ||
                             "-"}
                         </td>
-
+                        <td style={tdStyle}>{row.lokos_member_code || "-"}</td>
+                        <td style={tdStyle}>{row.lokos_shg_code || "-"}</td>
                         <td style={tdStyle}>
                           {row.mobile || row.mobile_number || "-"}
                         </td>
@@ -363,14 +369,30 @@ const ParticipantTable = ({
                             row.category ||
                             "-"}
                         </td>
-
+                        <td style={tdStyle}>
+                          {row.district_name_en ||
+                            row.district ||
+                            row.district_name ||
+                            "-"}
+                        </td>
                         <td style={tdStyle}>
                           {row.block_name_en ||
                             row.block ||
                             row.block_name ||
                             "-"}
                         </td>
-
+                        <td style={tdStyle}>
+                          {row.panchayat_name_en ||
+                            row.panchayat ||
+                            row.panchayat_name ||
+                            "-"}
+                        </td>
+                        <td style={tdStyle}>
+                          {row.village_name_english ||
+                            row.village ||
+                            row.village_name ||
+                            "-"}
+                        </td>
                         <td style={tdStyle}>
                           {row.training || row.training_request || "-"}
                         </td>

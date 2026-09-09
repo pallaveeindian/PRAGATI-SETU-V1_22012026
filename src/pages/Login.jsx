@@ -78,7 +78,7 @@ export default function Login({ isOpen, onClose }) {
           top: 20px;
           right: 20px;
           z-index: 100;
-          background: rgba(255, 255, 255, 0.2);
+          background: rgb(255, 0, 0);
           backdrop-filter: blur(4px);
           border: 2px solid rgba(255, 255, 255, 0.5);
           color: white;
@@ -95,8 +95,9 @@ export default function Login({ isOpen, onClose }) {
         }
 
         .login-close-btn:hover {
-          background: #dc2626;
+          background: #ffffff;
           border-color: #dc2626;
+          color: #dc2626;
           transform: scale(1.1) rotate(90deg);
         }
 

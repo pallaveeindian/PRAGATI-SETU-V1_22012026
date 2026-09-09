@@ -14,9 +14,11 @@ export function useMTList(initialFilters = {}) {
   const { user } = useContext(AuthContext) || {};
   const role = getCanonicalRole(user || {});
 
-  // Identify if user is DMMU (adjust conditions based on your exact role constants)
+  // Identify if user is DMMU or BMMU
   const isDMMU =
-    role === "dmmu" || role === "2" || String(user?.role_id) === "13";
+    role === "dmmu" || role === "2" || String(user?.role_id) === "2";
+  const isBMMU =
+    role === "bmmu" || role === "1" || String(user?.role_id) === "1"; // Adjust role_id if needed
 
   // --------------------------------------------------------
   // 1. Core State
@@ -28,17 +30,19 @@ export function useMTList(initialFilters = {}) {
 
   // Security / Scoping State
   const [lockedDistrict, setLockedDistrict] = useState(null);
-  // We block the initial API call until DMMU scope is resolved to prevent data leaks
-  const [scopeLoading, setScopeLoading] = useState(isDMMU);
+  const [lockedBlock, setLockedBlock] = useState(null); // <-- SURGICAL ADDITION
+  // We block the initial API call until scope is resolved to prevent data leaks
+  const [scopeLoading, setScopeLoading] = useState(isDMMU || isBMMU);
 
   // Pagination & Filter State
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 20; // Standardized per backend configuration
+  const rowsPerPage = 20;
 
   const [filters, setFilters] = useState({
     mandal: "",
     district_category: "",
     district: "",
+    block: "", // <-- SURGICAL ADDITION
     designation: "",
     gender: "",
     smmu_recommended: "",
@@ -57,15 +61,23 @@ export function useMTList(initialFilters = {}) {
 
     async function resolveScope() {
       try {
-        if (isDMMU) {
-          // DMMU District Resolution
+        if (isDMMU || isBMMU) {
+          // <-- SURGICAL REPLACEMENT
+          // DMMU / BMMU Scope Resolution
           const geoRes = await LOOKUP_API.userGeoscopeByUserId(user.id);
           const districtId =
             geoRes?.data?.districts?.[0] ?? geoRes?.data?.district ?? null;
+          const blockId =
+            geoRes?.data?.blocks?.[0] ?? geoRes?.data?.block ?? null;
 
           if (districtId) {
             setLockedDistrict(String(districtId));
             setFilters((prev) => ({ ...prev, district: String(districtId) }));
+          }
+
+          if (isBMMU && blockId) {
+            setLockedBlock(String(blockId));
+            setFilters((prev) => ({ ...prev, block: String(blockId) }));
           }
         } else {
           // SURGICAL ADDITION: SMMU Thematic Expert Resolution
@@ -120,8 +132,11 @@ export function useMTList(initialFilters = {}) {
 
         // STRICT SECURITY OVERRIDE:
         // Forcefully lock parameters if the user is restricted by role or expertise
-        if (isDMMU && lockedDistrict) {
+        if ((isDMMU || isBMMU) && lockedDistrict) {
           params.district = lockedDistrict;
+        }
+        if (isBMMU && lockedBlock) {
+          params.block = lockedBlock;
         }
         // SURGICAL ADDITION: Lock theme if SMMU is an expert
         if (lockedTheme) {
@@ -181,7 +196,9 @@ export function useMTList(initialFilters = {}) {
     setFilters,
 
     // RBAC Context for UI rendering
+    isBMMU,
     isDMMU,
+    lockedBlock,
     lockedDistrict,
     lockedTheme,
 

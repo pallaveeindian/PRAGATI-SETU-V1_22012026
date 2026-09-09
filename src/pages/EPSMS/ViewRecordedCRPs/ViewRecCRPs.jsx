@@ -6,38 +6,38 @@ import CRPTable from "./VRCComponents/CRPTable";
 import { FaFilter, FaTable } from "react-icons/fa";
 
 export default function ViewRecCRPs() {
-    const [filters, setFilters] = React.useState({});
+  const [filters, setFilters] = React.useState({});
 
-    return (
-        <div className="crpform-epsms-dashboard">
-            {/* Row 1 */}
-            <div className="epsms-grid-row one-col">
-                <div className="epsms-card">
-                    <h3>
-                        <FaFilter className="epsms-icon" /> Filters / Constraints
-                    </h3>
+  return (
+    <div className="crpform-epsms-dashboard">
+      {/* Row 1 */}
+      <div className="epsms-grid-row one-col">
+        <div className="epsms-card">
+          <h3>
+            <FaFilter className="epsms-icon" /> Filters / Constraints
+          </h3>
 
-                    <CRPFilters onFetch={setFilters} />
-                </div>
-            </div>
+          <CRPFilters onFetch={setFilters} />
+        </div>
+      </div>
 
-            {/* Row 2 */}
-            <div className="epsms-grid-row one-col">
-                <div className="epsms-card">
-                    <h3>
-                        <FaTable className="epsms-icon" /> CRP Table
-                    </h3>
+      {/* Row 2 */}
+      <div className="epsms-grid-row one-col">
+        <div className="epsms-card">
+          <h3>
+            <FaTable className="epsms-icon" /> CRP Table
+          </h3>
 
-                    <CRPTable filters={filters} />
-                </div>
+          <CRPTable filters={filters} itemsPerPage={25} />
+        </div>
 
-                {/* Export */}
-                <div className="epsms-export-row">
-                    {/* <ExportButton filters={filters} /> */}
-                </div>
-            </div>
+        {/* Export */}
+        <div className="epsms-export-row">
+          {/* <ExportButton filters={filters} /> */}
+        </div>
+      </div>
 
-            <style>{`
+      <style>{`
 
         .crpform-epsms-dashboard {
           display: flex;
@@ -166,6 +166,6 @@ export default function ViewRecCRPs() {
         }
 
       `}</style>
-        </div>
-    );
+    </div>
+  );
 }

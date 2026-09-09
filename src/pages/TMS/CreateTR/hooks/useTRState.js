@@ -1,5 +1,5 @@
 // src/pages/TMS/CreateTR/hooks/useTRState.js
-import { useState, useMemo, useRef, useCallback } from "react";
+import React, { useState, useMemo, useRef, useCallback } from "react";
 import { TMS_API } from "../../../../api/axios";
 
 export function useTRState(initialGeoscope = null) {
@@ -39,6 +39,19 @@ export function useTRState(initialGeoscope = null) {
   // Trainer Selection State
   const [selectedTrainersMap, setSelectedTrainersMap] = useState(new Map());
   const savedTrainerResponses = useRef(new Map());
+
+  // Staff Selection State
+  const [selectedStaffMap, setSelectedStaffMap] = useState(new Map());
+  const savedStaffResponses = useRef(new Map());
+
+  // --- Derived State (Memos) for Staff ---
+  const selectedStaffIds = useMemo(() => {
+    return new Set(Array.from(selectedStaffMap.keys()));
+  }, [selectedStaffMap]);
+
+  const selectedStaffList = useMemo(() => {
+    return Array.from(selectedStaffMap.values());
+  }, [selectedStaffMap]);
 
   // Modal & Submission State
   const [previewOpen, setPreviewOpen] = useState(false);
@@ -255,6 +268,42 @@ export function useTRState(initialGeoscope = null) {
     });
   }, []);
 
+  // --- Staff Handlers ---
+  const onToggleStaff = useCallback(async (staffObj, add) => {
+    const id = staffObj.id; // DB primary key
+    if (add) {
+      if (!savedStaffResponses.current.has(id)) {
+        try {
+          // Fetch fully nested detail view using employee_id as the lookup field
+          const resp = await TMS_API.staff.retrieve(staffObj.employee_id);
+          const payload = resp?.data ?? resp ?? staffObj;
+          savedStaffResponses.current.set(id, payload);
+        } catch (e) {
+          savedStaffResponses.current.set(id, staffObj);
+        }
+      }
+      setSelectedStaffMap((m) => {
+        const copy = new Map(m);
+        copy.set(id, savedStaffResponses.current.get(id));
+        return copy;
+      });
+    } else {
+      setSelectedStaffMap((m) => {
+        const copy = new Map(m);
+        copy.delete(id);
+        return copy;
+      });
+    }
+  }, []);
+
+  const removeSelectedStaff = useCallback((id) => {
+    setSelectedStaffMap((m) => {
+      const copy = new Map(m);
+      copy.delete(id);
+      return copy;
+    });
+  }, []);
+
   const removeIneligibleParticipants = useCallback(() => {
     if (form.training_type === "BENEFICIARY") {
       const engagedSet = new Set(
@@ -263,9 +312,18 @@ export function useTRState(initialGeoscope = null) {
       setSelectedBeneficiaries((prev) =>
         prev.filter((b) => !engagedSet.has(b.lokos_member_code)),
       );
-    } else {
+    } else if (form.training_type === "TRAINER") {
       const engagedSet = new Set(engagedParticipants.map((t) => String(t.id)));
       setSelectedTrainersMap((prev) => {
+        const copy = new Map(prev);
+        for (const key of copy.keys()) {
+          if (engagedSet.has(String(key))) copy.delete(key);
+        }
+        return copy;
+      });
+    } else if (form.training_type === "STAFF") {
+      const engagedSet = new Set(engagedParticipants.map((s) => String(s.id)));
+      setSelectedStaffMap((prev) => {
         const copy = new Map(prev);
         for (const key of copy.keys()) {
           if (engagedSet.has(String(key))) copy.delete(key);
@@ -276,6 +334,13 @@ export function useTRState(initialGeoscope = null) {
     setEngagementStatus("idle");
     setEngagedParticipants([]);
   }, [engagedParticipants, form.training_type]);
+
+  // --- Enforce LEVEL = STATE for STAFF ---
+  React.useEffect(() => {
+    if (form.training_type === "STAFF" && form.level !== "STATE") {
+      setForm((f) => ({ ...f, level: "STATE" }));
+    }
+  }, [form.training_type, form.level]);
 
   return {
     step,
@@ -337,5 +402,14 @@ export function useTRState(initialGeoscope = null) {
     engagedParticipants,
     setEngagedParticipants,
     removeIneligibleParticipants,
+
+    // Staff Exports
+    selectedStaffMap,
+    setSelectedStaffMap,
+    savedStaffResponses,
+    onToggleStaff,
+    removeSelectedStaff,
+    selectedStaffIds,
+    selectedStaffList,
   };
 }

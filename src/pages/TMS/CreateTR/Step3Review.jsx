@@ -10,10 +10,14 @@ export default function Step3Review({
   partners,
   selectedBeneficiaries,
   selectedTrainerList,
+  selectedStaffList = [],
   goToPrev,
   openPreview,
   removeSelectedBeneficiary,
   removeSelectedTrainer,
+  removeSelectedStaff,
+  targetDistrictId,
+  districts = [],
 }) {
   const btnPrimary = {
     background: "linear-gradient(20deg, #e4ecf5, #5a8cc2)",
@@ -154,6 +158,7 @@ export default function Step3Review({
 
       <div style={{ marginTop: 12 }}>
         <h4>Selected Participants</h4>
+        {/* SURGICAL ADDITION: Handle STAFF layout seamlessly */}
         {form.training_type === "BENEFICIARY" ? (
           selectedBeneficiaries.length === 0 ? (
             <p className="muted">No beneficiaries selected.</p>
@@ -206,6 +211,62 @@ export default function Step3Review({
                       </td>
                     </tr>
                   ))}
+                </tbody>
+              </table>
+            </div>
+          )
+        ) : form.training_type === "STAFF" ? (
+          selectedStaffList.length === 0 ? (
+            <p className="muted">No staff members selected.</p>
+          ) : (
+            <div
+              className="table-wrapper"
+              style={{ maxHeight: 220, overflow: "auto" }}
+            >
+              <table className="table table-compact">
+                <thead>
+                  <tr>
+                    <th>Name</th>
+                    <th>Employee ID</th>
+                    <th>Designation</th>
+                    <th>Theme</th>
+                    <th>District</th>
+                    <th>Mobile</th>
+                    <th></th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {selectedStaffList.map((s) => {
+                    const fbDistName = targetDistrictId
+                      ? districts.find(
+                          (d) =>
+                            String(d.district_id) === String(targetDistrictId),
+                        )?.district_name_en || targetDistrictId
+                      : "-";
+
+                    return (
+                      <tr key={s.id}>
+                        <td>{s.full_name || "-"}</td>
+                        <td>{s.employee_id || "-"}</td>
+                        <td>{s.designation || "-"}</td>
+                        <td>{s.theme_name || s.theme?.theme_name || "-"}</td>
+                        <td>
+                          {s.district_name ||
+                            s.district?.district_name_en ||
+                            fbDistName}
+                        </td>
+                        <td>{s.mobile || "-"}</td>
+                        <td>
+                          <button
+                            className="btn-sm btn-flat"
+                            onClick={() => removeSelectedStaff(s.id)}
+                          >
+                            Remove
+                          </button>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

@@ -35,13 +35,14 @@ export default function TrainingReqListFilter({ user, onApply }) {
     partner_id: "",
     theme_id: "",
     training_plan_id: "",
+    type_of_training: "",
 
     status: "",
     training_type: "",
     level: "",
     batch_type: "",
 
-    financial_year: "",
+    financial_year: "2026-27",
   });
 
   /* ================= LOOKUPS ================= */
@@ -187,7 +188,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
     }
 
     LOOKUP_API.blocks
-      .list({ district_id: filters.district_id })
+      .list({ district_id: filters.district_id, page_size: 100 })
       .then((r) => {
         let data = r?.data?.results || [];
         if (filters.aspirational_only) {
@@ -427,6 +428,23 @@ export default function TrainingReqListFilter({ user, onApply }) {
             </select>
           )}
 
+          {/* ===== Training Type (Residential / Non-residential) ===== */}
+          <select
+            className="filter-input"
+            value={filters.type_of_training}
+            onChange={(e) =>
+              setFilters((f) => ({
+                ...f,
+                type_of_training: e.target.value,
+              }))
+            }
+          >
+            <option value="">Type of Training</option>
+            <option value="RES">Residential</option>
+            <option value="NON RES">Non-residential</option>
+            <option value="OTHER">Other</option>
+          </select>
+
           {/* ===== Status ===== */}
           <select
             className="filter-input"
@@ -436,10 +454,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             }
           >
             <option value="">Status</option>
-            {[
-              "BATCHING",
-              "COMPLETED",
-            ].map((s) => (
+            {["BATCHING", "COMPLETED"].map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>
@@ -473,6 +488,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
             <option value="">Participant</option>
             <option value="BENEFICIARY">Beneficiary</option>
             <option value="TRAINER">Trainer</option>
+            <option value="STAFF">Staff</option>
           </select>
 
           {/* ===== Level ===== */}

@@ -1,0 +1,96 @@
+/* Main Container styling (matches PDUCard aesthetic) */
+.pdu-officer-form-container {
+    background-color: #ffffff;
+    border-radius: 12px;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+    border: 1px solid #e5e7eb;
+    overflow: hidden;
+    width: 100%;
+}
+
+/* Header section */
+.pdu-officer-form-header {
+    padding: 20px 24px;
+    border-bottom: 1px solid #f3f4f6;
+    background-color: #f9fafb;
+}
+
+.pdu-form-title {
+    margin: 0 0 4px 0;
+    font-size: 1.125rem;
+    font-weight: 600;
+    color: #111827;
+}
+
+.pdu-form-subtitle {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #6b7280;
+    line-height: 1.4;
+}
+
+/* Form Body */
+.pdu-officer-form {
+    display: flex;
+    flex-direction: column;
+}
+
+/* Grid layout for inputs (2 columns on desktop) */
+.pdu-form-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 20px;
+    padding: 24px;
+}
+
+/* Individual Input Groups */
+.pdu-form-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.pdu-form-label {
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+}
+
+/* Input Fields */
+.pdu-form-input {
+    width: 100%;
+    padding: 10px 14px;
+    font-size: 1rem;
+    font-family: inherit;
+    color: #1f2937;
+    background-color: #ffffff;
+    border: 1px solid #d1d5db;
+    border-radius: 6px;
+    transition: border-color 0.2s, box-shadow 0.2s;
+    outline: none;
+    box-sizing: border-box;
+}
+
+.pdu-form-input::placeholder {
+    color: #9ca3af;
+}
+
+.pdu-form-input:focus {
+    border-color: #3b82f6; /* Blue highlight */
+    box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15); /* Subtle blue glow */
+}
+
+.pdu-form-input:disabled {
+    background-color: #f3f4f6;
+    color: #9ca3af;
+    cursor: not-allowed;
+}
+
+/* Footer containing the submit button */
+.pdu-form-footer {
+    padding: 16px 24px;
+    border-top: 1px solid #f3f4f6;
+    background-color: #f9fafb;
+    display: flex;
+    justify-content: flex-end;
+}

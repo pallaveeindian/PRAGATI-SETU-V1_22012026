@@ -22,13 +22,7 @@ const labelStyle = {
 };
 
 const FilterComponent = ({ filters, handleChange }) => {
-  const financialYears = [
-    "2022-23",
-    "2023-24",
-    "2024-25",
-    "2025-26",
-    "2026-27",
-  ];
+  const financialYears = ["2026-27"];
 
   const fallbackThemes = [
     "Financial Literacy",
