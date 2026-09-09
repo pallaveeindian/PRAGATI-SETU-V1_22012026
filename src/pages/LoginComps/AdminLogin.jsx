@@ -8,7 +8,7 @@ import { AUTH_API } from "../../api/axios";
 import { getUser } from "../../utils/storage";
 import prernaLogo from "../../assets/BDOLogo.png";
 import { getCanonicalRole } from "../../utils/roleUtils";
-import AdminHeader from "../AdminPages/AdminHeader";
+import AdminHeader from "../AdminPages/Layout/AdminHeader";
 
 export default function AdminLogin() {
   const { login } = useContext(AuthContext);
@@ -62,7 +62,7 @@ export default function AdminLogin() {
     // 4. THE FIX: Use window.location.replace instead of navigate()
     // This bypasses any React state delays or hidden AuthContext redirects,
     // forcing the browser directly to the protected route with fresh credentials.
-    navigate("/admin/grievances");
+    window.location.replace("/admin/dashboard");
   };
 
   return (

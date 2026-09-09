@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+/*import React, { useState } from 'react';
 
 const AdminFooter = () => {
     return (
@@ -19,4 +19,4 @@ const AdminFooter = () => {
     );
 };
 
-export default AdminFooter;
+export default AdminFooter;*/

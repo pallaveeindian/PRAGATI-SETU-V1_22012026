@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import api, { TMS_API } from "../../api/axios";
+import api, { TMS_API } from "../../../api/axios";
 import KpiCards from "./KpiCards";
 import TmsModal from "./TmsModal";
 import TmsStyles from "./TmsStyles";
