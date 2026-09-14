@@ -47,7 +47,7 @@ export default function BatchRescheduleModal({
     setErrorData(null);
     try {
       const resp = await TMS_API.batchDetailV2(batchId);
-      setBatchData(resp?.data || null);
+    setBatchData(resp?.data?.data || resp?.data || null);
     } catch (err) {
       setErrorMsg("Failed to load batch details. Please try again.");
     } finally {

@@ -4,7 +4,7 @@ import KpiCards from "./KpiCards";
 import TmsModal from "./TmsModal";
 import TmsStyles from "./TmsStyles";
 // Naya component import karein (path apne folder structure ke hisaab se adjust kar lena)
-import CenterDetail from "./CenterDetail"; 
+ 
 
 const TmsPortal = () => {
   const [activeTab, setActiveTab] = useState('tms'); // 'tms' ya 'center'
@@ -269,12 +269,7 @@ color: isActive ? '#ffffff' : '#334155',
           >
             TMS Admin Dashboard
           </button>
-          <button 
-            onClick={() => setActiveTab('center')} 
-            style={tabBtnStyle(activeTab === 'center')}
-          >
-            Center Detail
-          </button>
+          
         </div>
 
         {/* --- VIEW 1: TMS PORTAL DASHBOARD --- */}

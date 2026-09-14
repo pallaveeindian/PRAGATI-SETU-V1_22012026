@@ -10,6 +10,8 @@ import UserManagement from "./UserManagement";
 import TrainingBatchList from "./TmsPortal/TrainingBatch/TrainingBatchList";
 import TrainingRequestList from "./TmsPortal/TrainingRequest/TrainingRequestList";
 import TrainingTarget from "./TmsPortal/TrainingTarget/TrainigTargetList";
+import LearningMaterial from "./TmsPortal/LearningMaterial/Llm";
+import CenterDetail from "./TmsPortal/CenterDetail";
 import HomeDashboard from "./HomeDashboard";
 
 
@@ -25,6 +27,8 @@ const tabGradients = {
   "Training Request List": "linear-gradient(to bottom, rgb(5, 46, 22) 0%, rgb(20, 83, 45) 12%, rgb(22, 101, 52) 28%, rgb(21, 128, 61) 45%, rgb(22, 163, 74) 60%, rgb(34, 197, 94) 75%, rgb(74, 222, 128) 88%, rgb(187, 247, 208) 100%)",
 
   "Training Target": "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)" ,
+
+  "Learning Material": "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)" ,
   
   "Default": "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)" 
 };
@@ -61,7 +65,9 @@ export default function AdminLayout({ children, defaultActiveMenu = "Home Dashbo
         />
 
         <div className="admin-layout-content">
-          {activeMenu === "TMS Portal" ? (
+          {children && activeMenu === defaultActiveMenu ? (
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>{children}</div>
+          ) : activeMenu === "TMS Portal" ? (
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}><TmsPortal /></div>
           ) : activeMenu === "User Management" ? (
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}><UserManagement /></div>
@@ -71,6 +77,10 @@ export default function AdminLayout({ children, defaultActiveMenu = "Home Dashbo
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}><TrainingRequestList /></div>
           ) : activeMenu === "Training Target" ? (
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}><TrainingTarget /></div>
+          ) : activeMenu === "Learning Material" ? (
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}><LearningMaterial/></div>
+          ) : activeMenu === "Center Detail" ? (
+            <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}><CenterDetail/></div>
           ) : activeMenu === "Home Dashboard" ? (
             <div style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}><HomeDashboard /></div>
           ) : activeMenu === "Grievances List" ? (

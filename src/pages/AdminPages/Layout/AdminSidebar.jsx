@@ -8,7 +8,10 @@ import {
     FaBars, 
     FaArrowLeft,
     FaChevronDown,
-    FaChevronRight
+    FaChevronRight,
+    FaBullseye,
+    FaBook,
+    FaFileSignature
 } from 'react-icons/fa';
 
 const AdminSidebar = ({
@@ -35,8 +38,10 @@ const AdminSidebar = ({
             children: [
                 { name: 'User Management', icon: <FaUsers /> },
                 { name: 'Training Batch List', icon: <FaClipboardList /> },
-                { name: 'Training Request List', icon: <FaClipboardList /> },
-                { name: 'Training Target', icon: <FaClipboardList /> },
+                { name: 'Training Request List', icon: <FaFileSignature /> },
+                { name: 'Training Target', icon: <FaBullseye /> },
+                { name: 'Learning Material', icon: <FaBook /> },
+                { name: 'Center Detail', icon: <FaClipboardList /> },
             ]
         },
     ];

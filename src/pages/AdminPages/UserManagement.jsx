@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { TMS_API } from '../../api/axios'; // Apne project ke mutabiq path check kar lein
+import { LOOKUP_API } from '../../api/axios'; // Apne project ke mutabiq path check kar lein
 
 const UserManagement = () => {
   // 1. Role Tab State ('bmmu' ya 'dmmu')
@@ -33,7 +33,7 @@ const UserManagement = () => {
       setApiError('');
       try {
         // Role ke hisaab se dynamic API choose hogi
-        const fetchMethod = roleTab === 'dmmu' ? TMS_API.dmmuUsers : TMS_API.bmmuUsers;
+        const fetchMethod = roleTab === 'dmmu' ? LOOKUP_API.lookups.users : LOOKUP_API.lookups.users;
 
         const apiParams = {
           page: currentPage,
