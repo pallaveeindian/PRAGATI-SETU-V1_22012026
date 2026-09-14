@@ -55,6 +55,9 @@ import DmmuTargetAchievement from "../pages/TMS/DMMU/dmmu_tp_tvs";
 import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
 import StaffBatchCreatorDashboard from "../pages/TMS/StaffBatchCreator/StaffBatchCreatorDashboard";
 
+// Backlog Batch Creator
+import BacklogBatchDashboard from "../pages/TMS/BacklogBatchCreator/BacklogBatchDashboard";
+
 // Learning Materials Module
 import LMList from "../pages/TMS/LearnMat/LMList";
 import AddLM from "../pages/TMS/LearnMat/AddLM";
@@ -175,6 +178,10 @@ export default function TmsRoutes() {
           element={<AssemblerDashboardBatchCreator />}
         />
         <Route path="preview-batch-creator" element={<PreviewBatchCreator />} />
+        <Route
+          path="backlog-batch-creator"
+          element={<BacklogBatchDashboard />}
+        />
       </Route>
 
       {/* TPCP Routes */}

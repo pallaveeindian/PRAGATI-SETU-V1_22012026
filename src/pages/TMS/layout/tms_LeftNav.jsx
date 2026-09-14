@@ -22,6 +22,7 @@ import {
   FaUserCheck,
   FaUserEdit,
   FaChalkboard,
+  FaBackward,
 } from "react-icons/fa";
 
 /**
@@ -344,6 +345,11 @@ const MENU = {
           label: "Batch List",
           to: "/tms/batches-list/",
           icon: FaAddressBook,
+        },
+        {
+          label: "Backlog Batch Creator",
+          to: "/tms/backlog-batch-creator/",
+          icon: FaBackward,
         },
       ],
     },

@@ -36,7 +36,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
     theme_id: "",
     training_plan_id: "",
     type_of_training: "",
-
+    is_old: "",
     status: "",
     training_type: "",
     level: "",
@@ -460,6 +460,38 @@ export default function TrainingReqListFilter({ user, onApply }) {
               </option>
             ))}
           </select>
+
+          {/* ===== Training Requests for Backlog Batches ===== */}
+          <label
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: 6,
+              fontSize: 14,
+              color: "#2b4e72",
+              background: "#fff",
+              padding: "6px 10px",
+              borderRadius: 6,
+              border: "1px solid #a7c6ed",
+            }}
+          >
+            <input
+              type="checkbox"
+              checked={filters.is_old}
+              onChange={(e) =>
+                setFilters((f) => ({
+                  ...f,
+                  is_old: e.target.checked,
+                }))
+              }
+              style={{
+                cursor: "pointer",
+                width: 16,
+                height: 16,
+              }}
+            />
+            Training Requests for Backlog Batches
+          </label>
 
           {/* ===== Financial Year ===== */}
           <select
