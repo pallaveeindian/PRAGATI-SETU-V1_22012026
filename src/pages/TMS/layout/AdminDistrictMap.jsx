@@ -316,6 +316,43 @@ export default function AdminDistrictMap({
 
         .muted-box { padding: 40px; text-align: center; color: #64748b; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 12px; display: flex; flex-direction: column; align-items: center; }
 
+        .admin-map-viewport {
+          position: relative;
+          width: 100%;
+          height: 100%;
+          overflow: hidden;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        .admin-map-canvas {
+          width: 100%;
+          height: 100%;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+
+          overflow: hidden;
+        }
+
+        .admin-map-canvas > svg {
+          width: 100% !important;
+          height: 100% !important;
+
+          max-width: 100%;
+          max-height: 100%;
+
+          display: block;
+
+          /*
+          * Never distort the map.
+          */
+          preserveAspectRatio: xMidYMid meet;
+        }
+
         @media (max-width: 1024px) {
           .admin-district-map-wrapper { grid-template-columns: 1fr; height: auto; }
           .admin-map-section { height: 400px; }

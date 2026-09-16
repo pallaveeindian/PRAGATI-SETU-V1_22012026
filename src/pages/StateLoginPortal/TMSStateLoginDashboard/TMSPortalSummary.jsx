@@ -1,7 +1,8 @@
 // src\pages\StateLoginPortal\TMSStateLoginDashboard\TMSPortalSummary.jsx
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { FaDownload, FaSpinner, FaChartBar, FaSearch } from "react-icons/fa";
+import { FaFilePdf, FaSpinner, FaChartBar, FaSearch } from "react-icons/fa";
 import api, { TMS_API } from "../../../api/axios";
+import TMSSummaryExport from "./TMSSummaryExport";
 
 export default function TMSPortalSummary({ financialYear }) {
   // State
@@ -95,25 +96,20 @@ export default function TMSPortalSummary({ financialYear }) {
   }, [reportData, searchQuery]);
 
   // ======================================================================
-  // BEAUTIFUL EXCEL EXPORT (HTML to XLS trick for precise styling)
+  // NATIVE PDF EXPORT VIA PRINT WINDOW
   // ======================================================================
-  const handleExportExcel = () => {
+  const handleExportPDF = () => {
     if (!reportData) return;
     const { report_date, state_wide_summary, district_summaries } = reportData;
 
-    // Helper to extract values
     const val = (v) => (v !== null && v !== undefined ? v : "");
-
-    // Helper to generate stacked HTML cells for Excel
     const getStackedCell = (b, p, cls = "") => `
       <td class="${cls}">
-        <span class="val-batch">${val(b)}</span>
-        <br style="mso-data-placement:same-cell;"/>
+        <span class="val-batch">${val(b)}</span><br/>
         <span class="val-pax">${val(p)}</span>
       </td>
     `;
 
-    // Row Generator
     const generateRow = (sno, name, summary) => {
       const b = summary.batch_counts || {};
       const p = summary.participant_counts || {};
@@ -121,8 +117,8 @@ export default function TMSPortalSummary({ financialYear }) {
         <tr>
           <td>${sno}</td>
           <td style="text-align: left;">
-            <span class="dist-name">${name}</span><br style="mso-data-placement:same-cell;"/>
-            <span class="val-batch">Batch Count</span><br style="mso-data-placement:same-cell;"/>
+            <span class="dist-name">${name}</span><br/>
+            <span class="val-batch">Batch Count</span><br/>
             <span class="val-pax">Participant Count</span>
           </td>
           ${getStackedCell(b["1_total_batches_created"], p["1_total_batches_created"])}
@@ -144,60 +140,39 @@ export default function TMSPortalSummary({ financialYear }) {
     };
 
     let tableHTML = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+      <html>
       <head>
-        <meta charset="utf-8" />
+        <title>TMS Portal Summary Report - ${financialYear}</title>
         <style>
-          table { border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; }
-          th, td { border: 1px solid #94a3b8; text-align: center; vertical-align: middle; padding: 6px; }
-          .header-main { background-color: #1e3a8a; color: #ffffff; font-size: 16px; font-weight: bold; padding: 12px; text-transform: uppercase; }
-          .col-headers th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; font-size: 12px; }
-          .col-nums th { background-color: #e2e8f0; color: #475569; font-weight: bold; font-size: 11px; }
-          .highlight-blue { background-color: #eff6ff; }
-          .highlight-purple { background-color: #fdf4ff; }
-          .highlight-green { background-color: #f0fdf4; }
+          body { font-family: 'Segoe UI', Arial, sans-serif; padding: 10px; }
+          table { border-collapse: collapse; font-size: 10px; width: 100%; }
+          th, td { border: 1px solid #94a3b8; text-align: center; vertical-align: middle; padding: 4px; }
+          .header-main { background-color: #1e3a8a !important; color: #ffffff !important; font-size: 14px; padding: 10px; -webkit-print-color-adjust: exact; }
+          .col-headers th { background-color: #f1f5f9 !important; color: #0f172a !important; font-size: 10px; -webkit-print-color-adjust: exact; }
+          .col-nums th { background-color: #e2e8f0 !important; color: #475569 !important; font-size: 9px; -webkit-print-color-adjust: exact; }
+          .highlight-blue { background-color: #eff6ff !important; -webkit-print-color-adjust: exact; }
+          .highlight-purple { background-color: #fdf4ff !important; -webkit-print-color-adjust: exact; }
+          .highlight-green { background-color: #f0fdf4 !important; -webkit-print-color-adjust: exact; }
           .val-batch { color: #1d4ed8; font-weight: bold; }
           .val-pax { color: #0f766e; font-weight: bold; }
-          .dist-name { color: #0f172a; font-weight: bold; font-size: 14px; text-transform: uppercase; }
+          .dist-name { color: #0f172a; font-weight: bold; font-size: 12px; text-transform: uppercase; }
           .text-danger { color: #dc2626; }
           .text-warning { color: #b45309; }
+          @media print { @page { size: landscape; margin: 10mm; } }
         </style>
       </head>
       <body>
         <table>
-          <tr>
-            <th colspan="16" class="header-main">PRAGATI SETU-TMS PORTAL SUMMARY REPORT - DATED: ${report_date} - FY: ${financialYear}</th>
-          </tr>
+          <tr><th colspan="16" class="header-main">PRAGATI SETU-TMS PORTAL SUMMARY REPORT - DATED: ${report_date} - FY: ${financialYear}</th></tr>
           <tr class="col-headers">
-            <th>S. No.</th>
-            <th style="text-align: left;">District / State Name</th>
-            <th>Total batches Created</th>
-            <th>Scheduled Batches</th>
-            <th>Batches Pending At DMM</th>
-            <th>Ongoing Batches</th>
-            <th>Completed Batches</th>
-            <th>Completed Batches for Verification</th>
-            <th>Completed batch Closed</th>
-            <th>Batches Rejected By DMM</th>
-            <th class="highlight-blue">Total Batches Completed (5+6+7)</th>
-            <th class="highlight-purple">Total Target (Slot 1+2)</th>
-            <th>Participants Onboarded</th>
-            <th>Participants Enrolled In Batches</th>
-            <th>Remaining Participants for Enrollment</th>
-            <th class="highlight-green">Achievement %</th>
+            <th>S. No.</th><th style="text-align: left;">District / State Name</th><th>Total batches Created</th><th>Scheduled Batches</th><th>Batches Pending At DMM</th><th>Ongoing Batches</th><th>Completed Batches</th><th>Completed Batches for Verification</th><th>Completed batch Closed</th><th>Batches Rejected By DMM</th><th class="highlight-blue">Total Batches Completed (5+6+7)</th><th class="highlight-purple">Total Target (Slot 1+2)</th><th>Participants Onboarded</th><th>Participants Enrolled In Batches</th><th>Remaining Participants for Enrollment</th><th class="highlight-green">Achievement %</th>
           </tr>
           <tr class="col-nums">
             <th></th><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>13</th><th>14</th>
           </tr>
+          ${generateRow("—", "STATE WIDE SUMMARY", state_wide_summary)}
     `;
 
-    // Add State Row
-    tableHTML += generateRow("—", "STATE WIDE SUMMARY", state_wide_summary);
-
-    // Add Blank Separator Row
-    tableHTML += `<tr><td colspan="16" style="background: #e2e8f0; height: 10px;"></td></tr>`;
-
-    // Add District Rows
     if (district_summaries && district_summaries.length > 0) {
       district_summaries.forEach((dist, idx) => {
         tableHTML += generateRow(idx + 1, dist.district_name, dist.summary);
@@ -206,24 +181,18 @@ export default function TMSPortalSummary({ financialYear }) {
 
     tableHTML += `
         </table>
+        <script>
+          window.onload = function() { 
+            setTimeout(() => { window.print(); window.close(); }, 500);
+          }
+        </script>
       </body>
       </html>
     `;
 
-    // Download Blob
-    const blob = new Blob([tableHTML], {
-      type: "application/vnd.ms-excel;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `TMS_Portal_Summary_Report_${financialYear}.xls`,
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+    const printWindow = window.open("", "_blank");
+    printWindow.document.write(tableHTML);
+    printWindow.document.close();
   };
 
   // ======================================================================
@@ -293,12 +262,24 @@ export default function TMSPortalSummary({ financialYear }) {
                   </select>
                 </div>
 
+                {/* SURGICAL ADDITION: New Direct Excel Exporter */}
+                <TMSSummaryExport
+                  reportData={reportData}
+                  financialYear={financialYear}
+                  disabled={loading || !reportData}
+                />
+
+                {/* SURGICAL FIX: Changed to PDF Generator */}
                 <button
                   className="btn-export"
-                  onClick={handleExportExcel}
+                  style={{
+                    background: "#dc2626",
+                    boxShadow: "0 2px 4px rgba(220, 38, 38, 0.2)",
+                  }}
+                  onClick={handleExportPDF}
                   disabled={loading || !reportData}
                 >
-                  <FaDownload /> Export Excel
+                  <FaFilePdf /> Export PDF
                 </button>
               </div>
             </div>
