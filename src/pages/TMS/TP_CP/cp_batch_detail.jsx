@@ -223,8 +223,7 @@ export default function CpBatchDetail() {
     return today >= startDate && today <= endDate;
   }, [batch]);
 
-  const disableAttendanceManager =
-    isBatchEnded || !isDateInRange || openingManager;
+  const disableAttendanceManager = isBatchEnded || openingManager;
 
   return (
     <div className="app-shell">

@@ -79,7 +79,7 @@ const Header = () => {
 
   const verifyOldPassword = async () => {
     if (!form.oldPassword) {
-      alert("Enter old password");
+      alert("Enter Default password");
       return;
     }
 
@@ -88,11 +88,11 @@ const Header = () => {
         old_password: form.oldPassword,
       });
 
-      alert("Old password verified");
+      alert("Default password verified");
       setStep(2);
     } catch (err) {
       console.error(err);
-      alert(err?.response?.data?.message || "Old password incorrect");
+      alert(err?.response?.data?.message || "Default password incorrect");
     }
   };
 
