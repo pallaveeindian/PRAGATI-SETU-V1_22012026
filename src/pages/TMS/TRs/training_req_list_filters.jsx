@@ -26,6 +26,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
 
   /* ================= FILTER STATE ================= */
   const [filters, setFilters] = useState({
+    id: "",
     mandal_id: "",
     district_category_id: "",
     district_id: "",
@@ -536,6 +537,30 @@ export default function TrainingReqListFilter({ user, onApply }) {
             <option value="DISTRICT">District</option>
             <option value="BLOCK">Block</option>
           </select>
+        </div>
+
+        {/* TR ID Search Input */}
+        <div
+          style={{
+            paddingTop: "16px",
+          }}
+        >
+          <input
+            type="text"
+            className="filter-input"
+            style={{
+              width: "100%",
+              display: "block",
+              margin: "0 auto",
+              textAlign: "center",
+            }}
+            placeholder="Search by Training Request ID..."
+            value={filters.id}
+            onChange={(e) => setFilters((f) => ({ ...f, id: e.target.value }))}
+            onKeyDown={(e) => {
+              if (e.key === "Enter") handleFetch();
+            }}
+          />
         </div>
       </div>
 
