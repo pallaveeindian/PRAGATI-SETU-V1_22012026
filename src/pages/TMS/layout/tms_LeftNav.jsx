@@ -346,11 +346,11 @@ const MENU = {
           to: "/tms/batches-list/",
           icon: FaAddressBook,
         },
-        {
-          label: "Backlog Batch Creator",
-          to: "/tms/backlog-batch-creator/",
-          icon: FaBackward,
-        },
+        // {
+        //   label: "Backlog Batch Creator",
+        //   to: "/tms/backlog-batch-creator/",
+        //   icon: FaBackward,
+        // },
       ],
     },
     {

@@ -72,12 +72,12 @@ const TMSDashboard = () => {
             Batch Certificate Pendency
           </button>
 
-          <button
+          {/* <button
             className={`tab-btn ${activeTab === "beneficiary_eligibility_attendance" ? "active" : ""}`}
             onClick={() => setActiveTab("beneficiary_eligibility_attendance")}
           >
             Beneficiary Eligibility Attendance Ratio
-          </button>
+          </button> */}
 
           <button
             className={`tab-btn ${activeTab === "training_request" ? "active" : ""}`}
