@@ -1,5 +1,5 @@
 // src/pages/Home.jsx
-import React, { useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import ps_logo from "../assets/PS_TRANS.png";
 import up_logo from "../assets/upgov_logo.jpg";
@@ -10,7 +10,11 @@ import HeroLayout from "./HeroComponents/HeroLayout.jsx";
 import Footer from "../components/layout/Footer.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
 import GovHeader from "./GovHeader.jsx";
+import NewsModal from "./newsModal.jsx";
+
 export default function Home() {
+  const [isNewsModalOpen, setIsNewsModalOpen] = useState(true);
+
   /* ================= FONT SIZE CONTROLS ================= */
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
@@ -43,6 +47,10 @@ export default function Home() {
       <footer className="home-footer">
         <Footer />
       </footer>
+      <NewsModal
+        isOpen={isNewsModalOpen}
+        onClose={() => setIsNewsModalOpen(false)}
+      />
 
       {/* ================= STYLES ================= */}
       <style>{`
