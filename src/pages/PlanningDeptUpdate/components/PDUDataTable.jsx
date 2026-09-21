@@ -91,12 +91,21 @@ const PDUDataTable = ({
       title.height = 30;
 
       // ===== Header =====
+
+      // Main heading row
       const headerRow = worksheet.addRow(enrichedColumns.map((h) => h.label));
+
+      // Sub heading row
+      const subHeaderRow = worksheet.addRow(
+        enrichedColumns.map((h) => h.subLabel || ""),
+      );
+
       const lightBlueFill = {
         type: "pattern",
         pattern: "solid",
         fgColor: { argb: "FFC6D9F1" },
       };
+
       const thinBorder = {
         top: { style: "thin" },
         left: { style: "thin" },
@@ -104,12 +113,32 @@ const PDUDataTable = ({
         bottom: { style: "thin" },
       };
 
+      // Style main header
       headerRow.eachCell((cell) => {
         cell.fill = lightBlueFill;
         cell.font = { bold: true };
         cell.border = thinBorder;
-        cell.alignment = { horizontal: "center", vertical: "middle" };
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
       });
+
+      // Style sub header
+      subHeaderRow.eachCell((cell) => {
+        cell.fill = lightBlueFill;
+        cell.font = { bold: true };
+        cell.border = thinBorder;
+        cell.alignment = {
+          horizontal: "center",
+          vertical: "middle",
+          wrapText: true,
+        };
+      });
+
+      headerRow.height = 70;
+      subHeaderRow.height = 25;
 
       // ===== Column Width =====
       worksheet.columns = enrichedColumns.map((h) => ({
@@ -188,16 +217,53 @@ const PDUDataTable = ({
       <div className="pdu-table-container">
         <table className="pdu-data-table">
           <thead>
+            {/* MAIN HEADER ROW */}
             <tr>
               {enrichedColumns.map((col, idx) => (
                 <th
                   key={col.key || idx}
-                  className={`pdu-table-th ${col.align ? `pdu-align-${col.align}` : "pdu-align-left"}`}
-                  style={{ width: col.width || "auto" }}
+                  rowSpan={col.subLabel ? 1 : 2}
+                  className={`pdu-table-th ${
+                    col.align ? `pdu-align-${col.align}` : "pdu-align-left"
+                  }`}
+                  style={{
+                    width: col.width || "auto",
+                    minWidth: col.width || "100px",
+                    padding: "10px 8px",
+                    verticalAlign: "middle",
+                    textAlign: "center",
+                    whiteSpace: "normal",
+                    overflowWrap: "break-word",
+                    lineHeight: "1.25",
+                  }}
                 >
                   {col.label}
                 </th>
               ))}
+            </tr>
+
+            {/* SUB HEADER ROW */}
+            <tr>
+              {enrichedColumns
+                .filter((col) => col.subLabel)
+                .map((col) => (
+                  <th
+                    key={`${col.key}-sub`}
+                    className="pdu-table-th"
+                    style={{
+                      padding: "6px 8px",
+                      height: "30px",
+                      textAlign: "center",
+                      verticalAlign: "middle",
+                      whiteSpace: "normal",
+                      fontWeight: 700,
+                      lineHeight: "1.1",
+                      borderTop: "1px solid rgba(255,255,255,0.35)",
+                    }}
+                  >
+                    {col.subLabel}
+                  </th>
+                ))}
             </tr>
           </thead>
 

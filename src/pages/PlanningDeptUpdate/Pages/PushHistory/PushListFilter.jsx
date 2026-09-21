@@ -151,7 +151,7 @@ export default function PushListFilter({
           </div>
 
           {/* INDICATOR */}
-          <div className="pdu-filter-field anim-delay-3">
+          {/* <div className="pdu-filter-field anim-delay-3">
             <label>Indicator / Pointer</label>
             <div className="pdu-select-wrapper">
               <select
@@ -164,7 +164,7 @@ export default function PushListFilter({
                 <option value="0512">0512 - RF Received</option>
               </select>
             </div>
-          </div>
+          </div> */}
 
           {/* DYNAMIC DISTRICT SELECTOR */}
           <div className="pdu-filter-field anim-delay-4">

@@ -182,19 +182,33 @@ export default function CpBatchDetail() {
     }
   }
 
-  async function handleOpenAttendanceManager() {
+  // async function handleOpenAttendanceManager() {
+  //   if (!batchId) return;
+  //   setOpeningManager(true);
+  //   try {
+  //     await patchTimeOfTraining();
+  //     // navigate(`/tms/cp/batch-attendance-ekyc/${batchId}`);
+  //     navigate(`/tms/cp/batch-attendance/${batchId}`);
+  //   } catch {
+  //     alert(
+  //       "Could not save session duration. Please check and try opening the manager again.",
+  //     );
+  //   } finally {
+  //     setOpeningManager(false);
+  //   }
+  // }
+  function handleOpenAttendanceManager() {
     if (!batchId) return;
-    setOpeningManager(true);
-    try {
-      await patchTimeOfTraining();
-      navigate(`/tms/cp/batch-attendance-ekyc/${batchId}`);
-    } catch {
+
+    // Duration must already be saved
+    if (!batch?.time_of_training) {
       alert(
-        "Could not save session duration. Please check and try opening the manager again.",
+        "Please set and lock the Daily Session Duration before opening Attendance Manager.",
       );
-    } finally {
-      setOpeningManager(false);
+      return;
     }
+
+    navigate(`/tms/cp/batch-attendance-ekyc/${batchId}`);
   }
 
   let isBatchEnded = false;
@@ -223,7 +237,9 @@ export default function CpBatchDetail() {
     return today >= startDate && today <= endDate;
   }, [batch]);
 
-  const disableAttendanceManager = isBatchEnded || openingManager;
+  // const disableAttendanceManager = isBatchEnded || openingManager;
+  const disableAttendanceManager =
+    isBatchEnded || openingManager || !batch?.time_of_training;
 
   return (
     <div className="app-shell">

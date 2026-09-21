@@ -684,6 +684,10 @@ export const TMS_API = {
     "/tms/batch-participant-certificates/",
   ),
 
+  // Batch ONE SHOT Attendance Endpoint
+  batchAttendanceOneShot: (data) =>
+    api.post("/tms/tms-attendance/oneshot/", data),
+
   // SMMU TP Targets bulk upload
   bulkUploadTargets: {
     create: (data, config = {}) =>

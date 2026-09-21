@@ -33,15 +33,45 @@ export default function PushList() {
   const fetchData = async () => {
     setLoading(true);
     try {
-      // Remove empty params to keep URL clean
-      const activeParams = Object.fromEntries(
-        Object.entries(filters).filter(([_, v]) => v !== ""),
+      const shouldFetchBoth = ["0511", "0512"].includes(
+        String(filters.prog_code),
       );
 
-      const response = await api.get("/uppld/achievements/", {
-        params: activeParams,
-      });
-      setData(response.data?.results || response.data || []);
+      // Remove empty params to keep URL clean
+      const activeParams = Object.fromEntries(
+        Object.entries(filters).filter(
+          ([key, value]) =>
+            value !== "" && !(shouldFetchBoth && key === "prog_code"),
+        ),
+      );
+
+      if (shouldFetchBoth) {
+        const [response0511, response0512] = await Promise.all([
+          api.get("/uppld/achievements/", {
+            params: {
+              ...activeParams,
+              prog_code: "0511",
+            },
+          }),
+          api.get("/uppld/achievements/", {
+            params: {
+              ...activeParams,
+              prog_code: "0512",
+            },
+          }),
+        ]);
+
+        const data0511 = response0511.data?.results || response0511.data || [];
+        const data0512 = response0512.data?.results || response0512.data || [];
+
+        setData([...data0511, ...data0512]);
+      } else {
+        const response = await api.get("/uppld/achievements/", {
+          params: activeParams,
+        });
+
+        setData(response.data?.results || response.data || []);
+      }
     } catch (error) {
       console.error("Failed to fetch achievements:", error);
       setData([]);
@@ -95,23 +125,47 @@ export default function PushList() {
   };
 
   const mappedData = useMemo(() => {
-    return data.map((row) => {
-      const names = getMappedNames(row.block_code);
-      const is0511 = String(row.prog_code).endsWith("511");
-      const progName = is0511
-        ? "Total Households added to SHGs"
-        : "SHGs receiving Revolving Fund";
+    const groupedData = {};
 
-      return {
-        ...row,
-        monthName: monthMap[row.month] || row.month,
-        districtName: names.districtName,
-        blockName: names.blockName,
-        progName: progName,
-        indicatorBadgeColor: is0511 ? "#e0f2fe" : "#fef3c7",
-        indicatorTextColor: is0511 ? "#0369a1" : "#b45309",
-      };
+    data.forEach((row) => {
+      const names = getMappedNames(row.block_code);
+      const progCode = String(row.prog_code).padStart(4, "0");
+      const key = `${row.year}-${row.month}-${row.dist_code}-${row.block_code}`;
+
+      if (!groupedData[key]) {
+        groupedData[key] = {
+          ...row,
+          monthName: monthMap[row.month] || row.month,
+          districtName: names.districtName,
+          blockName: names.blockName,
+          prog_code: "0511 / 0512",
+          progName:
+            "Total Households added to SHGs / SHGs receiving Revolving Fund",
+          indicatorBadgeColor: "#e0f2fe",
+          indicatorTextColor: "#0369a1",
+          mon_ach_numerator: null,
+          mon_ach_denominator: null,
+          numerator0512: null,
+          denominator0512: null,
+          achievement0511: null,
+          achievement0512: null,
+        };
+      }
+
+      if (progCode === "0511" || progCode.endsWith("511")) {
+        groupedData[key].mon_ach_numerator = row.mon_ach_numerator;
+        groupedData[key].mon_ach_denominator = row.mon_ach_denominator;
+        groupedData[key].achievement0511 = row.mon_ach;
+      }
+
+      if (progCode === "0512" || progCode.endsWith("512")) {
+        groupedData[key].numerator0512 = row.mon_ach_numerator;
+        groupedData[key].denominator0512 = row.mon_ach_denominator;
+        groupedData[key].achievement0512 = row.mon_ach;
+      }
     });
+
+    return Object.values(groupedData);
   }, [data, aspirationalBlocks]);
 
   // ==========================================
@@ -189,45 +243,58 @@ export default function PushList() {
       ),
     },
     {
-      key: "mon_ach",
-      label: "Achievement",
-      align: "right",
-      width: "140px",
-      render: (row) => (
-        <strong style={{ color: "#10b981", fontSize: "1.15rem" }}>
-          {new Intl.NumberFormat("en-IN").format(row.mon_ach)}
-        </strong>
-      ),
+      key: "mon_ach_numerator",
+      label: "Total Number of eligible households(HHs) added to SHGs",
+      subLabel: "NUMERATOR",
+      align: "center",
+      width: "160px",
+      render: (row) => <span>{row.mon_ach_numerator}</span>,
     },
+
     {
-      key: "updated_at",
-      label: "Pushed Timestamp",
-      align: "right",
-      width: "180px",
-      render: (row) => (
-        <div
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            color: "#64748b",
-            fontSize: "0.85rem",
-          }}
-        >
-          <span style={{ fontWeight: 600 }}>
-            {new Date(row.updated_at).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
-          </span>
-          <span>
-            {new Date(row.updated_at).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-        </div>
-      ),
+      key: "mon_ach_denominator",
+      label: "1",
+      subLabel: "DENOMINATOR",
+      align: "center",
+      width: "120px",
+      render: (row) => <span>{row.mon_ach_denominator}</span>,
+    },
+
+    {
+      key: "achievement0511",
+      label: "5.3 Total Number of eligible households(HHs) added to SHGs",
+      subLabel: "ACHIEVEMENT",
+      align: "center",
+      width: "150px",
+      render: (row) => <strong>{row.achievement0511 ?? "-"}</strong>,
+    },
+
+    {
+      key: "numerator0512",
+      label: "Total Number of SHGs receiving Revolving Fund in the Block",
+      subLabel: "NUMERATOR",
+      align: "center",
+      width: "150px",
+      render: (row) => <span>{row.numerator0512 ?? "-"}</span>,
+    },
+
+    {
+      key: "denominator0512",
+      label: "Total Number of SHGs in the Block",
+      subLabel: "DENOMINATOR",
+      align: "center",
+      width: "140px",
+      render: (row) => <span>{row.denominator0512 ?? "-"}</span>,
+    },
+
+    {
+      key: "achievement0512",
+      label:
+        "5.4 Percentage of SHGs that have received Revolving Fund against total SHGs in the Block",
+      subLabel: "ACHIEVEMENT",
+      align: "center",
+      width: "150px",
+      render: (row) => <strong>{row.achievement0512 ?? "-"}</strong>,
     },
   ];
 

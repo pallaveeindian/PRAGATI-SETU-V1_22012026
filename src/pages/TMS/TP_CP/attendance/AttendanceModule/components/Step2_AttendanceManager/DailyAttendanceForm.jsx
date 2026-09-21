@@ -1,7 +1,6 @@
 // src/pages/TMS/TP_CP/attendance/AttendanceModule/components/Step2_AttendanceManager/DailyAttendanceForm.jsx
 import React, { useState, useMemo } from "react";
-import api from "../../../../../../../api/axios";
-
+import { TMS_API } from "../../../../../../../api/axios";
 import BeneficiaryAttendanceTable from "./AttendanceTables/BeneficiaryAttendanceTable";
 import MasterTrainerAttendanceTable from "./AttendanceTables/MasterTrainerAttendanceTable";
 import StaffAttendanceTable from "./AttendanceTables/StaffAttendanceTable";
@@ -9,30 +8,23 @@ import StaffAttendanceTable from "./AttendanceTables/StaffAttendanceTable";
 export default function DailyAttendanceForm({
   batchId,
   today,
-  participants,
+  participants = [],
   attendanceToday,
   canShowForm,
-  currentUserId,
-  getOrCreateBatchAttendanceForDate,
-  getExistingParticipantAttendanceIds,
+  missingDates = [],
   fetchAttendanceList,
-  setAttendanceToday,
-  batch,
 }) {
   const [participantPresence, setParticipantPresence] = useState({});
-  const [csvFile, setCsvFile] = useState(null);
-  const [csvError, setCsvError] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const formattedToday = new Date(today).toLocaleDateString("en-GB");
 
-  // -------------------------
+  const formattedToday = new Date(`${today}T00:00:00`).toLocaleDateString(
+    "en-GB",
+  );
   // Categorize Participants for Tables
-  // -------------------------
   const { beneficiaries, masterTrainers, staff } = useMemo(() => {
     const b = [];
     const mt = [];
     const s = [];
-
     participants.forEach((p) => {
       if (p.original?.master_trainer || p.original?.trainer) {
         mt.push(p);
@@ -42,124 +34,140 @@ export default function DailyAttendanceForm({
         b.push(p);
       }
     });
-
-    return { beneficiaries: b, masterTrainers: mt, staff: s };
+    return {
+      beneficiaries: b,
+      masterTrainers: mt,
+      staff: s,
+    };
   }, [participants]);
-
-  // -------------------------
   // Calculate Total Present
-  // -------------------------
   const totalPresentCount = useMemo(() => {
     return participants.filter((p) => !!participantPresence[p.key]).length;
   }, [participants, participantPresence]);
-
-  // -------------------------
   // Quick Actions (Mark All)
-  // -------------------------
   const setAllPresence = (status) => {
     const newState = {};
     participants.forEach((p) => {
       newState[p.key] = status;
     });
+
     setParticipantPresence(newState);
   };
 
   const handleTogglePresence = (key, val) => {
-    setParticipantPresence((prev) => ({ ...prev, [key]: val }));
+    setParticipantPresence((prev) => ({
+      ...prev,
+      [key]: val,
+    }));
   };
-
-  // -------------------------
-  // CSV Validation
-  // -------------------------
-  const validateCsvFile = (file) => {
-    if (!file) return null;
-    if (file.size === 0) return "CSV file is empty (0 KB)";
-    if (!file.name.toLowerCase().endsWith(".csv"))
-      return "Only CSV files are allowed";
-    return null;
-  };
-
-  // -------------------------
-  // Completion Checker
-  // -------------------------
-  async function markBatchCompletedIfNeeded() {
-    try {
-      if (!batch || !batchId || !batch.end_date) return;
-      if (today < batch.end_date) return;
-      if ((batch.status || "").toUpperCase() !== "ONGOING") return;
-
-      await api.patch(`/tms/batches/${batchId}/`, { status: "COMPLETED" });
-    } catch (e) {
-      console.error("Failed to mark batch as COMPLETED", e);
-    }
-  }
-
-  // -------------------------
   // Submit Handler
-  // -------------------------
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!batchId || !participants.length) return;
+
+    if (!batchId) {
+      alert("Batch ID is missing.");
+      return;
+    }
+
+    if (!today) {
+      alert("Attendance date is missing.");
+      return;
+    }
+
+    if (!participants.length) {
+      alert("No participants configured for this batch.");
+      return;
+    }
 
     setIsSubmitting(true);
+
     try {
-      // 1. Get or Create Daily Master Record
-      let rec = await getOrCreateBatchAttendanceForDate(today);
+      // -------------------------
+      // Build participant records
+      // -------------------------
+      const participantRecords = participants.map((p) => {
+        const originalRole = String(p.participant_role || "").toLowerCase();
 
-      // 2. Attach CSV if provided
-      if (csvFile && rec?.id) {
-        const patchForm = new FormData();
-        patchForm.append("csv_upload", csvFile);
-        const patchResp = await api.patch(
-          `/tms/batch-attendance/${rec.id}/`,
-          patchForm,
-        );
-        rec = patchResp?.data ?? patchResp ?? rec;
+        // Backend strictly accepts only:
+        // "trainer" or "trainee"
+        const participantRole =
+          originalRole === "trainer" ? "trainer" : "trainee";
+
+        return {
+          participant_id: String(p.participant_id),
+
+          participant_role: participantRole,
+
+          participant_name: p.name || "",
+
+          present: !!participantPresence[p.key],
+        };
+      });
+
+      // -------------------------
+      // Required Payload
+      // -------------------------
+      const payload = {
+        batch_id: Number(batchId),
+
+        date: today,
+
+        missing_dates: Array.isArray(missingDates) ? missingDates : [],
+
+        participant_records: participantRecords,
+      };
+
+      const response = await TMS_API.batchAttendanceOneShot(payload);
+
+      if (fetchAttendanceList) {
+        await fetchAttendanceList();
       }
 
-      setAttendanceToday(rec);
+      const responseData = response?.data || {};
 
-      if (!rec?.id)
-        throw new Error(
-          "Cannot create participant attendance without a master record ID.",
-        );
+      let successMessage =
+        responseData.message || "Attendance successfully recorded.";
 
-      // 3. Prevent Duplicate Submissions
-      const existingKeys = await getExistingParticipantAttendanceIds(rec.id);
-
-      // 4. Submit Participant Level Data
-      for (const p of participants) {
-        const key = `${p.participant_role}-${p.participant_id}`;
-        if (existingKeys.has(key)) continue; // Skip already submitted
-
-        const present = !!participantPresence[p.key];
-
-        await api.post("/tms/participant-attendance/", {
-          attendance: rec.id,
-          participant_id: p.participant_id,
-          participant_name: p.name,
-          participant_role: p.participant_role,
-          present,
-          is_active: true,
-          created_by: currentUserId,
-        });
+      if (
+        Array.isArray(responseData.dates_processed) &&
+        responseData.dates_processed.length > 0
+      ) {
+        successMessage += `\n\nDates Processed: ${responseData.dates_processed.join(
+          ", ",
+        )}`;
       }
 
-      // 5. Cleanup & Refresh
-      await fetchAttendanceList();
-      await markBatchCompletedIfNeeded();
-      alert("Today's attendance recorded successfully.");
+      if (responseData.batch_status) {
+        successMessage += `\nBatch Status: ${responseData.batch_status}`;
+      }
+
+      alert(successMessage);
     } catch (error) {
-      console.error("Attendance submission failed", error);
-      alert("Failed to record attendance. Please try again.");
+      console.error("ONE-SHOT ATTENDANCE FAILED:", error);
+
+      console.error("HTTP STATUS:", error?.response?.status);
+
+      console.error("BACKEND RESPONSE:", error?.response?.data);
+
+      const backendError = error?.response?.data;
+
+      // Show actual backend error
+      if (backendError?.detail) {
+        alert(backendError.detail);
+      } else if (backendError?.message) {
+        alert(backendError.message);
+      } else if (backendError) {
+        alert(JSON.stringify(backendError, null, 2));
+      } else {
+        alert(error?.message || "Failed to record attendance.");
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
 
-  // -------------------------
-  // Render Locks
-  // -------------------------
+  //Render Locks
+
   if (attendanceToday && attendanceToday.id) {
     return (
       <div
@@ -172,9 +180,15 @@ export default function DailyAttendanceForm({
           marginBottom: 24,
         }}
       >
-        <h5 style={{ margin: "0 0 4px 0", fontWeight: 700 }}>
+        <h5
+          style={{
+            margin: "0 0 4px 0",
+            fontWeight: 700,
+          }}
+        >
           Attendance Complete ✅
         </h5>
+
         <span style={{ fontSize: 14 }}>
           Attendance for today ({formattedToday}) has been successfully
           submitted and locked.
@@ -195,9 +209,15 @@ export default function DailyAttendanceForm({
           marginBottom: 24,
         }}
       >
-        <h5 style={{ margin: "0 0 4px 0", fontWeight: 700 }}>
+        <h5
+          style={{
+            margin: "0 0 4px 0",
+            fontWeight: 700,
+          }}
+        >
           Window Locked 🔒
         </h5>
+
         <span style={{ fontSize: 14 }}>
           Attendance recording will be enabled when today's scheduled start time
           is reached.
@@ -225,12 +245,39 @@ export default function DailyAttendanceForm({
           marginBottom: 20,
         }}
       >
-        <h4 style={{ margin: 0, color: "#0f172a" }}>
-          Record Attendance for Today ({formattedToday})
-        </h4>
+        <div>
+          <h4
+            style={{
+              margin: 0,
+              color: "#0f172a",
+            }}
+          >
+            Record Attendance for Today ({formattedToday})
+          </h4>
+
+          {missingDates.length > 0 && (
+            <div
+              style={{
+                marginTop: 6,
+                fontSize: 13,
+                color: "#b45309",
+                fontWeight: 600,
+              }}
+            >
+              {missingDates.length} missing training day
+              {missingDates.length > 1 ? "s" : ""} will automatically be marked
+              absent when attendance is submitted.
+            </div>
+          )}
+        </div>
 
         {/* QUICK ACTIONS UI */}
-        <div style={{ display: "flex", gap: 8 }}>
+        <div
+          style={{
+            display: "flex",
+            gap: 8,
+          }}
+        >
           <button
             type="button"
             className="btn btn-sm btn-outline-success"
@@ -238,6 +285,7 @@ export default function DailyAttendanceForm({
           >
             Mark All Present
           </button>
+
           <button
             type="button"
             className="btn btn-sm btn-outline-danger"
@@ -249,48 +297,8 @@ export default function DailyAttendanceForm({
       </div>
 
       <form onSubmit={handleSubmit}>
-        {/* CSV Upload Section */}
-        <div
-          style={{
-            marginBottom: 24,
-            padding: 16,
-            background: "#f8fafc",
-            borderRadius: 8,
-            border: "1px dashed #cbd5e1",
-          }}
-        >
-          <label
-            style={{
-              fontWeight: 600,
-              display: "block",
-              marginBottom: 8,
-              color: "#334155",
-            }}
-          >
-            Upload Punch Machine Data (Optional)
-          </label>
-          <input
-            type="file"
-            accept=".csv"
-            onChange={(e) => {
-              const file = e.target.files?.[0] || null;
-              const error = validateCsvFile(file);
-              setCsvError(error || "");
-              setCsvFile(error ? null : file);
-            }}
-            style={{ display: "block", marginBottom: 4 }}
-          />
-          {csvError && (
-            <div style={{ color: "#dc2626", fontSize: 12, fontWeight: 500 }}>
-              {csvError}
-            </div>
-          )}
-          <div style={{ fontSize: 12, color: "#64748b", marginTop: 4 }}>
-            Only .csv files generated by standard punch machines are supported.
-          </div>
-        </div>
-
         {/* Modular Tables */}
+
         {participants.length === 0 ? (
           <div
             style={{
@@ -310,11 +318,13 @@ export default function DailyAttendanceForm({
               participantPresence={participantPresence}
               onTogglePresence={handleTogglePresence}
             />
+
             <BeneficiaryAttendanceTable
               rows={beneficiaries}
               participantPresence={participantPresence}
               onTogglePresence={handleTogglePresence}
             />
+
             <StaffAttendanceTable
               rows={staff}
               participantPresence={participantPresence}
@@ -322,6 +332,7 @@ export default function DailyAttendanceForm({
             />
 
             {/* OVERALL PRESENT COUNT SUMMARY BADGE */}
+
             <div
               style={{
                 display: "flex",
@@ -344,6 +355,7 @@ export default function DailyAttendanceForm({
                 Overall Present Today: {totalPresentCount} /{" "}
                 {participants.length}
               </div>
+
               <div
                 style={{
                   background: "#fdf1ec",
@@ -364,6 +376,7 @@ export default function DailyAttendanceForm({
         )}
 
         {/* Form Actions */}
+
         <div
           style={{
             marginTop: 24,
@@ -376,8 +389,12 @@ export default function DailyAttendanceForm({
           <button
             type="submit"
             className="btn btn-primary"
-            style={{ minWidth: 160, fontWeight: 600, padding: "10px 24px" }}
-            disabled={isSubmitting || participants.length === 0 || !!csvError}
+            style={{
+              minWidth: 160,
+              fontWeight: 600,
+              padding: "10px 24px",
+            }}
+            disabled={isSubmitting || participants.length === 0}
           >
             {isSubmitting ? "Submitting..." : "Submit Final Attendance"}
           </button>
@@ -385,6 +402,7 @@ export default function DailyAttendanceForm({
       </form>
 
       {/* Submitting Overlay */}
+
       {isSubmitting && (
         <div
           style={{
@@ -409,12 +427,27 @@ export default function DailyAttendanceForm({
           >
             <div
               className="spinner-border text-primary"
-              style={{ marginBottom: 12 }}
+              style={{
+                marginBottom: 12,
+              }}
             ></div>
-            <h5 style={{ margin: 0, color: "#0f172a" }}>
+
+            <h5
+              style={{
+                margin: 0,
+                color: "#0f172a",
+              }}
+            >
               Saving Attendance...
             </h5>
-            <p style={{ margin: "4px 0 0 0", fontSize: 13, color: "#64748b" }}>
+
+            <p
+              style={{
+                margin: "4px 0 0 0",
+                fontSize: 13,
+                color: "#64748b",
+              }}
+            >
               Please wait while records are updated.
             </p>
           </div>
