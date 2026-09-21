@@ -1,5 +1,6 @@
+// src\pages\HeroComponents\HeroLayout.jsx
 import React from "react";
-import SlideShow from "./HeroSlideshow";
+import HeroHome from "./HeroHome";
 import Info from "./HeroPSInfo";
 import app_section from "../../assets/Hero/SCRPEP/section.png";
 import Services from "./HeroPSServices";
@@ -19,7 +20,7 @@ export default function HeroLayout() {
     <div className="hero-layout">
       {/* ================= HERO SLIDESHOW (FULL BLEED) ================= */}
       <section className="hero-slideshow-section">
-        <SlideShow />
+        <HeroHome />
       </section>
 
       {/* ================= PRAGATI SETU INFO ================= */}
@@ -44,7 +45,7 @@ export default function HeroLayout() {
       </section>
 
       {/* ================= OUR SERVICES ================= */}
-      <section className="hero-section hero-services">
+      <section id="services-section" className="hero-section hero-services">
         <Services />
       </section>
 

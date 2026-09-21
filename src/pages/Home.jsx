@@ -34,23 +34,35 @@ export default function Home() {
         onFontChange={setFontScale}
       />
 
-      <TopNavigation />
-
-      {/* ================= HERO SECTION ================= */}
-      <main className="home-hero">
-        <div className="hero-inner">
-          <HeroLayout />
+      <div style={{ position: "relative" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            zIndex: 50,
+          }}
+        >
+          <TopNavigation />
         </div>
-      </main>
+
+        {/* ================= HERO SECTION ================= */}
+        <main className="home-hero">
+          <div className="hero-inner">
+            <HeroLayout />
+          </div>
+        </main>
+      </div>
 
       {/* ================= FOOTER ================= */}
       <footer className="home-footer">
         <Footer />
       </footer>
-      <NewsModal
+      {/* <NewsModal
         isOpen={isNewsModalOpen}
         onClose={() => setIsNewsModalOpen(false)}
-      />
+      /> */}
 
       {/* ================= STYLES ================= */}
       <style>{`
