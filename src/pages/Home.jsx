@@ -47,10 +47,10 @@ export default function Home() {
       <footer className="home-footer">
         <Footer />
       </footer>
-      <NewsModal
+      {/* <NewsModal
         isOpen={isNewsModalOpen}
         onClose={() => setIsNewsModalOpen(false)}
-      />
+      /> */}
 
       {/* ================= STYLES ================= */}
       <style>{`

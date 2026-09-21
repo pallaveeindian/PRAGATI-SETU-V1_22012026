@@ -17,7 +17,7 @@ export const MODULES_CONFIG = [
     color: "#2a56cf",
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: null,
+    maintenanceUntil: "permanent",
   },
   {
     id: "crp",
@@ -28,7 +28,7 @@ export const MODULES_CONFIG = [
     color: "#f59e0b",
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-09-21T20:30:00+05:30",
   },
   {
     id: "ldms",
@@ -63,7 +63,7 @@ export const MODULES_CONFIG = [
     color: "#ea6733",
     path: "/module-login?module=epsms",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-09-21T20:30:00+05:30",
   },
   {
     id: "prerna",
@@ -85,7 +85,7 @@ export const MODULES_CONFIG = [
     color: "#1a218ade",
     path: "/module-login?module=pmuadmin",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-09-21T20:30:00+05:30",
   },
   {
     id: "masteradmin",
@@ -96,6 +96,6 @@ export const MODULES_CONFIG = [
     color: "#1e8a1ade",
     path: "/module-login?module=admin",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-09-21T20:30:00+05:30",
   },
 ];
