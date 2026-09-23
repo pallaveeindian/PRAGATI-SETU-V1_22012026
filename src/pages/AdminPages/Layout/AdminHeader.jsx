@@ -23,7 +23,7 @@ export default function AdminHeader({ currentGradient, transparent = false }) {
     navigate("/mou/login", { replace: true });
   };
 
-  // TRICK: Sidebar wale "to bottom" ko Header ke liye "to right" bana diya
+  
   const headerGradient = currentGradient 
     ? currentGradient.replace('to bottom', 'to right') 
     : "linear-gradient(to right, #1d4ed8 0%, #e11d48 100%)";
@@ -51,7 +51,11 @@ export default function AdminHeader({ currentGradient, transparent = false }) {
         </div>
 
         <div className="mou-header-right">
-          <button className="logout-btn" onClick={handleLogout}>
+          <button
+            className="logout-btn"
+            onClick={handleLogout}
+            style={{ background: headerGradient }}
+          >
             <FaSignOutAlt />
             <span>Logout</span>
           </button>
@@ -137,8 +141,9 @@ export default function AdminHeader({ currentGradient, transparent = false }) {
         }
 
         .logout-btn:hover {
-          background: #b91c1c;
           transform: translateY(-1px);
+          filter: brightness(1.1);
+          box-shadow: 0 4px 12px rgba(15, 23, 42, 0.22);
         }
 
         .logout-btn svg {

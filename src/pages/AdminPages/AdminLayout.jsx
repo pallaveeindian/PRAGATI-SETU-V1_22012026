@@ -20,15 +20,15 @@ const tabGradients = {
   
   "TMS Portal": "linear-gradient(to bottom, rgb(2, 19, 46) 0%, rgb(4, 33, 82) 12%, rgb(6, 44, 110) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(61, 130, 224) 88%, rgb(185, 215, 251) 100%)",
   
-  "User Management": "linear-gradient(to bottom, #3a1c71, #d76d77, #ffaf7b)",
+  "User Management": "linear-gradient(to bottom, rgb(58, 28, 113) 0%, rgb(215, 109, 119) 50%, rgb(255, 175, 123) 100%)",
   
   "Training Batch List": "linear-gradient(to bottom, rgb(46, 17, 3) 0%, rgb(77, 28, 6) 12%, rgb(118, 43, 8) 28%, rgb(161, 62, 10) 45%, rgb(209, 87, 13) 60%, rgb(249, 115, 22) 75%, rgb(253, 164, 99) 88%, rgb(254, 215, 170) 100%)",
 
   "Training Request List": "linear-gradient(to bottom, rgb(5, 46, 22) 0%, rgb(20, 83, 45) 12%, rgb(22, 101, 52) 28%, rgb(21, 128, 61) 45%, rgb(22, 163, 74) 60%, rgb(34, 197, 94) 75%, rgb(74, 222, 128) 88%, rgb(187, 247, 208) 100%)",
 
-  "Training Target": "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)" ,
+  "Training Target": "linear-gradient(to bottom, rgb(2, 19, 46) 0%, rgb(4, 33, 82) 12%, rgb(5, 34, 85) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(2, 33, 77) 88%, rgb(52, 113, 188) 100%)" ,
 
-  "Learning Material": "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)" ,
+  "Learning Material": "linear-gradient(to bottom, rgb(2, 25, 46) 0%, rgb(4, 33, 82) 12%, rgb(6, 44, 110) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(61, 130, 224) 88%, rgb(16, 25, 35) 100%)", 
   
   "Default": "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)" 
 };
