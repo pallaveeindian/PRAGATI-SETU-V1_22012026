@@ -9,6 +9,7 @@ import faqBg from "../../assets/Hero/faq_bg.png";
 import Contact from "./HeroContactUs";
 import conBg from "../../assets/Hero/con_us_bg.png";
 import sectionPotraitMobileScreen from "../../assets/sectionPotraitMobileScreen.png";
+import LatestUpdates from "./HeroLatestUpdates";
 
 /**
  * HeroLayout
@@ -66,6 +67,12 @@ export default function HeroLayout() {
       <section className="hero-section hero-contact">
         <Contact />
       </section>
+      
+      {/* Latest Updates */}
+
+      <section className="hero-section hero-updates">
+  <LatestUpdates />
+</section>
 
       {/* ================= STYLES ================= */}
       <style>{`
@@ -85,10 +92,11 @@ export default function HeroLayout() {
         }
 
         /* ===== CONTENT SECTIONS ===== */
-        .hero-section {
-          padding: 64px 0px;
-          background: #ffffff;
-        }
+       .hero-info {
+  padding: 0;
+  width: 100%;
+  overflow: hidden;
+}
 
         .hero-heading {
           font-size: 32px;
@@ -111,6 +119,10 @@ export default function HeroLayout() {
           justify-content: center;
           overflow: hidden;
         }
+          .hero-crp {
+       width: 100%;
+       background: #FEF3EB;
+}
 
         /* ===== FAQ SECTION BACKGROUND ===== */
         .hero-faq {

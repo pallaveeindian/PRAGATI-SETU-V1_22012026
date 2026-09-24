@@ -1,253 +1,149 @@
-import React, { useState, useContext } from "react";
+import React, { useContext, useState } from "react";
 import { LanguageContext } from "../LanguageContext.jsx";
 
-/**
- * HeroFAQs
- */
+const content = {
+  en: {
+    label: "FREQUENTLY ASKED QUESTIONS",
+    title: "Find Quick Answers",
+    faqs: [
+      { question: "What is Pragati Setu?", answer: "Pragati Setu is a government-grade digital platform designed to strengthen and manage Self Help Group (SHG)–related activities across Uttar Pradesh.", color: "#2563eb" },
+      { question: "What is the purpose of Pragati Setu?", answer: "Pragati Setu supports SHG women through beneficiary management, livelihood monitoring, financial inclusion and targeted interventions.", color: "#22c55e" },
+      { question: "What kind of data is captured?", answer: "The platform captures beneficiary profiles, SHG details, enterprises, training, skills, financial status and progress indicators.", color: "#0ea5e9" },
+      { question: "Who can use Pragati Setu?", answer: "Field functionaries, Community-Based Organizations and government officials at block, district and state levels can use Pragati Setu.", color: "#2563eb" },
+      { question: "How does it help SHG women?", answer: "It enables targeted training, financial access, enterprise support and continuous livelihood monitoring for SHG women.", color: "#f97316" },
+      { question: "How do I access the dashboard?", answer: "Click Login in the top navigation bar. After successful login, you will be redirected to your dashboard.", color: "#ef4444" },
+    ],
+  },
+  hi: {
+    label: "अक्सर पूछे जाने वाले प्रश्न",
+    title: "त्वरित उत्तर खोजें",
+    faqs: [
+      { question: "प्रगति सेतु क्या है?", answer: "प्रगति सेतु उत्तर प्रदेश में स्वयं सहायता समूहों से जुड़ी गतिविधियों को मजबूत और प्रबंधित करने के लिए एक डिजिटल प्लेटफ़ॉर्म है।", color: "#2563eb" },
+      { question: "प्रगति सेतु का उद्देश्य क्या है?", answer: "इसका उद्देश्य SHG महिलाओं को आजीविका, वित्तीय समावेशन और लक्षित सहायता के माध्यम से सशक्त बनाना है।", color: "#22c55e" },
+      { question: "किस प्रकार का डेटा संग्रहित होता है?", answer: "लाभार्थी प्रोफाइल, SHG विवरण, उद्यम, प्रशिक्षण, कौशल और वित्तीय स्थिति से संबंधित डेटा संग्रहित होता है।", color: "#0ea5e9" },
+      { question: "प्रगति सेतु का उपयोग कौन करता है?", answer: "फील्ड कर्मचारी तथा ब्लॉक, जिला और राज्य स्तर के अधिकारी इसका उपयोग करते हैं।", color: "#2563eb" },
+      { question: "यह SHG महिलाओं की कैसे मदद करता है?", answer: "यह प्रशिक्षण, वित्तीय सहायता, उद्यम विकास और आजीविका निगरानी में सहायता करता है।", color: "#f97316" },
+      { question: "डैशबोर्ड कैसे खोलें?", answer: "ऊपर दिए गए लॉगिन विकल्प पर क्लिक करें। सफल लॉगिन के बाद डैशबोर्ड खुल जाएगा।", color: "#ef4444" },
+    ],
+  },
+};
 
 export default function HeroFAQs() {
   const { lang } = useContext(LanguageContext);
-
-  const content = {
-    en: {
-      title: "Frequently Asked",
-      highlight: "Questions?",
-      faqs: [
-        {
-          question: "What is Pragati Setu?",
-          answer:
-            "Pragati Setu is a government-grade digital platform designed to strengthen and manage Self Help Group (SHG)–related activities across the state. It acts as a digital bridge connecting rural women, SHGs, Community-Based Organizations, and government systems through structured data and transparent workflows.",
-          color: "#2563eb",
-        },
-        {
-          question: "What is the purpose of Pragati Setu?",
-          answer:
-            "Pragati Setu aims to enable livelihood-based empowerment of SHG women by capturing beneficiary and enterprise data, supporting skill-based employment, financial inclusion, and continuous livelihood monitoring for informed decision-making and targeted interventions.",
-          color: "#16a34a",
-        },
-        {
-          question: "What kind of data is captured in Pragati Setu?",
-          answer:
-            "The platform captures comprehensive data including beneficiary profiles, SHG and enterprise details, livelihood activities, skill mapping, training interventions, financial inclusion status, and progress indicators.",
-          color: "#0ea5e9",
-        },
-        {
-          question: "Who uses Pragati Setu?",
-          answer:
-            "Pragati Setu is used by field functionaries, Community-Based Organizations, and government officials at block, district, and state levels.",
-          color: "#9333ea",
-        },
-        {
-          question: "How does Pragati Setu empower SHG women?",
-          answer:
-            "By organizing and analyzing livelihood data, Pragati Setu enables targeted skill training, financial access, enterprise support, and continuous monitoring.",
-          color: "#15803d",
-        },
-        {
-          question: "How do I navigate to dashboard?",
-          answer:
-            "Click on Login in the top navigation bar. After login, you will be redirected to your dashboard.",
-          color: "#be123c",
-        },
-      ],
-    },
-
-    hi: {
-      title: "अक्सर पूछे जाने वाले",
-      highlight: "प्रश्न?",
-      faqs: [
-        {
-          question: "प्रगति सेतु क्या है?",
-          answer:
-            "प्रगति सेतु एक सरकारी डिजिटल प्लेटफ़ॉर्म है जो स्वयं सहायता समूह (SHG) से जुड़ी गतिविधियों के प्रबंधन को मजबूत करता है। यह ग्रामीण महिलाओं, SHG और सरकारी तंत्र के बीच एक डिजिटल सेतु का कार्य करता है।",
-          color: "#2563eb",
-        },
-        {
-          question: "प्रगति सेतु का उद्देश्य क्या है?",
-          answer:
-            "इसका उद्देश्य SHG महिलाओं को सशक्त बनाना है, जिसमें लाभार्थी डेटा, रोजगार, वित्तीय समावेशन और आजीविका की निगरानी शामिल है।",
-          color: "#16a34a",
-        },
-        {
-          question: "प्रगति सेतु में किस प्रकार का डेटा संग्रहित होता है?",
-          answer:
-            "इसमें लाभार्थी प्रोफाइल, SHG विवरण, उद्यम, कौशल, प्रशिक्षण और वित्तीय स्थिति से जुड़ा डेटा शामिल होता है।",
-          color: "#0ea5e9",
-        },
-        {
-          question: "प्रगति सेतु का उपयोग कौन करता है?",
-          answer:
-            "इसका उपयोग ब्लॉक, जिला और राज्य स्तर के अधिकारी तथा फील्ड कर्मचारी करते हैं।",
-          color: "#9333ea",
-        },
-        {
-          question: "यह SHG महिलाओं को कैसे सशक्त बनाता है?",
-          answer:
-            "यह प्लेटफ़ॉर्म डेटा के आधार पर प्रशिक्षण, वित्तीय सहायता और उद्यम विकास को सक्षम बनाता है।",
-          color: "#15803d",
-        },
-        {
-          question: "डैशबोर्ड कैसे खोलें?",
-          answer:
-            "ऊपर दिए गए लॉगिन बटन पर क्लिक करें और लॉगिन करने के बाद डैशबोर्ड खुल जाएगा।",
-          color: "#be123c",
-        },
-      ],
-    },
-  };
-
+  const [activeIndex, setActiveIndex] = useState(0); // first FAQ open by default
   const t = content[lang] || content.en;
 
-  const [activeIndex, setActiveIndex] = useState(0);
-
-  const toggleFAQ = (index) => {
-    setActiveIndex(index === activeIndex ? null : index);
-  };
+  const toggleFAQ = (index) => setActiveIndex(activeIndex === index ? null : index);
 
   return (
-    <div className="hero-faq-wrapper">
-      {/* HEADER */}
-      <div className="faq-header">
-        <h2 className="faq-title">
-          {t.title} <span>{t.highlight}</span>
-        </h2>
+    <div className="faq-wrap">
+      <div className="faq-head">
+        <div className="faq-label">
+          <span className="faq-label-line"></span>
+          {t.label}
+        </div>
+        <h2>{t.title}</h2>
       </div>
 
-      {/* FAQ LIST */}
       <div className="faq-list">
-        {t.faqs.map((faq, index) => (
-          <div
-            key={index}
-            className={`faq-item ${activeIndex === index ? "active" : ""}`}
-            style={{ borderLeftColor: faq.color }}
-          >
-            <div className="faq-question" onClick={() => toggleFAQ(index)}>
-              <span>{faq.question}</span>
-              <span className="faq-icon">
-                {activeIndex === index ? "−" : "+"}
-              </span>
-            </div>
+        {t.faqs.map((faq, index) => {
+          const isOpen = activeIndex === index;
+          return (
+            <div key={index} className={`faq-card ${isOpen ? "open" : ""}`} style={{ "--faq-color": faq.color }}>
+              <button type="button" className="faq-question" onClick={() => toggleFAQ(index)}>
+                <span className="faq-question-text">{faq.question}</span>
+                <span className="faq-icon">{isOpen ? "−" : "+"}</span>
+              </button>
 
-            <div
-              className="faq-answer"
-              style={{
-                maxHeight: activeIndex === index ? "300px" : "0px",
-              }}
-            >
-              <p>{faq.answer}</p>
+              <div className="faq-answer-wrapper">
+                <div className="faq-answer-inner">
+                  <p>{faq.answer}</p>
+                </div>
+              </div>
             </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
 
-      {/* STYLES */}
       <style>{`
-        /* ===== WRAPPER ===== */
-        .hero-faq-wrapper {
-          max-width: 1300px;
-          margin: 0 auto;
+        .faq-wrap { width: 100%; max-width: none; margin: 0; padding: 5px 30px; box-sizing: border-box; }
+
+        .faq-head { width: 100%; margin-bottom: 20px; }
+        .faq-label { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; color: #f97316; font-size: 18px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
+        .faq-label-line { display: block; width: 20px; height: 2px; background: #f97316; border-radius: 10px; flex-shrink: 0; }
+        .faq-head h2 { margin: 0; color: #123d75; font-size: 32px; font-weight: 800; line-height: 1.15; }
+
+        .faq-list { width: 100%; display: flex; flex-direction: column; gap: 9px; }
+
+        .faq-card { position: relative; width: 100%; overflow: hidden; background: #ffffff; border: 1px solid #e5e7eb; border-radius: 7px; box-shadow: 0 3px 10px rgba(15, 23, 42, 0.05); box-sizing: border-box; transition: background 0.3s ease, box-shadow 0.3s ease; }
+        /* Colored left border */
+        .faq-card::before { content: ""; position: absolute; top: 0; left: 0; bottom: 0; width: 3px; background: var(--faq-color); }
+        .faq-card.open { background: #fcfdff; box-shadow: 0 5px 15px rgba(15, 23, 42, 0.07); }
+
+        .faq-question { width: 100%; min-height: 48px; padding: 12px 16px 12px 20px; border: none; outline: none; background: transparent; display: flex; align-items: center; justify-content: space-between; gap: 15px; text-align: left; cursor: pointer; }
+        .faq-question-text { flex: 1; min-width: 0; color: #0f2748; font-size: 14px; font-weight: 700; line-height: 1.35; }
+        .faq-icon { width: 25px; height: 25px; flex-shrink: 0; display: flex; align-items: center; justify-content: center; color: #475569; font-size: 20px; font-weight: 400; line-height: 1; }
+
+        .faq-answer-wrapper { display: grid; grid-template-rows: 0fr; transition: grid-template-rows 0.3s ease; }
+        .faq-card.open .faq-answer-wrapper { grid-template-rows: 1fr; }
+        .faq-answer-inner { overflow: hidden; }
+        .faq-answer-inner p { margin: 0 48px 14px 20px; color: #64748b; font-size: 12.5px; line-height: 1.55; }
+
+        @media (min-width: 1400px) {
+          .faq-wrap { padding: 10px 50px; }
+          .faq-head h2 { font-size: 34px; }
+          .faq-question { min-height: 52px; }
+          .faq-question-text { font-size: 15px; }
+          .faq-answer-inner p { font-size: 13.5px; }
         }
 
-        /* ===== HEADER ===== */
-        .faq-header {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          margin-bottom: 32px;
+        @media (max-width: 1200px) {
+          .faq-wrap { width: 100%; max-width: none; padding: 5px 24px; }
+          .faq-head h2 { font-size: 30px; }
+          .faq-question-text { font-size: 13.5px; }
         }
 
-        .faq-title {
-          font-size: 36px;
-          font-weight: 800;
-          color: #0f172a;
+        @media (max-width: 1024px) {
+          .faq-wrap { padding: 5px 20px; }
+          .faq-head { margin-bottom: 18px; }
+          .faq-head h2 { font-size: 28px; }
+          .faq-question { min-height: 47px; }
+          .faq-question-text { font-size: 13px; }
+          .faq-answer-inner p { font-size: 12px; }
         }
 
-        .faq-title span {
-          color: #fd7301;
+        @media (max-width: 900px) {
+          .faq-wrap { padding: 5px 18px; }
+          .faq-head { margin-bottom: 16px; }
+          .faq-head h2 { font-size: 27px; }
+          .faq-list { gap: 8px; }
+          .faq-question { padding: 11px 15px 11px 18px; }
         }
 
-        .faq-viewall {
-          padding: 8px 18px;
-          background: transparent;
-          border: 1.5px solid #0f172a;
-          border-radius: 6px;
-          font-weight: 600;
-          cursor: pointer;
+        @media (max-width: 600px) {
+          .faq-wrap { padding: 0 14px; }
+          .faq-head { margin-bottom: 15px; }
+          .faq-label { font-size: 9px; gap: 6px; }
+          .faq-label-line { width: 16px; }
+          .faq-head h2 { font-size: 23px; }
+          .faq-question { min-height: 45px; padding: 11px 12px 11px 16px; }
+          .faq-question-text { font-size: 12.5px; }
+          .faq-icon { width: 22px; height: 22px; font-size: 18px; }
+          .faq-answer-inner p { margin: 0 38px 12px 16px; font-size: 11.5px; }
         }
 
-        /* ===== FAQ LIST ===== */
-        .faq-list {
-          display: flex;
-          flex-direction: column;
-          gap: 18px;
-        }
-
-        /* ===== FAQ ITEM ===== */
-        .faq-item {
-          background: #ffffff;
-          border-radius: 10px;
-          border-left: 6px solid;
-          padding: 20px 24px;
-          box-shadow: 0 10px 24px rgba(15, 23, 42, 0.08);
-          transition: all 0.3s ease;
-        }
-
-        .faq-item.active {
-          background: #fffaf5;
-        }
-
-        /* QUESTION */
-        .faq-question {
-          display: flex;
-          justify-content: space-between;
-          align-items: center;
-          font-size: 18px;
-          font-weight: 700;
-          color: #0f172a;
-          cursor: pointer;
-        }
-
-        .faq-icon {
-          font-size: 26px;
-          font-weight: 700;
-          color: #0f172a;
-          transition: transform 0.3s ease;
-        }
-
-        .faq-item.active .faq-icon {
-          transform: rotate(180deg);
-        }
-
-        /* ANSWER */
-        .faq-answer {
-          overflow: hidden;
-          transition: max-height 0.45s ease;
-        }
-
-        .faq-answer p {
-          margin-top: 14px;
-          font-size: 15.5px;
-          line-height: 1.7;
-          color: #334155;
-          max-width: 1000px;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 768px) {
-          .faq-header {
-            flex-direction: column;
-            align-items: flex-start;
-            gap: 16px;
-          }
-
-          .faq-title {
-            font-size: 28px;
-          }
-            .hero-faq-wrapper {
-          
-          margin-left: 10px;
-          margin-right: 10px
-        }
+        @media (max-width: 400px) {
+          .faq-wrap { padding: 0 10px; }
+          .faq-head { margin-bottom: 13px; }
+          .faq-label { font-size: 8.5px; }
+          .faq-label-line { width: 15px; }
+          .faq-head h2 { font-size: 20px; }
+          .faq-list { gap: 7px; }
+          .faq-card { border-radius: 6px; }
+          .faq-question { min-height: 42px; padding: 10px 10px 10px 14px; }
+          .faq-question-text { font-size: 11.5px; line-height: 1.3; }
+          .faq-icon { width: 20px; height: 20px; font-size: 17px; }
+          .faq-answer-inner p { margin: 0 30px 11px 14px; font-size: 10.5px; line-height: 1.5; }
         }
       `}</style>
     </div>

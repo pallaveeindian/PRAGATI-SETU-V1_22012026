@@ -1,365 +1,130 @@
 import React, { useContext } from "react";
 import { LanguageContext } from "../../pages/LanguageContext";
-
-import ps_logo from "../../assets/PS_TRANS.png";
+import psLogo from "../../assets/PS_TRANS.png";
 import bdoLogo from "../../assets/BDO_logo.png";
+import footerBg from "../../assets/Hero/footer_bg2.png";
+
+const en = {
+  description: "A Digital Bridge for a Stronger Rural and Prosperous Uttar Pradesh.",
+  quickLinks: "Quick Links",
+  quickLinksItems: ["About Us", "Contact Us", "Dashboards", "Resource Centre"],
+  services: "Our Services",
+  serviceItems: ["Beneficiary Management", "Training Management", "Enterprise Sakhi", "Lakhpati Didi"],
+  support: "Help & Support",
+  supportItems: ["FAQs", "Release Notes", "Guidelines", "Grievance Redressal"],
+  powered: "Powered by",
+  rights: "All rights reserved.",
+  copyright: "© 2026 Pragati Setu | Uttar Pradesh State Rural Livelihoods Mission",
+  bottomLinks: ["Privacy Policy", "Terms of Use", "Accessibility", "Sitemap"],
+};
+
+const hi = {
+  description: "सशक्त ग्रामीण और समृद्ध उत्तर प्रदेश के लिए एक डिजिटल सेतु।",
+  quickLinks: "त्वरित लिंक",
+  quickLinksItems: ["हमारे बारे में", "संपर्क करें", "डैशबोर्ड", "संसाधन केंद्र"],
+  services: "हमारी सेवाएं",
+  serviceItems: ["लाभार्थी प्रबंधन", "प्रशिक्षण प्रबंधन", "एंटरप्राइज सखी", "लखपति दीदी"],
+  support: "सहायता एवं समर्थन",
+  supportItems: ["अक्सर पूछे जाने वाले प्रश्न", "रिलीज नोट्स", "दिशानिर्देश", "शिकायत निवारण"],
+  powered: "द्वारा संचालित",
+  rights: "सभी अधिकार सुरक्षित।",
+  copyright: "© 2026 प्रगति सेतु | उत्तर प्रदेश राज्य ग्रामीण आजीविका मिशन",
+  bottomLinks: ["गोपनीयता नीति", "उपयोग की शर्तें", "सुगम्यता", "साइटमैप"],
+};
+
+const content = { en, hi };
+const SOCIAL_LINKS = [
+  { label: "Facebook", text: "f" },
+  { label: "X", text: "X" },
+  { label: "YouTube", text: "▶" },
+  { label: "LinkedIn", text: "in" },
+];
+
+function FooterColumn({ title, items }) {
+  return (
+    <div className="footer-column">
+      <h4>{title}</h4>
+      <ul>
+        {items.map((item) => (
+          <li key={item}><a href="#">{item}</a></li>
+        ))}
+      </ul>
+    </div>
+  );
+}
 
 export default function Footer() {
   const { lang } = useContext(LanguageContext);
-
-  const content = {
-    en: {
-      brandDesc:
-        "Pragati Setu is a unified digital platform for monitoring, analytics, and governance, empowering Self Help Groups and rural institutions across Uttar Pradesh.",
-      lastUpdated: "Last Updated: 30 Apr, 2026",
-
-      col1: "Pragati Setu",
-      col1Links: [
-        "About Pragati Setu",
-        "About UPSRLM",
-        "Contact Us",
-        "Dashboards",
-        "Pragati Setu Outreach",
-        "Lakhpati Didi Impact",
-        "CLF Performance",
-        "Community Funds",
-      ],
-
-      col2: "Our Services",
-      col2Links: [
-        "Beneficiary Management System",
-        "Training Management System",
-        "Enterprise Sakhi",
-        "Lakhpati Didi",
-        "Monitoring & Analytics",
-      ],
-
-      col3: "Help & Support",
-      col3Links: [
-        "Application Information",
-        "Release Notes",
-        "Frequently Asked Questions",
-        "What’s New",
-        "Legal Info",
-        "Advisory & Guidelines",
-        "Copyright Policy",
-      ],
-
-      powered: "Powered by",
-      rights: "All rights reserved.",
-
-      bottom:
-        "© 2026 – Copyright UPSRLM. Powered by BDO India LLP | Government of Uttar Pradesh. All rights reserved.",
-
-      links: ["Disclaimer", "Terms & Conditions", "Privacy Policy"],
-    },
-
-    hi: {
-      brandDesc:
-        "प्रगति सेतु एक एकीकृत डिजिटल प्लेटफ़ॉर्म है जो निगरानी, विश्लेषण और शासन को सशक्त बनाता है, तथा उत्तर प्रदेश में स्वयं सहायता समूहों और ग्रामीण संस्थाओं को मजबूत करता है।",
-      lastUpdated: "अंतिम अपडेट: 30 अप्रैल, 2026",
-
-      col1: "प्रगति सेतु",
-      col1Links: [
-        "प्रगति सेतु के बारे में",
-        "UPSRLM के बारे में",
-        "संपर्क करें",
-        "डैशबोर्ड",
-        "प्रगति सेतु आउटरीच",
-        "लखपति दीदी प्रभाव",
-        "CLF प्रदर्शन",
-        "सामुदायिक निधि",
-      ],
-
-      col2: "हमारी सेवाएं",
-      col2Links: [
-        "लाभार्थी प्रबंधन प्रणाली",
-        "प्रशिक्षण प्रबंधन प्रणाली",
-        "एंटरप्राइज सखी",
-        "लखपति दीदी",
-        "निगरानी एवं विश्लेषण",
-      ],
-
-      col3: "सहायता एवं समर्थन",
-      col3Links: [
-        "एप्लिकेशन जानकारी",
-        "रिलीज नोट्स",
-        "अक्सर पूछे जाने वाले प्रश्न",
-        "नया क्या है",
-        "कानूनी जानकारी",
-        "दिशानिर्देश",
-        "कॉपीराइट नीति",
-      ],
-
-      powered: "द्वारा संचालित",
-      rights: "सभी अधिकार सुरक्षित।",
-
-      bottom:
-        "© 2026 – कॉपीराइट UPSRLM। BDO इंडिया LLP द्वारा संचालित | उत्तर प्रदेश सरकार। सभी अधिकार सुरक्षित।",
-
-      links: ["अस्वीकरण", "नियम व शर्तें", "गोपनीयता नीति"],
-    },
-  };
-
   const t = content[lang] || content.en;
 
   return (
     <footer className="ps-footer">
-      <div className="ps-footer-top">
-        {/* COLUMN 1 */}
-        <div className="footer-col brand">
-          <div className="footer-logo">
-            <img src={ps_logo} alt="" className="ps-logo" />
-            <span className="brand-name">Pragati Setu</span>
+      <div className="ps-footer-main" style={{ backgroundImage: `url(${footerBg})` }}>
+        <div className="footer-content">
+          <div className="footer-brand">
+            <img src={psLogo} alt="Pragati Setu" className="footer-ps-logo" />
+            <p>{t.description}</p>
+            <div className="footer-social">
+              {SOCIAL_LINKS.map((item) => (
+                <a key={item.label} href="#" aria-label={item.label}>{item.text}</a>
+              ))}
+            </div>
           </div>
-
-          <p className="brand-desc">{t.brandDesc}</p>
-
-          <div className="social-icons">
-            <span className="icon">f</span>
-            <span className="icon">x</span>
-            <span className="icon">▶</span>
-          </div>
-
-          <p className="updated">{t.lastUpdated}</p>
-        </div>
-
-        {/* COLUMN 2 */}
-        <div className="footer-col">
-          <h4>{t.col1}</h4>
-          <ul>
-            {t.col1Links.map((item, i) => (
-              <li key={i}>
-                <a href="#">{item}</a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* COLUMN 3 */}
-        <div className="footer-col">
-          <h4>{t.col2}</h4>
-          <ul>
-            {t.col2Links.map((item, i) => (
-              <li key={i}>
-                <a href="#">{item}</a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* COLUMN 4 */}
-        <div className="footer-col">
-          <h4>{t.col3}</h4>
-          <ul>
-            {t.col3Links.map((item, i) => (
-              <li key={i}>
-                <a href="#">{item}</a>
-              </li>
-            ))}
-          </ul>
-        </div>
-
-        {/* COLUMN 5 */}
-        <div className="footer-col right">
-          <img
-            src={bdoLogo}
-            alt=""
-            style={{ width: "80px", marginTop: "20px" }}
-          />
-          <div className="powered-by">
-            <p>
-              {t.powered}
-              <br />
-              BDO India LLP
-              <br />
-              {t.rights}
-            </p>
+          <FooterColumn title={t.quickLinks} items={t.quickLinksItems} />
+          <FooterColumn title={t.services} items={t.serviceItems} />
+          <FooterColumn title={t.support} items={t.supportItems} />
+          <div className="footer-powered">
+            <span>{t.powered}</span>
+            <img src={bdoLogo} alt="BDO India LLP" />
+            <strong>BDO India LLP</strong>
+            <small>{t.rights}</small>
           </div>
         </div>
       </div>
-
-      {/* BOTTOM */}
-      <div className="ps-footer-bottom">
-        <span>{t.bottom}</span>
-
-        <div className="footer-links">
-          {t.links.map((l, i) => (
-            <a key={i} href="#">
-              {l}
-            </a>
-          ))}
+      <div className="footer-bottom">
+        <div className="footer-bottom-inner">
+          <p>{t.copyright}</p>
+          <div className="footer-bottom-links">
+            {t.bottomLinks.map((item, index) => (
+              <React.Fragment key={item}>
+                <a href="#">{item}</a>
+                {index < t.bottomLinks.length - 1 && <span>|</span>}
+              </React.Fragment>
+            ))}
+          </div>
         </div>
       </div>
-
-      {/* ===== STYLES ===== */}
       <style>{`
-        .footer-col li a {
-          color: #334155;
-          text-decoration: none;
-        }
-
-        .footer-col li a:hover {
-          text-decoration: underline;
-        }
-
-                .ps-footer {
-          background: #ffffff;
-          color: #334155;
-          font-size: 14px;
-        }
-
-        .ps-footer-top {
-          max-width: 1400px;
-          margin: 0 auto;
-          padding: 60px 24px;
-          display: grid;
-          grid-template-columns: 1.5fr 1fr 1fr 1fr 1fr;
-          gap: 40px;
-          align-items: left;
-          text-align: left;
-        }
-
-        .footer-col h4 {
-          font-size: 16px;
-          margin-bottom: 16px;
-          font-weight: 700;
-        }
-
-        .footer-col ul {
-          list-style: none;
-          padding: 0;
-        }
-
-        .footer-col li {
-          margin-bottom: 10px;
-          opacity: 0.85;
-          cursor: pointer;
-        }
-
-        .footer-col li:hover {
-          opacity: 1;
-          text-decoration: underline;
-        }
-
-        .section-gap {
-          margin-top: 16px;
-        }
-
-        /* BRAND */
-        .footer-logo {
-          display: flex;
-          align-items: center;
-          gap: 10px;
-          margin-bottom: 14px;
-        }
-
-        .ps-logo {
-          width: 60px;
-          height: 60px;
-          object-fit: contain;
-        }
-
-        .brand-name {
-          font-size: 20px;
-          font-weight: 800;
-        }
-
-        .brand-desc {
-          line-height: 1.6;
-          opacity: 0.85;
-          margin-bottom: 16px;
-        }
-
-        .social-icons {
-          display: flex;
-          gap: 12px;
-          margin-bottom: 16px;
-        }
-
-        .icon {
-          width: 34px;
-          height: 34px;
-          border-radius: 50%;
-          background: #1e293b;
-          color: #ffffff;
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-weight: 700;
-          cursor: pointer;
-        }
-
-        .updated {
-          font-size: 12px;
-          opacity: 0.7;
-        }
-
-        /* RIGHT COL */
-        .right {
-          text-align: left;
-        }
-
-        .di-placeholder,
-        .playstore-placeholder {
-          width: 160px;
-          height: 48px;
-          background: #1e293b;
-          border-radius: 6px;
-          display: flex;
-          align-items: left;
-          justify-content: left;
-          margin: 12px 0;
-          font-size: 12px;
-        }
-
-        /* BOTTOM BAR */
-        .ps-footer-bottom {
-          border-top: 1px solid #334155;
-          padding: 18px 24px;
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          gap: 10px;
-          text-align: center;
-          font-size: 13px;
-          opacity: 0.9;
-        }
-        .footer-links {
-          display: flex;
-          gap: 24px;
-          flex-wrap: wrap;
-          justify-content: center;
-        }          
-        .footer-links a {
-          color: #334155;
-          text-decoration: none;
-          font-weight: 500;
-        }
-
-        .footer-links a:hover {
-          text-decoration: underline;
-        }
-
-        .powered-by p {
-          font-size: 13px;
-          opacity: 0.9;
-          margin-top: 2px;
-        }
-
-        /* RESPONSIVE */
-        @media (max-width: 1100px) {
-          .ps-footer-top {
-            grid-template-columns: 1fr 1fr;
-          }
-        }
-
-        @media (max-width: 600px) {
-          .ps-footer-top {
-            grid-template-columns: 1fr;
-          }
-        }
-      `}</style>
+.ps-footer,.ps-footer *{box-sizing:border-box}.ps-footer{width:100%;margin:0;font-family:inherit}
+.ps-footer-main{width:100%;background-color:#06345e;background-size:100% auto;background-position:center bottom;background-repeat:no-repeat;color:#fff}
+.footer-content{width:100%;max-width:1500px;margin:0 auto;padding:30px 235px 32px 45px;display:grid;grid-template-columns:190px 135px 175px 155px 110px;gap:28px;align-items:start}
+.footer-brand{min-width:0}.footer-ps-logo{display:block;width:105px;height:auto;margin-bottom:7px}
+.footer-brand p{max-width:185px;margin:0 0 11px;color:rgba(255,255,255,.9);font-size:11px;font-weight:600;line-height:1.45}
+.footer-social{display:flex;gap:8px}.footer-social a{width:28px;height:28px;display:flex;align-items:center;justify-content:center;border:1px solid rgba(255,255,255,.75);border-radius:50%;color:#fff;font-size:10px;font-weight:700;text-decoration:none;transition:.2s ease}
+.footer-social a:hover{background:#fff;color:#06345e}
+.footer-column{min-width:0}.footer-column h4{margin:0 0 9px;color:#fff;font-size:13px;font-weight:800;line-height:1.2}
+.footer-column ul{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:7px}
+.footer-column a{color:rgba(255,255,255,.88);font-size:10.5px;font-weight:600;line-height:1.35;text-decoration:none}
+.footer-column a:hover{color:#fff;text-decoration:underline}
+.footer-powered{min-width:0;display:flex;flex-direction:column;align-items:flex-start}
+.footer-powered>span{margin-bottom:2px;color:rgba(255,255,255,.82);font-size:9px}
+.footer-powered img{width:58px;height:auto;margin-bottom:2px}
+.footer-powered strong{margin-bottom:2px;font-size:10px;color:#fff;white-space:nowrap}
+.footer-powered small{color:rgba(255,255,255,.8);font-size:8px}
+.footer-bottom{width:100%;background:#fff;border-top:1px solid #e2e8f0}
+.footer-bottom-inner{width:100%;max-width:1500px;min-height:38px;margin:0 auto;padding:6px 45px;display:flex;align-items:center;justify-content:space-between;gap:14px}
+.footer-bottom p{margin:0;color:#64748b;font-size:9px}
+.footer-bottom-links{display:flex;align-items:center;flex-wrap:wrap;gap:7px}
+.footer-bottom-links a{color:#475569;font-size:9px;text-decoration:none}
+.footer-bottom-links a:hover{text-decoration:underline}
+.footer-bottom-links span{color:#cbd5e1}
+@media(min-width:1400px){.footer-content{max-width:1600px;padding:32px 260px 34px 55px;grid-template-columns:200px 145px 185px 165px 115px;gap:32px}.footer-column h4{font-size:14px}.footer-column a{font-size:11px}.footer-bottom-inner{max-width:1600px;padding:6px 55px}}
+@media(max-width:1200px){.footer-content{padding:28px 155px 32px 30px;grid-template-columns:165px 115px 150px 135px 95px;gap:20px}.footer-ps-logo{width:95px}.footer-brand p{max-width:160px;font-size:10px}.footer-column h4{font-size:12px}.footer-column a{font-size:9.5px}}
+@media(max-width:1024px){.footer-content{padding:26px 65px 70px 24px;grid-template-columns:repeat(3,1fr);column-gap:28px;row-gap:20px}.footer-brand{grid-row:1/span 2}.footer-column h4{font-size:12px;margin-bottom:7px}.footer-column ul{gap:6px}.footer-column a{font-size:9.5px}}
+@media(max-width:900px){.footer-content{padding:24px 20px 95px;grid-template-columns:1fr 1fr;column-gap:30px;row-gap:20px}.footer-brand{grid-column:1/-1;grid-row:auto}.footer-brand p{max-width:280px;font-size:10px}.footer-column,.footer-powered{padding-top:2px}.footer-column h4{margin-bottom:7px;font-size:12px}.footer-column ul{gap:6px}.footer-column a{font-size:10px}.footer-bottom-inner{padding:8px 16px;flex-direction:column;justify-content:center;gap:4px;text-align:center}.footer-bottom-links{justify-content:center}}
+@media(max-width:600px){.ps-footer-main{background-size:100% auto;background-position:center bottom}.footer-content{padding:22px 16px 82px;grid-template-columns:1fr 1fr;column-gap:18px;row-gap:18px}.footer-brand{grid-column:1/-1}.footer-ps-logo{width:92px}.footer-brand p{max-width:250px;margin-bottom:9px;font-size:10px}.footer-social a{width:27px;height:27px;font-size:9px}.footer-column,.footer-powered{padding-top:10px;border-top:1px solid rgba(255,255,255,.12)}.footer-column h4{margin-bottom:7px;font-size:11.5px}.footer-column ul{gap:6px}.footer-column a{font-size:9.5px;line-height:1.4}.footer-powered>span{font-size:8.5px}.footer-powered img{width:52px}.footer-powered strong{font-size:9.5px}.footer-powered small{font-size:7.5px}.footer-bottom p,.footer-bottom-links a{font-size:8px}}
+@media(max-width:400px){.footer-content{padding:20px 12px 68px;grid-template-columns:1fr 1fr;column-gap:12px;row-gap:15px}.footer-ps-logo{width:86px}.footer-brand p{max-width:235px;font-size:9.5px}.footer-social a{width:25px;height:25px}.footer-column,.footer-powered{padding-top:8px}.footer-column h4{font-size:11px}.footer-column ul{gap:5px}.footer-column a{font-size:9px}.footer-powered img{width:48px}.footer-bottom-inner{padding:7px 9px}.footer-bottom-links{gap:5px}.footer-bottom p,.footer-bottom-links a{font-size:7.5px}}
+`}</style>
     </footer>
   );
 }

@@ -1,208 +1,682 @@
 import React, { useContext } from "react";
 import { LanguageContext } from "../LanguageContext.jsx";
 
-/**
- * HeroContactUs
- */
+import contactBg from "../../assets/Hero/About/contactus.png";
 
 export default function HeroContactUs() {
   const { lang } = useContext(LanguageContext);
 
   const content = {
     en: {
-      title: "Need Support for Pragati Setu?",
-      highlight: "Contact Us!",
-      subtitle:
-        "Our technical support team is available over Phone and Email to assist you with any issues.",
+      title: "Need Support?",
+      highlight: "We Are Here to Help",
 
       callTitle: "Call Us",
-      callTime: "Monday through Friday",
-      callTime2: "10:30 AM to 6:30 PM",
+      callDay: "Monday – Friday",
+      callTime: "10:30 AM – 6:30 PM",
 
-      writeTitle: "Write to us",
-      writeDesc:
-        "Mail us your queries and our support team will get back to you within 24 hours.",
+      emailTitle: "Email Us",
+      emailDesc: "Send your queries anytime",
     },
 
     hi: {
-      title: "प्रगति सेतु के लिए सहायता चाहिए?",
-      highlight: "संपर्क करें!",
-      subtitle:
-        "हमारी तकनीकी सहायता टीम आपकी किसी भी समस्या में फोन और ईमेल के माध्यम से मदद के लिए उपलब्ध है।",
+      title: "सहायता चाहिए?",
+      highlight: "हम आपकी मदद के लिए हैं",
 
       callTitle: "हमें कॉल करें",
-      callTime: "सोमवार से शुक्रवार",
-      callTime2: "सुबह 10:30 बजे से शाम 6:30 बजे तक",
+      callDay: "सोमवार – शुक्रवार",
+      callTime: "सुबह 10:30 – शाम 6:30",
 
-      writeTitle: "हमें लिखें",
-      writeDesc:
-        "अपनी समस्याएं हमें मेल करें, हमारी टीम 24 घंटे के भीतर आपसे संपर्क करेगी।",
+      emailTitle: "ईमेल करें",
+      emailDesc: "अपनी समस्या कभी भी भेजें",
     },
   };
 
   const t = content[lang] || content.en;
 
   return (
-    <div className="hero-contact-wrapper">
-      {/* HEADER */}
-      <div className="contact-header">
-        <h2 className="contact-title">
-          {t.title} <span>{t.highlight}</span>
-        </h2>
-        <p className="contact-subtitle">{t.subtitle}</p>
-      </div>
+    <section
+      className="support-section"
+      style={{
+        backgroundImage: `url(${contactBg})`,
+      }}
+    >
+      <div className="support-content">
 
-      {/* CARDS */}
-      <div className="contact-cards">
-        {/* CALL US */}
-        <div className="contact-card">
-          <div className="contact-icon orange">📞</div>
+        {/* ================= HEADING ================= */}
 
-          <h3>{t.callTitle}</h3>
-          <p className="contact-time">
-            <strong>{t.callTime}</strong>
-            <br />
-            {t.callTime2}
-          </p>
+        <div className="support-heading">
 
-          <p className="contact-link">
-            <a href="tel:+919236434631">+91-9236434631</a>
-            <br></br>
-            <a href="tel:+918840961627">+91-8840961627</a>
-          </p>
+          <h2>
+            {t.title}
+          </h2>
+
+          <h3>
+            {t.highlight}
+          </h3>
+
         </div>
 
-        {/* WRITE TO US */}
-        <div className="contact-card">
-          <div className="contact-icon orange">📝</div>
 
-          <h3>{t.writeTitle}</h3>
-          <p className="contact-desc">{t.writeDesc}</p>
+        {/* ================= CONTACT ROW ================= */}
 
-          <p className="contact-link">
-            <a href="mailto:bdopmuit@gmail.com">bdopmuit@gmail.com</a>
-          </p>
+        <div className="support-info-row">
+
+
+          {/* CALL */}
+
+          <div className="support-info-item">
+
+            <div className="support-icon">
+              ☎
+            </div>
+
+            <div className="support-text">
+
+              <h4>
+                {t.callTitle}
+              </h4>
+
+              <p>
+                {t.callDay}
+              </p>
+
+              <p>
+                {t.callTime}
+              </p>
+
+              <a href="tel:+919236434631">
+                +91-9236434631
+              </a>
+
+              <a href="tel:+918840961627">
+                +91-8840961627
+              </a>
+
+            </div>
+
+          </div>
+
+
+
+          {/* EMAIL */}
+
+          <div className="support-info-item">
+
+            <div className="support-icon">
+              ✉
+            </div>
+
+            <div className="support-text">
+
+              <h4>
+                {t.emailTitle}
+              </h4>
+
+              <p>
+                {t.emailDesc}
+              </p>
+
+              <a href="mailto:bdopmuit@gmail.com">
+                bdopmuit@gmail.com
+              </a>
+
+            </div>
+
+          </div>
+
         </div>
+
       </div>
 
-      {/* STYLES */}
+
+
       <style>{`
-        /* ===== WRAPPER ===== */
-        .hero-contact-wrapper {
-          max-width: 1300px;
-          margin: 0 auto;
-        }
 
-        /* ===== HEADER ===== */
-        .contact-header {
-          margin-bottom: 40px;
-        }
+        /* =========================================
+           MAIN SECTION
+        ========================================= */
 
-        .contact-title {
-          font-size: 36px;
-          font-weight: 800;
-          color: #0f172a;
-        }
+        .support-section {
+          width: 100%;
 
-        .contact-title span {
-          color: #fd7301;
-        }
+          min-height: 420px;
 
-        .contact-subtitle {
-          margin-top: 10px;
-          font-size: 16px;
-          color: #475569;
-          max-width: 800px;
-        }
-
-        /* ===== CARDS ===== */
-        .contact-cards {
-          display: flex;
-          gap: 32px;
-          flex-wrap: wrap;
-        }
-
-        .contact-card {
-          flex: 1;
-          min-width: 320px;
-          background: #ffffff;
-          border-radius: 14px;
-          padding: 28px 30px;
-          border: 1px solid #e5e7eb;
-          box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
           position: relative;
+
+          display: flex;
+
+          align-items: center;
+
+          background-size: cover;
+
+          background-position: center right;
+
+          background-repeat: no-repeat;
+
+          box-sizing: border-box;
+
           overflow: hidden;
         }
 
-        /* dotted corner effect */
-        .contact-card::after {
-          content: "";
-          position: absolute;
-          bottom: 0;
-          right: 0;
-          width: 120px;
-          height: 120px;
-          background: radial-gradient(#e5e7eb 1px, transparent 1px);
-          background-size: 10px 10px;
-          opacity: 0.6;
+
+
+        /* =========================================
+           CONTENT
+        ========================================= */
+
+        .support-content {
+          width: 100%;
+
+          max-width: 1500px;
+
+          margin: 0 auto;
+
+          padding:
+            55px
+            50px;
+
+          box-sizing: border-box;
+
+          position: relative;
+
+          z-index: 2;
         }
 
-        /* ICON */
-        .contact-icon {
-          width: 44px;
-          height: 44px;
-          border-radius: 10px;
+
+
+        /* =========================================
+           HEADING
+        ========================================= */
+
+        .support-heading {
+          margin-bottom: 30px;
+
+          max-width: 520px;
+        }
+
+
+        .support-heading h2 {
+          margin: 0;
+
+          color: #123d75;
+
+          font-size: 36px;
+
+          font-weight: 800;
+
+          line-height: 1.1;
+        }
+
+
+        .support-heading h3 {
+          margin:
+            5px
+            0
+            0;
+
+          color: #f97316;
+
+          font-size: 34px;
+
+          font-weight: 800;
+
+          line-height: 1.1;
+        }
+
+
+
+        /* =========================================
+           INFO ROW
+        ========================================= */
+
+        .support-info-row {
           display: flex;
+
+          align-items: flex-start;
+
+          gap: 45px;
+
+          max-width: 650px;
+        }
+
+
+
+        /* =========================================
+           INFO ITEM
+        ========================================= */
+
+        .support-info-item {
+          display: flex;
+
+          align-items: flex-start;
+
+          gap: 13px;
+
+          min-width: 0;
+        }
+
+
+
+        /* =========================================
+           ICON
+        ========================================= */
+
+        .support-icon {
+          width: 42px;
+
+          height: 42px;
+
+          flex-shrink: 0;
+
+          border-radius: 50%;
+
+          background: #ffffff;
+
+          display: flex;
+
           align-items: center;
+
           justify-content: center;
-          font-size: 20px;
-          margin-bottom: 16px;
-          background: #fff7ed;
-          color: #fd7301;
+
+          color: #f97316;
+
+          font-size: 18px;
+
+          box-shadow:
+            0 4px 15px
+            rgba(15, 23, 42, 0.10);
         }
 
-        /* TEXT */
-        .contact-card h3 {
-          font-size: 22px;
-          font-weight: 700;
-          margin-bottom: 10px;
-          color: #0f172a;
+
+
+        /* =========================================
+           TEXT
+        ========================================= */
+
+        .support-text h4 {
+          margin:
+            0
+            0
+            4px;
+
+          color: #123d75;
+
+          font-size: 14px;
+
+          font-weight: 800;
         }
 
-        .contact-time,
-        .contact-desc {
-          font-size: 15px;
-          line-height: 1.6;
-          color: #334155;
-          margin-bottom: 18px;
+
+        .support-text p {
+          margin: 0;
+
+          color: #64748b;
+
+          font-size: 11px;
+
+          line-height: 1.45;
         }
 
-        .contact-link a {
-          font-size: 15px;
-          font-weight: 700;
+
+        .support-text a {
+          display: block;
+
+          margin-top: 3px;
+
           color: #2563eb;
+
+          font-size: 11px;
+
+          font-weight: 800;
+
           text-decoration: none;
         }
 
-        .contact-link a:hover {
+
+        .support-text a:hover {
           text-decoration: underline;
         }
 
-        /* ===== RESPONSIVE ===== */
-        @media (max-width: 768px) {
-          .contact-title {
+
+
+        /* =========================================
+           1400+
+        ========================================= */
+
+        @media (min-width: 1400px) {
+
+          .support-section {
+            min-height: 450px;
+          }
+
+
+          .support-content {
+            padding:
+              65px
+              70px;
+          }
+
+
+          .support-heading h2 {
+            font-size: 40px;
+          }
+
+
+          .support-heading h3 {
+            font-size: 38px;
+          }
+
+
+          .support-info-row {
+            gap: 55px;
+          }
+
+        }
+
+
+
+        /* =========================================
+           1200
+        ========================================= */
+
+        @media (max-width: 1200px) {
+
+          .support-section {
+            min-height: 390px;
+
+            background-position:
+              65% center;
+          }
+
+
+          .support-content {
+            padding:
+              45px
+              35px;
+          }
+
+
+          .support-heading h2 {
+            font-size: 32px;
+          }
+
+
+          .support-heading h3 {
+            font-size: 30px;
+          }
+
+
+          .support-info-row {
+            gap: 35px;
+
+            max-width: 600px;
+          }
+
+        }
+
+
+
+        /* =========================================
+           1024
+        ========================================= */
+
+        @media (max-width: 1024px) {
+
+          .support-section {
+            min-height: 360px;
+
+            background-position:
+              62% center;
+          }
+
+
+          .support-content {
+            padding:
+              40px
+              28px;
+          }
+
+
+          .support-heading {
+            max-width: 450px;
+          }
+
+
+          .support-heading h2 {
             font-size: 28px;
           }
 
-          .contact-cards {
-            gap: 24px;
+
+          .support-heading h3 {
+            font-size: 27px;
           }
-            .hero-contact-wrapper {
-          margin-left: 10px;
-          margin-right: 10px
+
+
+          .support-info-row {
+            gap: 28px;
+
+            max-width: 540px;
+          }
+
         }
+
+
+
+        /* =========================================
+           900
+        ========================================= */
+
+        @media (max-width: 900px) {
+
+          .support-section {
+            min-height: 340px;
+
+            background-position:
+              68% center;
+          }
+
+
+          .support-content {
+            padding:
+              35px
+              24px;
+          }
+
+
+          .support-heading h2 {
+            font-size: 26px;
+          }
+
+
+          .support-heading h3 {
+            font-size: 25px;
+          }
+
+
+          .support-info-row {
+            gap: 22px;
+          }
+
+
+          .support-text h4 {
+            font-size: 13px;
+          }
+
+
+          .support-text p,
+          .support-text a {
+            font-size: 10.5px;
+          }
+
         }
+
+
+
+        /* =========================================
+           600
+        ========================================= */
+
+        @media (max-width: 600px) {
+
+          .support-section {
+            min-height: 500px;
+
+            align-items: flex-start;
+
+            background-size: auto 100%;
+
+            background-position:
+              75% center;
+          }
+
+
+          /*
+            Add a soft light overlay on mobile
+            so text stays readable.
+          */
+
+          .support-section::before {
+            content: "";
+
+            position: absolute;
+
+            inset: 0;
+
+            background:
+              linear-gradient(
+                90deg,
+                rgba(255,255,255,0.98) 0%,
+                rgba(255,255,255,0.92) 50%,
+                rgba(255,255,255,0.15) 100%
+              );
+
+            z-index: 1;
+          }
+
+
+          .support-content {
+            padding:
+              35px
+              18px;
+
+            z-index: 2;
+          }
+
+
+          .support-heading {
+            max-width: 310px;
+
+            margin-bottom: 25px;
+          }
+
+
+          .support-heading h2 {
+            font-size: 24px;
+          }
+
+
+          .support-heading h3 {
+            font-size: 23px;
+          }
+
+
+          .support-info-row {
+            flex-direction: column;
+
+            gap: 22px;
+
+            max-width: 300px;
+          }
+
+
+          .support-icon {
+            width: 38px;
+
+            height: 38px;
+
+            font-size: 16px;
+          }
+
+
+          .support-text h4 {
+            font-size: 13px;
+          }
+
+
+          .support-text p,
+          .support-text a {
+            font-size: 11px;
+          }
+
+        }
+
+
+
+        /* =========================================
+           400
+        ========================================= */
+
+        @media (max-width: 400px) {
+
+          .support-section {
+            min-height: 460px;
+
+            background-position:
+              77% center;
+          }
+
+
+          .support-content {
+            padding:
+              28px
+              14px;
+          }
+
+
+          .support-heading h2 {
+            font-size: 21px;
+          }
+
+
+          .support-heading h3 {
+            font-size: 20px;
+          }
+
+
+          .support-heading {
+            margin-bottom: 22px;
+          }
+
+
+          .support-info-row {
+            gap: 18px;
+          }
+
+
+          .support-icon {
+            width: 34px;
+
+            height: 34px;
+
+            font-size: 14px;
+          }
+
+
+          .support-text h4 {
+            font-size: 12px;
+          }
+
+
+          .support-text p,
+          .support-text a {
+            font-size: 10px;
+          }
+
+        }
+
       `}</style>
-    </div>
+
+    </section>
   );
 }

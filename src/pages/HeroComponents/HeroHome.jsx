@@ -1,8 +1,9 @@
-import React from "react";
+import React, { useContext } from "react";
 import { useNavigate } from "react-router-dom";
 import { FaArrowRight } from "react-icons/fa";
 import HeroStatsBanner from "./HeroStatsBanner";
 import HeroBottomBanner from "./HeroBottomBanner";
+import { LanguageContext } from "../../pages/LanguageContext";
 
 // Images
 import heroBBBG from "../../assets/NewHero/heroBBBG.png";
@@ -11,11 +12,78 @@ import hinLine from "../../assets/NewHero/binge_line.png";
 
 export default function HeroHome() {
   const navigate = useNavigate();
+  const { lang } = useContext(LanguageContext);
   const scrollToServices = () => {
     document
       .getElementById("services-section")
       ?.scrollIntoView({ behavior: "smooth" });
   };
+   const content = {
+
+    en: {
+      tagline:
+        "Empowered Women | Prosperous Uttar Pradesh",
+
+      heading1:
+        "Stronger",
+
+      heading2:
+        "Self Help Groups",
+
+      heading3:
+        "Brighter Tomorrows",
+
+      description:
+        "Pragati Setu is a unified digital platform to strengthen, monitor and support SHG-related activities across Uttar Pradesh, enabling transparent governance and sustainable rural livelihoods.",
+
+      explore:
+        "Explore Our Services",
+
+      knowMore:
+        "Know More",
+
+      // womenAlt:
+      //   "Rural Women Uttar Pradesh",
+
+      // hindiAlt:
+      //   "Women Empowerment",
+    },
+
+
+    hi: {
+      tagline:
+        "सशक्त महिलाएं | समृद्ध उत्तर प्रदेश",
+
+      heading1:
+        "सशक्त",
+
+      heading2:
+        "स्वयं सहायता समूह",
+
+      heading3:
+        "उज्ज्वल भविष्य",
+
+      description:
+        "प्रगति सेतु उत्तर प्रदेश में स्वयं सहायता समूहों (SHG) से जुड़ी गतिविधियों को मजबूत करने, उनकी निगरानी करने और सहयोग प्रदान करने के लिए एक एकीकृत डिजिटल प्लेटफ़ॉर्म है, जो पारदर्शी शासन और सतत ग्रामीण आजीविका को बढ़ावा देता है।",
+
+      explore:
+        "हमारी सेवाएं देखें",
+
+      knowMore:
+        "और जानें",
+
+      // womenAlt:
+      //   "उत्तर प्रदेश की ग्रामीण महिलाएं",
+
+      // hindiAlt:
+      //   "महिला सशक्तिकरण",
+    },
+
+  };
+
+
+  const t = content[lang] || content.en;
+
 
   return (
     <div className="hero-home-wrapper">
@@ -52,33 +120,33 @@ export default function HeroHome() {
         <div className="hero-text-content">
           <div className="hero-tagline">
             <span className="red-dash"></span>
-            Empowered Women | Prosperous Uttar Pradesh
+             {t.tagline}
+
           </div>
 
           <h1 className="hero-h1">
-            Stronger
+             {t.heading1}
             <br />
-            Self Help Groups
+            {t.heading2}
             <br />
-            <span className="text-orange">Brighter Tomorrows</span>
+            <span className="text-orange">{t.heading3}</span>
           </h1>
 
           <p className="hero-description">
-            Pragati Setu is a unified digital platform to strengthen, monitor
-            and support SHG-related activities across Uttar Pradesh, enabling
-            transparent governance and sustainable rural livelihoods.
+            {t.description}
+
           </p>
 
           <div className="hero-actions">
             <button className="btn-explore" onClick={scrollToServices}>
-              Explore Our Services{" "}
+             {t.explore}{" "}
               <FaArrowRight style={{ marginLeft: "8px" }} />
             </button>
             <button
               className="btn-know-more"
               onClick={() => navigate("/about-us")}
             >
-              Know More
+              {t.knowMore}
             </button>
           </div>
         </div>
