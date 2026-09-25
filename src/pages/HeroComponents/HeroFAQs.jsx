@@ -66,9 +66,9 @@ export default function HeroFAQs() {
       </div>
 
       <style>{`
-        .faq-wrap { width: 100%; max-width: none; margin: 0; padding: 5px 30px; box-sizing: border-box; }
+        .faq-wrap { width: 100%; max-width: none; margin: 0; padding: 5px 30px; box-sizing: border-box; background: #FFF9F7; }
 
-        .faq-head { width: 100%; margin-bottom: 20px; }
+        .faq-head { width: 100%; margin-bottom: 20px;}
         .faq-label { display: flex; align-items: center; gap: 7px; margin-bottom: 6px; color: #f97316; font-size: 18px; font-weight: 800; letter-spacing: 0.5px; text-transform: uppercase; }
         .faq-label-line { display: block; width: 20px; height: 2px; background: #f97316; border-radius: 10px; flex-shrink: 0; }
         .faq-head h2 { margin: 0; color: #123d75; font-size: 32px; font-weight: 800; line-height: 1.15; }

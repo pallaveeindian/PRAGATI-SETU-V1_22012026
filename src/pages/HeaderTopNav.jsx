@@ -156,7 +156,7 @@ export default function TopNavigation() {
 
           .desktop-logo { display: block; }
           .mobile-logo { display: none; }
-          .nav-logo { height: 52px; width: auto; transition: transform 0.3s ease; }
+          .nav-logo { height: 68px; width: auto; transition: transform 0.3s ease; }
           .nav-logo:hover { transform: scale(1.02); }
           .nav-logo-img { height: 44px; width: auto; object-fit: contain; }
 

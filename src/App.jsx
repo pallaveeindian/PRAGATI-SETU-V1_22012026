@@ -18,7 +18,7 @@ import Login from "./pages/Login";
 import AboutUs from "./pages/AboutUs";
 import BeneficiaryProfiling from "./pages/BeneficiaryProfiling";
 import UserManagement from "./pages/UserManagement";
-import TrainingManagement from "./pages/TrainingManagement";
+import TMSLayout from "./pages/PublicTMS/TMSLayout.jsx";
 import LakhpatiDidi from "./pages/LakhpatiDidi";
 import EnterpriseTracking from "./pages/EnterpriseTracking";
 import MonitoringandAnlytics from "./pages/MonitoringandAnlytics";
@@ -123,7 +123,7 @@ export default function App() {
           element={<BeneficiaryProfiling />}
         />
         <Route path="/user-management" element={<UserManagement />} />
-        <Route path="/training-management" element={<TrainingManagement />} />
+        <Route path="/training-management" element={<TMSLayout />} />
         <Route path="/lakhpati-didi" element={<LakhpatiDidi />} />
         <Route path="/enterprise-tracking" element={<EnterpriseTracking />} />
         <Route

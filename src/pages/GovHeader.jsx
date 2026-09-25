@@ -47,12 +47,12 @@ export default function GovHeader({ logo, title, onFontChange }) {
           <span className="divider">|</span>
 
           <button
-            className="lang-btn"
-            onClick={() => navigate("/register-grievance")}
-            style={{ fontWeight: "700" }}
-          >
-            Complaint & Support
-          </button>
+  className="complaint-support-btn"
+  onClick={() => navigate("/register-grievance")}
+>
+  <span>Complaint & Support</span>
+  <span className="complaint-arrow">→</span>
+</button>
         </div>
       </div>
 
@@ -114,9 +114,70 @@ export default function GovHeader({ logo, title, onFontChange }) {
           opacity: 0.6;
         }
 
-        .lang-btn {
-          font-weight: 500;
-        }
+        // .lang-btn {
+        //   font-weight: 500;
+        // }
+       .gov-header-right .complaint-support-btn {
+  min-width: 190px;
+  height: 36px;
+
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+
+  gap: 18px;
+
+  padding: 0 18px;
+
+  background: #ff5b0b;
+
+  border: none;
+  border-radius: 5px;
+
+  color: #ffffff;
+
+  font-size: 13px;
+  font-weight: 700;
+
+  cursor: pointer;
+
+  box-shadow:
+    0 4px 10px rgba(255, 91, 11, 0.25);
+
+  transition:
+    background 0.25s ease,
+    transform 0.25s ease,
+    box-shadow 0.25s ease;
+}
+
+
+.gov-header-right .complaint-support-btn:hover {
+  background: #e94e00;
+
+  color: #ffffff;
+
+  text-decoration: none;
+
+  transform: translateY(-1px);
+
+  box-shadow:
+    0 6px 14px rgba(255, 91, 11, 0.32);
+}
+
+
+.complaint-arrow {
+  color: #ffffff;
+
+  font-size: 16px;
+  font-weight: 500;
+
+  transition: transform 0.25s ease;
+}
+
+
+.complaint-support-btn:hover .complaint-arrow {
+  transform: translateX(4px);
+}
 
         @media (max-width: 768px) {
           .gov-header-inner {
@@ -161,8 +222,13 @@ export default function GovHeader({ logo, title, onFontChange }) {
           }
 
           .gov-header-right button {
-            font-size: 12px;
-          }
+  background: transparent;
+  border: none;
+  color: #fff;
+  font-size: 14px;
+  cursor: pointer;
+  padding: 4px 6px;
+}
         }
       `}</style>
     </header>
