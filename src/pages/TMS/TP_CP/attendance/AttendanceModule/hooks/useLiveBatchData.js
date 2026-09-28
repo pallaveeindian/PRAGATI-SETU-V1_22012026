@@ -195,30 +195,56 @@ export default function useLiveBatchData(batchId) {
   // 5. DERIVED STATE: MISSING DATES (Requires Auto-Absent)
   // --------------------------------------------------------
   const missingDates = useMemo(() => {
-    if (!batchData || !batchData.start_date) return [];
+    if (!batchData?.start_date || !today) {
+      return [];
+    }
 
-    const startDate = batchData.start_date;
-    const endLimit =
-      batchData.end_date && batchData.end_date < today
-        ? batchData.end_date
-        : today;
+    const startDate = String(batchData.start_date).slice(0, 10);
+
     const yesterday = addDaysISO(today, -1);
-    const stop = yesterday < endLimit ? yesterday : endLimit;
 
-    if (startDate > stop) return []; // Batch hasn't started or started today
+    let stopDate = yesterday;
 
-    const recordedDates = new Set(attendances.map((a) => a.date));
+    // Do not go beyond batch end date
+    if (
+      batchData?.end_date &&
+      String(batchData.end_date).slice(0, 10) < stopDate
+    ) {
+      stopDate = String(batchData.end_date).slice(0, 10);
+    }
 
-    const toMark = [];
+    if (startDate > stopDate) {
+      return [];
+    }
+
+    // Normalize already-recorded dates
+    const recordedDates = new Set(
+      attendances
+        .map((attendance) => {
+          const dateValue = attendance?.date || attendance?.attendance_date;
+
+          if (!dateValue) {
+            return null;
+          }
+
+          return String(dateValue).slice(0, 10);
+        })
+        .filter(Boolean),
+    );
+
+    const missing = [];
+
     let cursor = startDate;
-    while (cursor <= stop) {
+
+    while (cursor <= stopDate) {
       if (!recordedDates.has(cursor)) {
-        toMark.push(cursor);
+        missing.push(cursor);
       }
+
       cursor = addDaysISO(cursor, 1);
     }
 
-    return toMark;
+    return missing;
   }, [batchData, attendances, today]);
 
   // --------------------------------------------------------
@@ -233,8 +259,8 @@ export default function useLiveBatchData(batchId) {
 
     // Derived Participants & EKYC
     participants,
-    ekycRows,
-    allEkycVerified,
+    // ekycRows,
+    // allEkycVerified,
 
     // Derived Schedule & Attendance
     schedule,

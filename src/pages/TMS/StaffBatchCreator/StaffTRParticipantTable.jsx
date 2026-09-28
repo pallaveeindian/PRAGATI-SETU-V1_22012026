@@ -8,6 +8,7 @@ export default function StaffTRParticipantTable({
   selectedStaffIds = [],
   onStaffSelectionChange,
   maxAllowed = 40,
+  participantType, // SURGICAL ADDITION: Passed from parent
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -17,19 +18,26 @@ export default function StaffTRParticipantTable({
   const filteredStaff = useMemo(() => {
     if (!searchTerm) return staffPool;
     const lowerSearch = searchTerm.toLowerCase();
-
     return staffPool.filter((staff) => {
       const nameMatch = (staff.full_name || "")
         .toLowerCase()
         .includes(lowerSearch);
-      const empIdMatch = (staff.employee_id || "")
-        .toLowerCase()
-        .includes(lowerSearch);
+
+      // SURGICAL FIX: Dynamic search based on participant type
+      const identifierMatch =
+        participantType === "TRAINER"
+          ? String(staff.mobile_no || "")
+              .toLowerCase()
+              .includes(lowerSearch)
+          : String(staff.employee_id || "")
+              .toLowerCase()
+              .includes(lowerSearch);
+
       const trIdMatch = String(staff.source_tr_id).includes(lowerSearch);
 
-      return nameMatch || empIdMatch || trIdMatch;
+      return nameMatch || identifierMatch || trIdMatch;
     });
-  }, [staffPool, searchTerm]);
+  }, [staffPool, searchTerm, participantType]);
 
   // 2. Pagination Logic
   const totalPages = Math.ceil(filteredStaff.length / rowsPerPage);
@@ -89,15 +97,16 @@ export default function StaffTRParticipantTable({
       <div className="p-table-header">
         <div>
           <h4 style={{ margin: 0, color: "#1e293b", fontSize: "15px" }}>
-            Aggregated Staff Participants
+            Aggregated {participantType === "TRAINER" ? "Trainer" : "Staff"}{" "}
+            Participants
           </h4>
           <span style={{ fontSize: "12px", color: "#64748b" }}>
-            Showing unallocated staff from all selected Training Requests
+            Showing unallocated participants from all selected Training Requests
           </span>
         </div>
         <input
           type="text"
-          placeholder="Search Name, Emp ID, or TR ID..."
+          placeholder={`Search Name, ${participantType === "TRAINER" ? "Mobile No." : "Emp ID"}, or TR ID...`}
           value={searchTerm}
           onChange={(e) => setSearchTerm(e.target.value)}
           className="p-search-input"
@@ -133,7 +142,10 @@ export default function StaffTRParticipantTable({
                 />
               </th>
               <th>Source TR ID</th>
-              <th>Employee ID</th>
+              {/* SURGICAL FIX: Dynamic column header */}
+              <th>
+                {participantType === "TRAINER" ? "Mobile No." : "Employee ID"}
+              </th>
               <th>Full Name</th>
               <th>Designation</th>
               <th>District</th>
@@ -144,8 +156,8 @@ export default function StaffTRParticipantTable({
               <tr>
                 <td colSpan="6" className="empty-state">
                   {staffPool.length === 0
-                    ? "No unallocated staff available in selected requests."
-                    : "No staff matches your search."}
+                    ? "No unallocated participants available in selected requests."
+                    : "No participants match your search."}
                 </td>
               </tr>
             ) : (
@@ -194,10 +206,18 @@ export default function StaffTRParticipantTable({
                       )}
                     </td>
                     <td style={{ fontWeight: "600", color: "#0f172a" }}>
-                      {staff.employee_id || "-"}
+                      {/* SURGICAL FIX: Dynamic cell value */}
+                      {participantType === "TRAINER"
+                        ? staff.mobile_no || "-"
+                        : staff.employee_id || "-"}
                     </td>
                     <td>{staff.full_name || "-"}</td>
-                    <td>{staff.designation || "-"}</td>
+                    <td>
+                      {participantType === "TRAINER"
+                        ? `${staff.designation || ""}-${staff.theme_name || ""}` ||
+                          "-"
+                        : staff.designation || "-"}
+                    </td>
                     <td>
                       {staff.district_name_en || staff.district_id || "-"}
                     </td>

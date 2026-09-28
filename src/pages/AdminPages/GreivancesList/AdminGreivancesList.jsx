@@ -4,11 +4,11 @@ import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import {
   faEye,
   faTimes,
-  faMagnifyingGlass,
 } from "@fortawesome/free-solid-svg-icons";
-import { SUPPORT_API } from "../../api/axios";
-import { AuthContext } from "../../contexts/AuthContext";
-import AdminHeader from "../AdminPages/AdminHeader";
+import { SUPPORT_API } from "../../../api/axios";
+import { AuthContext } from "../../../contexts/AuthContext";
+
+
 export default function AdminGreivancesList() {
   const { user } = useContext(AuthContext);
   const [tickets, setTickets] = useState([]);
@@ -40,19 +40,17 @@ export default function AdminGreivancesList() {
       setLoading(false);
     }
   };
+
   const searchTicket = () => {
     setCurrentPage(1);
-
     let data = [...tickets];
 
-    // Ticket Number Filter
     if (ticketCode.trim()) {
       data = data.filter((x) =>
         x.ticket_code.toLowerCase().includes(ticketCode.toLowerCase()),
       );
     }
 
-    // Status Filter
     if (statusFilter !== "all") {
       data = data.filter((x) =>
         statusFilter === "pending" ? !x.is_solved : x.is_solved,
@@ -83,7 +81,6 @@ export default function AdminGreivancesList() {
   const isPMUUser = Number(user?.role_id) === 9;
 
   const handleResolve = async () => {
-    // Prevent non-PMU users
     if (!isPMUUser) {
       alert("You are not authorized to resolve tickets.");
       return;
@@ -108,160 +105,60 @@ export default function AdminGreivancesList() {
       alert("Failed to resolve ticket.");
     }
   };
+
   const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
 
   const paginatedTickets = filteredTickets.slice(
     (currentPage - 1) * ITEMS_PER_PAGE,
     currentPage * ITEMS_PER_PAGE,
   );
+
   return (
-    <>
-      <AdminHeader />
-      <div className="grievances-page">
+    
+      <div className="grievances-page" style={{ flex: 1, minHeight: 0, overflowY: "auto", overflowX: "hidden" }}>
         <style>{`
-        .grievances-page { padding: 2rem; min-height: 100vh; background: #f8fafc; font-family: sans-serif; }
-        .card { background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); }
-        .search-section { display: flex; gap: 1rem; margin-bottom: 2rem; }
-        .search-input { flex: 1; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 8px; }
-        .btn-search { padding: 0.75rem 2rem; background: #2563eb; color: white; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+          .grievances-page { padding: 0 1rem 1rem; background: transparent; font-family: sans-serif; }
+          .card { background: #fff; padding: 1.5rem; border-radius: 12px; border: 1px solid #e2e8f0; box-shadow: 0 1px 3px rgba(0,0,0,0.1); margin-top: 1.25rem; }
+          .search-section { display: flex; gap: 1rem; margin-bottom: 2rem; }
+          .search-input, .status-select { flex: 1; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; border-radius: 8px; font-size: 14px; outline: none; box-sizing: border-box; }
+          .search-input:focus, .status-select:focus { border-color: #2563eb; box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15); }
+          .btn-search { min-width: 140px; padding: 0.75rem 2rem; background: #2563eb; color: #fff; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; }
+          .btn-clearfilter { padding: 0.75rem 1.5rem; background: #16534b; color: #fff; border: 1px solid #cbd5e1; border-radius: 8px; cursor: pointer; font-weight: 600; transition: 0.2s; }
+          .btn-clearfilter:hover { background: #e2e8f0; color: #1e293b; }
+          table { width: 100%; border-collapse: collapse; table-layout: auto; }
+          thead th { position: sticky; top: 0; z-index: 20; background: #ffffff; padding: 1rem; text-align: left; font-size: 0.80rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; white-space: nowrap; box-shadow: inset 0 -1px 0 rgba(0,0,0,0.05); background-clip: padding-box; }
+          td { padding: 0.75rem; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #334155; white-space: normal; word-break: break-word; overflow-wrap: break-word; }
+          table td:nth-child(2), table td:nth-child(4) { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          table td:nth-child(7) { text-align: center; }
+          .chip-pending, .chip-solved { display: inline-block; white-space: nowrap; padding: 0.2rem 0.55rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; }
+          .chip-pending { background: #fef3c7; color: #92400e; }
+          .chip-solved { background: #dcfce7; color: #166534; }
+          .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; padding: 2rem; z-index: 9999; }
+          .modal { background: white; width: 100%; max-width: 900px; max-height: calc(100vh - 4rem); border-radius: 12px; padding: 1.5rem; box-shadow: -4px 0 25px rgba(0,0,0,0.15); overflow-y: auto; animation: slideInRight 0.3s ease-out; }
+          .modal-header { display: flex; justify-content: center; align-items: center; margin-bottom: 1.5rem; position: sticky; top: -1.5rem; background: white; padding-top: 1.5rem; padding-bottom: 1rem; z-index: 10; border-bottom: 1px solid #e2e8f0; }
+          @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+          .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
+          .info-box { border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; }
+          .info-title { font-size: 0.7rem; color: #64748b; font-weight: 800; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
+          .info-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; color: #334155; }
+          .section-label { font-size: 0.7rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 1.5rem 0 0.5rem 0; letter-spacing: 0.05em; }
+          .box-container { border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; font-size: 0.9rem; color: #334155; }
+          .textarea-response { width: 100%; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 8px; min-height: 120px; box-sizing: border-box; margin-top: 0.5rem; }
+          .footer-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
+          .btn-cancel { background: transparent; border: none; cursor: pointer; color: #64748b; font-weight: 600; padding: 0.75rem 1.5rem; }
+          .btn-resolve { padding: 0.75rem 2rem; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
+          .error-placeholder { width: 100px; height: 75px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: bold; border-radius: 4px; }
+          .pagination { display:flex; justify-content:center; align-items:center; gap:8px; margin-top:20px; flex-wrap:wrap; }
+          .pagination button { min-width:38px; height:38px; border:1px solid #d1d5db; background:#fff; color:#334155; border-radius:8px; cursor:pointer; transition:.2s; font-weight:600; }
+          .pagination button:hover:not(:disabled) { background:#2563eb; color:#fff; border-color:#2563eb; }
+          .pagination button.active { background:#2563eb; color:#fff; border-color:#2563eb; }
+          .pagination button:disabled { opacity:.5; cursor:not-allowed; }
+          .image-preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); display:flex; justify-content:center; align-items:center; z-index:99999; }
+          .image-preview-box { position:relative; max-width:90vw; max-height:90vh; }
+          .image-preview-box img { max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; background:#fff; }
+          .image-preview-close { position:absolute; top:-15px; right:-15px; width:38px; height:38px; border:none; border-radius:50%; cursor:pointer; font-size:18px; font-weight:bold; }
+        `}</style>
         
-        /* Table Styles */
-        table { width: 100%; border-collapse: collapse; }
-        th { background: #f8fafc; padding: 1rem; text-align: left; font-size: 0.75rem; color: #64748b; text-transform: uppercase; border-bottom: 2px solid #e2e8f0; }
-        td { padding: 1rem; border-bottom: 1px solid #e2e8f0; font-size: 0.9rem; color: #334155; }
-        .chip-pending { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: #fef3c7; color: #92400e; }
-        .chip-solved { padding: 0.2rem 0.6rem; border-radius: 4px; font-size: 0.75rem; font-weight: 600; background: #dcfce7; color: #166534; }
-        
-        /* Modal Styles */
-        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); display: flex; align-items: center; justify-content: center; z-index: 50; padding: 1rem; }
-        .modal { background: white; width: 100%; max-width: 800px; border-radius: 12px; padding: 1.5rem; box-shadow: 0 20px 25px -5px rgba(0,0,0,0.1); max-height: 90vh; overflow-y: auto; }
-        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
-        
-        .grid-info { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1.5rem; }
-        .info-box { border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; }
-        .info-title { font-size: 0.7rem; color: #64748b; font-weight: 800; margin-bottom: 1rem; text-transform: uppercase; letter-spacing: 0.05em; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 0.5rem; font-size: 0.85rem; color: #334155; }
-        
-        .section-label { font-size: 0.7rem; color: #64748b; font-weight: 800; text-transform: uppercase; margin: 1.5rem 0 0.5rem 0; letter-spacing: 0.05em; }
-        .box-container { border: 1px solid #e2e8f0; padding: 1rem; border-radius: 8px; font-size: 0.9rem; color: #334155; }
-        
-        .textarea-response { width: 100%; padding: 1rem; border: 1px solid #e2e8f0; border-radius: 8px; min-height: 120px; box-sizing: border-box; margin-top: 0.5rem; }
-        .footer-actions { display: flex; justify-content: flex-end; gap: 1rem; margin-top: 1.5rem; }
-        .btn-cancel { background: transparent; border: none; cursor: pointer; color: #64748b; font-weight: 600; padding: 0.75rem 1.5rem; }
-        .btn-resolve { padding: 0.75rem 2rem; background: #2563eb; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; }
-        
-        .error-placeholder { width: 100px; height: 75px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: bold; border-radius: 4px; }
-        .pagination{
-            display:flex;
-            justify-content:center;
-            align-items:center;
-            gap:8px;
-            margin-top:20px;
-            flex-wrap:wrap;
-        }
-
-        .pagination button{
-            min-width:38px;
-            height:38px;
-            border:1px solid #d1d5db;
-            background:#fff;
-            color:#334155;
-            border-radius:8px;
-            cursor:pointer;
-            transition:.2s;
-            font-weight:600;
-        }
-
-        .pagination button:hover:not(:disabled){
-            background:#2563eb;
-            color:#fff;
-            border-color:#2563eb;
-        }
-
-        .pagination button.active{
-            background:#2563eb;
-            color:#fff;
-            border-color:#2563eb;
-        }
-
-        .pagination button:disabled{
-            opacity:.5;
-            cursor:not-allowed;
-        }
-        .search-section {
-          display: flex;
-          gap: 1rem;
-          margin-bottom: 2rem;
-        }
-
-        .search-input,
-        .status-select {
-          flex: 1;
-          padding: 0.75rem 1rem;
-          border: 1px solid #e2e8f0;
-          border-radius: 8px;
-          font-size: 14px;
-          outline: none;
-          box-sizing: border-box;
-        }
-
-        .search-input:focus,
-        .status-select:focus {
-          border-color: #2563eb;
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
-        }
-
-        .btn-search {
-          min-width: 140px;
-          padding: 0.75rem 2rem;
-          background: #2563eb;
-          color: #fff;
-          border: none;
-          border-radius: 8px;
-          cursor: pointer;
-          font-weight: 600;
-        }
-
-
-        .image-preview-overlay{
-          position: fixed;
-          inset: 0;
-          background: rgba(0,0,0,.85);
-          display:flex;
-          justify-content:center;
-          align-items:center;
-          z-index:99999;
-        }
-
-        .image-preview-box{
-          position:relative;
-          max-width:90vw;
-          max-height:90vh;
-        }
-
-        .image-preview-box img{
-          max-width:90vw;
-          max-height:90vh;
-          object-fit:contain;
-          border-radius:8px;
-          background:#fff;
-        }
-
-        .image-preview-close{
-          position:absolute;
-          top:-15px;
-          right:-15px;
-          width:38px;
-          height:38px;
-          border:none;
-          border-radius:50%;
-          
-          cursor:pointer;
-          font-size:18px;
-          font-weight:bold;
-        
-        }
-      `}</style>
         <div className="card">
           <div className="search-section">
             <input
@@ -284,8 +181,19 @@ export default function AdminGreivancesList() {
             <button className="btn-search" onClick={searchTicket}>
               Search
             </button>
+            <button 
+              className="btn-clearfilter" 
+              onClick={() => { 
+                setTicketCode(""); 
+                setStatusFilter("all"); 
+                setCurrentPage(1);            
+                setFilteredTickets(tickets);   
+              }}
+            >
+              Clear Filters
+            </button>
           </div>
-
+          
           <table>
             <thead>
               <tr>
@@ -300,16 +208,13 @@ export default function AdminGreivancesList() {
               </tr>
             </thead>
             <tbody>
-              {/* {filteredTickets.map((ticket, i) => ( */}
               {paginatedTickets.map((ticket, i) => (
                 <tr key={ticket.id}>
-                  {/* <td>{i + 1}</td> */}
                   <td>{(currentPage - 1) * ITEMS_PER_PAGE + i + 1}</td>
                   <td>{ticket.ticket_code}</td>
                   <td>{ticket.ticket_body?.username || "N/A"}</td>
                   <td>
-                    {ticket.ticket_body?.district_obj?.district_name_en ||
-                      "N/A"}
+                    {ticket.ticket_body?.district_obj?.district_name_en || "N/A"}
                   </td>
                   <td>
                     {ticket.ticket_body?.block_obj?.block_name_en || "N/A"}
@@ -341,6 +246,7 @@ export default function AdminGreivancesList() {
               ))}
             </tbody>
           </table>
+
           <div className="pagination">
             <button
               onClick={() => setCurrentPage((p) => p - 1)}
@@ -486,14 +392,7 @@ export default function AdminGreivancesList() {
                     <button
                       type="button"
                       onClick={() =>
-                        setPmuResponse(`Dear User,
- 
- 
- 
-Thank you.
- 
-Regards,
-Pragati Setu Grievance Portal`)
+                        setPmuResponse(`Dear User,\n\n\nThank you.\n\nRegards,\nPragati Setu Grievance Portal`)
                       }
                       style={{
                         background: "#2563eb",
@@ -544,6 +443,7 @@ Pragati Setu Grievance Portal`)
             </div>
           </div>
         )}
+        
         {previewImage && (
           <div
             className="image-preview-overlay"
@@ -565,6 +465,6 @@ Pragati Setu Grievance Portal`)
           </div>
         )}
       </div>
-    </>
+    
   );
 }

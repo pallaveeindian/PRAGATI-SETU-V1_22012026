@@ -1074,6 +1074,18 @@ export default function TrainingBatchList() {
                                       Delete
                                     </button>
                                   )}
+                                {role === "training_partner" &&
+                                  ["DRAFT", "REJECTED"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) &&
+                                  String(b.level).toUpperCase() === "STATE" && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteBatch(b.id)}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
                                 {role === "smmu" &&
                                   ["ONGOING"].includes(
                                     String(b.status).toUpperCase(),

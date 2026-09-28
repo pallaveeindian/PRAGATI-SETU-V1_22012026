@@ -39,7 +39,10 @@ export default function StaffBatchCreatorDashboard() {
   const [trainingPlanDays, setTrainingPlanDays] = useState(0);
   const [trainingPlanName, setTrainingPlanName] = useState("");
 
-  // SURGICAL ADDITION: Multi-TR Aggregation States
+  // SURGICAL FIX: Dynamic participant type extraction
+  const [participantType, setParticipantType] = useState("STAFF");
+
+  // Multi-TR Aggregation States
   const [selectedTrIds, setSelectedTrIds] = useState([]);
   const [unallocatedStaff, setUnallocatedStaff] = useState([]);
 
@@ -69,6 +72,9 @@ export default function StaffBatchCreatorDashboard() {
         const trResp = await TMS_API.trainingRequests.retrieve(baseTrId);
         const trData = trResp?.data ?? trResp;
         setBaseTrDetails(trData);
+
+        // SURGICAL FIX: Extract Participant Type directly from Base TR
+        setParticipantType(trData?.training_type || "STAFF");
 
         // B. Fetch Plan Details to get "no_of_days"
         if (trData?.training_plan) {
@@ -119,7 +125,7 @@ export default function StaffBatchCreatorDashboard() {
           const participants = resp?.data?.results || resp?.data || [];
 
           participants.forEach((p) => {
-            // ONLY strictly unallocated staff
+            // ONLY strictly unallocated participants
             if (!p.CB_selected) {
               mergedPool.push({
                 ...p,
@@ -143,7 +149,7 @@ export default function StaffBatchCreatorDashboard() {
           }
           initialSelectDoneRef.current = true;
         } else {
-          // Cleanup: Remove selected IDs that no longer exist in the pool (e.g. user unchecked a TR)
+          // Cleanup: Remove selected IDs that no longer exist in the pool
           const validPoolIds = new Set(mergedPool.map((p) => p.id));
           setSelectedStaffIds((prev) =>
             prev.filter((id) => validPoolIds.has(id)),
@@ -162,7 +168,7 @@ export default function StaffBatchCreatorDashboard() {
   // ==========================================
   // 3. VALIDATION LOGIC
   // ==========================================
-  // Dynamic minimum: 20, OR the exact remaining pool if less than 20 staff are left globally
+  // Dynamic minimum: 20, OR the exact remaining pool if less than 20 participants are left globally
   const minRequired = Math.min(20, unallocatedStaff.length);
   const currentSelectedCount = selectedStaffIds.length;
 
@@ -179,19 +185,17 @@ export default function StaffBatchCreatorDashboard() {
 
     setIsSubmitting(true);
     try {
-      // Construct payload.
-      // Brilliant Backend Insight: Even though we combined TRs, we send batch_type="SEPARATE".
-      // The backend uses `parsed_mappings` to trace `participant_ids` back to their exact source TR automatically!
+      // SURGICAL FIX: Send dynamic participant_type (STAFF or TRAINER)
       const payload = {
-        participant_type: "STAFF",
+        participant_type: participantType,
         batch_type: "SEPARATE",
         district_tp_user_id: user?.id,
         participant_ids: selectedStaffIds,
-        block_id: null, // Strictly null for STAFF
+        block_id: null, // Strictly null for STAFF/TRAINER
         training_plan_id: baseTrDetails.training_plan,
         centre_id: selectedCentre.id,
-        district_id: baseTrDetails.district,
-        level: "STATE", // Strictly locked for STAFF
+        district_id: null,
+        level: "STATE", // Strictly locked for STAFF/TRAINER
         status: "PENDING",
         financial_year: baseTrDetails.financial_year,
         start_date: startDate,
@@ -200,7 +204,7 @@ export default function StaffBatchCreatorDashboard() {
 
       await TMS_API.batchCreator.create(payload);
 
-      alert("Aggregated Staff Batch created successfully!");
+      alert(`Aggregated ${participantType} Batch created successfully!`);
       setIsPreviewOpen(false);
       navigate(`/tms/tr-detail/${baseTrId}`);
     } catch (error) {
@@ -293,6 +297,7 @@ export default function StaffBatchCreatorDashboard() {
               trDetails={baseTrDetails}
               totalUnallocated={unallocatedStaff.length}
               trainingPlanName={trainingPlanName}
+              participantType={participantType} // PROP DRILLING
             />
 
             <div
@@ -303,21 +308,21 @@ export default function StaffBatchCreatorDashboard() {
                 marginTop: "24px",
               }}
             >
-              {/* SURGICAL ADDITION: Multi-TR Search Engine */}
               <StaffTRSearch
                 baseTrDetails={baseTrDetails}
                 selectedTrIds={selectedTrIds}
                 onTrSelectionChange={setSelectedTrIds}
+                participantType={participantType} // PROP DRILLING
               />
 
-              {/* SURGICAL ADDITION: Global Participant Table */}
               <StaffTRParticipantTable
-                staffPool={unallocatedStaff} // Passed directly from the Global Aggregator
+                staffPool={unallocatedStaff}
                 loading={loadingParticipants}
                 baseTrId={baseTrId}
                 selectedStaffIds={selectedStaffIds}
                 onStaffSelectionChange={setSelectedStaffIds}
                 maxAllowed={maxAllowed}
+                participantType={participantType} // PROP DRILLING
               />
 
               <StaffSelectionTable
@@ -325,6 +330,7 @@ export default function StaffBatchCreatorDashboard() {
                 selectedIds={selectedStaffIds}
                 onSelectionChange={setSelectedStaffIds}
                 maxAllowed={maxAllowed}
+                participantType={participantType} // PROP DRILLING
               />
 
               {/* Centre Selection (Pass Partner ID from Base TR to fetch centres) */}
@@ -365,7 +371,7 @@ export default function StaffBatchCreatorDashboard() {
                 }}
               >
                 {!isSelectionValid
-                  ? `⚠ Please select between ${minRequired} and ${maxAllowed} staff members.`
+                  ? `⚠ Please select between ${minRequired} and ${maxAllowed} participants.`
                   : !selectedCentre?.id
                     ? "⚠ Please select a Training Centre."
                     : !startDate
@@ -418,7 +424,7 @@ export default function StaffBatchCreatorDashboard() {
       {isPreviewOpen && (
         <StaffPreviewModal
           trDetails={baseTrDetails}
-          selectedTrIds={selectedTrIds} // Pass array for Transparency Modal
+          selectedTrIds={selectedTrIds}
           selectedCount={currentSelectedCount}
           centre={selectedCentre}
           startDate={startDate}
@@ -426,6 +432,7 @@ export default function StaffBatchCreatorDashboard() {
           onClose={() => setIsPreviewOpen(false)}
           onConfirm={handleConfirmAndSave}
           isSubmitting={isSubmitting}
+          participantType={participantType} // PROP DRILLING
         />
       )}
     </div>

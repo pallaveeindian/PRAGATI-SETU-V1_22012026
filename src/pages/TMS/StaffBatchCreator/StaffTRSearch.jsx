@@ -6,6 +6,7 @@ export default function StaffTRSearch({
   baseTrDetails,
   selectedTrIds,
   onTrSelectionChange,
+  participantType, // SURGICAL ADDITION: Passed down from parent
 }) {
   const [availableTrs, setAvailableTrs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -17,14 +18,16 @@ export default function StaffTRSearch({
 
   // 1. Fetch Compatible Training Requests
   useEffect(() => {
-    if (!basePlanId || !baseFy) return;
+    // Also wait for participantType to be available before fetching
+    if (!basePlanId || !baseFy || !participantType) return;
 
     const fetchCompatibleTRs = async () => {
       setLoading(true);
       try {
         const params = {
           status: "BATCHING",
-          training_type: "STAFF",
+          // SURGICAL FIX: Use dynamic participant type instead of hardcoded "STAFF"
+          training_type: participantType,
           training_plan_id: basePlanId,
           financial_year: baseFy,
           page_size: 100,
@@ -53,7 +56,7 @@ export default function StaffTRSearch({
 
     fetchCompatibleTRs();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [basePlanId, baseFy, baseTrId]);
+  }, [basePlanId, baseFy, baseTrId, participantType]);
 
   // 2. Handle Checkbox Toggle
   const handleToggleTr = (id) => {

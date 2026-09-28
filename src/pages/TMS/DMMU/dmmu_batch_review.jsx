@@ -683,6 +683,8 @@ export default function DmmuBatchReview() {
                         <th>Master Trainer Name</th>
                         <th>Mobile</th>
                         <th>Designation</th>
+                        <th>District</th>
+                        <th>Block</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -776,6 +778,8 @@ export default function DmmuBatchReview() {
                                   {mt.theme_name || "N/A"}
                                 </span>
                               </td>
+                              <td>{mt.district_name_en || "-"}</td>
+                              <td>{mt.block_name_en || "-"}</td>
                             </tr>
                           );
                         })

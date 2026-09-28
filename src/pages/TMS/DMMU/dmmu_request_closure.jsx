@@ -297,9 +297,9 @@ export default function DmmuBatchClosureReview() {
 
     setActionLoading(true);
     try {
-      // Mark batch as REJECTED with reason
+      // Mark batch as COMPLETED with reason
       await api.patch(`/tms/batches/${batchId}/`, {
-        status: "REJECTED",
+        status: "COMPLETED",
         rejection_reason: rejectionReason,
         updated_by: user.id,
       });

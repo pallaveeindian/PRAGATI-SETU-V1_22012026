@@ -12,5 +12,5 @@ import BatchAttendanceStepper from "./AttendanceModule/BatchAttendanceStepper";
  * have been migrated to the modular `AttendanceModule`.
  */
 export default function CpAdPerBatchEkyc() {
-  return <BatchAttendanceStepper activeStep={1} />;
+  return <BatchAttendanceStepper activeStep={2} />;
 }

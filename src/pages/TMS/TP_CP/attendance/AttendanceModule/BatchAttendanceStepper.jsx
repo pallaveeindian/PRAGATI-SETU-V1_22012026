@@ -11,7 +11,7 @@ import NicStepperHeader from "./components/Shared/NicStepperHeader";
 import NicStatsCards from "./components/Shared/NicStatsCards";
 
 // Controllers for the actual steps
-import EkycStepMain from "./components/Step1_EkycManager/EkycStepMain";
+// import EkycStepMain from "./components/Step1_EkycManager/EkycStepMain";
 import AttendanceStepMain from "./components/Step2_AttendanceManager/AttendanceStepMain";
 
 export default function BatchAttendanceStepper({ activeStep = 1 }) {
@@ -38,12 +38,12 @@ export default function BatchAttendanceStepper({ activeStep = 1 }) {
   // Auto-Redirect Protection:
   // If user tries to access Step 2 (Attendance) but Step 1 (EKYC) is NOT complete,
   // we warn them and force them back to Step 1.
-  if (!loading && activeStep === 2 && !allEkycVerified) {
-    alert(
-      "E-KYC is not complete. You must verify all participants before taking attendance.",
-    );
-    navigate(`/tms/cp/batch-attendance-ekyc/${batchId}`);
-  }
+  // if (!loading && activeStep === 2 && !allEkycVerified) {
+  //   alert(
+  //     "E-KYC is not complete. You must verify all participants before taking attendance.",
+  //   );
+  //   navigate(`/tms/cp/batch-attendance-ekyc/${batchId}`);
+  // }
 
   return (
     <div
@@ -215,7 +215,7 @@ export default function BatchAttendanceStepper({ activeStep = 1 }) {
                       border: "1px solid #e2e8f0",
                     }}
                   >
-                    {activeStep === 1 && (
+                    {/* {activeStep === 1 && (
                       <EkycStepMain
                         batchId={batchId}
                         batchData={batchData}
@@ -226,7 +226,7 @@ export default function BatchAttendanceStepper({ activeStep = 1 }) {
                         allEkycVerified={allEkycVerified}
                         refreshData={refreshData}
                       />
-                    )}
+                    )} */}
 
                     {activeStep === 2 && (
                       <AttendanceStepMain

@@ -152,7 +152,7 @@ export default function TpTrainingRequestClosure() {
 
   // ⚠️ SURGICAL FIX: Detect if the batch was rejected by DMMU at the closure stage
   const isClosureRejected =
-    batch?.status === "REJECTED" && Boolean(batch?.batch_closing);
+    batch?.status === "COMPLETED" && Boolean(batch?.batch_closing);
 
   // ⚠️ SURGICAL FIX: If it is rejected, we do NOT treat it as "already submitted" so inputs unlock.
   const alreadySubmitted = Boolean(batch?.batch_costing) && !isClosureRejected;
@@ -515,7 +515,7 @@ export default function TpTrainingRequestClosure() {
 
               {alreadySubmitted && !submitSuccess && (
                 <div className="alert alert-info">
-                  Closure has already been submitted. Batch is under DMMU
+                  Closure has already been submitted. Batch is under DMMU/SMMU
                   review. The data below is read-only.
                 </div>
               )}

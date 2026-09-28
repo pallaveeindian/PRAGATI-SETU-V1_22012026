@@ -1388,7 +1388,9 @@ export default function TrainingRequestDetail() {
                       }}
                     >
                       {isTP &&
-                        (tr?.training_type || "").toUpperCase() === "STAFF" &&
+                        ["STAFF", "TRAINER"].includes(
+                          (tr?.training_type || "").toUpperCase(),
+                        ) &&
                         tr?.status === "BATCHING" && (
                           <button
                             className="btn-primary"

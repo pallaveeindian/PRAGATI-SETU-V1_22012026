@@ -6,6 +6,7 @@ const StaffSelectionTable = ({
   selectedIds = [],
   onSelectionChange,
   maxAllowed = 40,
+  participantType, // SURGICAL ADDITION: Passed from parent
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -25,17 +26,25 @@ const StaffSelectionTable = ({
       const nameMatch = (staff.full_name || "")
         .toLowerCase()
         .includes(lowerSearch);
-      const empIdMatch = (staff.employee_id || "")
-        .toLowerCase()
-        .includes(lowerSearch);
+
+      // SURGICAL FIX: Dynamic search logic
+      const identifierMatch =
+        participantType === "TRAINER"
+          ? String(staff.mobile_no || "")
+              .toLowerCase()
+              .includes(lowerSearch)
+          : String(staff.employee_id || "")
+              .toLowerCase()
+              .includes(lowerSearch);
+
       const designationMatch = (staff.designation || "")
         .toLowerCase()
         .includes(lowerSearch);
       const trIdMatch = String(staff.source_tr_id || "").includes(lowerSearch);
 
-      return nameMatch || empIdMatch || designationMatch || trIdMatch;
+      return nameMatch || identifierMatch || designationMatch || trIdMatch;
     });
-  }, [selectedStaffObjects, searchTerm]);
+  }, [selectedStaffObjects, searchTerm, participantType]);
 
   // 3. Handle Pagination
   const totalPages = Math.ceil(filteredStaff.length / rowsPerPage);
@@ -126,7 +135,7 @@ const StaffSelectionTable = ({
           )}
           <input
             type="text"
-            placeholder="Search TR ID, Name, Emp ID..."
+            placeholder={`Search TR ID, Name, ${participantType === "TRAINER" ? "Mobile No" : "Emp ID"}...`}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             style={{
@@ -156,7 +165,10 @@ const StaffSelectionTable = ({
                 Action
               </th>
               <th style={styles.th}>Source TR ID</th>
-              <th style={styles.th}>Employee ID</th>
+              {/* SURGICAL FIX: Dynamic column header */}
+              <th style={styles.th}>
+                {participantType === "TRAINER" ? "Mobile No." : "Employee ID"}
+              </th>
               <th style={styles.th}>Full Name</th>
               <th style={styles.th}>Designation</th>
               <th style={styles.th}>Location (Dist/Block)</th>
@@ -174,7 +186,7 @@ const StaffSelectionTable = ({
                     fontStyle: "italic",
                   }}
                 >
-                  No staff members selected yet. Please select participants from
+                  No participants selected yet. Please select participants from
                   the pool above.
                 </td>
               </tr>
@@ -188,7 +200,7 @@ const StaffSelectionTable = ({
                     color: "#64748b",
                   }}
                 >
-                  No selected staff matches your search.
+                  No selected participants match your search.
                 </td>
               </tr>
             ) : (
@@ -245,10 +257,19 @@ const StaffSelectionTable = ({
                         color: "#0f172a",
                       }}
                     >
-                      {staff.employee_id || "-"}
+                      {/* SURGICAL FIX: Dynamic cell value */}
+                      {participantType === "TRAINER"
+                        ? staff.mobile_no || "-"
+                        : staff.employee_id || "-"}
                     </td>
                     <td style={styles.td}>{staff.full_name || "-"}</td>
-                    <td style={styles.td}>{staff.designation || "-"}</td>
+                    <td style={styles.td}>
+                      {" "}
+                      {participantType === "TRAINER"
+                        ? `${staff.designation || ""}-${staff.theme_name || ""}` ||
+                          "-"
+                        : staff.designation || "-"}
+                    </td>
                     <td style={styles.td}>
                       {staff.district_name_en || staff.district_id || "-"} /{" "}
                       {staff.block_name_en || staff.block_id || "-"}

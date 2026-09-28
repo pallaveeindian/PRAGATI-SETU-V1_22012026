@@ -521,7 +521,7 @@ export default function CpBatchList() {
                               <td>
                                 {(currentPage - 1) * rowsPerPage + index + 1}
                               </td>
-                              <td>{batch.district.district_name_en}</td>
+                              <td>{batch?.district?.district_name_en || "-"}</td>
                               <td>{batch?.block?.block_name_en || "-"}</td>
                               <td
                                 style={{ fontWeight: "600", color: "#2563eb" }}

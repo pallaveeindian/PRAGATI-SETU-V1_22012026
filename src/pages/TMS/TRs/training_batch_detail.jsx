@@ -175,7 +175,7 @@ export default function TrainingBatchDetail() {
               <BatchHeaderActions
                 batchId={batchId}
                 batchCode={batchData?.code}
-                status={batchData?.status}
+                batchStatus={batchData?.status}
                 closureRequest={closureRequest}
                 loadingClosureInfo={loadingClosureInfo}
                 onRefresh={handleRefresh}

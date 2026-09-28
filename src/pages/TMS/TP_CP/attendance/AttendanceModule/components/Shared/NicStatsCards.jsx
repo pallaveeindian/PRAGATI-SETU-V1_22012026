@@ -39,7 +39,7 @@ export default function NicStatsCards({ participants, ekycRows, schedule }) {
       </div>
 
       {/* Card 2: E-KYC Verified */}
-      <div className="nic-stat-card">
+      {/* <div className="nic-stat-card">
         <div
           className="stat-icon-wrapper"
           style={{ background: "#dcfce7", color: "#166534" }}
@@ -52,10 +52,10 @@ export default function NicStatsCards({ participants, ekycRows, schedule }) {
             {totalVerified}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Card 3: Pending E-KYC */}
-      <div className="nic-stat-card">
+      {/* <div className="nic-stat-card">
         <div
           className="stat-icon-wrapper"
           style={{
@@ -74,7 +74,7 @@ export default function NicStatsCards({ participants, ekycRows, schedule }) {
             {pendingEkyc}
           </div>
         </div>
-      </div>
+      </div> */}
 
       {/* Card 4: Daily Start Time */}
       <div className="nic-stat-card">

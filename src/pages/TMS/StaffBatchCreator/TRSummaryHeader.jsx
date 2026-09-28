@@ -1,7 +1,12 @@
 // src/pages/TMS/StaffBatchCreator/TRSummaryHeader.jsx
 import React from "react";
 
-const TRSummaryHeader = ({ trDetails, totalUnallocated, trainingPlanName }) => {
+const TRSummaryHeader = ({
+  trDetails,
+  totalUnallocated,
+  trainingPlanName,
+  participantType, // SURGICAL ADDITION: Passed from parent
+}) => {
   if (!trDetails) return null;
 
   const trId = trDetails.id || "-";
@@ -14,6 +19,10 @@ const TRSummaryHeader = ({ trDetails, totalUnallocated, trainingPlanName }) => {
     trDetails.training_plan_name ||
     trDetails.training_plan?.training_name ||
     `Plan ID: ${trDetails.training_plan || "-"}`;
+
+  // Fallback to trDetails if participantType prop is missing for some reason
+  const displayType =
+    participantType?.toUpperCase() || trDetails.training_type || "STAFF";
 
   return (
     <div
@@ -55,7 +64,8 @@ const TRSummaryHeader = ({ trDetails, totalUnallocated, trainingPlanName }) => {
             fontWeight: "600",
           }}
         >
-          Available Pool: {totalUnallocated} Unallocated Staff
+          Available Pool: {totalUnallocated} Unallocated{" "}
+          {displayType === "TRAINER" ? "Trainers" : "Staff"}
         </span>
       </div>
 
@@ -73,7 +83,8 @@ const TRSummaryHeader = ({ trDetails, totalUnallocated, trainingPlanName }) => {
         {/* LOCKED PARAMETERS */}
         <div style={styles.infoBlock}>
           <span style={styles.label}>Participant Type 🔒</span>
-          <span style={styles.lockedValue}>STAFF</span>
+          {/* SURGICAL FIX: Dynamic Participant Type */}
+          <span style={styles.lockedValue}>{displayType}</span>
         </div>
 
         <div style={styles.infoBlock}>

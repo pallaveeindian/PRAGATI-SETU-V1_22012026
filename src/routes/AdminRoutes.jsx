@@ -2,8 +2,11 @@
 import React from "react";
 import { Routes, Route } from "react-router-dom";
 import ProtectedRoute from "./ProtectedRoute";
-import AdminGreivancesList from "../pages/AdminPages/AdminGreivancesList";
-
+import AdminGreivancesList from "../pages/AdminPages/GreivancesList/AdminGreivancesList";
+import TrainingRequestDetail from "../pages/AdminPages/TmsPortal/TrainingRequest/TraningRequestDetail";
+import EditCenter from "../pages/AdminPages/TmsPortal/EditCenter";
+import AdminLayout from "../pages/AdminPages/AdminLayout";
+ 
 export default function AdminRoutes() {
   return (
     <Routes>
@@ -27,7 +30,21 @@ export default function AdminRoutes() {
         }
       >
         <Route path="/grievances" element={<AdminGreivancesList />} />
+        <Route path="/dashboard" element={<AdminLayout />} />
+        <Route
+          path="/trainingrequestdetail/:id"
+          element={<TrainingRequestDetail />}
+        />
+        <Route
+          path="/tms/tp/centre/:centreId"
+          element={
+            <AdminLayout defaultActiveMenu="Center Detail">
+              <EditCenter />
+            </AdminLayout>
+          }
+        />
       </Route>
     </Routes>
   );
 }
+ 

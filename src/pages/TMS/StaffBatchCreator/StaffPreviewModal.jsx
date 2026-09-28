@@ -3,7 +3,7 @@ import React from "react";
 
 const StaffPreviewModal = ({
   trDetails,
-  selectedTrIds = [], // SURGICAL ADDITION: Accept array of TR IDs
+  selectedTrIds = [],
   selectedCount,
   centre,
   startDate,
@@ -11,6 +11,7 @@ const StaffPreviewModal = ({
   onClose,
   onConfirm,
   isSubmitting,
+  participantType, // SURGICAL ADDITION: Passed from parent
 }) => {
   // Safe fallbacks for display
   const planName =
@@ -27,6 +28,9 @@ const StaffPreviewModal = ({
   const centreDisplay = centreDistrict
     ? `${centreName} (${centreDistrict})`
     : centreName;
+
+  const displayType =
+    participantType?.toUpperCase() || trDetails?.training_type || "STAFF";
 
   return (
     <div
@@ -76,7 +80,9 @@ const StaffPreviewModal = ({
               color: "#0f172a",
             }}
           >
-            Staff Batch Preview & Confirmation
+            {/* SURGICAL FIX: Dynamic Modal Title */}
+            {displayType === "TRAINER" ? "Trainer" : "Staff"} Batch Preview &
+            Confirmation
           </h3>
           <button
             onClick={onClose}
@@ -128,14 +134,17 @@ const StaffPreviewModal = ({
                 fontWeight: "800",
               }}
             >
-              STAFF SEPARATE BATCH
+              {/* SURGICAL FIX: Dynamic Strategy Text */}
+              {displayType} SEPARATE BATCH
             </span>
           </div>
 
           <div style={styles.row}>
             <span style={styles.label}>Total Participants:</span>
             <span style={{ ...styles.value, color: "#2563eb" }}>
-              {selectedCount} Staff Members
+              {/* SURGICAL FIX: Dynamic Count Label */}
+              {selectedCount}{" "}
+              {displayType === "TRAINER" ? "Trainers" : "Staff Members"}
             </span>
           </div>
 
@@ -144,7 +153,6 @@ const StaffPreviewModal = ({
             <span style={styles.value}>{planName}</span>
           </div>
 
-          {/* SURGICAL ADDITION: Multi-TR Transparency Display */}
           <div
             style={{
               display: "flex",

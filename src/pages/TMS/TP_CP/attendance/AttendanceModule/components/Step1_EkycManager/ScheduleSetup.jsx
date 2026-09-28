@@ -222,7 +222,7 @@ export default function ScheduleSetup({
                 value={startHour}
                 onChange={(e) => setStartHour(e.target.value.slice(0, 2))}
                 style={{
-                  width: 50,
+                  width: 55,
                   border: "none",
                   background: "transparent",
                   outline: "none",
@@ -240,7 +240,7 @@ export default function ScheduleSetup({
                 value={startMinute}
                 onChange={(e) => setStartMinute(e.target.value.slice(0, 2))}
                 style={{
-                  width: 50,
+                  width: 55,
                   border: "none",
                   background: "transparent",
                   outline: "none",
