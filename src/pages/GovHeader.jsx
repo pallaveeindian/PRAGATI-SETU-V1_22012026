@@ -44,15 +44,9 @@ export default function GovHeader({ logo, title, onFontChange }) {
             हिंदी
           </button>
 
-          <span className="divider">|</span>
+    
 
-          <button
-  className="complaint-support-btn"
-  onClick={() => navigate("/register-grievance")}
->
-  <span>Complaint & Support</span>
-  <span className="complaint-arrow">→</span>
-</button>
+      
         </div>
       </div>
 

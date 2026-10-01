@@ -138,7 +138,7 @@ export default function TMSOverview() {
         .overview-card-content p {
           margin: 0;
           color: #334155;
-          font-size: calc(12px * var(--font-scale, 1));
+          font-size: calc(15px * var(--font-scale, 1));
           font-weight: 500;
           line-height: 1.4;
         }
@@ -151,7 +151,7 @@ export default function TMSOverview() {
             padding: 18px 20px;
           }
           .overview-card-content h3 { font-size: calc(14px * var(--font-scale, 1)); }
-          .overview-card-content p { font-size: calc(12px * var(--font-scale, 1)); }
+          .overview-card-content p { font-size: calc(13px * var(--font-scale, 1)); }
         }
 
         /* 1200px laptop */
@@ -168,7 +168,7 @@ export default function TMSOverview() {
             font-size: 20px;
           }
           .overview-card-content h3 { font-size: calc(13px * var(--font-scale, 1)); }
-          .overview-card-content p { font-size: calc(11px * var(--font-scale, 1)); }
+          .overview-card-content p { font-size: calc(12px * var(--font-scale, 1)); }
         }
 
         /* 1024px small laptop */
@@ -208,7 +208,7 @@ export default function TMSOverview() {
             font-size: 18px;
           }
           .overview-card-content h3 { font-size: calc(13px * var(--font-scale, 1)); }
-          .overview-card-content p { font-size: calc(11px * var(--font-scale, 1)); }
+          .overview-card-content p { font-size: calc(12px * var(--font-scale, 1)); }
         }
 
         /* 400px small mobile */
@@ -221,7 +221,7 @@ export default function TMSOverview() {
             font-size: 16px;
           }
           .overview-card-content h3 { font-size: calc(12px * var(--font-scale, 1)); }
-          .overview-card-content p { font-size: calc(10.5px * var(--font-scale, 1)); }
+          .overview-card-content p { font-size: calc(11px * var(--font-scale, 1)); }
         }
       `}</style>
     </section>

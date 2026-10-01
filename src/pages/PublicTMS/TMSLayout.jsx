@@ -8,15 +8,14 @@ import Footer from "../../components/layout/Footer.jsx";
 
 import TMSHero from "./TMSHero.jsx";
 import TMSOverview from "./TMSOverview.jsx";
-import TMSModules from "./TMSModules.jsx"
+import TMSModules from "./TMSModules.jsx";
 import TMSBenefits from "./TMSBenefits.jsx";
-export default function TMSLayout() {
+import HeaderTopMenu from "../HeaderTopMenu.jsx";
+import HeaderTopHeadline from "../HeaderTopHeadline.jsx";
 
+export default function TMSLayout() {
   const setFontScale = (scale) => {
-    document.documentElement.style.setProperty(
-      "--font-scale",
-      scale
-    );
+    document.documentElement.style.setProperty("--font-scale", scale);
   };
 
   useEffect(() => {
@@ -25,7 +24,6 @@ export default function TMSLayout() {
 
   return (
     <div className="tms-page">
-
       <GovHeader
         logo={upLogo}
         title="Government Of Uttar Pradesh"
@@ -33,44 +31,37 @@ export default function TMSLayout() {
       />
 
       <main className="tms-layout">
-
         {/* ================= HERO AREA ================= */}
 
         <section className="tms-hero-wrapper">
-
-          {/* FLOATING NAVIGATION */}
+          {/* NAVIGATION (normal flow, so the hero starts below it) */}
           <div className="tms-top-navigation">
             <TopNavigation />
+            <HeaderTopMenu />
+            <HeaderTopHeadline />
           </div>
 
           {/* TMS HERO */}
           <TMSHero />
-
         </section>
-
 
         {/* ================= TMS OVERVIEW ================= */}
 
-        <section
-          id="tms-overview"
-          className="tms-overview-section"
-        >
+        <section id="tms-overview" className="tms-overview-section">
           <TMSOverview />
         </section>
-       {/* ================= TMS MODULES ================= */}
-       <section id="tms-modules">
+
+        {/* ================= TMS MODULES ================= */}
+
+        <section id="tms-modules">
           <TMSModules />
         </section>
 
-  {/* ================= TMS BENEFITS ================= */}
-        <section
-      id="tms-benefits"
-      className="tms-benefits-section"
-        >
-        <TMSBenefits />
-       </section>
-       
+        {/* ================= TMS BENEFITS ================= */}
 
+        <section id="tms-benefits" className="tms-benefits-section">
+          <TMSBenefits />
+        </section>
       </main>
 
       <Footer />
@@ -85,9 +76,7 @@ export default function TMSLayout() {
         .tms-page {
           width: 100%;
           min-height: 100vh;
-
           background: #ffffff;
-
           overflow-x: hidden;
         }
 
@@ -102,25 +91,22 @@ export default function TMSLayout() {
 
         .tms-hero-wrapper {
           position: relative;
-
           width: 100%;
         }
 
 
         /* =============================
-           FLOATING NAVIGATION
+           NAVIGATION
+
+           position: relative (NOT absolute) keeps it in
+           the normal flow, so the hero sits below it
+           instead of hiding behind it.
         ============================= */
 
         .tms-top-navigation {
-          position: absolute;
-
-          top: 0;
-          left: 0;
-
+          position: relative;
           width: 100%;
-
           z-index: 50;
-
           background: transparent;
         }
 
@@ -131,34 +117,10 @@ export default function TMSLayout() {
 
         .tms-overview-section {
           width: 100%;
-
           background: #ffffff;
         }
 
-
-        /* =============================
-           TABLET
-        ============================= */
-
-        @media (max-width: 900px) {
-
-          .tms-top-navigation {
-            position: absolute;
-
-            top: 0;
-            left: 0;
-
-            width: 100%;
-
-            z-index: 50;
-
-            background: transparent;
-          }
-
-        }
-
       `}</style>
-
     </div>
   );
 }

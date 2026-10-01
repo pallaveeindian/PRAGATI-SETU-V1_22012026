@@ -215,7 +215,7 @@ export default function WhatsNew() {
                            /* ===== FOOTER ===== */
                            .home-footer {
                              text-align: center;
-                             font-size: 28px;
+                             
                              font-weight: 800;
                            }
                                @media (max-width: 992px) {

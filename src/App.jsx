@@ -20,13 +20,17 @@ import BeneficiaryProfiling from "./pages/BeneficiaryProfiling";
 import UserManagement from "./pages/UserManagement";
 import TMSLayout from "./pages/PublicTMS/TMSLayout.jsx";
 import LakhpatiDidi from "./pages/LakhpatiDidi";
-import EnterpriseTracking from "./pages/EnterpriseTracking";
+import LDMSLayout from "./pages/PublicLDMS/LDMSLayout.jsx";
+import BMSLayout from "./pages/PublicBMS/BMSLayout.jsx";
+// import EnterpriseTracking from "./pages/EnterpriseTracking";
+import EnterpriseSakhiDigital from "./pages/PublicEnterpriseSakhi/EnterpriseSakhiDigital.jsx";
 import MonitoringandAnlytics from "./pages/MonitoringandAnlytics";
 import PowerBIAnalytics from "./pages/PowerBiAnalytics";
 import UserManual from "./pages/UserManual";
 import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
 import PublicReports from "./pages/PublicReports";
 import WhatsNew from "./pages/WhatsNew";
+import ContactDetails from "./pages/ContactDetails.jsx";
 
 // Grievance Portal
 import RegisterGrievance from "./pages/RegisterGrievance.jsx";
@@ -64,6 +68,47 @@ export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navType = useNavigationType();
+  useEffect(() => {
+    if ("scrollRestoration" in window.history) {
+      window.history.scrollRestoration = "manual";
+    }
+
+    const resetScroll = () => {
+      window.scrollTo({
+        top: 0,
+        left: 0,
+        behavior: "auto",
+      });
+
+      document.documentElement.scrollTop = 0;
+      document.body.scrollTop = 0;
+
+      // Reset possible custom scroll containers also
+      const scrollContainers = document.querySelectorAll(
+        "main, #root, .home-shell, .page-main, .public-reports-page"
+      );
+
+      scrollContainers.forEach((element) => {
+        element.scrollTop = 0;
+      });
+    };
+
+    resetScroll();
+
+    const frame = requestAnimationFrame(() => {
+      resetScroll();
+    });
+
+    const timer = setTimeout(() => {
+      resetScroll();
+    }, 50);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      clearTimeout(timer);
+    };
+  }, [location.pathname]);
+
 
   // Route Blocking & Timer State
   const [currentTime, setCurrentTime] = useState(Date.now());
@@ -114,18 +159,23 @@ export default function App() {
 
   return (
     <LanguageProvider>
+
       <Routes>
         {/* ----- Public Routes ----- */}
         <Route path="/" element={<Home />} />
         <Route path="/about-us" element={<AboutUs />} />
-        <Route
+        {/* <Route
           path="/beneficiary-profiling"
           element={<BeneficiaryProfiling />}
-        />
+        /> */}
         <Route path="/user-management" element={<UserManagement />} />
         <Route path="/training-management" element={<TMSLayout />} />
-        <Route path="/lakhpati-didi" element={<LakhpatiDidi />} />
-        <Route path="/enterprise-tracking" element={<EnterpriseTracking />} />
+        <Route path="/Lakhpati-Didi" element={<LDMSLayout />} />
+        {/* <Route path="/enterprise-tracking" element={<EnterpriseTracking />} /> */}
+        <Route
+          path="/Enterprise-Tracking"
+          element={<EnterpriseSakhiDigital />}
+        />
         <Route
           path="/monitoring-and-anlytics"
           element={<MonitoringandAnlytics />}
@@ -136,6 +186,12 @@ export default function App() {
           path="/frequently-asked-questions"
           element={<FrequentlyAskedQuestions />}
         />
+        <Route
+          path="/beneficiary-profiling"
+          element={<BMSLayout />}
+        />
+
+        <Route path="/contact-us" element={<ContactDetails />} />
         <Route path="/what's-new" element={<WhatsNew />} />
         <Route path="/public-reports" element={<PublicReports />} />
         <Route path="/future-updates" element={<SiteDevErrorPage />} />

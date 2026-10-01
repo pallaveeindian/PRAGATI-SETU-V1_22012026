@@ -143,7 +143,7 @@ export default function TMSBenefits() {
         .tms-benefit-content p {
           margin: 0;
           color: #334155;
-          font-size: calc(10.5px * var(--font-scale, 1));
+          font-size: calc(15px * var(--font-scale, 1));
           font-weight: 500;
           line-height: 1.35;
         }
@@ -155,7 +155,7 @@ export default function TMSBenefits() {
             padding: 13px 18px;
           }
           .tms-benefit-content h3 { font-size: calc(13px * var(--font-scale, 1)); }
-          .tms-benefit-content p { font-size: calc(10.5px * var(--font-scale, 1)); }
+          .tms-benefit-content p { font-size: calc(12px * var(--font-scale, 1)); }
         }
 
         /* 1200px */
@@ -172,7 +172,7 @@ export default function TMSBenefits() {
             font-size: 19px;
           }
           .tms-benefit-content h3 { font-size: calc(12px * var(--font-scale, 1)); }
-          .tms-benefit-content p { font-size: calc(10px * var(--font-scale, 1)); }
+          .tms-benefit-content p { font-size: calc(11px * var(--font-scale, 1)); }
         }
 
         /* 1024px */
@@ -209,7 +209,7 @@ export default function TMSBenefits() {
             font-size: 17px;
           }
           .tms-benefit-content h3 { font-size: calc(12px * var(--font-scale, 1)); }
-          .tms-benefit-content p { font-size: calc(10px * var(--font-scale, 1)); }
+          .tms-benefit-content p { font-size: calc(11px * var(--font-scale, 1)); }
         }
 
         /* 400px */
@@ -225,7 +225,7 @@ export default function TMSBenefits() {
             font-size: 16px;
           }
           .tms-benefit-content h3 { font-size: calc(11.5px * var(--font-scale, 1)); }
-          .tms-benefit-content p { font-size: calc(9.5px * var(--font-scale, 1)); }
+          .tms-benefit-content p { font-size: calc(10.5px * var(--font-scale, 1)); }
         }
       `}</style>
     </section>

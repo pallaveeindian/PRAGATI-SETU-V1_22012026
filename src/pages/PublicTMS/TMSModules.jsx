@@ -186,7 +186,7 @@ export default function TMSModules() {
           max-width: 250px;
           margin: 0;
           color: #334155;
-          font-size: calc(11px * var(--font-scale, 1));
+          font-size: calc(15px * var(--font-scale, 1));
           font-weight: 500;
           line-height: 1.4;
         }
@@ -226,7 +226,7 @@ export default function TMSModules() {
           .tms-module-card { min-height: 155px; }
           .tms-module-content { padding: 17px 12px 15px 22px; }
           .tms-module-content h3 { font-size: calc(14px * var(--font-scale, 1)); }
-          .tms-module-content p { font-size: calc(11px * var(--font-scale, 1)); }
+          .tms-module-content p { font-size: calc(13px * var(--font-scale, 1)); }
         }
 
         /* 1200px */
@@ -245,7 +245,7 @@ export default function TMSModules() {
             font-size: 18px;
           }
           .tms-module-content h3 { font-size: calc(13px * var(--font-scale, 1)); }
-          .tms-module-content p { font-size: calc(10.5px * var(--font-scale, 1)); }
+          .tms-module-content p { font-size: calc(12px * var(--font-scale, 1)); }
         }
 
         /* 1024px */
@@ -299,7 +299,7 @@ export default function TMSModules() {
           }
           .tms-module-content h3 { font-size: calc(12px * var(--font-scale, 1)); }
           .tms-module-content p {
-            font-size: calc(10px * var(--font-scale, 1));
+            font-size: calc(11px * var(--font-scale, 1));
             line-height: 1.35;
           }
         }

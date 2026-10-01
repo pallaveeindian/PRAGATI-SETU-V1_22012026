@@ -7,7 +7,7 @@ import { LanguageContext } from "../../pages/LanguageContext";
 
 // Images
 import heroBBBG from "../../assets/NewHero/heroBBBG.png";
-import womBg from "../../assets/NewHero/wom_bg.png";
+import womBg from "../../assets/NewHero/wom_bg1.png";
 import hinLine from "../../assets/NewHero/binge_line.png";
 
 export default function HeroHome() {
@@ -168,6 +168,7 @@ export default function HeroHome() {
           min-height: 650px;
           overflow: hidden;
           background: #f1f5f9;
+          margin-top:150px;
         }
 
         /* 1. Static Background Layer (Right Side) */

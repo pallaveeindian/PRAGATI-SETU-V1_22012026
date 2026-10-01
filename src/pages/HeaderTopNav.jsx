@@ -1,268 +1,1061 @@
 // src/components/layout/TopNavigation.jsx
-import React, { useState, useEffect } from "react";
+
+import React, { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import nav_logo from "../assets/top_nav_banner.png";
+
+import {
+  FiUser,
+  FiHeadphones,
+  FiArrowRight,
+} from "react-icons/fi";
+
+/* EXISTING IMAGES */
+import nav_logo from "../assets/top_nav_banner1.png";
 import ps_banner from "../assets/top_nav_banner_ps.png";
-import LoginButton from "../components/ui/LoginButton";
+
+/* EXISTING LOGIN */
 import Login from "../pages/Login";
 
-const NAV_ITEMS = [
-  {
-    type: "dropdown",
-    key: "about",
-    label: "About Us",
-    items: [
-      { label: "UPSRLM", href: "https://srlm.up.gov.in/en", external: true },
-      { label: "Our Mission", to: "/about-us" },
-    ],
-  },
-  {
-    type: "dropdown",
-    key: "services",
-    label: "Our Services",
-    items: [
-      { label: "UP Aspirational Blocks Dashboard", to: "/upsrlm-planning/login" },
-      { label: "Beneficiary Profiling", to: "/beneficiary-profiling" },
-      { label: "User Management", to: "/user-management" },
-      { label: "Training Management (TMS)", to: "/training-management" },
-      { label: "Lakhpati Didi (LDMS)", to: "/Lakhpati-Didi" },
-      { label: "Enterprise Tracking (SU-Sakhi)", to: "/Enterprise-Tracking" },
-      { label: "Monitoring and Analytics", to: "/Monitoring-and-Anlytics" },
-    ],
-  },
-  {
-    type: "dropdown",
-    key: "dashboard",
-    label: "Dashboards",
-    items: [
-      { label: "Pragati Setu", to: "/" },
-      { label: "Power BI Analytics", to: "/Power-BI-Analytics" },
-    ],
-  },
-  { type: "link", label: "Reports", to: "/Public-Reports" },
-  {
-    type: "dropdown",
-    key: "resource",
-    label: "Resource Centre",
-    items: [
-      { label: "User Manual", to: "/User-Manual" },
-      { label: "Frequently Asked Questions", to: "/Frequently-Asked-Questions" },
-      { label: "What's New", to: "/What's-New" },
-    ],
-  },
-];
 
 export default function TopNavigation() {
-  const [open, setOpen] = useState(false);
-  const [activeDropdown, setActiveDropdown] = useState(null);
   const [isLoginOpen, setIsLoginOpen] = useState(false);
 
-  const toggleMenu = () => setOpen((prev) => !prev);
-  const closeMenu = () => {
-    setOpen(false);
-    setActiveDropdown(null);
-  };
-  const toggleDropdown = (menu) => setActiveDropdown((prev) => (prev === menu ? null : menu));
 
-  // Body scroll lock covers both the mobile menu and the login modal
+  /* =====================================================
+     BODY SCROLL LOCK
+  ===================================================== */
+
   useEffect(() => {
-    document.body.style.overflow = open || isLoginOpen ? "hidden" : "auto";
+    document.body.style.overflow =
+      isLoginOpen ? "hidden" : "auto";
+
     return () => {
       document.body.style.overflow = "auto";
     };
-  }, [open, isLoginOpen]);
+  }, [isLoginOpen]);
 
-  useEffect(() => {
-    if (!open) setActiveDropdown(null);
-  }, [open]);
 
   return (
     <>
-      <nav className="home-topnav">
-        <div className="topnav-inner">
-          <div className="topnav-left desktop-logo">
+
+      {/* =====================================================
+          TOP NAVIGATION
+      ===================================================== */}
+
+      <nav className="ps-topbar">
+
+        <div className="ps-topbar-inner">
+
+
+          {/* =================================================
+              LEFT LOGO
+          ================================================= */}
+
+          <div className="ps-topbar-logo">
+
             <Link to="/">
-              <img src={nav_logo} alt="Pragati Setu" className="nav-logo" />
+
+              {/* DESKTOP IMAGE */}
+
+              <img
+                src={nav_logo}
+                alt="UP State Rural Livelihoods Mission - Pragati Setu"
+                className="ps-desktop-logo"
+              />
+
+
+              {/* MOBILE IMAGE */}
+
+              <img
+                src={ps_banner}
+                alt="Pragati Setu"
+                className="ps-mobile-logo"
+              />
+
             </Link>
+
           </div>
 
-          <div className="topnav-left mobile-logo">
-            <Link to="/">
-              <img src={ps_banner} alt="Pragati Setu Banner" className="nav-logo-img" />
+
+
+          {/* =================================================
+              RIGHT BUTTONS
+          ================================================= */}
+
+          <div className="ps-topbar-actions">
+
+
+            {/* ================= LOGIN ================= */}
+
+            <button
+              type="button"
+              className="ps-login-btn"
+              onClick={() => setIsLoginOpen(true)}
+            >
+
+              <FiUser className="ps-action-icon" />
+
+              <span>
+                LOGIN
+              </span>
+
+              <FiArrowRight className="ps-action-arrow" />
+
+            </button>
+
+
+
+            {/* ================= COMPLAINT ================= */}
+
+            <Link
+              to="/register-grievance"
+              className="ps-complaint-btn"
+            >
+
+              <FiHeadphones className="ps-complaint-icon" />
+
+
+              <div className="ps-complaint-text">
+
+                <strong>
+                  COMPLAINT & SUPPORT
+                </strong>
+
+                <small>
+                  (Grievance Portal)
+                </small>
+
+              </div>
+
+
+              <FiArrowRight className="ps-action-arrow" />
+
             </Link>
+
+
           </div>
 
-          <div className="hamburger" onClick={toggleMenu}>
-            <span></span>
-            <span></span>
-            <span></span>
-          </div>
-
-          <div className={`nav-overlay ${open ? "active" : ""}`} onClick={closeMenu} />
-
-          <ul className={`topnav-menu ${open ? "open" : ""}`}>
-            <li className="close-btn">
-              <span onClick={closeMenu}>✕</span>
-            </li>
-
-            {NAV_ITEMS.map((item) =>
-              item.type === "link" ? (
-                <li className="menu-item" key={item.label}>
-                  <Link to={item.to} style={{ textDecoration: "none", color: "inherit" }}>
-                    {item.label}
-                  </Link>
-                </li>
-              ) : (
-                <li
-                  className={`menu-item dropdown ${activeDropdown === item.key ? "active" : ""}`}
-                  key={item.key}
-                >
-                  <span onClick={() => toggleDropdown(item.key)}>
-                    {item.label} <span className="arrow">▾</span>
-                  </span>
-                  <ul className="dropdown-menu">
-                    {item.items.map((sub) => (
-                      <li key={sub.label}>
-                        {sub.external ? (
-                          <a href={sub.href} target="_blank" rel="noreferrer" onClick={closeMenu}>
-                            {sub.label}
-                          </a>
-                        ) : (
-                          <Link to={sub.to} onClick={closeMenu}>
-                            {sub.label}
-                          </Link>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
-                </li>
-              )
-            )}
-
-            <li>
-              <LoginButton closeMenu={closeMenu} onOpenLogin={() => setIsLoginOpen(true)} />
-            </li>
-          </ul>
         </div>
 
+
+
+        {/* =====================================================
+            STYLES
+        ===================================================== */}
+
         <style>{`
-          .home-topnav, .home-topnav * { box-sizing: border-box; }
 
-          /* Wrap the entire nav in a transparent container to hold the floating notch */
-          .home-topnav { position: relative; z-index: 50; background: transparent; padding: 12px 0; }
+          /* =====================================================
+             RESET
+          ===================================================== */
 
-          /* THE FLOATING NOTCH / PILL */
-          .topnav-inner { display: flex; align-items: center; justify-content: space-between; margin: 0 auto; width: 95%; max-width: 1400px; padding: 8px 32px; background: rgba(255, 255, 255, 0.96); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); border-radius: 100px; box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08), 0 1px 3px rgba(15, 23, 42, 0.03); border: 1px solid rgba(226, 232, 240, 0.8); transition: all 0.3s ease; }
+          .ps-topbar,
+          .ps-topbar * {
+            box-sizing: border-box;
+          }
 
-          .desktop-logo { display: block; }
-          .mobile-logo { display: none; }
-          .nav-logo { height: 68px; width: auto; transition: transform 0.3s ease; }
-          .nav-logo:hover { transform: scale(1.02); }
-          .nav-logo-img { height: 44px; width: auto; object-fit: contain; }
 
-          .topnav-menu { list-style: none; display: flex; align-items: center; gap: 32px; margin: 0; padding: 0; }
 
-          .menu-item { position: relative; font-weight: 700; font-size: 14.5px; color: #1e293b; cursor: pointer; padding: 8px 0; transition: color 0.2s ease; }
-          .menu-item:hover { color: #ea580c; }
-          .menu-item span { display: flex; align-items: center; gap: 6px; }
-          .arrow { transition: transform 0.3s ease; font-size: 12px; }
+          /* =====================================================
+             MAIN BAR
+          ===================================================== */
 
-          .dropdown-menu { position: absolute; top: 100%; left: 50%; transform: translateX(-50%) translateY(15px); background: #ffffff; border: 1px solid #f1f5f9; box-shadow: 0 12px 35px rgba(0, 0, 0, 0.1); min-width: 240px; opacity: 0; visibility: hidden; border-radius: 16px; padding: 8px; transition: all 0.25s cubic-bezier(0.16, 1, 0.3, 1); z-index: 100; list-style: none; }
-          /* Subtle upward pointer arrow for dropdowns */
-          .dropdown-menu::before { content: ''; position: absolute; top: -6px; left: 50%; transform: translateX(-50%) rotate(45deg); width: 12px; height: 12px; background: #ffffff; border-left: 1px solid #f1f5f9; border-top: 1px solid #f1f5f9; }
-          .dropdown-menu li { border-radius: 8px; margin-bottom: 2px; transition: background 0.2s ease; }
-          .dropdown-menu li:last-child { margin-bottom: 0; }
-          .dropdown-menu li a { display: block; padding: 10px 16px; font-size: 14px; font-weight: 600; color: #334155; text-decoration: none; white-space: nowrap; transition: color 0.2s ease; }
-          .dropdown-menu li:hover { background: #f8fafc; }
-          .dropdown-menu li:hover a { color: #ea580c; }
-          .dropdown-menu a { text-decoration: none; color: #0f172a; }
+          .ps-topbar {
+            position: relative;
 
-          .menu-item:hover .dropdown-menu { opacity: 1; visibility: visible; transform: translateX(-50%) translateY(5px); }
-          .menu-item:hover .arrow { transform: rotate(180deg); }
+            z-index: 100;
 
-          .hamburger { display: none; flex-direction: column; gap: 5px; cursor: pointer; padding: 4px; }
-          .hamburger span { width: 24px; height: 3px; background: #0f172a; border-radius: 4px; transition: all 0.3s; }
+            width: 100%;
 
-          .nav-overlay { position: fixed; inset: 0; background: rgba(15, 23, 42, 0.4); backdrop-filter: blur(4px); opacity: 0; visibility: hidden; transition: 0.3s; z-index: 999; }
-          .nav-overlay.active { opacity: 1; visibility: visible; }
+            background: #ffffff;
 
-          .close-btn { display: none; }
+            border-bottom:
+              1px solid
+              #edf0f4;
+
+            box-shadow:
+              0 2px 8px
+              rgba(15, 23, 42, 0.04);
+          }
+
+
+
+          .ps-topbar-inner {
+            width: 100%;
+            max-width: 1540px;
+
+            min-height: 105px;
+
+            margin: 0 auto;
+
+            padding:
+              10px
+              35px;
+
+            display: flex;
+
+            align-items: center;
+            justify-content: space-between;
+
+            gap: 30px;
+          }
+
+
+
+          /* =====================================================
+             LOGO
+          ===================================================== */
+
+          .ps-topbar-logo {
+            flex: 1;
+
+            min-width: 0;
+
+            display: flex;
+
+            align-items: center;
+          }
+
+
+          .ps-topbar-logo a {
+            display: inline-flex;
+
+            align-items: center;
+
+            text-decoration: none;
+          }
+
+
+          /*
+             EXACT EXISTING DESKTOP IMAGE
+          */
+
+          .ps-desktop-logo {
+            display: block;
+
+            width: auto;
+            height: 82px;
+
+            max-width: 760px;
+
+            object-fit: contain;
+
+            object-position: left center;
+          }
+
+
+          /*
+             MOBILE IMAGE
+          */
+
+          .ps-mobile-logo {
+            display: none;
+
+            width: auto;
+            height: 52px;
+
+            object-fit: contain;
+          }
+
+
+
+          /* =====================================================
+             RIGHT ACTIONS
+          ===================================================== */
+
+          .ps-topbar-actions {
+            flex-shrink: 0;
+
+            display: flex;
+
+            align-items: center;
+
+            gap: 14px;
+          }
+
+
+
+          /* =====================================================
+             LOGIN BUTTON
+          ===================================================== */
+
+          .ps-login-btn {
+            width: 190px;
+            height: 58px;
+
+            display: inline-flex;
+
+            align-items: center;
+            justify-content: center;
+
+            gap: 15px;
+
+            padding:
+              0
+              22px;
+
+            border: none;
+
+            border-radius: 7px;
+
+            background: #132E4F;
+
+            color: #ffffff;
+
+            font-family: inherit;
+
+            font-size: 16px;
+            font-weight: 700;
+
+            cursor: pointer;
+
+            box-shadow:
+              0 3px 7px
+              rgba(6, 58, 114, 0.18);
+
+            transition:
+              background 0.25s ease,
+              transform 0.25s ease,
+              box-shadow 0.25s ease;
+          }
+
+
+          .ps-login-btn:hover {
+            background: #052e5a;
+
+            transform:
+              translateY(-1px);
+
+            box-shadow:
+              0 6px 14px
+              rgba(6, 58, 114, 0.22);
+          }
+
+
+
+          /* =====================================================
+             COMPLAINT BUTTON
+          ===================================================== */
+
+          .ps-complaint-btn {
+            min-width: 295px;
+            height: 58px;
+
+            display: inline-flex;
+
+            align-items: center;
+
+            gap: 14px;
+
+            padding:
+              0
+              18px;
+
+            border:
+              1.7px solid
+              #174c88;
+
+            border-radius: 7px;
+
+            background: #ffffff;
+
+            color: #132E4F;
+
+            text-decoration: none;
+
+            transition:
+              background 0.25s ease,
+              transform 0.25s ease,
+              box-shadow 0.25s ease;
+          }
+
+
+          .ps-complaint-btn:hover {
+            background: #f8fbff;
+
+            transform:
+              translateY(-1px);
+
+            box-shadow:
+              0 5px 13px
+              rgba(22, 76, 136, 0.12);
+          }
+
+
+
+          /* =====================================================
+             ICONS
+          ===================================================== */
+
+          .ps-action-icon {
+            flex-shrink: 0;
+
+            font-size: 24px;
+
+            stroke-width: 2;
+          }
+
+
+          .ps-complaint-icon {
+            flex-shrink: 0;
+
+            color: #132E4F;
+
+            font-size: 29px;
+
+            stroke-width: 2;
+          }
+
+
+          .ps-action-arrow {
+            flex-shrink: 0;
+
+            font-size: 21px;
+
+            transition:
+              transform 0.25s ease;
+          }
+
+
+          .ps-login-btn:hover
+          .ps-action-arrow,
+          .ps-complaint-btn:hover
+          .ps-action-arrow {
+            transform:
+              translateX(4px);
+          }
+
+
+
+          /* =====================================================
+             COMPLAINT TEXT
+          ===================================================== */
+
+          .ps-complaint-text {
+            flex: 1;
+
+            display: flex;
+
+            flex-direction: column;
+
+            align-items: flex-start;
+
+            line-height: 1.15;
+          }
+
+
+          .ps-complaint-text strong {
+            color: #123d72;
+
+            font-size: 15px;
+            font-weight: 800;
+
+            white-space: nowrap;
+          }
+
+
+          .ps-complaint-text small {
+            margin-top: 4px;
+
+            color: #334155;
+
+            font-size: 11px;
+            font-weight: 700;
+          }
+
+
+
+          /* =====================================================
+             1400px+ LARGE DESKTOP
+          ===================================================== */
 
           @media (min-width: 1400px) {
-            .topnav-inner { max-width: 1400px; }
+
+            .ps-topbar-inner {
+              max-width: 1600px;
+
+              min-height: 112px;
+
+              padding:
+                10px
+                40px;
+            }
+
+
+            .ps-desktop-logo {
+              height: 88px;
+
+              max-width: 790px;
+            }
+
+
+            .ps-login-btn {
+              width: 195px;
+              height: 60px;
+
+              font-size: 16px;
+            }
+
+
+            .ps-complaint-btn {
+              min-width: 305px;
+              height: 60px;
+            }
+
           }
+
+
+
+          /* =====================================================
+             1200px LAPTOP
+          ===================================================== */
 
           @media (max-width: 1200px) {
-            .topnav-inner { width: 96%; padding: 8px 22px; }
-            .topnav-menu { gap: 20px; }
-            .menu-item { font-size: 13.5px; }
-            .nav-logo { height: 48px; }
+
+            .ps-topbar-inner {
+              min-height: 92px;
+
+              padding:
+                9px
+                25px;
+
+              gap: 20px;
+            }
+
+
+            .ps-desktop-logo {
+              height: 68px;
+
+              max-width: 600px;
+            }
+
+
+            .ps-topbar-actions {
+              gap: 10px;
+            }
+
+
+            .ps-login-btn {
+              width: 160px;
+              height: 52px;
+
+              padding:
+                0
+                17px;
+
+              font-size: 14px;
+            }
+
+
+            .ps-complaint-btn {
+              min-width: 255px;
+              height: 52px;
+
+              padding:
+                0
+                14px;
+
+              gap: 10px;
+            }
+
+
+            .ps-complaint-text strong {
+              font-size: 13px;
+            }
+
+
+            .ps-complaint-text small {
+              font-size: 10px;
+            }
+
+
+            .ps-complaint-icon {
+              font-size: 25px;
+            }
+
           }
+
+
+
+          /* =====================================================
+             1024px SMALL LAPTOP / TABLET
+          ===================================================== */
 
           @media (max-width: 1024px) {
-            .topnav-inner { width: 97%; padding: 7px 18px; }
-            .topnav-menu { gap: 14px; }
-            .menu-item { font-size: 12.5px; }
-            .nav-logo { height: 44px; }
-          }
 
-          @media (max-width: 900px) {
-            .home-topnav { padding: 10px 0; }
-            .topnav-inner { width: 92%; padding: 8px 20px; border-radius: 30px; }
-            .desktop-logo { display: none; }
-            .mobile-logo { display: flex; align-items: center; }
-            .hamburger { display: flex; }
+            .ps-topbar-inner {
+              min-height: 82px;
 
-            .topnav-menu {
-              position: fixed; top: 0; right: 0;
-              width: 320px; max-width: 90%; height: 100dvh;
-              padding: 24px 20px; margin: 0;
-              display: flex; flex-direction: column; align-items: flex-start; gap: 0;
-              background: #ffffff;
-              transform: translateX(calc(100% + 40px)); /* move completely outside screen */
-              transition: transform 0.4s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.4s;
-              overflow-y: auto; overflow-x: hidden;
-              z-index: 1000;
-              border-radius: 24px 0 0 24px;
-              box-shadow: none; visibility: hidden; pointer-events: none; /* hide everything while closed */
+              padding:
+                8px
+                20px;
             }
-            .topnav-menu.open { transform: translateX(0); visibility: visible; pointer-events: auto; box-shadow: -10px 0 40px rgba(0, 0, 0, 0.15); }
 
-            .close-btn { display: flex; align-self: flex-end; margin-bottom: 20px; padding: 8px; font-size: 20px; color: #64748b; cursor: pointer; }
 
-            .menu-item { width: 100%; padding: 0; font-size: 15px; border-bottom: 1px solid #f1f5f9; }
-            .menu-item > span, .menu-item > a { width: 100%; display: flex; align-items: center; justify-content: space-between; padding: 15px 8px; }
+            .ps-desktop-logo {
+              height: 58px;
 
-            .dropdown-menu { position: static; transform: none; width: 100%; min-width: 0; padding: 0; opacity: 1; visibility: visible; max-height: 0; overflow: hidden; border: none; border-radius: 0; box-shadow: none; transition: max-height 0.35s ease; }
-            .dropdown-menu::before { display: none; }
-            .menu-item.active .dropdown-menu { max-height: 600px; padding: 0 0 14px 16px; }
-            .dropdown-menu li a { padding: 11px 8px; font-size: 14px; color: #475569; white-space: normal; }
-            .menu-item:hover .dropdown-menu { transform: none; }
+              max-width: 500px;
+            }
+
+
+            .ps-login-btn {
+              width: 135px;
+              height: 48px;
+
+              gap: 9px;
+
+              font-size: 12px;
+            }
+
+
+            .ps-complaint-btn {
+              min-width: 220px;
+              height: 48px;
+
+              padding:
+                0
+                11px;
+            }
+
+
+            .ps-action-icon {
+              font-size: 20px;
+            }
+
+
+            .ps-complaint-icon {
+              font-size: 22px;
+            }
+
+
+            .ps-complaint-text strong {
+              font-size: 11.5px;
+            }
+
+
+            .ps-complaint-text small {
+              font-size: 9px;
+            }
+
+
+            .ps-action-arrow {
+              font-size: 17px;
+            }
+
           }
 
-          @media (max-width: 600px) {
-            .topnav-inner { width: 94%; padding: 7px 15px; }
-            .nav-logo-img { height: 38px; }
-            .topnav-menu { width: 290px; padding: 20px 16px; }
-            .menu-item { font-size: 14px; }
-            .menu-item > span, .menu-item > a { padding: 13px 6px; }
-            .dropdown-menu li a { font-size: 13px; padding: 10px 7px; }
-          }
 
-          @media (max-width: 400px) {
-            .topnav-inner { width: 95%; padding: 6px 12px; }
-            .nav-logo-img { height: 34px; }
-            .hamburger span { width: 22px; height: 2.5px; }
-            .topnav-menu { width: 270px; padding: 18px 14px; }
-            .menu-item { font-size: 13px; }
-            .menu-item > span, .menu-item > a { padding: 12px 5px; }
-            .dropdown-menu li a { font-size: 12px; }
-          }
+
+         /* =====================================================
+   900px TABLET
+===================================================== */
+
+@media (max-width: 900px) {
+
+  .ps-topbar-inner {
+    width: 100%;
+    min-height: 68px;
+
+    padding: 8px 14px;
+
+    gap: 12px;
+
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+
+  /* HIDE DESKTOP LOGO */
+
+  .ps-desktop-logo {
+    display: none;
+  }
+
+
+  /* MOBILE LOGO */
+
+  .ps-mobile-logo {
+    display: block;
+
+    width: auto;
+    height: 48px;
+
+    max-width: 170px;
+
+    object-fit: contain;
+  }
+
+
+  .ps-topbar-logo {
+    flex: 1;
+
+    min-width: 0;
+
+    overflow: hidden;
+  }
+
+
+  /* RIGHT SIDE */
+
+  .ps-topbar-actions {
+    flex: 0 0 auto;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: flex-end;
+
+    gap: 8px;
+  }
+
+
+  /* LOGIN */
+
+  .ps-login-btn {
+    flex: 0 0 auto;
+
+    width: auto;
+
+    min-width: 105px;
+
+    height: 44px;
+
+    padding: 0 12px;
+
+    gap: 8px;
+
+    font-size: 11px;
+  }
+
+
+  /* COMPLAINT */
+
+  .ps-complaint-btn {
+    flex: 0 0 auto;
+
+    min-width: 175px;
+
+    height: 44px;
+
+    padding: 0 9px;
+
+    gap: 7px;
+  }
+
+
+  .ps-complaint-text strong {
+    font-size: 9px;
+  }
+
+
+  .ps-complaint-text small {
+    font-size: 7px;
+  }
+
+
+  .ps-complaint-icon {
+    font-size: 18px;
+  }
+
+}
+/* =====================================================
+   600px MOBILE
+===================================================== */
+
+@media (max-width: 600px) {
+
+  .ps-topbar-inner {
+    min-height: 58px;
+
+    padding:
+      8px
+      10px;
+
+    gap: 7px;
+
+    display: flex;
+
+    align-items: center;
+
+    justify-content: space-between;
+  }
+
+
+  /* ================= LOGO ================= */
+
+  .ps-topbar-logo {
+    flex: 1;
+
+    min-width: 0;
+  }
+
+
+  .ps-mobile-logo {
+    display: block;
+
+    width: auto;
+
+    height: 38px;
+
+    max-width: 120px;
+
+    object-fit: contain;
+  }
+
+
+  /* ================= ACTION AREA ================= */
+
+  .ps-topbar-actions {
+    flex-shrink: 0;
+
+    display: flex;
+
+    align-items: center;
+
+    gap: 6px;
+  }
+
+
+  /* ================= LOGIN ================= */
+
+  .ps-login-btn {
+    display: inline-flex !important;
+
+    width: auto;
+
+    min-width: 82px;
+
+    height: 40px;
+
+    padding:
+      0
+      9px;
+
+    gap: 6px;
+
+    align-items: center;
+
+    justify-content: center;
+
+    border-radius: 7px;
+
+    font-size: 10px;
+
+    font-weight: 700;
+  }
+
+
+  /* IMPORTANT:
+     KEEP LOGIN TEXT VISIBLE */
+
+  .ps-login-btn span {
+    display: inline-block !important;
+  }
+
+
+  .ps-action-icon {
+    display: block;
+
+    flex-shrink: 0;
+
+    font-size: 18px;
+  }
+
+
+  /* Arrow can be hidden on mobile
+     to save space */
+
+  .ps-login-btn
+  .ps-action-arrow {
+    display: none;
+  }
+
+
+  /* ================= COMPLAINT ================= */
+
+  .ps-complaint-btn {
+    display: inline-flex !important;
+
+    min-width: 138px;
+
+    height: 40px;
+
+    padding:
+      0
+      7px;
+
+    gap: 5px;
+  }
+
+
+  .ps-complaint-icon {
+    flex-shrink: 0;
+
+    font-size: 17px;
+  }
+
+
+  .ps-complaint-text {
+    min-width: 0;
+  }
+
+
+  .ps-complaint-text strong {
+    font-size: 7.5px;
+
+    white-space: nowrap;
+  }
+
+
+  .ps-complaint-text small {
+    font-size: 6px;
+
+    white-space: nowrap;
+  }
+
+
+  .ps-complaint-btn
+  .ps-action-arrow {
+    display: none;
+  }
+
+}
+
+
+
+/* =====================================================
+   400px SMALL MOBILE
+===================================================== */
+
+@media (max-width: 400px) {
+
+  .ps-topbar-inner {
+    min-height: 54px;
+
+    padding:
+      7px
+      7px;
+
+    gap: 4px;
+  }
+
+
+  /* ================= LOGO ================= */
+
+  .ps-mobile-logo {
+    height: 32px;
+
+    max-width: 92px;
+  }
+
+
+  .ps-topbar-actions {
+    flex-shrink: 0;
+
+    gap: 4px;
+  }
+
+
+  /* ================= LOGIN ================= */
+
+  .ps-login-btn {
+    display: inline-flex !important;
+
+    width: auto;
+
+    min-width: 72px;
+
+    height: 36px;
+
+    padding:
+      0
+      7px;
+
+    gap: 5px;
+
+    font-size: 8px;
+
+    border-radius: 6px;
+  }
+
+
+  /* KEEP WORD LOGIN */
+
+  .ps-login-btn span {
+    display: inline-block !important;
+  }
+
+
+  .ps-action-icon {
+    font-size: 16px;
+
+    flex-shrink: 0;
+  }
+
+
+  .ps-login-btn
+  .ps-action-arrow {
+    display: none;
+  }
+
+
+  /* ================= COMPLAINT ================= */
+
+  .ps-complaint-btn {
+    display: inline-flex !important;
+
+    min-width: 116px;
+
+    height: 36px;
+
+    padding:
+      0
+      5px;
+
+    gap: 4px;
+  }
+
+
+  .ps-complaint-icon {
+    font-size: 15px;
+  }
+
+
+  .ps-complaint-text strong {
+    font-size: 6.3px;
+  }
+
+
+  .ps-complaint-text small {
+    font-size: 5.3px;
+  }
+
+
+  .ps-complaint-btn
+  .ps-action-arrow {
+    display: none;
+  }
+
+}
+
         `}</style>
+
       </nav>
 
-      {/* Login modal rendered outside nav so it covers everything */}
-      <Login isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+
+
+      {/* =====================================================
+          EXISTING LOGIN MODAL
+      ===================================================== */}
+
+      <Login
+        isOpen={isLoginOpen}
+        onClose={() => setIsLoginOpen(false)}
+      />
+
     </>
   );
 }

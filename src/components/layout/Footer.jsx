@@ -121,15 +121,32 @@ export default function Footer() {
 
         /* CONTENT */
         .footer-content {
-          width: 100%;
-          max-width: 1500px;
-          margin: 0 auto;
-          padding: 30px 235px 32px 45px;
-          display: grid;
-          grid-template-columns: 190px 135px 175px 155px 110px;
-          gap: 28px;
-          align-items: start;
-        }
+  width: 100%;
+  max-width: 1500px;
+
+  margin: 0 auto;
+
+  padding:
+    18px
+    350px
+    18px
+    42px;
+
+  display: grid;
+
+  grid-template-columns:
+    180px
+    120px
+    155px
+    145px
+    95px;
+
+  gap: 24px;
+
+  align-items: start;
+
+  text-align: left;
+}
 
         /* BRAND */
         .footer-brand { min-width: 0; }
@@ -179,7 +196,7 @@ export default function Footer() {
           color: #ffffff;
           font-size: 13px;
           font-weight: 800;
-          line-height: 1.2;
+          line-height: 0.2;
         }
         .footer-column ul {
           list-style: none;
@@ -193,7 +210,6 @@ export default function Footer() {
           color: rgba(255, 255, 255, 0.88);
           font-size: 10.5px;
           font-weight: 600;
-          line-height: 1.35;
           text-decoration: none;
         }
         .footer-column a:hover {

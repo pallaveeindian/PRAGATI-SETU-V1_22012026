@@ -12,6 +12,7 @@ import conBg from "../../assets/Hero/con_us_bg.png";
 import sectionPotraitMobileScreen from "../../assets/sectionPotraitMobileScreen.png";
 import LatestUpdates from "./HeroLatestUpdates";
 
+
 /**
  * HeroLayout — full landing-page content container
  */
