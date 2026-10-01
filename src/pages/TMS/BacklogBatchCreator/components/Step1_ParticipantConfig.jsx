@@ -191,8 +191,8 @@ export default function Step1_ParticipantConfig({
         selectedParticipants: current.filter((p) => p.id !== pObj.id),
       });
     } else {
-      if (current.length >= 50) {
-        alert("Maximum 50 participants allowed per batch.");
+      if (current.length >= 60) {
+        alert("Maximum 60 participants allowed per batch.");
         return;
       }
       updateBatchData({ selectedParticipants: [...current, pObj] });
@@ -201,7 +201,7 @@ export default function Step1_ParticipantConfig({
 
   const selectAllParticipants = (e) => {
     if (e.target.checked) {
-      const availableSpace = 50 - batchData.selectedParticipants.length;
+      const availableSpace = 60 - batchData.selectedParticipants.length;
       if (availableSpace <= 0) return;
 
       const toAdd = aggregatedPool
@@ -231,7 +231,7 @@ export default function Step1_ParticipantConfig({
   }, [batchData.level, batchData.batchType, batchData.blockIds]);
 
   const pCount = batchData.selectedParticipants.length;
-  const isParticipantValid = pCount >= 20 && pCount <= 50;
+  const isParticipantValid = pCount >= 20 && pCount <= 60;
 
   const isNextEnabled =
     batchData.participantType &&
@@ -595,7 +595,7 @@ export default function Step1_ParticipantConfig({
               Select Participants for Batch
             </h4>
             <span style={{ fontSize: "12px", color: "#64748b" }}>
-              Select between 20 and 50 participants.
+              Select between 20 and 60 participants.
             </span>
           </div>
           <div
@@ -604,7 +604,7 @@ export default function Step1_ParticipantConfig({
               color: isParticipantValid ? "#16a34a" : "#dc2626",
             }}
           >
-            Selected: {pCount} / 50
+            Selected: {pCount} / 60
           </div>
         </div>
 

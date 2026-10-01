@@ -6,7 +6,7 @@ import prernaLogo from "../assets/prernaHd.png";
 import BDOLogo from "../assets/BDOLogo.png";
 
 export const MODULES_CONFIG = [
-  // 2026-08-03T17:30:00
+  // 2026-09-28T14:30:00
 
   {
     id: "tms",

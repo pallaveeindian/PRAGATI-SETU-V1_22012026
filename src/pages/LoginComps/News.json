@@ -1,11 +1,11 @@
 {
-    "default": {
+  "default": {
     "title": "Portal Update Board",
     "title_hi": "पोर्टल अपडेट बोर्ड",
     "subtitle": "Latest updates across all modules",
     "subtitle_hi": "सभी मॉड्यूल के नवीनतम अपडेट",
     "items": [
-        {
+      {
         "id": 1,
         "title": "System Scheduled Maintenance",
         "title_hi": "सिस्टम निर्धारित रखरखाव",
@@ -13,8 +13,8 @@
         "time": "09:30 AM",
         "description": "Planned maintenance window for server optimization and security patching.",
         "description_hi": "सर्वर अनुकूलन और सुरक्षा पैचिंग के लिए नियोजित रखरखाव।"
-        },
-        {
+      },
+      {
         "id": 2,
         "title": "Suksham Udhyam Sakhi Mobile App V2.1 Release",
         "title_hi": "सुक्षम उद्यम सखी मोबाइल ऐप V2.1 रिलीज़",
@@ -22,8 +22,8 @@
         "time": "12:30 PM",
         "description": "The latest version of the Suksham Udhyam Sakhi mobile app is now available on the portal for download.",
         "description_hi": "सुक्षम उद्यम सखी मोबाइल ऐप का नवीनतम संस्करण अब पोर्टल पर डाउनलोड के लिए उपलब्ध है।"
-        },
-        {
+      },
+      {
         "id": 3,
         "title": "UI Accessibility Improvements",
         "title_hi": "UI एक्सेसिबिलिटी सुधार",
@@ -31,8 +31,8 @@
         "time": "02:15 PM",
         "description": "High-contrast mode and screen reader compatibility improvements have been deployed globally.",
         "description_hi": "हाई-कंट्रास्ट मोड और स्क्रीन रीडर संगतता सुधार विश्व स्तर पर लागू किए गए हैं।"
-        },
-        {
+      },
+      {
         "id": 4,
         "title": "Helpdesk Ticketing Integration",
         "title_hi": "हेल्पडेस्क टिकटिंग एकीकरण",
@@ -40,8 +40,8 @@
         "time": "11:00 AM",
         "description": "Users can now raise support tickets directly from the portal's quick action menu.",
         "description_hi": "उपयोगकर्ता अब सीधे पोर्टल के क्विक एक्शन मेनू से सपोर्ट टिकट जनरेट कर सकते हैं।"
-        },
-        {
+      },
+      {
         "id": 5,
         "title": "Updated User Manuals",
         "title_hi": "अपडेटेड उपयोगकर्ता नियमावली",
@@ -49,16 +49,16 @@
         "time": "09:00 AM",
         "description": "New PDF guides and video tutorials have been added to the Resources section.",
         "description_hi": "संसाधन अनुभाग में नए पीडीएफ गाइड और वीडियो ट्यूटोरियल जोड़े गए हैं।"
-        }
+      }
     ]
-    },
-    "tms": {
+  },
+  "tms": {
     "title": "TMS Update Board",
     "title_hi": "टीएमएस अपडेट बोर्ड",
     "subtitle": "Training Management System",
     "subtitle_hi": "प्रशिक्षण प्रबंधन प्रणाली",
     "items": [
-        {
+      {
         "id": 1,
         "title": "New User Manual Resource Section",
         "title_hi": "नया यूजर मैनुअल संसाधन अनुभाग",
@@ -66,8 +66,8 @@
         "time": "10:00 AM",
         "description": "A new user manual resource section has been added for the TMS portal.",
         "description_hi": "टीएमएस पोर्टल में एक नया यूजर मैनुअल संसाधन अनुभाग जोड़ा गया है।"
-        },
-        {
+      },
+      {
         "id": 2,
         "title": "Master Trainer Management Rule",
         "title_hi": "मास्टर ट्रेनर प्रबंधन नियम",
@@ -75,8 +75,8 @@
         "time": "10:30 AM",
         "description": "Master trainer addition, deletion, and replacement on every batch are allowed until batch e-KYC is completed.",
         "description_hi": "प्रत्येक बैच पर मास्टर ट्रेनर को जोड़ना, हटाना और बदलना तब तक अनुमति है जब तक बैच का ई-केवाईसी नहीं हो जाता।"
-        },
-        {
+      },
+      {
         "id": 3,
         "title": "Residential/Non-Residential Filter",
         "title_hi": "आवासीय/गैर-आवासीय फ़िल्टर",
@@ -84,8 +84,8 @@
         "time": "11:00 AM",
         "description": "Residential or non-residential training request batch filters are now available throughout the portal.",
         "description_hi": "पोर्टल पर हर जगह आवासीय या गैर-आवासीय प्रशिक्षण अनुरोध बैच फ़िल्टर उपलब्ध करा दिए गए हैं।"
-        },
-        {
+      },
+      {
         "id": 4,
         "title": "Batch Deletion at State Level",
         "title_hi": "राज्य स्तर पर बैच विलोपन",
@@ -93,8 +93,8 @@
         "time": "11:30 AM",
         "description": "Batch deletion option is available at the state level; each SMM can delete the batches of thier Theme.",
         "description_hi": "राज्य स्तर पर बैच हटाने का विकल्प उपलब्ध है, प्रत्येक SMM अपने स्वयं के बैच हटा सकता है।"
-        },
-        {
+      },
+      {
         "id": 5,
         "title": "Learning Material Upload Feature",
         "title_hi": "अध्ययन सामग्री अपलोड सुविधा",
@@ -102,8 +102,8 @@
         "time": "12:00 PM",
         "description": "Learning materials uploaded from the state level are now available for download on all other logins.",
         "description_hi": "राज्य स्तर से अपलोड की गई अध्ययन सामग्री अब अन्य सभी लॉगिन पर डाउनलोड के लिए उपलब्ध है।"
-        },
-        {
+      },
+      {
         "id": 6,
         "title": "Brand New Analytics Dashboard",
         "title_hi": "बिल्कुल नया एनालिटिक्स डैशबोर्ड",
@@ -111,8 +111,8 @@
         "time": "12:30 PM",
         "description": "A brand new analytics dashboard has been added for BMM, DMM, and SMM levels.",
         "description_hi": "सभी स्तरों (BMM, DMM और SMM) के लिए एक बिल्कुल नया एनालिटिक्स डैशबोर्ड जोड़ा गया है।"
-        },
-        {
+      },
+      {
         "id": 7,
         "title": "Beneficiary Lokos Profile Fetch",
         "title_hi": "लाभार्थी लोकोस प्रोफाइल फ़ेच",
@@ -120,8 +120,8 @@
         "time": "01:00 PM",
         "description": "Beneficiary Lokos profile fetch option is now available at the time of attendance.",
         "description_hi": "उपस्थिति दर्ज करते समय लाभार्थी लोकोस प्रोफाइल फ़ेच करने का विकल्प उपलब्ध है।"
-        },
-        {
+      },
+      {
         "id": 8,
         "title": "Panchayat & Village in Batch Creation",
         "title_hi": "बैच निर्माण में पंचायत और गाँव",
@@ -129,8 +129,8 @@
         "time": "01:30 PM",
         "description": "Beneficiaries' panchayat and village details are now available during batch creation.",
         "description_hi": "बैच बनाते समय लाभार्थियों की पंचायत और गाँव की जानकारी उपलब्ध कराई गई है।"
-        },
-        {
+      },
+      {
         "id": 9,
         "title": "Central Batch Date Locking",
         "title_hi": "केंद्रीय बैच तिथि लॉकिंग",
@@ -138,8 +138,8 @@
         "time": "09:00 AM",
         "description": "Batch dates are now centrally locked to ensure wrong computer dates are not considered.",
         "description_hi": "गलत कंप्यूटर तिथि को रोकने के लिए अब बैच की तारीखों को केंद्रीय रूप से लॉक कर दिया गया है।"
-        },
-        {
+      },
+      {
         "id": 10,
         "title": "Updated Absence Rule for Batches",
         "title_hi": "बैच के लिए अपडेटेड अनुपस्थिति नियम",
@@ -147,8 +147,8 @@
         "time": "09:30 AM",
         "description": "For a 9-day batch, only 2 days of absence are now permitted as per department rules.",
         "description_hi": "विभाग के नियम के अनुसार 9 दिन के बैच पर अब केवल 2 दिन की अनुपस्थिति की अनुमति है।"
-        },
-        {
+      },
+      {
         "id": 11,
         "title": "Block Level BRP Registration",
         "title_hi": "ब्लॉक स्तरीय BRP पंजीकरण",
@@ -156,8 +156,8 @@
         "time": "10:00 AM",
         "description": "Block-level BRP registration and district-level approval module have been added.",
         "description_hi": "ब्लॉक स्तरीय BRP पंजीकरण और जिला स्तर पर अनुमोदन मॉड्यूल जोड़ दिया गया है।"
-        },
-        {
+      },
+      {
         "id": 12,
         "title": "Backlog Batch Training Marking",
         "title_hi": "बैकलॉग बैच प्रशिक्षण अंकन",
@@ -165,7 +165,70 @@
         "time": "10:30 AM",
         "description": "Backlog batch training request marking module has been successfully added.",
         "description_hi": "बैकलॉग बैच प्रशिक्षण अनुरोध अंकन मॉड्यूल जोड़ दिया गया है।"
-        }
+      },
+      {
+        "id": 13,
+        "title": "Batch Participant Limit Increased to 60",
+        "title_hi": "बैच प्रतिभागी सीमा बढ़ाकर 60 की गई",
+        "date": "28 Sep 2026",
+        "time": "09:00 AM",
+        "description": "The maximum participant limit for each batch has now been increased to 60 participants.",
+        "description_hi": "प्रत्येक बैच में प्रतिभागियों की अधिकतम सीमा अब बढ़ाकर 60 कर दी गई है।"
+      },
+      {
+        "id": 14,
+        "title": "New Master Trainer Staff Batch Creation Compatibility",
+        "title_hi": "नए मास्टर ट्रेनर स्टाफ के लिए बैच निर्माण सुविधा",
+        "date": "28 Sep 2026",
+        "time": "09:30 AM",
+        "description": "New compatibility has been added to allow Master Trainer Staff to be selected and managed during batch creation.",
+        "description_hi": "बैच निर्माण के दौरान मास्टर ट्रेनर स्टाफ का चयन और प्रबंधन करने के लिए नई सुविधा जोड़ी गई है।"
+      },
+      {
+        "id": 15,
+        "title": "Rejected Batch Can Now Be Edited and Resubmitted",
+        "title_hi": "अस्वीकृत बैच को अब संपादित कर पुनः भेजा जा सकता है",
+        "date": "28 Sep 2026",
+        "time": "10:00 AM",
+        "description": "Batches rejected at the Cost Phase (Review Batch) can now be edited and sent again for approval.",
+        "description_hi": "कॉस्ट फेज़ (रिव्यू बैच) में अस्वीकृत किए गए बैच को अब संपादित कर पुनः अनुमोदन के लिए भेजा जा सकता है।"
+      },
+      {
+        "id": 16,
+        "title": "Updated Attendance Summary for Beneficiary Eligibility",
+        "title_hi": "लाभार्थी पात्रता के लिए अपडेटेड उपस्थिति सारांश",
+        "date": "28 Sep 2026",
+        "time": "10:30 AM",
+        "description": "A new Attendance Summary option is now available on Batch Detail to calculate beneficiary eligibility based on attendance.",
+        "description_hi": "उपस्थिति के आधार पर लाभार्थी पात्रता की गणना के लिए बैच विवरण में नया उपस्थिति सारांश विकल्प उपलब्ध है।"
+      },
+      {
+        "id": 17,
+        "title": "Auto-Delete for Zero Participation Training Requests",
+        "title_hi": "शून्य प्रतिभागिता वाले प्रशिक्षण अनुरोधों का स्वचालित विलोपन",
+        "date": "28 Sep 2026",
+        "time": "11:00 AM",
+        "description": "Training requests with 0 onboarded and 0 enrolled participants will now be automatically deleted every night at 12:00 AM.",
+        "description_hi": "0 ऑनबोर्डेड और 0 नामांकित प्रतिभागियों वाले प्रशिक्षण अनुरोध अब प्रत्येक रात 12:00 बजे स्वतः हटा दिए जाएंगे।"
+      },
+      {
+        "id": 18,
+        "title": "Master Trainer Themes Updated",
+        "title_hi": "सभी मास्टर ट्रेनरों के थीम अपडेट किए गए",
+        "date": "28 Sep 2026",
+        "time": "11:30 AM",
+        "description": "The themes of all Master Trainers have been updated across the portal for improved training management.",
+        "description_hi": "बेहतर प्रशिक्षण प्रबंधन के लिए पोर्टल पर सभी मास्टर ट्रेनरों के थीम अपडेट कर दिए गए हैं।"
+      },
+      {
+        "id": 19,
+        "title": "New Attendance Module - No eKYC Verification Required",
+        "title_hi": "नया उपस्थिति मॉड्यूल - ई-केवाईसी सत्यापन आवश्यक नहीं",
+        "date": "28 Sep 2026",
+        "time": "12:00 PM",
+        "description": "A new Attendance Module is now available. No eKYC verification is required, and attendance can be uploaded directly, with an optional CSV upload option.",
+        "description_hi": "नया उपस्थिति मॉड्यूल अब उपलब्ध है। इसमें ई-केवाईसी सत्यापन की आवश्यकता नहीं है और उपस्थिति सीधे अपलोड की जा सकती है, साथ ही वैकल्पिक CSV अपलोड की सुविधा भी उपलब्ध है।"
+      }
     ]
-    }
+  }
 }

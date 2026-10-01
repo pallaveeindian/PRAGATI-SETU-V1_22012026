@@ -53,7 +53,7 @@ export default function StaffBatchCreatorDashboard() {
   const [endDate, setEndDate] = useState("");
 
   const initialSelectDoneRef = useRef(false);
-  const maxAllowed = 40;
+  const maxAllowed = 60;
 
   // ==========================================
   // 1. BASE DATA INITIALIZATION (Runs Once)

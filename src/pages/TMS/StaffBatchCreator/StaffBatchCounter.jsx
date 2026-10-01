@@ -4,7 +4,7 @@ import React, { useState } from "react";
 const StaffBatchCounter = ({
   selectedCount = 0,
   minRequired = 20,
-  maxAllowed = 40,
+  maxAllowed = 60,
 }) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
 

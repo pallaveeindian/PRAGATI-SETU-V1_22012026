@@ -113,7 +113,7 @@ const AssemblerDashboardBatchCreator = () => {
     ) {
       setParticipantData((prev) => ({
         ...prev,
-        totalLimit: 50,
+        totalLimit: 60,
       }));
     } else {
       setParticipantData({ selectedParticipants: [], totalLimit: 0 });
@@ -420,7 +420,7 @@ const AssemblerDashboardBatchCreator = () => {
   const isBtnDisabled =
     isTargetMet ||
     participantData.selectedParticipants.length < 20 ||
-    participantData.selectedParticipants.length > 50 ||
+    participantData.selectedParticipants.length > 60 ||
     (batchType === "SEPARATE" &&
       filters.participantType !== "Trainer" &&
       !filters.block) ||
@@ -669,8 +669,8 @@ const AssemblerDashboardBatchCreator = () => {
                     ? "⚠ Start Date is required."
                     : participantData.selectedParticipants.length < 20
                       ? "⚠ Minimum 20 participants required to form a batch."
-                      : participantData.selectedParticipants.length > 50
-                        ? "⚠ Maximum 50 participants allowed per batch."
+                      : participantData.selectedParticipants.length > 60
+                        ? "⚠ Maximum 60 participants allowed per batch."
                         : batchType === "SEPARATE" &&
                             filters.participantType !== "Trainer" &&
                             !filters.block

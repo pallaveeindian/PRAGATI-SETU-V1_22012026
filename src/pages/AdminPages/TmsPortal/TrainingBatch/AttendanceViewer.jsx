@@ -33,8 +33,6 @@ export default function AttendanceViewer({
 }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [editableRecords, setEditableRecords] = useState([]);
-  const [selectedRowIds, setSelectedRowIds] = useState([]);
-  const [hasChanges, setHasChanges] = useState(false);
   const [isSaving, setIsSaving] = useState(false);
 
   // Safely sort attendances by date
@@ -54,16 +52,27 @@ export default function AttendanceViewer({
   useEffect(() => {
     if (selectedAttendance && selectedAttendance.participant_records) {
       setEditableRecords(
-        selectedAttendance.participant_records.map((r) => ({ ...r }))
+        selectedAttendance.participant_records.map((r) => ({ ...r })),
       );
-      setSelectedRowIds([]);
-      setHasChanges(false);
     } else {
       setEditableRecords([]);
-      setSelectedRowIds([]);
-      setHasChanges(false);
     }
   }, [selectedAttendance]);
+
+  // Dynamically check if any record was changed compared to the original data
+  const hasChanges = useMemo(() => {
+    if (!selectedAttendance || editableRecords.length === 0) return false;
+    return editableRecords.some((record) => {
+      const originalRecord = selectedAttendance.participant_records.find(
+        (r) => r.id === record.id,
+      );
+      return originalRecord && originalRecord.present !== record.present;
+    });
+  }, [editableRecords, selectedAttendance]);
+
+  // Calculate counts
+  const presentCount = editableRecords.filter((r) => r.present).length;
+  const absentCount = editableRecords.length - presentCount;
 
   // Filter media files that belong specifically to the selected date
   const mediaForDate = useMemo(() => {
@@ -79,27 +88,8 @@ export default function AttendanceViewer({
           return { ...r, present: !r.present };
         }
         return r;
-      })
+      }),
     );
-    setHasChanges(true);
-  };
-
-  // Toggle single row checkbox selection
-  const handleToggleRowSelect = (recordId) => {
-    setSelectedRowIds((prev) =>
-      prev.includes(recordId)
-        ? prev.filter((id) => id !== recordId)
-        : [...prev, recordId]
-    );
-  };
-
-  // Toggle select-all header checkbox
-  const handleSelectAll = (e) => {
-    if (e.target.checked) {
-      setSelectedRowIds(editableRecords.map((r) => r.id));
-    } else {
-      setSelectedRowIds([]);
-    }
   };
 
   // Save changes handler
@@ -109,7 +99,6 @@ export default function AttendanceViewer({
     setIsSaving(true);
     try {
       await onSaveAttendance(selectedAttendance.id, editableRecords);
-      setHasChanges(false);
       alert("Attendance changes saved successfully!");
     } catch (error) {
       console.error("Attendance update failed:", error);
@@ -123,7 +112,9 @@ export default function AttendanceViewer({
     return (
       <div style={{ marginBottom: 24 }}>
         <h3 className="attendance-title"> Daily Attendance & Media</h3>
-        <div style={{ color: "#64748b", fontStyle: "italic", padding: "12px 0" }}>
+        <div
+          style={{ color: "#64748b", fontStyle: "italic", padding: "12px 0" }}
+        >
           No daily records found for this batch.
         </div>
         <style>{`
@@ -136,10 +127,6 @@ export default function AttendanceViewer({
       </div>
     );
   }
-
-  const allSelected =
-    editableRecords.length > 0 &&
-    selectedRowIds.length === editableRecords.length;
 
   return (
     <div style={{ marginBottom: 24, marginTop: 30 }}>
@@ -188,18 +175,32 @@ export default function AttendanceViewer({
       {/* SELECTED DATE DETAILS */}
       {selectedDate && selectedAttendance && (
         <div className="attendance-detail">
-          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: 12 }}>
+          <div
+            style={{
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              marginBottom: 12,
+            }}
+          >
             <h4 className="attendance-subtitle" style={{ margin: 0 }}>
               Attendance on {fmtDate(selectedDate)}
+              <span className="attendance-counts">
+                (Present:{" "}
+                <strong style={{ color: "#16a34a" }}>{presentCount}</strong> |
+                Absent:{" "}
+                <strong style={{ color: "#dc2626" }}>{absentCount}</strong>)
+              </span>
             </h4>
+
             {hasChanges && (
               <button
                 type="button"
                 className="save-attendance-btn"
                 onClick={handleSaveChanges}
-                 disabled={isSaving}
+                disabled={isSaving}
               >
-                 {isSaving ? "Saving..." : "Save Attendance Changes"}
+                {isSaving ? "Saving..." : "Save Attendance Changes"}
               </button>
             )}
           </div>
@@ -220,14 +221,6 @@ export default function AttendanceViewer({
               <table className="table table-compact attendance-table">
                 <thead>
                   <tr>
-                    <th style={{ width: 40, textAlign: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={allSelected}
-                        onChange={handleSelectAll}
-                        aria-label="Select all attendance records"
-                      />
-                    </th>
                     <th>S.No.</th>
                     <th>Name</th>
                     <th>Role</th>
@@ -236,17 +229,8 @@ export default function AttendanceViewer({
                 </thead>
                 <tbody>
                   {editableRecords.map((r, index) => {
-                    const isChecked = selectedRowIds.includes(r.id);
                     return (
-                      <tr key={r.id} className={isChecked ? "row-selected" : ""}>
-                        <td style={{ textAlign: "center" }}>
-                          <input
-                            type="checkbox"
-                            checked={isChecked}
-                            onChange={() => handleToggleRowSelect(r.id)}
-                            aria-label={`Select ${r.participant_name}`}
-                          />
-                        </td>
+                      <tr key={r.id}>
                         <td>{index + 1}</td>
                         <td>{r.participant_name}</td>
                         <td>
@@ -398,9 +382,6 @@ export default function AttendanceViewer({
         .attendance-table tbody tr:hover {
           background: #f4f8fd;
         }
-        .row-selected {
-          background: #eef2ff !important;
-        }
         .attendance-date-btn {
           border: 1px solid #a7c6ed;
           background: #e4ecf5;
@@ -472,6 +453,12 @@ export default function AttendanceViewer({
           margin-bottom: 12px;
           color: #3d6ba6;
           font-size: 16px;
+        }
+        .attendance-counts {
+          font-size: 14px;
+          color: #64748b;
+          margin-left: 12px;
+          font-weight: normal;
         }
         .attendance-participant-table {
           max-height: 300px;

@@ -7,7 +7,7 @@ export default function StaffTRParticipantTable({
   baseTrId,
   selectedStaffIds = [],
   onStaffSelectionChange,
-  maxAllowed = 40,
+  maxAllowed = 60,
   participantType, // SURGICAL ADDITION: Passed from parent
 }) {
   const [searchTerm, setSearchTerm] = useState("");

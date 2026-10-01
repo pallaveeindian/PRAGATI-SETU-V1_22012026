@@ -110,9 +110,9 @@ export default function TMSSummaryExport({
         val(b["9_total_batches_completed"]),
         val(p["9_total_batches_completed"]),
         val(b["10_total_target"]),
-        val(p["11_participants_onboarded"]),
-        val(p["12_participants_enrolled_in_batches"]),
-        val(p["13_remaining_participants_for_enrollment"]),
+        val(b["11_participants_onboarded"]),
+        val(b["12_participants_enrolled_in_batches"]),
+        val(b["13_remaining_participants_for_enrollment"]),
         val(b["14_achievement_percentage"]),
       ];
     };

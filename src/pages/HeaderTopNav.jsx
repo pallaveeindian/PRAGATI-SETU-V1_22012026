@@ -115,11 +115,11 @@ export default function TopNavigation() {
                 Our Services <span className="arrow">▾</span>
               </span>
               <ul className="dropdown-menu">
-                <li>
+                {/* <li>
                   <Link to="/upsrlm-planning/login" onClick={closeMenu}>
                     UP Aspirational Blocks Dashboard
                   </Link>
-                </li>
+                </li> */}
                 <li>
                   <Link to="/beneficiary-profiling" onClick={closeMenu}>
                     Beneficiary Profiling
