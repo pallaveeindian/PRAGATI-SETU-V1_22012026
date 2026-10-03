@@ -2,10 +2,20 @@
 
 import React, { useContext } from "react";
 import { LanguageContext } from "../LanguageContext.jsx";
-import { FaAndroid, FaClipboardList, FaUsers, FaChartBar, FaDatabase, FaMapMarkerAlt } from "react-icons/fa";
+import {
+  FaAndroid,
+  FaClipboardList,
+  FaUsers,
+  FaChartBar,
+  FaDatabase,
+  FaMapMarkerAlt,
+} from "react-icons/fa";
 
 // change this path only if your image name is different
 import mobileImage from "../../assets/EPSMS/udhyam_sakhi_mobile.png";
+import qrImage from "../../assets/EPSMS/udhyam_sakhi_qr.jpg";
+const APP_LINK =
+  "https://play.google.com/store/apps/details?id=com.crp_ep_demo";
 
 const content = {
   en: {
@@ -14,7 +24,11 @@ const content = {
     subtitle: "Empowering Rural Women Entrepreneurs under UPSRLM",
     p1: "Transforming Rural Livelihoods through Digital Innovation EPSMS (Enterprise Sakhi Management System) is the dedicated digital tool for Community Resource Persons (CRP-EPs) and Micro-Enterprise Sakhis under the Non-Farm Livelihood Theme of the Uttar Pradesh State Rural Livelihood Mission (UPSRLM).",
     p2: "This application is designed to replace manual, paper-based processes with a unified automated workflow, enabling the growth of over 6.5 lakh rural women entrepreneurs across Uttar Pradesh.",
-    features: ["Field-level CRP Data", "Digital Data Collection", "Enterprise Surveys"],
+    features: [
+      "Field-level CRP Data",
+      "Digital Data Collection",
+      "Enterprise Surveys",
+    ],
   },
   hi: {
     label: "मोबाइल एप्लिकेशन",
@@ -62,7 +76,10 @@ export default function AndroidAppSection() {
         <div className="android-dashed-circle"></div>
 
         {FLOATING_ICONS.map(({ icon, position }) => (
-          <div className={`android-floating-icon android-float-${position}`} key={position}>
+          <div
+            className={`android-floating-icon android-float-${position}`}
+            key={position}
+          >
             {icon}
           </div>
         ))}
@@ -70,7 +87,11 @@ export default function AndroidAppSection() {
         <Leaf side="left" />
         <Leaf side="right" />
 
-        <img src={mobileImage} alt="Udhyam Sakhi Mobile Application" className="android-phone-image" />
+        <img
+          src={mobileImage}
+          alt="Udhyam Sakhi Mobile Application"
+          className="android-phone-image"
+        />
       </div>
 
       <div className="android-info">
@@ -79,7 +100,24 @@ export default function AndroidAppSection() {
           <span>{t.label}</span>
         </div>
 
-        <h2 className="android-title">{t.title}</h2>
+        <div className="android-title-row">
+          <h2 className="android-title">{t.title}</h2>
+
+          <a
+            href={APP_LINK}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="android-qr-link"
+            title="Open Udhyam Sakhi App"
+          >
+            <img
+              src={qrImage}
+              alt="Udhyam Sakhi App QR Code"
+              className="android-qr-image"
+            />
+          </a>
+        </div>
+
         <h3 className="android-subtitle">{t.subtitle}</h3>
 
         <p className="android-description">{t.p1}</p>
@@ -89,7 +127,10 @@ export default function AndroidAppSection() {
           {t.features.map((feature, index) => {
             const meta = FEATURE_META[index];
             return (
-              <div className={`android-feature-card feature-${meta.color}`} key={feature}>
+              <div
+                className={`android-feature-card feature-${meta.color}`}
+                key={feature}
+              >
                 <div className="android-feature-icon">{meta.icon}</div>
                 <h4>{feature}</h4>
               </div>
@@ -236,12 +277,13 @@ export default function AndroidAppSection() {
         .android-leaf span:nth-child(2) { right: 0; top: 40px; transform: rotate(35deg) scale(0.88); }
         .android-leaf span:nth-child(3) { left: 5px; top: 72px; transform: rotate(-15deg) scale(0.75); }
 
-        .android-info {
-          display: flex;
-          flex-direction: column;
-          justify-content: center;
-          padding: 38px 42px 38px 30px;
-        }
+       .android-info{
+  position:relative;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  padding:38px 42px 38px 30px;
+}
 
         .android-label {
           width: fit-content;
@@ -258,6 +300,48 @@ export default function AndroidAppSection() {
           letter-spacing: 0.3px;
         }
         .android-label svg { font-size: 20px; }
+      .android-title-row{
+  display:block;
+  margin-bottom:5px;
+  padding-right:170px;
+}
+
+.android-title-row .android-title{
+  margin:0;
+}
+
+.android-qr-link{
+  position:absolute;
+  top:15px;
+  right:35px;
+
+  width:150px;
+  height:150px;
+
+  display:block;
+  padding:4px;
+
+  background:#fff;
+  // border:2px solid #ff5b0b;
+  border-radius:4px;
+
+  z-index:10;
+  cursor:pointer;
+
+  transition:transform .25s ease,box-shadow .25s ease;
+}
+
+.android-qr-link:hover{
+  transform:scale(1.04);
+  box-shadow:0 6px 16px rgba(15,23,42,.15);
+}
+
+.android-qr-image{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
 
         .android-title {
           margin: 0 0 5px;
@@ -344,6 +428,16 @@ export default function AndroidAppSection() {
           .android-info { padding: 42px 50px 42px 32px; }
           .android-title { font-size: calc(42px * var(--font-scale, 1)); }
           .android-description { font-size: calc(15px * var(--font-scale, 1)); }
+          .android-qr-link{
+  top:18px;
+  right:35px;
+  width:155px;
+  height:155px;
+}
+
+.android-title-row{
+  padding-right:175px;
+}
         }
 
         /* 1200px laptop */
@@ -357,6 +451,16 @@ export default function AndroidAppSection() {
           .android-info { padding: 32px 28px; }
           .android-title { font-size: calc(36px * var(--font-scale, 1)); }
           .android-description { font-size: calc(13.5px * var(--font-scale, 1)); }
+          .android-qr-link{
+  top:15px;
+  right:25px;
+  width:125px;
+  height:125px;
+}
+
+.android-title-row{
+  padding-right:140px;
+}
         }
 
         /* 1024px */
@@ -378,6 +482,16 @@ export default function AndroidAppSection() {
           .android-subtitle { font-size: calc(15px * var(--font-scale, 1)); }
           .android-feature-grid { gap: 10px; }
           .android-feature-card { min-height: 120px; }
+          .android-qr-link{
+  top:14px;
+  right:20px;
+  width:105px;
+  height:105px;
+}
+
+.android-title-row{
+  padding-right:120px;
+}
         }
 
         /* 900px tablet */
@@ -387,6 +501,16 @@ export default function AndroidAppSection() {
           .android-phone-image { height: 435px; }
           .android-info { padding: 32px 28px 38px; }
           .android-title { font-size: calc(36px * var(--font-scale, 1)); }
+          .android-qr-link{
+  top:20px;
+  right:28px;
+  width:100px;
+  height:100px;
+}
+
+.android-title-row{
+  padding-right:115px;
+}
         }
 
         /* 600px mobile */
@@ -429,6 +553,17 @@ export default function AndroidAppSection() {
             text-align: left;
           }
           .android-feature-card h4 { max-width: none; }
+          .android-qr-link{
+  top:18px;
+  right:16px;
+  width:72px;
+  height:72px;
+  padding:2px;
+}
+
+.android-title-row{
+  padding-right:80px;
+}
         }
 
         /* 400px small mobile */
@@ -448,6 +583,17 @@ export default function AndroidAppSection() {
             font-size: 19px;
           }
           .android-feature-card h4 { font-size: calc(12.5px * var(--font-scale, 1)); }
+          .android-qr-link{
+  top:14px;
+  right:10px;
+  width:58px;
+  height:58px;
+  padding:2px;
+}
+
+.android-title-row{
+  padding-right:65px;
+}
         }
       `}</style>
     </section>

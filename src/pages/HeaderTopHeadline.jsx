@@ -1,6 +1,7 @@
 // src/pages/HeaderTopHeadline.jsx
 
-import React from "react";
+import React, { useContext } from "react";
+import { LanguageContext } from "./LanguageContext.jsx";
 
 const HEADLINES = [
     `Pragati Setu Portal में आपका स्वागत है।`,
@@ -19,9 +20,18 @@ const HEADLINES = [
 
     `🙏 Thank you for your support.`,
 ];
-
+const content = {
+  en: {
+    latest: "Latest Updates"
+    },
+  hi: {
+    latest: "नवीनतम अपडेट"
+   },
+};
 
 export default function HeaderTopHeadline() {
+    const { lang } = useContext(LanguageContext);
+    const t = content[lang] || content.en;
     return (
         <div className="headline-bar">
 
@@ -29,7 +39,7 @@ export default function HeaderTopHeadline() {
 
             <div className="headline-label">
                 <span className="headline-dot"></span>
-                <span>Latest Updates</span>
+                <span>{t.latest}</span>
             </div>
 
 

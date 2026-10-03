@@ -32,9 +32,9 @@ const content = {
 const HEADER_ICONS = [FaHashtag, FaUser, FaEnvelope, FaPhoneAlt];
 
 const contacts = [
-  { id: 1, name: "Sh. Rajesh Kumar", designation: "Principal Secretary", department: "Rural Development, GoUP", email: "officer1@example.gov.in", phone: "0522-0000001" },
-  { id: 2, name: "Ms. Anjali Verma, IAS", designation: "Commissioner", department: "Rural Development, GoUP", email: "officer2@example.gov.in", phone: "0522-0000002" },
-  { id: 3, name: "Sh. Amit Singh, IAS", designation: "Mission Director", department: "UPSRLM", email: "officer3@example.gov.in", phone: "9000000000" },
+  { id: 1, name: "Mr. Sachin Mishra", designation: "Head Project Manager", department: "PMU-IT,UPSRLM", email: "SachinAKumar@bdo.in", phone: "9984988066" },
+  { id: 2, name: "Mr. Ashish Saraf", designation: "Project Manager", department: "PMU-IT,UPSRLM", email: "ashishsaraf170688@gmail.com", phone: "9936753975" },
+  { id: 3, name: "Ms. Shilpi Raizada", designation: "Technical Support", department: "PMU-IT,UPSRLM", email: "officer3@example.gov.in", phone: "9000000000" },
 ];
 
 const telHref = (phone) => `tel:${phone.replace(/[^0-9+]/g, "")}`;

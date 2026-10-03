@@ -1,5 +1,6 @@
 // src/pages/HeroComponents/HeroBottomBanner.jsx
-import React from "react";
+import React, { useContext } from "react";
+import { LanguageContext } from "../LanguageContext.jsx";
 import {
   FaCertificate,
   FaChartPie,
@@ -10,12 +11,60 @@ import {
 import heroLog from "../../assets/NewHero/heroLog.png";
 
 export default function HeroBottomBanner() {
-  const pillars = [
-    { icon: <FaCertificate size={16} />, text: "Transparent Systems" },
-    { icon: <FaChartPie size={16} />, text: "Data-Driven Governance" },
-    { icon: <FaHandsHelping size={16} />, text: "Inclusive Growth" },
-    { icon: <FaLeaf size={16} />, text: "Sustainable Livelihoods" },
-  ];
+  const { lang } = useContext(LanguageContext);
+ const content = {
+  en: {
+    pillars: [
+      {
+        icon: <FaCertificate size={16} />,
+        text: "Transparent Systems",
+      },
+      {
+        icon: <FaChartPie size={16} />,
+        text: "Data-Driven Governance",
+      },
+      {
+        icon: <FaHandsHelping size={16} />,
+        text: "Inclusive Growth",
+      },
+      {
+        icon: <FaLeaf size={16} />,
+        text: "Sustainable Livelihoods",
+      },
+    ],
+
+    logoAlt:
+      "Women Empowerment for Prosperous Uttar Pradesh",
+  },
+
+  hi: {
+    pillars: [
+      {
+        icon: <FaCertificate size={16} />,
+        text: "पारदर्शी प्रणाली",
+      },
+      {
+        icon: <FaChartPie size={16} />,
+        text: "डेटा आधारित शासन",
+      },
+      {
+        icon: <FaHandsHelping size={16} />,
+        text: "समावेशी विकास",
+      },
+      {
+        icon: <FaLeaf size={16} />,
+        text: "सतत आजीविका",
+      },
+    ],
+
+    logoAlt:
+      "महिला सशक्तिकरण से समृद्ध उत्तर प्रदेश",
+  },
+};
+
+const t = content[lang] || content.en;
+
+const pillars = t.pillars;
 
   return (
     <div className="hero-bottom-banner">

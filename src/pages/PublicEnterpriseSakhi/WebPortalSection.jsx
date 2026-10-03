@@ -1,6 +1,7 @@
 // src/pages/EnterpriseSakhi/WebPortalSection.jsx
 
 import React, { useContext } from "react";
+import { useNavigate } from "react-router-dom";
 import { LanguageContext } from "../LanguageContext.jsx";
 import { FaDatabase, FaMapMarkedAlt, FaCheckCircle, FaArrowRight } from "react-icons/fa";
 
@@ -42,11 +43,12 @@ const content = {
 
 // icon + color + content keys for each portal card, in render order
 const PORTAL_CARDS = [
-  { color: "orange", icon: <FaDatabase />, labelKey: "epsmsLabel", titleKey: "epsmsTitle", subtitleKey: "epsmsSubtitle", descKey: "epsmsDescription", pointsKey: "epsmsPoints", buttonKey: "epsmsButton" },
-  { color: "blue", icon: <FaMapMarkedAlt />, labelKey: "mappingLabel", titleKey: "mappingTitle", subtitleKey: "mappingSubtitle", descKey: "mappingDescription", pointsKey: "mappingPoints", buttonKey: "mappingButton" },
+  { color: "orange", icon: <FaDatabase />, labelKey: "epsmsLabel", titleKey: "epsmsTitle", subtitleKey: "epsmsSubtitle", descKey: "epsmsDescription", pointsKey: "epsmsPoints", buttonKey: "epsmsButton",loginRoute: "/module-login?module=epsms",},
+  { color: "blue", icon: <FaMapMarkedAlt />, labelKey: "mappingLabel", titleKey: "mappingTitle", subtitleKey: "mappingSubtitle", descKey: "mappingDescription", pointsKey: "mappingPoints", buttonKey: "mappingButton", loginRoute: "/module-login?module=crp", },
 ];
 
 export default function WebPortalSection() {
+  const navigate = useNavigate();
   const { lang } = useContext(LanguageContext);
   const t = content[lang] || content.en;
 
@@ -76,7 +78,8 @@ export default function WebPortalSection() {
             ))}
           </div>
 
-          <button type="button" className={`portal-button ${card.color}-button`}>
+          <button type="button" className={`portal-button ${card.color}-button`}
+            onClick={() => navigate(card.loginRoute)}>
             <span>{t[card.buttonKey]}</span>
             <FaArrowRight />
           </button>

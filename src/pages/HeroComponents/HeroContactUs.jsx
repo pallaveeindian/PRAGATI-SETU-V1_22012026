@@ -4,8 +4,24 @@ import contactBg from "../../assets/Hero/About/contactus.png";
 
 // Hoisted outside to prevent re-creation on every render
 const content = {
-  en: { title: "Need Support?", highlight: "We Are Here to Help", callTitle: "Call Us", callDay: "Monday – Friday", callTime: "10:30 AM – 6:30 PM", emailTitle: "Email Us", emailDesc: "Send your queries anytime" },
-  hi: { title: "सहायता चाहिए?", highlight: "हम आपकी मदद के लिए हैं", callTitle: "हमें कॉल करें", callDay: "सोमवार – शुक्रवार", callTime: "सुबह 10:30 – शाम 6:30", emailTitle: "ईमेल करें", emailDesc: "अपनी समस्या कभी भी भेजें" },
+  en: {
+    title: "Need Support?",
+    highlight: "We Are Here to Help",
+    callTitle: "Call Us",
+    callDay: "Monday – Friday",
+    callTime: "10:30 AM – 6:30 PM",
+    emailTitle: "Email Us",
+    emailDesc: "Send your queries anytime",
+  },
+  hi: {
+    title: "सहायता चाहिए?",
+    highlight: "हम आपकी मदद के लिए हैं",
+    callTitle: "हमें कॉल करें",
+    callDay: "सोमवार – शुक्रवार",
+    callTime: "सुबह 10:30 – शाम 6:30",
+    emailTitle: "ईमेल करें",
+    emailDesc: "अपनी समस्या कभी भी भेजें",
+  },
 };
 
 export default function HeroContactUs() {
@@ -13,7 +29,10 @@ export default function HeroContactUs() {
   const t = content[lang] || content.en;
 
   return (
-    <section className="support-section" style={{ backgroundImage: `url(${contactBg})` }}>
+    <section
+      className="support-section"
+      style={{ backgroundImage: `url(${contactBg})` }}
+    >
       <div className="support-content">
         <div className="support-heading">
           <h2>{t.title}</h2>
@@ -59,6 +78,55 @@ export default function HeroContactUs() {
         .support-text a:hover { text-decoration: underline; }
 
         /* TABLET / SMALL LAPTOP (Replaces 1400, 1200, 1024, 900) */
+
+        /* =========================================
+   1400px+ LARGE DESKTOP
+========================================= */
+
+@media (min-width:1400px){
+
+  .support-section{
+    min-height:460px;
+  }
+
+  .support-content{
+    max-width:1600px;
+    padding:60px 65px;
+  }
+
+  .support-heading{
+    max-width:620px;
+    margin-bottom:34px;
+  }
+
+  .support-heading h2{
+    font-size:58px;
+  }
+
+  .support-heading h3{
+    font-size:53px;
+  }
+
+  .support-info-row{
+    max-width:720px;
+    gap:55px;
+  }
+
+  .support-icon{
+    width:50px;
+    height:50px;
+    font-size:24px;
+  }
+
+  .support-text h4{
+    font-size:18px;
+  }
+
+  .support-text p,
+  .support-text a{
+    font-size:15px;
+  }
+}
         @media (max-width: 1024px) {
           .support-section { min-height: 360px; background-position: 62% center; }
           .support-content { padding: 40px 28px; }

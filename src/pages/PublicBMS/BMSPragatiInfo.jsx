@@ -21,8 +21,22 @@ const content = {
   },
 };
 
-const ICONS = { growth: <FiTrendingUp />, settings: <FiSettings />, users: <FiUsers /> };
-const getIcon = (icon) => ICONS[icon] || <FiMonitor />;
+const ICONS = {
+  monitor: FiMonitor,
+  growth: FiTrendingUp,
+  settings: FiSettings,
+  users: FiUsers,
+};
+
+const getIcon = (icon) => {
+  const IconComponent = ICONS[icon] || FiMonitor;
+
+  return (
+    <IconComponent
+      className="bms-info-svg"
+    />
+  );
+};
 
 export default function BMSPragatiInfo() {
   const { lang } = useContext(LanguageContext);
@@ -112,13 +126,21 @@ export default function BMSPragatiInfo() {
           justify-self: center;
           border-radius: 50%;
         }
-        .bms-info-icon {
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          font-size: 41px;
-          stroke-width: 2.4;
-        }
+        .bms-info-icon{
+  width:100%;
+  height:100%;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+
+.bms-info-svg{
+  width:52px !important;
+  height:52px !important;
+  min-width:52px !important;
+  min-height:52px !important;
+  stroke-width:2.4;
+}
 
         .bms-info-icon-about { background: linear-gradient(135deg, #fff1e8 0%, #ffe2cf 100%); }
         .bms-info-icon-about .bms-info-icon { color: #063466; }
@@ -164,6 +186,7 @@ export default function BMSPragatiInfo() {
           height: 260px;
           background: #ffe1d1;
         }
+   
 
         /* 1400px+ */
         @media (min-width: 1400px) {

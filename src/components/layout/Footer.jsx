@@ -16,7 +16,7 @@ const content = {
     powered: "Powered by",
     rights: "All rights reserved.",
     copyright: "© 2026 Pragati Setu | Uttar Pradesh State Rural Livelihoods Mission",
-    bottomLinks: ["Privacy Policy", "Terms of Use", "Accessibility", "Sitemap"],
+    bottomLinks: ["Privacy Policy", "Terms of Use", "Accessibility"],
   },
   hi: {
     description: "सशक्त ग्रामीण और समृद्ध उत्तर प्रदेश के लिए एक डिजिटल सेतु।",
@@ -29,7 +29,7 @@ const content = {
     powered: "द्वारा संचालित",
     rights: "सभी अधिकार सुरक्षित।",
     copyright: "© 2026 प्रगति सेतु | उत्तर प्रदेश राज्य ग्रामीण आजीविका मिशन",
-    bottomLinks: ["गोपनीयता नीति", "उपयोग की शर्तें", "सुगम्यता", "साइटमैप"],
+    bottomLinks: ["गोपनीयता नीति", "उपयोग की शर्तें", "सुगम्यता"],
   },
 };
 

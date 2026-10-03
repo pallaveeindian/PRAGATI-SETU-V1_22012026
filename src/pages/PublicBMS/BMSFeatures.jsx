@@ -47,7 +47,7 @@ export default function BMSFeatures() {
         <div className="bms-features-grid">
           {t.cards.map((card, index) => (
             <article className={`bms-feature-card bms-feature-card-${card.type}`} key={`${card.title}-${index}`}>
-              <div className={`bms-feature-icon-wrap bms-feature-icon-${card.type}`}>
+              <div className="bms-feature-icon-wrap">
                 <div className="bms-feature-icon">{getIcon(card.icon)}</div>
               </div>
 
@@ -112,6 +112,50 @@ export default function BMSFeatures() {
           gap: 12px;
         }
 
+        /* per-color theme tokens — each card type sets these once, the
+           shared rules below read them so the border/gradient/shadow/icon
+           declarations aren't repeated per color */
+        .bms-feature-card-pink {
+          --card-border: #f5a7bd;
+          --card-bg-a: #fff7fa;
+          --card-bg-b: #fdebf1;
+          --card-shadow-rgb: 235, 58, 111;
+          --icon-bg-a: #ffd7e3;
+          --icon-bg-b: #ffc0d2;
+          --icon-color: #f01455;
+          --title-color: #ed174e;
+        }
+        .bms-feature-card-purple {
+          --card-border: #c8afff;
+          --card-bg-a: #fbf8ff;
+          --card-bg-b: #f0e8ff;
+          --card-shadow-rgb: 102, 46, 240;
+          --icon-bg-a: #e9dbff;
+          --icon-bg-b: #d7beff;
+          --icon-color: #5e18e8;
+          --title-color: #3511bf;
+        }
+        .bms-feature-card-green {
+          --card-border: #99e7bc;
+          --card-bg-a: #f5fff9;
+          --card-bg-b: #e6faef;
+          --card-shadow-rgb: 17, 181, 83;
+          --icon-bg-a: #d3ffe4;
+          --icon-bg-b: #b9f6d1;
+          --icon-color: #08b84f;
+          --title-color: #082c5a;
+        }
+        .bms-feature-card-orange {
+          --card-border: #f7b892;
+          --card-bg-a: #fffaf7;
+          --card-bg-b: #fff0e7;
+          --card-shadow-rgb: 255, 91, 11;
+          --icon-bg-a: #ffe4d1;
+          --icon-bg-b: #ffd0b3;
+          --icon-color: #ff580b;
+          --title-color: #082c5a;
+        }
+
         .bms-feature-card {
           position: relative;
           min-width: 0;
@@ -122,37 +166,15 @@ export default function BMSFeatures() {
           gap: 10px;
           padding: 13px 15px;
           border-radius: 10px;
+          border: 1px solid var(--card-border);
+          background: linear-gradient(135deg, var(--card-bg-a) 0%, var(--card-bg-b) 100%);
+          box-shadow: 0 5px 14px rgba(var(--card-shadow-rgb), 0.08);
           transition: transform .25s ease, box-shadow .25s ease;
         }
-        .bms-feature-card:hover { transform: translateY(-3px); }
-
-        .bms-feature-card-pink {
-          border: 1px solid #f5a7bd;
-          background: linear-gradient(135deg, #fff7fa 0%, #fdebf1 100%);
-          box-shadow: 0 5px 14px rgba(235, 58, 111, 0.08);
+        .bms-feature-card:hover {
+          transform: translateY(-3px);
+          box-shadow: 0 8px 20px rgba(var(--card-shadow-rgb), 0.15);
         }
-        .bms-feature-card-pink:hover { box-shadow: 0 8px 20px rgba(235, 58, 111, 0.15); }
-
-        .bms-feature-card-purple {
-          border: 1px solid #c8afff;
-          background: linear-gradient(135deg, #fbf8ff 0%, #f0e8ff 100%);
-          box-shadow: 0 5px 14px rgba(102, 46, 240, 0.08);
-        }
-        .bms-feature-card-purple:hover { box-shadow: 0 8px 20px rgba(102, 46, 240, 0.15); }
-
-        .bms-feature-card-green {
-          border: 1px solid #99e7bc;
-          background: linear-gradient(135deg, #f5fff9 0%, #e6faef 100%);
-          box-shadow: 0 5px 14px rgba(17, 181, 83, 0.08);
-        }
-        .bms-feature-card-green:hover { box-shadow: 0 8px 20px rgba(17, 181, 83, 0.15); }
-
-        .bms-feature-card-orange {
-          border: 1px solid #f7b892;
-          background: linear-gradient(135deg, #fffaf7 0%, #fff0e7 100%);
-          box-shadow: 0 5px 14px rgba(255, 91, 11, 0.08);
-        }
-        .bms-feature-card-orange:hover { box-shadow: 0 8px 20px rgba(255, 91, 11, 0.15); }
 
         .bms-feature-icon-wrap {
           width: 68px;
@@ -162,20 +184,13 @@ export default function BMSFeatures() {
           justify-content: center;
           justify-self: center;
           border-radius: 50%;
+          background: linear-gradient(135deg, var(--icon-bg-a), var(--icon-bg-b));
         }
-        .bms-feature-icon-pink { background: linear-gradient(135deg, #ffd7e3, #ffc0d2); }
-        .bms-feature-icon-pink .bms-feature-icon { color: #f01455; }
-        .bms-feature-icon-purple { background: linear-gradient(135deg, #e9dbff, #d7beff); }
-        .bms-feature-icon-purple .bms-feature-icon { color: #5e18e8; }
-        .bms-feature-icon-green { background: linear-gradient(135deg, #d3ffe4, #b9f6d1); }
-        .bms-feature-icon-green .bms-feature-icon { color: #08b84f; }
-        .bms-feature-icon-orange { background: linear-gradient(135deg, #ffe4d1, #ffd0b3); }
-        .bms-feature-icon-orange .bms-feature-icon { color: #ff580b; }
-
         .bms-feature-icon {
           display: flex;
           align-items: center;
           justify-content: center;
+          color: var(--icon-color);
           font-size: 37px;
           stroke-width: 2.5;
         }
@@ -183,7 +198,7 @@ export default function BMSFeatures() {
         .bms-feature-content { min-width: 0; }
         .bms-feature-content h3 {
           margin: 0 0 7px;
-          color: #082c5a;
+          color: var(--title-color);
           font-size: calc(15px * var(--font-scale, 1));
           font-weight: 900;
           line-height: 1.23;
@@ -195,9 +210,6 @@ export default function BMSFeatures() {
           font-weight: 500;
           line-height: 1.42;
         }
-        /* first card red title, second card purple title */
-        .bms-feature-card-pink .bms-feature-content h3 { color: #ed174e; }
-        .bms-feature-card-purple .bms-feature-content h3 { color: #3511bf; }
 
         .bms-features-decoration {
           position: absolute;
