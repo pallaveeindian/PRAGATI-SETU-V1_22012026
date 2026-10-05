@@ -52,7 +52,8 @@ export default function RFSubmission() {
         lokosDistrictId: block.lokos_district_id,
         lokosBlockId: block.lokos_block_id,
         indicatorCode: "0512", // Pointer 2 Code
-        cumulativeAchievement: block.rfReceivedCount || 0, // Mapping the requested RF field
+        numerator: block.rfReceivedCount || 0,
+        denominator: block.shgCount || 0,
         officerDetails: officerDetails,
       });
     });
@@ -126,7 +127,8 @@ export default function RFSubmission() {
           lokosDistrictId: aspirationalBlocks[0].lokos_district_id,
           lokosBlockId: aspirationalBlocks[0].lokos_block_id,
           indicatorCode: "0512",
-          cumulativeAchievement: aspirationalBlocks[0].rfReceivedCount || 0,
+          numerator: aspirationalBlocks[0].rfReceivedCount || 0,
+          denominator: aspirationalBlocks[0].shgCount || 0,
           officerDetails: officerDetails,
         })
       : null;

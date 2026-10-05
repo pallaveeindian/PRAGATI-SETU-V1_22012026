@@ -111,8 +111,13 @@ export const buildPlanningApiPayload = ({
   const derivedUnit =
     unitOverride || (indicatorCode === "0512" ? "Percentage" : "Number");
 
-  // 3. Construct the Full Object
-  // We use .toFixed(2) to enforce the "00.00" decimal requirement as a string
+  // 3. Calculate metrics based on Indicator Code (0511 vs 0512)
+  const isRFIndicator = String(indicatorCode) === "0512";
+  const rfNum = Number(numerator || cumulativeAchievement || 0);
+  const rfDen = Number(denominator || 0);
+  const rfPct = rfDen > 0 ? ((rfNum / rfDen) * 100).toFixed(2) : "0.00";
+
+  // 4. Construct the Full Object
   const payload = {
     year: getFinancialYear(reportDate),
     month: getApiMonthCode(reportDate),
@@ -124,10 +129,12 @@ export const buildPlanningApiPayload = ({
     unit: derivedUnit,
     PeriodNameId: String(indicator.periodicityId),
     LeadDeptNameId: String(indicator.leadDeptId),
-    mon_ach_numirator: Number(cumulativeAchievement).toFixed(2),
-    mon_ach_denominator: "1",
-    mon_ach: Number(cumulativeAchievement).toFixed(2),
-    cum_ach: Number(cumulativeAchievement).toFixed(2),
+    mon_ach_numirator: isRFIndicator
+      ? String(rfNum)
+      : Number(cumulativeAchievement).toFixed(2),
+    mon_ach_denominator: isRFIndicator ? String(rfDen) : "1",
+    mon_ach: isRFIndicator ? rfPct : Number(cumulativeAchievement).toFixed(2),
+    cum_ach: isRFIndicator ? rfPct : Number(cumulativeAchievement).toFixed(2),
     Disclaimer: buildDisclaimer(officerDetails, reportDate),
     FourMonth: "",
     QuarterMonth: "",
