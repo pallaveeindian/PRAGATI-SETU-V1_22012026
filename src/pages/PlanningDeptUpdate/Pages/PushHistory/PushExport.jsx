@@ -1,4 +1,4 @@
-// src\pages\PlanningDeptUpdate\Pages\PushHistory\PushExport.jsx
+// src/pages/PlanningDeptUpdate/Pages/PushHistory/PushExport.jsx
 import React, { useState } from "react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -24,22 +24,67 @@ export default function PushExport({ filters }) {
     12: "December",
   };
 
-  const getMappedNames = (apiBlockCode) => {
+  const getMappedNames = (apiBlockCode, apiDistCode) => {
     const block = aspirationalBlocks.find(
       (b) => String(b.api_block_code) === String(apiBlockCode),
     );
+    const distFallback = aspirationalBlocks.find(
+      (b) =>
+        String(b.api_district_code) === String(apiDistCode) &&
+        b.districtName &&
+        b.districtName !== "Unknown",
+    );
+
     return {
-      blockName: block?.block_name || apiBlockCode,
-      districtName: block?.districtName || "Unknown",
+      blockName: block?.block_name || block?.blockNameEn || apiBlockCode || "—",
+      districtName:
+        block?.districtName && block.districtName !== "Unknown"
+          ? block.districtName
+          : distFallback?.districtName || apiDistCode || "Unknown",
     };
+  };
+
+  const formatTwoDecimals = (val, fallback = "0.00") => {
+    if (val === null || val === undefined || val === "") return fallback;
+    const num = Number(val);
+    return Number.isNaN(num) ? fallback : num.toFixed(2);
+  };
+
+  const formatTimestamp = (isoString) => {
+    if (!isoString) return "—";
+    try {
+      const d = new Date(isoString);
+      if (Number.isNaN(d.getTime())) return isoString;
+
+      const datePart = d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      const timePart = d
+        .toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+        .toLowerCase();
+
+      return `${datePart} ${timePart}`;
+    } catch {
+      return isoString;
+    }
   };
 
   const handleExport = async () => {
     setIsExporting(true);
     try {
-      // Fetch all data matching current filters (passing a large limit to bypass pagination)
+      const activeParams = Object.fromEntries(
+        Object.entries(filters || {}).filter(([_, v]) => v !== ""),
+      );
+
+      // Fetch all data matching current filters
       const response = await api.get("/uppld/achievements/", {
-        params: { ...filters, limit: 10000 },
+        params: { ...activeParams, limit: 10000 },
       });
       const data = response.data?.results || response.data || [];
 
@@ -49,159 +94,176 @@ export default function PushExport({ filters }) {
         return;
       }
 
-      // Separate datasets by indicator
-      const df_0511 = data.filter((d) => String(d.prog_code).endsWith("511"));
-      const df_0512 = data.filter((d) => String(d.prog_code).endsWith("512"));
+      // Group records by (year + month + block_code) so 0511 & 0512 sit side-by-side
+      const groupedMap = new Map();
+
+      data.forEach((row) => {
+        const bCode = row.block_code ?? row.Block_code ?? "";
+        const dCode = row.dist_code ?? "";
+        const yr = row.year ?? "";
+        const mo = row.month ?? "";
+        const key = `${yr}_${mo}_${bCode}`;
+
+        if (!groupedMap.has(key)) {
+          groupedMap.set(key, {
+            year: yr,
+            month: mo,
+            dist_code: dCode,
+            block_code: bCode,
+            row0511: null,
+            row0512: null,
+            updated_at: row.updated_at || row.created_at || null,
+          });
+        }
+
+        const group = groupedMap.get(key);
+        const pCode = String(row.prog_code || "");
+
+        if (pCode.endsWith("511")) {
+          group.row0511 = row;
+        } else if (pCode.endsWith("512")) {
+          group.row0512 = row;
+        }
+
+        const rowTime = row.updated_at || row.created_at;
+        if (
+          rowTime &&
+          (!group.updated_at || new Date(rowTime) > new Date(group.updated_at))
+        ) {
+          group.updated_at = rowTime;
+        }
+      });
+
+      const mergedRows = Array.from(groupedMap.values());
 
       const workbook = new ExcelJS.Workbook();
       const reportDate = new Date()
         .toLocaleDateString("en-GB")
         .replace(/\//g, "-");
 
-      // Helper to generate a styled sheet
-      const createSheet = (sheetName, dataset, indicatorCode) => {
-        const worksheet = workbook.addWorksheet(sheetName);
+      const worksheet = workbook.addWorksheet("UPPLD Push Report");
 
-        // --- MASTER TITLE ---
-        const titleRow = worksheet.addRow([
-          `PRAGATI SETU UPPLD PUSH REPORT AS OF ${reportDate}  |  INDICATOR ${indicatorCode}`,
-        ]);
-        worksheet.mergeCells(1, 1, 1, 11);
-        titleRow.height = 40;
-        titleRow.getCell(1).fill = {
-          type: "pattern",
-          pattern: "solid",
-          fgColor: { argb: "FF0F3057" },
+      // --- 2-ROW HEADER DEFINITIONS (EXACT MATCH TO IMAGE) ---
+      const topHeaders = [
+        "Sno",
+        "District",
+        "Block",
+        "Month",
+        "Financial Year",
+        "Total number of elligible households (HHs) added to SHGs",
+        "1",
+        "5.3 Total number of elligible households (HHs) added to SHGs",
+        "Total number of SHGs receiving revolving fund in the block",
+        "Total number of SHGs in the block",
+        "5.4 Percentage of SHGs that have received Revolving Fund against total SHGs in the block",
+        "Timestamp",
+      ];
+
+      const subHeaders = [
+        "",
+        "",
+        "",
+        "",
+        "",
+        "Numerator",
+        "Denominator",
+        "Achievement",
+        "Numerator",
+        "Denominator",
+        "Achievement",
+        "",
+      ];
+
+      const headerRow1 = worksheet.addRow(topHeaders);
+      const headerRow2 = worksheet.addRow(subHeaders);
+
+      headerRow1.height = 115;
+      headerRow2.height = 24;
+
+      // Vertically merge columns that span both header rows (Cols 1-5 and Col 12)
+      [1, 2, 3, 4, 5, 12].forEach((colIdx) => {
+        worksheet.mergeCells(1, colIdx, 2, colIdx);
+      });
+
+      const thinBorder = {
+        top: { style: "thin", color: { argb: "FF000000" } },
+        left: { style: "thin", color: { argb: "FF000000" } },
+        bottom: { style: "thin", color: { argb: "FF000000" } },
+        right: { style: "thin", color: { argb: "FF000000" } },
+      };
+
+      // Style Header Row 1
+      headerRow1.eachCell((cell) => {
+        cell.font = { bold: true, size: 11, color: { argb: "FF000000" } };
+        cell.alignment = {
+          vertical: "top",
+          horizontal: "center",
+          wrapText: true,
         };
-        titleRow.getCell(1).font = {
-          bold: true,
-          size: 16,
-          color: { argb: "FFFFFFFF" },
-        };
-        titleRow.getCell(1).alignment = {
+        cell.border = thinBorder;
+      });
+
+      // Style Header Row 2
+      headerRow2.eachCell((cell) => {
+        cell.font = { bold: true, size: 11, color: { argb: "FF000000" } };
+        cell.alignment = {
           vertical: "middle",
           horizontal: "center",
+          wrapText: true,
         };
-        titleRow.getCell(1).border = {
-          top: { style: "thin" },
-          left: { style: "thin" },
-          bottom: { style: "thin" },
-          right: { style: "thin" },
-        };
+        cell.border = thinBorder;
+      });
 
-        if (dataset.length === 0) {
-          worksheet.addRow(["No Data Available"]);
-          return;
-        }
+      // --- COLUMN WIDTHS ---
+      worksheet.getColumn(1).width = 8; // Sno
+      worksheet.getColumn(2).width = 18; // District
+      worksheet.getColumn(3).width = 18; // Block
+      worksheet.getColumn(4).width = 15; // Month
+      worksheet.getColumn(5).width = 15; // Financial Year
+      worksheet.getColumn(6).width = 16; // 0511 Numerator
+      worksheet.getColumn(7).width = 15; // 0511 Denominator
+      worksheet.getColumn(8).width = 16; // 0511 Achievement
+      worksheet.getColumn(9).width = 16; // 0512 Numerator
+      worksheet.getColumn(10).width = 18; // 0512 Denominator
+      worksheet.getColumn(11).width = 18; // 0512 Achievement
+      worksheet.getColumn(12).width = 18; // Timestamp
 
-        // --- HEADERS ---
-        const headers = [
-          "S.No.",
-          "Year",
-          "Month Name",
-          "District Name",
-          "Block Name",
-          "Program Name",
-          "Program Head Name",
-          "Period Name",
-          "Lead Department Name",
-          "Achievement (mon_ach)",
-          "Disclaimer",
-        ];
-        const headerRow = worksheet.addRow(headers);
-        headerRow.height = 30;
+      // --- POPULATE DATA ROWS ---
+      mergedRows.forEach((group, index) => {
+        const names = getMappedNames(group.block_code, group.dist_code);
+        const monthName = monthMap[Number(group.month)] || group.month || "—";
+        const r511 = group.row0511;
+        const r512 = group.row0512;
 
-        headerRow.eachCell((cell) => {
-          cell.fill = {
-            type: "pattern",
-            pattern: "solid",
-            fgColor: { argb: "FF38A3C5" },
-          };
-          cell.font = { bold: true, size: 11, color: { argb: "FFFFFFFF" } };
+        const dataRow = worksheet.addRow([
+          index + 1,
+          names.districtName,
+          names.blockName,
+          monthName,
+          group.year || "—",
+          r511
+            ? formatTwoDecimals(r511.mon_ach_numirator ?? r511.mon_ach, "0.00")
+            : "—",
+          r511 ? formatTwoDecimals(r511.mon_ach_denominator ?? 1, "1.00") : "—",
+          r511 ? formatTwoDecimals(r511.mon_ach, "0.00") : "—",
+          r512 ? formatTwoDecimals(r512.mon_ach_numirator ?? 0, "0.00") : "—",
+          r512 ? formatTwoDecimals(r512.mon_ach_denominator ?? 0, "0.00") : "—",
+          r512 ? formatTwoDecimals(r512.mon_ach, "0.00") : "—",
+          formatTimestamp(group.updated_at),
+        ]);
+
+        dataRow.height = 32;
+
+        dataRow.eachCell((cell) => {
+          cell.font = { size: 11, color: { argb: "FF000000" } };
+          cell.border = thinBorder;
           cell.alignment = {
             vertical: "middle",
             horizontal: "center",
             wrapText: true,
           };
-          cell.border = {
-            top: { style: "thin" },
-            left: { style: "thin" },
-            bottom: { style: "thin" },
-            right: { style: "thin" },
-          };
         });
-
-        // --- COLUMNS WIDTHS ---
-        worksheet.getColumn(1).width = 8; // S.No
-        worksheet.getColumn(2).width = 12; // Year
-        worksheet.getColumn(3).width = 12; // Month
-        worksheet.getColumn(4).width = 20; // District
-        worksheet.getColumn(5).width = 20; // Block
-        worksheet.getColumn(6).width = 38; // Program Name
-        worksheet.getColumn(7).width = 20; // Head
-        worksheet.getColumn(8).width = 15; // Period
-        worksheet.getColumn(9).width = 22; // Dept
-        worksheet.getColumn(10).width = 25; // Achievement
-        worksheet.getColumn(11).width = 75; // Disclaimer
-
-        // --- POPULATE DATA ---
-        dataset.forEach((row, index) => {
-          const names = getMappedNames(row.block_code);
-          const progName =
-            indicatorCode === "0511"
-              ? "Total Households added to SHGs"
-              : "SHGs receiving Revolving Fund";
-          const monthName = monthMap[row.month] || row.month;
-
-          const dataRow = worksheet.addRow([
-            index + 1,
-            row.year,
-            monthName,
-            names.districtName,
-            names.blockName,
-            progName,
-            row.prog_head_code,
-            row.period_name_id,
-            row.lead_dept_name_id,
-            row.mon_ach,
-            row.disclaimer,
-          ]);
-
-          dataRow.height = 45; // Taller row for disclaimer wrapping
-          const isEven = index % 2 === 0;
-          const rowBgColor = isEven ? "FFF9FAFB" : "FFFFFFFF";
-
-          dataRow.eachCell((cell, colNumber) => {
-            cell.fill = {
-              type: "pattern",
-              pattern: "solid",
-              fgColor: { argb: rowBgColor },
-            };
-            cell.border = {
-              top: { style: "thin" },
-              left: { style: "thin" },
-              bottom: { style: "thin" },
-              right: { style: "thin" },
-            };
-
-            if (colNumber === 11) {
-              // Disclaimer column alignment
-              cell.alignment = {
-                vertical: "middle",
-                horizontal: "left",
-                wrapText: true,
-              };
-              cell.font = { size: 9 };
-            } else {
-              cell.alignment = { vertical: "middle", horizontal: "center" };
-            }
-          });
-        });
-      };
-
-      // Generate the two tabs
-      createSheet("Pointer 0511 - SHG HHs", df_0511, "0511");
-      createSheet("Pointer 0512 - RF", df_0512, "0512");
+      });
 
       // Save file
       const buffer = await workbook.xlsx.writeBuffer();

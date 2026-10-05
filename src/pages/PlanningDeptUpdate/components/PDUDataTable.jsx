@@ -1,4 +1,4 @@
-// src\pages\PlanningDeptUpdate\components\PDUDataTable.jsx
+// src/pages/PlanningDeptUpdate/components/PDUDataTable.jsx
 import React, { useState, useMemo, useEffect } from "react";
 import ExcelJS from "exceljs";
 import { saveAs } from "file-saver";
@@ -6,8 +6,9 @@ import "./styles/PDUDataTable.css";
 
 /**
  * PDUDataTable - A highly reusable, paginated, and exportable data table.
+ * Supports single-row headers as well as two-tier headers (when columns include `subLabel`).
  *
- * @param {Array<Object>} columns - Definition of table columns [{ key: 'id', label: 'Name', render: (row) => ... }]
+ * @param {Array<Object>} columns - Definition of table columns [{ key: 'id', label: 'Name', subLabel: 'Optional', render: (row) => ... }]
  * @param {Array<Object>} data - The array of data objects to render
  * @param {boolean} highlightTopThree - If true, highlights the first 3 rows as Gold, Silver, Bronze
  * @param {string} emptyMessage - Message to display if data array is empty
@@ -25,7 +26,7 @@ const PDUDataTable = ({
   const ITEMS_PER_PAGE = 25;
   const [currentPage, setCurrentPage] = useState(1);
 
-  // Reset to page 1 whenever data changes (e.g., user types in search or changes sort)
+  // Reset to page 1 whenever data changes
   useEffect(() => {
     setCurrentPage(1);
   }, [data]);
@@ -41,11 +42,18 @@ const PDUDataTable = ({
   const handleNext = () => setCurrentPage((p) => Math.min(totalPages, p + 1));
 
   // --- Column & SNo. Logic ---
-  // Automatically inject SNo. as the first column
-  const enrichedColumns = [
-    { key: "sno", label: "SNo.", align: "center", width: "60px" },
-    ...columns,
-  ];
+  const enrichedColumns = useMemo(
+    () => [
+      { key: "sno", label: "Sno", align: "center", width: "60px" },
+      ...columns,
+    ],
+    [columns],
+  );
+
+  const hasSubHeaders = useMemo(
+    () => enrichedColumns.some((col) => Boolean(col.subLabel)),
+    [enrichedColumns],
+  );
 
   // Helper to determine the medal class and emoji based on the GLOBAL row index
   const getRowHighlightConfig = (globalIndex) => {
@@ -62,7 +70,7 @@ const PDUDataTable = ({
     }
   };
 
-  // --- Export to Excel Logic (from provided snippet) ---
+  // --- Export to Excel Logic ---
   const handleExport = async () => {
     if (!data || data.length === 0) return;
 
@@ -70,33 +78,6 @@ const PDUDataTable = ({
       const workbook = new ExcelJS.Workbook();
       const worksheet = workbook.addWorksheet("Report");
 
-      // ===== Title =====
-      const title = worksheet.addRow(["PRAGATI SETU REPORT"]);
-      worksheet.mergeCells(1, 1, 1, enrichedColumns.length);
-
-      title.getCell(1).fill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FF0F3057" },
-      };
-      title.getCell(1).font = {
-        bold: true,
-        size: 14,
-        color: { argb: "FFFFFFFF" },
-      };
-      title.getCell(1).alignment = {
-        horizontal: "center",
-        vertical: "middle",
-      };
-      title.height = 30;
-
-      // ===== Header =====
-      const headerRow = worksheet.addRow(enrichedColumns.map((h) => h.label));
-      const lightBlueFill = {
-        type: "pattern",
-        pattern: "solid",
-        fgColor: { argb: "FFC6D9F1" },
-      };
       const thinBorder = {
         top: { style: "thin" },
         left: { style: "thin" },
@@ -104,26 +85,93 @@ const PDUDataTable = ({
         bottom: { style: "thin" },
       };
 
-      headerRow.eachCell((cell) => {
-        cell.fill = lightBlueFill;
-        cell.font = { bold: true };
-        cell.border = thinBorder;
-        cell.alignment = { horizontal: "center", vertical: "middle" };
-      });
+      if (hasSubHeaders) {
+        // ===== Two-Tier Header Export (Matches UPPLD Format) =====
+        const topRowValues = enrichedColumns.map((c) => c.label);
+        const subRowValues = enrichedColumns.map((c) => c.subLabel || "");
 
-      // ===== Column Width =====
-      worksheet.columns = enrichedColumns.map((h) => ({
-        key: h.key,
-        width: Math.max(h.label.length + 8, 18),
-      }));
+        const headerRow1 = worksheet.addRow(topRowValues);
+        const headerRow2 = worksheet.addRow(subRowValues);
 
-      // ===== Data =====
-      // Export ENTIRE dataset, calculating SNo. dynamically
+        headerRow1.height = 110;
+        headerRow2.height = 24;
+
+        enrichedColumns.forEach((col, idx) => {
+          const colNum = idx + 1;
+          if (!col.subLabel) {
+            worksheet.mergeCells(1, colNum, 2, colNum);
+          }
+        });
+
+        headerRow1.eachCell((cell) => {
+          cell.font = { bold: true, size: 11 };
+          cell.border = thinBorder;
+          cell.alignment = {
+            horizontal: "center",
+            vertical: "top",
+            wrapText: true,
+          };
+        });
+
+        headerRow2.eachCell((cell) => {
+          cell.font = { bold: true, size: 11 };
+          cell.border = thinBorder;
+          cell.alignment = {
+            horizontal: "center",
+            vertical: "middle",
+            wrapText: true,
+          };
+        });
+
+        worksheet.columns = enrichedColumns.map((h) => ({
+          key: h.key,
+          width: 18,
+        }));
+      } else {
+        // ===== Standard Single-Header Export =====
+        const title = worksheet.addRow(["PRAGATI SETU REPORT"]);
+        worksheet.mergeCells(1, 1, 1, enrichedColumns.length);
+
+        title.getCell(1).fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FF0F3057" },
+        };
+        title.getCell(1).font = {
+          bold: true,
+          size: 14,
+          color: { argb: "FFFFFFFF" },
+        };
+        title.getCell(1).alignment = {
+          horizontal: "center",
+          vertical: "middle",
+        };
+        title.height = 30;
+
+        const headerRow = worksheet.addRow(enrichedColumns.map((h) => h.label));
+        const lightBlueFill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: "FFC6D9F1" },
+        };
+
+        headerRow.eachCell((cell) => {
+          cell.fill = lightBlueFill;
+          cell.font = { bold: true };
+          cell.border = thinBorder;
+          cell.alignment = { horizontal: "center", vertical: "middle" };
+        });
+
+        worksheet.columns = enrichedColumns.map((h) => ({
+          key: h.key,
+          width: Math.max(h.label.length + 8, 18),
+        }));
+      }
+
+      // ===== Data Rows =====
       data.forEach((item, index) => {
         const rowData = enrichedColumns.map((col) => {
           if (col.key === "sno") return index + 1;
-          // If the column has a render function but we are exporting to raw Excel,
-          // fallback to the raw key value. You can adjust if you need formatted strings.
           return item[col.key] ?? "";
         });
 
@@ -135,6 +183,7 @@ const PDUDataTable = ({
           cell.alignment = {
             horizontal: column?.align === "left" ? "left" : "center",
             vertical: "middle",
+            wrapText: true,
           };
         });
       });
@@ -192,13 +241,43 @@ const PDUDataTable = ({
               {enrichedColumns.map((col, idx) => (
                 <th
                   key={col.key || idx}
+                  rowSpan={hasSubHeaders && !col.subLabel ? 2 : 1}
                   className={`pdu-table-th ${col.align ? `pdu-align-${col.align}` : "pdu-align-left"}`}
-                  style={{ width: col.width || "auto" }}
+                  style={{
+                    width: col.width || "auto",
+                    verticalAlign: hasSubHeaders ? "top" : "middle",
+                    whiteSpace: "normal",
+                    lineHeight: 1.35,
+                    border: hasSubHeaders ? "1px solid #cbd5e1" : undefined,
+                  }}
                 >
                   {col.label}
                 </th>
               ))}
             </tr>
+
+            {hasSubHeaders && (
+              <tr>
+                {enrichedColumns
+                  .filter((col) => Boolean(col.subLabel))
+                  .map((col, idx) => (
+                    <th
+                      key={`${col.key}-sub-${idx}`}
+                      className={`pdu-table-th ${col.align ? `pdu-align-${col.align}` : "pdu-align-center"}`}
+                      style={{
+                        backgroundColor: "#f1f5f9",
+                        fontWeight: 700,
+                        fontSize: "0.8rem",
+                        color: "#fff",
+                        border: "1px solid #cbd5e1",
+                        padding: "8px 10px",
+                      }}
+                    >
+                      {col.subLabel}
+                    </th>
+                  ))}
+              </tr>
+            )}
           </thead>
 
           <tbody>
@@ -213,7 +292,6 @@ const PDUDataTable = ({
               </tr>
             ) : (
               paginatedData.map((row, rowIndex) => {
-                // Calculate actual global index for SNo. and Medal logic
                 const globalIndex =
                   (currentPage - 1) * ITEMS_PER_PAGE + rowIndex;
                 const { className: highlightClass, emoji } =
@@ -225,7 +303,6 @@ const PDUDataTable = ({
                     className={`pdu-table-row ${highlightClass}`}
                   >
                     {enrichedColumns.map((col, colIndex) => {
-                      // 1. Render Serial Number
                       if (col.key === "sno") {
                         return (
                           <td
@@ -238,18 +315,15 @@ const PDUDataTable = ({
                         );
                       }
 
-                      // 2. Render Normal Columns
                       return (
                         <td
                           key={col.key || colIndex}
                           className={`pdu-table-td ${col.align ? `pdu-align-${col.align}` : "pdu-align-left"}`}
                         >
-                          {/* Attach medal to the FIRST actual data column (colIndex === 1 because SNo is 0) */}
                           {colIndex === 1 && highlightTopThree && emoji && (
                             <span className="pdu-medal-emoji">{emoji}</span>
                           )}
 
-                          {/* Use custom render if provided, else raw data */}
                           {col.render
                             ? col.render(row, rowIndex)
                             : row[col.key]}

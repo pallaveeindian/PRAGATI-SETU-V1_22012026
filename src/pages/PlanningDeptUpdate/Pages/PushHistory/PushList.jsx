@@ -1,4 +1,4 @@
-// src\pages\PlanningDeptUpdate\Pages\PushHistory\PushList.jsx
+// src/pages/PlanningDeptUpdate/Pages/PushHistory/PushList.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import api from "../../../../api/axios";
 import { usePDUContext } from "../../context/PDUContext";
@@ -28,18 +28,19 @@ export default function PushList() {
     if (isInitialized && aspirationalBlocks.length === 0) {
       loadAspirationalBlocksData();
     }
-  }, [isInitialized]);
+  }, [isInitialized, aspirationalBlocks.length, loadAspirationalBlocksData]);
 
-  const fetchData = async () => {
+  const fetchData = async (overrideFilters = null) => {
     setLoading(true);
     try {
+      const targetFilters = overrideFilters || filters;
       // Remove empty params to keep URL clean
       const activeParams = Object.fromEntries(
-        Object.entries(filters).filter(([_, v]) => v !== ""),
+        Object.entries(targetFilters).filter(([_, v]) => v !== ""),
       );
 
       const response = await api.get("/uppld/achievements/", {
-        params: activeParams,
+        params: { ...activeParams, limit: 10000 },
       });
       setData(response.data?.results || response.data || []);
     } catch (error) {
@@ -53,21 +54,23 @@ export default function PushList() {
   // Initial load
   useEffect(() => {
     fetchData();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const handleReset = () => {
-    setFilters({
+    const emptyFilters = {
       year: "",
       month: "",
       dist_code: "",
       block_code: "",
       prog_code: "",
-    });
-    setTimeout(fetchData, 0); // Fetch after state clear
+    };
+    setFilters(emptyFilters);
+    fetchData(emptyFilters);
   };
 
   // ==========================================
-  // EXCEL-MATCHING MAPPING LOGIC
+  // EXCEL-MATCHING MAPPING & PIVOT LOGIC
   // ==========================================
   const monthMap = {
     1: "January",
@@ -84,65 +87,143 @@ export default function PushList() {
     12: "December",
   };
 
-  const getMappedNames = (apiBlockCode) => {
+  const getMappedNames = (apiBlockCode, apiDistCode) => {
     const block = aspirationalBlocks.find(
       (b) => String(b.api_block_code) === String(apiBlockCode),
     );
+    const distFallback = aspirationalBlocks.find(
+      (b) =>
+        String(b.api_district_code) === String(apiDistCode) &&
+        b.districtName &&
+        b.districtName !== "Unknown",
+    );
+
     return {
-      blockName: block?.block_name || apiBlockCode,
-      districtName: block?.districtName || "Unknown",
+      blockName: block?.block_name || block?.blockNameEn || apiBlockCode || "—",
+      districtName:
+        block?.districtName && block.districtName !== "Unknown"
+          ? block.districtName
+          : distFallback?.districtName || apiDistCode || "Unknown",
     };
   };
 
+  const formatTwoDecimals = (val, fallback = "0.00") => {
+    if (val === null || val === undefined || val === "") return fallback;
+    const num = Number(val);
+    return Number.isNaN(num) ? fallback : num.toFixed(2);
+  };
+
+  const formatTimestamp = (isoString) => {
+    if (!isoString) return "—";
+    try {
+      const d = new Date(isoString);
+      if (Number.isNaN(d.getTime())) return isoString;
+
+      const datePart = d.toLocaleDateString("en-GB", {
+        day: "2-digit",
+        month: "short",
+        year: "numeric",
+      });
+      const timePart = d
+        .toLocaleTimeString("en-IN", {
+          hour: "2-digit",
+          minute: "2-digit",
+          hour12: true,
+        })
+        .toLowerCase();
+
+      return `${datePart} ${timePart}`;
+    } catch {
+      return isoString;
+    }
+  };
+
+  // Group 0511 and 0512 records by (Year + Month + Block) into unified rows
   const mappedData = useMemo(() => {
-    return data.map((row) => {
-      const names = getMappedNames(row.block_code);
-      const is0511 = String(row.prog_code).endsWith("511");
-      const progName = is0511
-        ? "Total Households added to SHGs"
-        : "SHGs receiving Revolving Fund";
+    const groupedMap = new Map();
+
+    data.forEach((row) => {
+      const bCode = row.block_code ?? row.Block_code ?? "";
+      const dCode = row.dist_code ?? "";
+      const yr = row.year ?? "";
+      const mo = row.month ?? "";
+      const key = `${yr}_${mo}_${bCode}`;
+
+      if (!groupedMap.has(key)) {
+        groupedMap.set(key, {
+          year: yr,
+          month: mo,
+          dist_code: dCode,
+          block_code: bCode,
+          row0511: null,
+          row0512: null,
+          updated_at: row.updated_at || row.created_at || null,
+        });
+      }
+
+      const group = groupedMap.get(key);
+      const pCode = String(row.prog_code || "");
+
+      if (pCode.endsWith("511")) {
+        group.row0511 = row;
+      } else if (pCode.endsWith("512")) {
+        group.row0512 = row;
+      }
+
+      const rowTime = row.updated_at || row.created_at;
+      if (
+        rowTime &&
+        (!group.updated_at || new Date(rowTime) > new Date(group.updated_at))
+      ) {
+        group.updated_at = rowTime;
+      }
+    });
+
+    return Array.from(groupedMap.values()).map((group) => {
+      const names = getMappedNames(group.block_code, group.dist_code);
+      const r511 = group.row0511;
+      const r512 = group.row0512;
 
       return {
-        ...row,
-        monthName: monthMap[row.month] || row.month,
+        year: group.year || "—",
+        monthName: monthMap[Number(group.month)] || group.month || "—",
         districtName: names.districtName,
         blockName: names.blockName,
-        progName: progName,
-        indicatorBadgeColor: is0511 ? "#e0f2fe" : "#fef3c7",
-        indicatorTextColor: is0511 ? "#0369a1" : "#b45309",
+
+        // 0511 (SHG HHs)
+        hhs_num: r511
+          ? formatTwoDecimals(r511.mon_ach_numerator ?? r511.mon_ach, "0.00")
+          : "—",
+        hhs_den: r511
+          ? formatTwoDecimals(r511.mon_ach_denominator ?? 1, "1.00")
+          : "—",
+        hhs_ach: r511 ? formatTwoDecimals(r511.mon_ach, "0.00") : "—",
+
+        // 0512 (Revolving Fund)
+        rf_num: r512
+          ? formatTwoDecimals(r512.mon_ach_numerator ?? 0, "0.00")
+          : "—",
+        rf_den: r512
+          ? formatTwoDecimals(r512.mon_ach_denominator ?? 0, "0.00")
+          : "—",
+        rf_ach: r512 ? formatTwoDecimals(r512.mon_ach, "0.00") : "—",
+
+        timestamp: formatTimestamp(group.updated_at),
+        raw_updated_at: group.updated_at,
       };
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [data, aspirationalBlocks]);
 
   // ==========================================
-  // BEAUTIFIED TABLE COLUMNS
+  // TWO-TIER TABLE COLUMNS (MATCHING EXCEL)
   // ==========================================
   const columns = [
     {
-      key: "year",
-      label: "Year",
-      align: "center",
-      width: "100px",
-      render: (row) => (
-        <span style={{ fontWeight: 700, color: "#1e293b" }}>{row.year}</span>
-      ),
-    },
-    {
-      key: "monthName",
-      label: "Month",
-      align: "left",
-      width: "120px",
-      render: (row) => (
-        <span style={{ color: "#475569", fontWeight: 600 }}>
-          {row.monthName}
-        </span>
-      ),
-    },
-    {
       key: "districtName",
       label: "District",
-      align: "left",
-      width: "160px",
+      align: "center",
+      width: "140px",
       render: (row) => (
         <span style={{ fontWeight: 700, color: "#0f172a" }}>
           {row.districtName}
@@ -151,82 +232,118 @@ export default function PushList() {
     },
     {
       key: "blockName",
-      label: "Block Name",
-      align: "left",
-      width: "160px",
+      label: "Block",
+      align: "center",
+      width: "140px",
       render: (row) => (
-        <span style={{ fontWeight: 500, color: "#334155" }}>
+        <span style={{ fontWeight: 600, color: "#334155" }}>
           {row.blockName}
         </span>
       ),
     },
     {
-      key: "prog_code",
-      label: "Indicator / Program",
-      align: "left",
+      key: "monthName",
+      label: "Month",
+      align: "center",
+      width: "110px",
       render: (row) => (
-        <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-          <span
-            style={{
-              backgroundColor: row.indicatorBadgeColor,
-              color: row.indicatorTextColor,
-              padding: "2px 10px",
-              borderRadius: "12px",
-              fontSize: "0.75rem",
-              fontWeight: 800,
-              width: "fit-content",
-              letterSpacing: "0.5px",
-            }}
-          >
-            CODE: {String(row.prog_code).padStart(4, "0")}
-          </span>
-          <span
-            style={{ fontSize: "0.85rem", color: "#475569", fontWeight: 600 }}
-          >
-            {row.progName}
-          </span>
-        </div>
+        <span style={{ color: "#475569", fontWeight: 600 }}>
+          {row.monthName}
+        </span>
       ),
     },
     {
-      key: "mon_ach",
-      label: "Achievement",
-      align: "right",
-      width: "140px",
+      key: "year",
+      label: "Financial Year",
+      align: "center",
+      width: "110px",
       render: (row) => (
-        <strong style={{ color: "#10b981", fontSize: "1.15rem" }}>
-          {new Intl.NumberFormat("en-IN").format(row.mon_ach)}
+        <span style={{ fontWeight: 700, color: "#1e293b" }}>{row.year}</span>
+      ),
+    },
+    {
+      key: "hhs_num",
+      label: "Total number of elligible households (HHs) added to SHGs",
+      subLabel: "Numerator",
+      align: "center",
+      width: "150px",
+      render: (row) => (
+        <span style={{ fontWeight: 600, color: "#1e293b" }}>{row.hhs_num}</span>
+      ),
+    },
+    {
+      key: "hhs_den",
+      label: "1",
+      subLabel: "Denominator",
+      align: "center",
+      width: "110px",
+      render: (row) => (
+        <span style={{ fontWeight: 500, color: "#475569" }}>{row.hhs_den}</span>
+      ),
+    },
+    {
+      key: "hhs_ach",
+      label: "5.3 Total number of elligible households (HHs) added to SHGs",
+      subLabel: "Achievement",
+      align: "center",
+      width: "160px",
+      render: (row) => (
+        <strong style={{ color: "#0369a1", fontSize: "1rem" }}>
+          {row.hhs_ach}
         </strong>
       ),
     },
     {
-      key: "updated_at",
-      label: "Pushed Timestamp",
-      align: "right",
-      width: "180px",
+      key: "rf_num",
+      label: "Total number of SHGs receiving revolving fund in the block",
+      subLabel: "Numerator",
+      align: "center",
+      width: "150px",
       render: (row) => (
-        <div
+        <span style={{ fontWeight: 600, color: "#1e293b" }}>{row.rf_num}</span>
+      ),
+    },
+    {
+      key: "rf_den",
+      label: "Total number of SHGs in the block",
+      subLabel: "Denominator",
+      align: "center",
+      width: "130px",
+      render: (row) => (
+        <span style={{ fontWeight: 600, color: "#475569" }}>{row.rf_den}</span>
+      ),
+    },
+    {
+      key: "rf_ach",
+      label:
+        "5.4 Percentage of SHGs that have received Revolving Fund against total SHGs in the block",
+      subLabel: "Achievement",
+      align: "center",
+      width: "170px",
+      render: (row) => (
+        <strong style={{ color: "#10b981", fontSize: "1rem" }}>
+          {row.rf_ach}
+        </strong>
+      ),
+    },
+    {
+      key: "timestamp",
+      label: "Timestamp",
+      align: "center",
+      width: "140px",
+      render: (row) => (
+        <span
           style={{
-            display: "flex",
-            flexDirection: "column",
-            color: "#64748b",
+            color: "#334155",
             fontSize: "0.85rem",
+            fontWeight: 500,
+            whiteSpace: "normal",
+            display: "inline-block",
+            lineHeight: 1.35,
           }}
         >
-          <span style={{ fontWeight: 600 }}>
-            {new Date(row.updated_at).toLocaleDateString("en-IN", {
-              day: "2-digit",
-              month: "short",
-              year: "numeric",
-            })}
-          </span>
-          <span>
-            {new Date(row.updated_at).toLocaleTimeString("en-IN", {
-              hour: "2-digit",
-              minute: "2-digit",
-            })}
-          </span>
-        </div>
+          {row.timestamp}
+        </span>
       ),
     },
   ];
@@ -304,7 +421,7 @@ export default function PushList() {
       <PushListFilter
         filters={filters}
         setFilters={setFilters}
-        onApply={fetchData}
+        onApply={() => fetchData()}
         onReset={handleReset}
         loading={loading}
       />
@@ -355,7 +472,7 @@ export default function PushList() {
               ? "Establishing secure connection & fetching transmission records..."
               : "No push records found for the selected criteria."
           }
-          exportFilename="Data_Not_Used_Please_Use_Top_Button"
+          exportFilename="Pragati_Setu_UPPLD_Push_History.xlsx"
         />
       </PDUCard>
 
