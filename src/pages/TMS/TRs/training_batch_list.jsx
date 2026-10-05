@@ -341,11 +341,13 @@ export default function TrainingBatchList() {
       setBlocks([]);
       return;
     }
-    LOOKUP_API.blocksByDistrict(filters.district_id)
+    LOOKUP_API.blocks
+      .list({ district_id: filters.district_id, page_size: 100 })
       .then((r) => {
         let data = r?.data?.results || [];
-        if (filters.aspirational_only)
-          data = data.filter((b) => b.is_aspirational === 1);
+        if (filters.aspirational_only) {
+          data = data.filter((b) => Number(b.is_aspirational) === 1);
+        }
         setBlocks(data);
       })
       .catch(() => setBlocks([]));
