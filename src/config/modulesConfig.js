@@ -1,9 +1,15 @@
 // src/config/modulesConfig.js
 import tmsLogo from "../assets/TMS/tms_logo.png";
+import tmsBG from "../assets/LoginBG/tms_space.png";
 import esmLogo from "../assets/ems_logo.png";
+import epsmsBG from "../assets/LoginBG/epsms_space.png";
+import mapBG from "../assets/LoginBG/crpmap_space.png";
 import ldmsLogo from "../assets/ldms_logo.png";
 import prernaLogo from "../assets/prernaHd.png";
+import mdBG from "../assets/LoginBG/md_space.png";
 import BDOLogo from "../assets/BDOLogo.png";
+import pmuBG from "../assets/LoginBG/pmu_space.png";
+import inactiveBG from "../assets/LoginBG/inactive_space.png";
 
 export const MODULES_CONFIG = [
   // 2026-09-28T14:30:00
@@ -15,6 +21,7 @@ export const MODULES_CONFIG = [
     subtitle: "Training Management System",
     desc: "Manage training programs, capacity building, and skill development workflows efficiently.",
     color: "#2a56cf",
+    bg: tmsBG,
     path: "/module-login?module=tms",
     level: "All",
     maintenanceUntil: null,
@@ -26,6 +33,7 @@ export const MODULES_CONFIG = [
     subtitle: "Enterprise Tracking",
     desc: "Create Community Resource Person accounts and map their respective Panchayat coverage for Udhyam Sakhi App survey filling effectively.",
     color: "#f59e0b",
+    bg: mapBG,
     path: "/module-login?module=crp",
     level: "District",
     maintenanceUntil: null,
@@ -37,6 +45,7 @@ export const MODULES_CONFIG = [
     subtitle: "Lakhpati Didi",
     desc: "Lakhpati Didi Management System is currently under development.",
     color: "#b91c1c",
+    bg: inactiveBG,
     path: "#",
     level: "All",
     maintenanceUntil: "permanent", // "permanent" means ALWAYS INACTIVE
@@ -48,6 +57,7 @@ export const MODULES_CONFIG = [
     subtitle: "Memorandum of Understanding",
     desc: "Securely manage and monitor enterprise MOUs and related institutional agreements.",
     color: "#9333ea",
+    bg: inactiveBG,
     path: "/module-login?module=mou",
     level: "Block",
     // Example of a module under maintenance. Change this date to test the countdown!
@@ -61,6 +71,7 @@ export const MODULES_CONFIG = [
     subtitle: "Enterprise Sakhi Management System",
     desc: "Securely manage and monitor enterprise Sakhi data submitted by field level CRPs using our Udhyam Sakhi Android App.",
     color: "#ea6733",
+    bg: epsmsBG,
     path: "/module-login?module=epsms",
     level: "Block",
     maintenanceUntil: null,
@@ -68,6 +79,7 @@ export const MODULES_CONFIG = [
   {
     id: "prerna",
     logo: esmLogo,
+    bg: inactiveBG,
     title: "Prerna Canteen Portal",
     subtitle: "Portal for Prerna Canteen Management",
     desc: "Portal for Prerna Canteen Management is currently under development.",
@@ -83,6 +95,7 @@ export const MODULES_CONFIG = [
     subtitle: "PMU Login",
     desc: "PMU - IT Login",
     color: "#1a218ade",
+    bg: pmuBG,
     path: "/module-login?module=pmuadmin",
     level: "Block",
     maintenanceUntil: null,
@@ -94,6 +107,7 @@ export const MODULES_CONFIG = [
     subtitle: "Master Login",
     desc: "MD - Master Login",
     color: "#1e8a1ade",
+    bg: mdBG,
     path: "/module-login?module=admin",
     level: "Block",
     maintenanceUntil: null,
