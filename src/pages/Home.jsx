@@ -11,6 +11,8 @@ import Footer from "../components/layout/Footer.jsx";
 import TopNavigation from "./HeaderTopNav.jsx";
 import GovHeader from "./GovHeader.jsx";
 import NewsModal from "./newsModal.jsx";
+import HeaderTopMenu from "./HeaderTopMenu.jsx";
+import HeaderTopHeadline from "./HeaderTopHeadline.jsx";
 
 export default function Home() {
   const [isNewsModalOpen, setIsNewsModalOpen] = useState(true);
@@ -34,14 +36,28 @@ export default function Home() {
         onFontChange={setFontScale}
       />
 
-      <TopNavigation />
-
-      {/* ================= HERO SECTION ================= */}
-      <main className="home-hero">
-        <div className="hero-inner">
-          <HeroLayout />
+      <div style={{ position: "relative" }}>
+        <div
+          style={{
+            position: "absolute",
+            top: 0,
+            left: 0,
+            width: "100%",
+            zIndex: 50,
+          }}
+        >
+          <TopNavigation />
+          <HeaderTopMenu />
+          <HeaderTopHeadline />
         </div>
-      </main>
+
+        {/* ================= HERO SECTION ================= */}
+        <main className="home-hero">
+          <div className="hero-inner">
+            <HeroLayout />
+          </div>
+        </main>
+      </div>
 
       {/* ================= FOOTER ================= */}
       <footer className="home-footer">
@@ -93,7 +109,7 @@ export default function Home() {
         /* ===== FOOTER ===== */
         .home-footer {
           text-align: center;
-          font-size: 28px;
+          
           font-weight: 800;
       
         }
