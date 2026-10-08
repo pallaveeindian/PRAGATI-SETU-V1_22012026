@@ -589,6 +589,7 @@ export default function CreateTrainingRequest() {
       const resp = await api.post("/tms/check-training-engagement/", {
         participant_type: trState.form.training_type,
         financial_year: trState.form.financial_year,
+        training_plan_id: trState.selectedPlan?.id,
         ids: ids,
       });
       const engagedIds = resp?.data?.engaged_ids || [];
@@ -652,39 +653,14 @@ export default function CreateTrainingRequest() {
         return;
       }
 
-      const trPayload = {
-        financial_year: trState.form.financial_year,
-        training_plan: trState.selectedPlan.id,
-        partner: trState.form.partner ? Number(trState.form.partner) : null,
-        training_type: trState.form.training_type,
-        level: trState.form.level,
-        notes: trState.form.notes || null,
-        created_by: user?.id ?? user?.user_id ?? null,
-        block: userBlock
-          ? isNaN(Number(userBlock))
-            ? userBlock
-            : Number(userBlock)
-          : null,
-        district:
-          resolvedDistrict === undefined || resolvedDistrict === null
-            ? null
-            : Number(resolvedDistrict),
-      };
+      const participants = [];
 
-      const trResp = await TMS_API.trainingRequests.create(trPayload);
-      const trObj = trResp?.data ?? trResp;
-      const trId = trObj?.id;
-      if (!trId) throw new Error("Training request created but id missing");
-
-      const successes = [];
-      const failures = [];
-
+      // 1. Gather all participants into a single array based on type
       if (trState.form.training_type === "BENEFICIARY") {
         for (const b of trState.selectedBeneficiaries) {
           const key = `${b.lokos_shg_code}|${b.lokos_member_code}`;
           const raw = trState.savedMemberResponses.current.get(key) || {};
 
-          // Absolute fallback extraction
           const actualRaw = Array.isArray(raw.__raw_upsrlm?.data)
             ? raw.__raw_upsrlm.data[0]
             : raw.__raw_upsrlm || raw;
@@ -694,7 +670,6 @@ export default function CreateTrainingRequest() {
               ? actualRaw.member_addresses[0]
               : {};
 
-          // Extract and ensure they are numbers
           const extDist =
             b.district_id ||
             actualRaw.district_id ||
@@ -710,8 +685,7 @@ export default function CreateTrainingRequest() {
           const extVillage =
             b.village_id || actualRaw.village_id || rawAddr.village_id || null;
 
-          const bPayload = {
-            training: trId,
+          participants.push({
             lokos_shg_code: b.lokos_shg_code,
             lokos_member_code: b.lokos_member_code,
             member_name: raw.member_name || b.member_name,
@@ -730,28 +704,11 @@ export default function CreateTrainingRequest() {
             panchayat: extPanchayat ? Number(extPanchayat) : null,
             village: extVillage ? Number(extVillage) : null,
             remarks: raw.remarks || "",
-            created_by: user?.id ?? user?.user_id ?? null,
-          };
-          try {
-            const resp =
-              await TMS_API.trainingRequestBeneficiaries.create(bPayload);
-            successes.push({
-              type: "beneficiary",
-              row: b,
-              resp: resp?.data ?? resp,
-            });
-          } catch (e) {
-            const msg =
-              (e?.response?.data && JSON.stringify(e.response.data)) ||
-              e?.message ||
-              String(e);
-            failures.push({ type: "beneficiary", row: b, error: msg });
-          }
+          });
         }
       } else if (trState.form.training_type === "TRAINER") {
         for (const [tid, detail] of trState.selectedTrainersMap.entries()) {
-          const tPayload = {
-            training: trId,
+          participants.push({
             trainer: tid,
             full_name: detail.full_name || detail.name || "",
             mobile_no: detail.mobile_no || detail.mobile || "",
@@ -759,28 +716,11 @@ export default function CreateTrainingRequest() {
             district: detail.empanel_district || null,
             block: detail.empanel_block || null,
             remarks: "",
-            created_by: user?.id ?? user?.user_id ?? null,
-          };
-          try {
-            const resp = await TMS_API.trainingRequestTrainers.create(tPayload);
-            successes.push({
-              type: "trainer",
-              row: detail,
-              resp: resp?.data ?? resp,
-            });
-          } catch (e) {
-            const msg =
-              (e?.response?.data && JSON.stringify(e.response.data)) ||
-              e?.message ||
-              String(e);
-            failures.push({ type: "trainer", row: detail, error: msg });
-          }
+          });
         }
       } else if (trState.form.training_type === "STAFF") {
-        // SURGICAL ADDITION: Submission Loop for STAFF
         for (const [sid, detail] of trState.selectedStaffMap.entries()) {
-          const sPayload = {
-            training: trId,
+          participants.push({
             staff: sid,
             full_name: detail.full_name || detail.name || "",
             designation: detail.designation || "",
@@ -789,29 +729,56 @@ export default function CreateTrainingRequest() {
               detail.district?.district_id ||
               detail.district ||
               resolvedDistrict ||
-              null, // SURGICAL FALLBACK: Use SMMU selected district if missing,
+              null,
             block: detail.block?.block_id || detail.block || null,
             remarks: "",
-            created_by: user?.id ?? user?.user_id ?? null,
-          };
-          try {
-            const resp = TMS_API.trStaff.create(sPayload);
-
-            successes.push({
-              type: "staff",
-              row: detail,
-              resp: resp?.data ?? resp,
-            });
-          } catch (e) {
-            const msg =
-              (e?.response?.data && JSON.stringify(e.response.data)) ||
-              e?.message ||
-              String(e);
-            failures.push({ type: "staff", row: detail, error: msg });
-          }
+          });
         }
       }
-      trState.setSubmitSummary({ trId, successes, failures });
+
+      // 2. Build the Atomic One-Shot Payload
+      const oneShotPayload = {
+        financial_year: trState.form.financial_year,
+        training_plan: trState.selectedPlan.id,
+        partner: trState.form.partner ? Number(trState.form.partner) : null,
+        training_type: trState.form.training_type,
+        level: trState.form.level,
+        notes: trState.form.notes || null,
+        created_by: user?.id ?? user?.user_id ?? null,
+        block: userBlock
+          ? isNaN(Number(userBlock))
+            ? userBlock
+            : Number(userBlock)
+          : null,
+        district:
+          resolvedDistrict === undefined || resolvedDistrict === null
+            ? null
+            : Number(resolvedDistrict),
+        participants: participants,
+      };
+
+      // 3. Fire a single request
+      const resp = await api.post(
+        "/tms/training-requests/create-oneshot/",
+        oneShotPayload,
+      );
+
+      const responseData = resp?.data ?? resp;
+      const createdRequests = responseData.results || [];
+      const trId =
+        createdRequests.length > 0
+          ? createdRequests[0].training_request_id
+          : null;
+
+      // 4. Update the summary modal successfully
+      trState.setSubmitSummary({
+        trId: trId,
+        successes: participants.map((p) => ({
+          type: trState.form.training_type,
+          row: p,
+        })),
+        failures: [],
+      });
     } catch (e) {
       trState.setSubmitSummary({
         trId: null,
