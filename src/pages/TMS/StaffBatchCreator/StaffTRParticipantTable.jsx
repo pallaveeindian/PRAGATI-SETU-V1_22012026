@@ -9,6 +9,7 @@ export default function StaffTRParticipantTable({
   onStaffSelectionChange,
   maxAllowed = 60,
   participantType, // SURGICAL ADDITION: Passed from parent
+  engagedParticipants = [],
 }) {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -92,6 +93,20 @@ export default function StaffTRParticipantTable({
     }
   };
 
+  // SURGICAL ADDITION: Check if a row is engaged
+  const getEngagementData = (row) => {
+    if (!engagedParticipants || engagedParticipants.length === 0) return null;
+    if (participantType === "TRAINER") {
+      return engagedParticipants.find(
+        (ep) => ep.mobile_no === (row.mobile_no || row.mobile),
+      );
+    } else {
+      return engagedParticipants.find(
+        (ep) => ep.employee_id === row.employee_id,
+      );
+    }
+  };
+
   return (
     <div className="p-table-wrapper">
       <div className="p-table-header">
@@ -166,12 +181,19 @@ export default function StaffTRParticipantTable({
                 const isDisabled = isMaxReached && !isSelected;
                 const isFromBaseTr = staff.source_tr_id === baseTrId;
 
+                // SURGICAL ADDITION: Identify engagement
+                const engagementData = getEngagementData(staff);
+                const isEngaged = !!engagementData;
+
                 return (
                   <tr
                     key={staff.id}
                     className={isSelected ? "selected-row" : ""}
                     onClick={() => !isDisabled && handleSelectRow(staff.id)}
-                    style={{ cursor: isDisabled ? "not-allowed" : "pointer" }}
+                    style={{
+                      cursor: isDisabled ? "not-allowed" : "pointer",
+                      background: isEngaged ? "#fef2f2" : undefined, // SURGICAL FIX: Highlight Red
+                    }}
                   >
                     <td style={{ textAlign: "center" }}>
                       <input
@@ -206,12 +228,31 @@ export default function StaffTRParticipantTable({
                       )}
                     </td>
                     <td style={{ fontWeight: "600", color: "#0f172a" }}>
-                      {/* SURGICAL FIX: Dynamic cell value */}
                       {participantType === "TRAINER"
                         ? staff.mobile_no || "-"
                         : staff.employee_id || "-"}
                     </td>
-                    <td>{staff.full_name || "-"}</td>
+                    <td>
+                      {/* SURGICAL ADDITION: Render Badge */}
+                      {isEngaged && engagementData.batch_code && (
+                        <div style={{ marginBottom: "6px" }}>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              background: "#ef4444",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              fontWeight: "bold",
+                              letterSpacing: "0.5px",
+                            }}
+                          >
+                            BATCH: {engagementData.batch_code}
+                          </span>
+                        </div>
+                      )}
+                      {staff.full_name || "-"}
+                    </td>
                     <td>
                       {participantType === "TRAINER"
                         ? `${staff.designation || ""}-${staff.theme_name || ""}` ||
@@ -219,7 +260,8 @@ export default function StaffTRParticipantTable({
                         : staff.designation || "-"}
                     </td>
                     <td>
-                      {staff.district_name_en || staff.district_id || "-"}
+                      {staff.district_name_en || staff.district_id || "-"} /{" "}
+                      {staff.block_name_en || staff.block_id || "-"}
                     </td>
                   </tr>
                 );

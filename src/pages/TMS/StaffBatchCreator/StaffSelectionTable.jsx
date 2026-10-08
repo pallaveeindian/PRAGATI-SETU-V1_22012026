@@ -7,6 +7,7 @@ const StaffSelectionTable = ({
   onSelectionChange,
   maxAllowed = 60,
   participantType, // SURGICAL ADDITION: Passed from parent
+  engagedParticipants = [],
 }) => {
   const [searchTerm, setSearchTerm] = useState("");
   const [currentPage, setCurrentPage] = useState(1);
@@ -78,6 +79,20 @@ const StaffSelectionTable = ({
       )
     ) {
       onSelectionChange([]);
+    }
+  };
+
+  // SURGICAL ADDITION: Helper to check if a row is engaged
+  const getEngagementData = (row) => {
+    if (!engagedParticipants || engagedParticipants.length === 0) return null;
+    if (participantType === "TRAINER") {
+      return engagedParticipants.find(
+        (ep) => ep.mobile_no === (row.mobile_no || row.mobile),
+      );
+    } else {
+      return engagedParticipants.find(
+        (ep) => ep.employee_id === row.employee_id,
+      );
     }
   };
 
@@ -205,17 +220,24 @@ const StaffSelectionTable = ({
               </tr>
             ) : (
               paginatedStaff.map((staff, index) => {
+                // SURGICAL ADDITION: Identify engagement
+                const engagementData = getEngagementData(staff);
+                const isEngaged = !!engagementData;
+
                 return (
                   <tr
                     key={staff.id}
                     style={{
                       borderBottom: "1px solid #f1f5f9",
                       transition: "background-color 0.2s",
+                      backgroundColor: isEngaged ? "#fef2f2" : "transparent", // SURGICAL FIX: Highlight Red
                     }}
                     onMouseEnter={(e) =>
+                      !isEngaged &&
                       (e.currentTarget.style.backgroundColor = "#f8fafc")
                     }
                     onMouseLeave={(e) =>
+                      !isEngaged &&
                       (e.currentTarget.style.backgroundColor = "transparent")
                     }
                   >
@@ -257,12 +279,31 @@ const StaffSelectionTable = ({
                         color: "#0f172a",
                       }}
                     >
-                      {/* SURGICAL FIX: Dynamic cell value */}
                       {participantType === "TRAINER"
                         ? staff.mobile_no || "-"
                         : staff.employee_id || "-"}
                     </td>
-                    <td style={styles.td}>{staff.full_name || "-"}</td>
+                    <td style={styles.td}>
+                      {/* SURGICAL ADDITION: Render Badge */}
+                      {isEngaged && engagementData.batch_code && (
+                        <div style={{ marginBottom: "6px" }}>
+                          <span
+                            style={{
+                              fontSize: "10px",
+                              background: "#ef4444",
+                              color: "#fff",
+                              padding: "2px 6px",
+                              borderRadius: "4px",
+                              fontWeight: "bold",
+                              letterSpacing: "0.5px",
+                            }}
+                          >
+                            BATCH: {engagementData.batch_code}
+                          </span>
+                        </div>
+                      )}
+                      {staff.full_name || "-"}
+                    </td>
                     <td style={styles.td}>
                       {" "}
                       {participantType === "TRAINER"

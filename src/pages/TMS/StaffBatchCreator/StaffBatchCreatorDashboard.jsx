@@ -52,6 +52,10 @@ export default function StaffBatchCreatorDashboard() {
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
 
+  // SURGICAL ADDITION: State for handling 409 Engagement Conflicts
+  const [engagedParticipants, setEngagedParticipants] = useState([]);
+  const [showEngagementModal, setShowEngagementModal] = useState(false);
+
   const initialSelectDoneRef = useRef(false);
   const maxAllowed = 60;
 
@@ -209,11 +213,20 @@ export default function StaffBatchCreatorDashboard() {
       navigate(`/tms/tr-detail/${baseTrId}`);
     } catch (error) {
       console.error("Batch Creation Failed:", error);
-      alert(
-        error?.response?.data?.error ||
-          error?.response?.data?.message ||
-          "Failed to create batch. Please try again.",
-      );
+      // SURGICAL ADDITION: Handle 409 Engagement Conflict
+      if (
+        error?.response?.status === 409 &&
+        error?.response?.data?.engaged_participants
+      ) {
+        setEngagedParticipants(error.response.data.engaged_participants);
+        setShowEngagementModal(true);
+      } else {
+        alert(
+          error?.response?.data?.error ||
+            error?.response?.data?.message ||
+            "Failed to create batch. Please try again.",
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -322,7 +335,8 @@ export default function StaffBatchCreatorDashboard() {
                 selectedStaffIds={selectedStaffIds}
                 onStaffSelectionChange={setSelectedStaffIds}
                 maxAllowed={maxAllowed}
-                participantType={participantType} // PROP DRILLING
+                participantType={participantType}
+                engagedParticipants={engagedParticipants} // SURGICAL ADDITION
               />
 
               <StaffSelectionTable
@@ -330,7 +344,8 @@ export default function StaffBatchCreatorDashboard() {
                 selectedIds={selectedStaffIds}
                 onSelectionChange={setSelectedStaffIds}
                 maxAllowed={maxAllowed}
-                participantType={participantType} // PROP DRILLING
+                participantType={participantType}
+                engagedParticipants={engagedParticipants} // SURGICAL ADDITION
               />
 
               {/* Centre Selection (Pass Partner ID from Base TR to fetch centres) */}
@@ -434,6 +449,134 @@ export default function StaffBatchCreatorDashboard() {
           isSubmitting={isSubmitting}
           participantType={participantType} // PROP DRILLING
         />
+      )}
+
+      {/* SURGICAL ADDITION: Engagement Conflict Modal */}
+      {showEngagementModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              width: "90%",
+              maxWidth: "700px",
+              borderRadius: "12px",
+              padding: "24px",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <h3
+              style={{
+                margin: "0 0 8px 0",
+                color: "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              ⚠️ Conflict: Participants Already Engaged
+            </h3>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "14px",
+                margin: "0 0 16px 0",
+                borderBottom: "1px solid #e2e8f0",
+                paddingBottom: "16px",
+              }}
+            >
+              One or more selected participants have either already successfully
+              completed this training plan in this financial year, or their
+              dates overlap with an active batch.
+            </p>
+            <div style={{ overflowY: "auto", flex: 1, paddingRight: "8px" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "13px",
+                  textAlign: "left",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: "#f8fafc",
+                      borderBottom: "2px solid #e2e8f0",
+                    }}
+                  >
+                    <th style={{ padding: "10px" }}>Name</th>
+                    <th style={{ padding: "10px" }}>Identifier</th>
+                    <th style={{ padding: "10px" }}>Conflict Reason</th>
+                    <th style={{ padding: "10px" }}>Batch Code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {engagedParticipants.map((ep, idx) => (
+                    <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px", fontWeight: "600" }}>
+                        {ep.name || "-"}
+                      </td>
+                      <td style={{ padding: "10px", color: "#475569" }}>
+                        {ep.employee_id || ep.mobile_no || "-"}
+                      </td>
+                      <td style={{ padding: "10px", color: "#b91c1c" }}>
+                        {ep.reason}
+                      </td>
+                      <td
+                        style={{
+                          padding: "10px",
+                          fontWeight: "600",
+                          color: "#0f172a",
+                        }}
+                      >
+                        {ep.batch_code || "N/A"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "20px",
+              }}
+            >
+              <button
+                onClick={() => setShowEngagementModal(false)}
+                style={{
+                  padding: "10px 24px",
+                  background: "#f1f5f9",
+                  color: "#334155",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Close & Review
+              </button>
+            </div>
+          </div>
+        </div>
       )}
     </div>
   );
