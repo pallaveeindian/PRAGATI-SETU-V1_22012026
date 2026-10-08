@@ -21,7 +21,7 @@ export default function MTProfileApprovalsTable({
 
     const desigUpper = String(designation).toUpperCase();
     if (isDMMU && desigUpper === "BRP") return true;
-    if (isSMMU && (desigUpper === "BRP" || desigUpper === "DRP")) return true;
+    if (isSMMU) return true;
 
     // BMMU has no approval authority, SMMU cannot approve SRPs (SRPs auto-verify)
     return false;
