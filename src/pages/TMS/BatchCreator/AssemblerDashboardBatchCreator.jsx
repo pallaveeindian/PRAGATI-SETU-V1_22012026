@@ -55,6 +55,11 @@ const AssemblerDashboardBatchCreator = () => {
   const [resumeBeneficiary, setResumeBeneficiary] = useState(null);
   const [isResumeMode, setIsResumeMode] = useState(false);
   const [rejectionReason, setRejectionReason] = useState("");
+
+  // SURGICAL ADDITION: State for handling 409 Engagement Conflicts
+  const [engagedParticipants, setEngagedParticipants] = useState([]);
+  const [showEngagementModal, setShowEngagementModal] = useState(false);
+
   const location = useLocation();
   const user = getUser();
 
@@ -297,15 +302,25 @@ const AssemblerDashboardBatchCreator = () => {
         alert(`Batch successfully created as ${status}.`);
       }
 
-      // Optional: Close the preview modal or redirect user after success
+      // SURGICAL FIX: Close modal and redirect to batch list upon success
       setIsPreviewOpen(false);
+      navigate("/tms/batches-list/");
     } catch (error) {
       console.error("API ERROR:", error);
-      alert(
-        error?.response?.data?.message ||
-          error?.response?.data?.error ||
-          "Failed to process batch.",
-      );
+      // SURGICAL ADDITION: Handle 409 Engagement Conflict
+      if (
+        error?.response?.status === 409 &&
+        error?.response?.data?.engaged_participants
+      ) {
+        setEngagedParticipants(error.response.data.engaged_participants);
+        setShowEngagementModal(true);
+      } else {
+        alert(
+          error?.response?.data?.message ||
+            error?.response?.data?.error ||
+            "Failed to process batch.",
+        );
+      }
     } finally {
       setIsSubmitting(false);
     }
@@ -412,22 +427,62 @@ const AssemblerDashboardBatchCreator = () => {
     [selectedTrainees],
   );
 
-  // SURGICAL ADDITION: Target logic checks
+  // SURGICAL ADDITION: Target & Strict Form Validation logic checks
   const isTargetMet =
     achievementData.target > 0 &&
     achievementData.achievement >= achievementData.target;
 
   const isBtnDisabled =
     isTargetMet ||
+    !filters.financialYear ||
+    !filters.trainingTheme ||
+    !filters.trainingPlan ||
+    !filters.participantType ||
+    !filters.trainingCenter ||
+    !filters.startDate ||
+    !filters.endDate ||
     participantData.selectedParticipants.length < 20 ||
     participantData.selectedParticipants.length > 60 ||
-    (batchType === "SEPARATE" &&
-      filters.participantType !== "Trainer" &&
-      !filters.block) ||
-    (batchType === "COMBINED" &&
-      filters.participantType !== "Trainer" &&
-      (!Array.isArray(filters.block) || filters.block.length < 2)) ||
-    !filters.startDate;
+    (filters.participantType !== "Trainer" &&
+      batchType === "SEPARATE" &&
+      (!filters.block || filters.block.length === 0)) ||
+    (filters.participantType !== "Trainer" &&
+      batchType === "COMBINED" &&
+      (!Array.isArray(filters.block) || filters.block.length < 2));
+
+  // Helper function to render exact missing criteria dynamically
+  const getValidationMessage = () => {
+    if (isTargetMet)
+      return "⚠ Target for this Training Plan has already been achieved.";
+    if (!filters.financialYear) return "⚠ Financial Year is required.";
+    if (!filters.trainingTheme) return "⚠ Training Theme is required.";
+    if (!filters.trainingPlan) return "⚠ Training Plan is required.";
+    if (!filters.participantType) return "⚠ Participant Type is required.";
+    if (!filters.trainingCenter) return "⚠ Training Centre is required.";
+    if (!filters.startDate) return "⚠ Start Date is required.";
+    if (!filters.endDate) return "⚠ End Date is required.";
+
+    if (filters.participantType !== "Trainer") {
+      if (
+        batchType === "SEPARATE" &&
+        (!filters.block || filters.block.length === 0)
+      )
+        return "⚠ Exactly 1 Block must be selected for a Separate Batch.";
+      if (
+        batchType === "COMBINED" &&
+        (!Array.isArray(filters.block) || filters.block.length < 2)
+      )
+        return "⚠ Minimum 2 Blocks must be selected for a Combined Batch.";
+    }
+
+    const count = participantData.selectedParticipants.length;
+    if (count < 20)
+      return `⚠ Minimum 20 participants required (Currently: ${count}).`;
+    if (count > 60)
+      return `⚠ Maximum 60 participants allowed (Currently: ${count}).`;
+
+    return "✓ Configuration is valid. Ready to submit.";
+  };
 
   return (
     <>
@@ -623,6 +678,7 @@ const AssemblerDashboardBatchCreator = () => {
                 handleChange={handleChange}
                 onSelectionChange={handleSelectionChange}
                 batchId={resumeBatchId}
+                engagedParticipants={engagedParticipants}
                 resumeSelectedIds={resumeSelectedIds}
                 onTraineesLoaded={handleResumeTrainees}
                 isResumeMode={isResumeMode}
@@ -655,7 +711,7 @@ const AssemblerDashboardBatchCreator = () => {
                 borderTop: "1px solid #f1f5f9",
               }}
             >
-              {/* SURGICAL FIX: Validation message for participant limits, block selection, start date & TARGET ACHIEVEMENT */}
+              {/* SURGICAL FIX: Advanced validation message utilizing the helper function */}
               <div
                 style={{
                   fontSize: "14px",
@@ -663,24 +719,7 @@ const AssemblerDashboardBatchCreator = () => {
                   color: !isBtnDisabled ? "#16a34a" : "#ef4444",
                 }}
               >
-                {isTargetMet
-                  ? "⚠ Target for this Training Plan has already been achieved. Batch creation disabled."
-                  : !filters.startDate
-                    ? "⚠ Start Date is required."
-                    : participantData.selectedParticipants.length < 20
-                      ? "⚠ Minimum 20 participants required to form a batch."
-                      : participantData.selectedParticipants.length > 60
-                        ? "⚠ Maximum 60 participants allowed per batch."
-                        : batchType === "SEPARATE" &&
-                            filters.participantType !== "Trainer" &&
-                            !filters.block
-                          ? "⚠ A Block must be selected for a Separate Batch."
-                          : batchType === "COMBINED" &&
-                              filters.participantType !== "Trainer" &&
-                              (!Array.isArray(filters.block) ||
-                                filters.block.length < 2)
-                            ? "⚠ At least 2 Blocks must be selected for a Combined Batch."
-                            : "✓ Configuration is valid."}
+                {getValidationMessage()}
               </div>
 
               <button
@@ -933,6 +972,136 @@ const AssemblerDashboardBatchCreator = () => {
                 }}
               >
                 {isSubmitting ? "Processing..." : "Confirm & Save"}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* SURGICAL ADDITION: Engagement Conflict Modal */}
+      {showEngagementModal && (
+        <div
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            width: "100vw",
+            height: "100vh",
+            background: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(4px)",
+            display: "flex",
+            justifyContent: "center",
+            alignItems: "center",
+            zIndex: 9999,
+          }}
+        >
+          <div
+            style={{
+              background: "#fff",
+              width: "90%",
+              maxWidth: "700px",
+              borderRadius: "12px",
+              padding: "24px",
+              boxShadow: "0 20px 25px -5px rgba(0,0,0,0.1)",
+              maxHeight: "85vh",
+              display: "flex",
+              flexDirection: "column",
+            }}
+          >
+            <h3
+              style={{
+                margin: "0 0 8px 0",
+                color: "#dc2626",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+            >
+              ⚠️ Conflict: Participants Already Engaged
+            </h3>
+            <p
+              style={{
+                color: "#64748b",
+                fontSize: "14px",
+                margin: "0 0 16px 0",
+                borderBottom: "1px solid #e2e8f0",
+                paddingBottom: "16px",
+              }}
+            >
+              One or more selected participants have either already successfully
+              completed this training plan in this financial year, or their
+              dates overlap with an active batch.
+            </p>
+            <div style={{ overflowY: "auto", flex: 1, paddingRight: "8px" }}>
+              <table
+                style={{
+                  width: "100%",
+                  borderCollapse: "collapse",
+                  fontSize: "13px",
+                  textAlign: "left",
+                }}
+              >
+                <thead>
+                  <tr
+                    style={{
+                      background: "#f8fafc",
+                      borderBottom: "2px solid #e2e8f0",
+                    }}
+                  >
+                    <th style={{ padding: "10px" }}>Name</th>
+                    <th style={{ padding: "10px" }}>Identifier</th>
+                    <th style={{ padding: "10px" }}>Conflict Reason</th>
+                    <th style={{ padding: "10px" }}>Batch Code</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {engagedParticipants.map((ep, idx) => (
+                    <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px", fontWeight: "600" }}>
+                        {ep.name || "-"}
+                      </td>
+                      <td style={{ padding: "10px", color: "#475569" }}>
+                        {ep.lokos_member_code ||
+                          ep.mobile_no ||
+                          ep.employee_id ||
+                          "-"}
+                      </td>
+                      <td style={{ padding: "10px", color: "#b91c1c" }}>
+                        {ep.reason}
+                      </td>
+                      <td
+                        style={{
+                          padding: "10px",
+                          fontWeight: "600",
+                          color: "#0f172a",
+                        }}
+                      >
+                        {ep.batch_code || "N/A"}
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "flex-end",
+                marginTop: "20px",
+              }}
+            >
+              <button
+                onClick={() => setShowEngagementModal(false)}
+                style={{
+                  padding: "10px 24px",
+                  background: "#f1f5f9",
+                  color: "#334155",
+                  border: "none",
+                  borderRadius: "8px",
+                  fontWeight: "600",
+                  cursor: "pointer",
+                }}
+              >
+                Close & Review
               </button>
             </div>
           </div>

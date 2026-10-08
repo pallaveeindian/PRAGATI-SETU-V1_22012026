@@ -11,6 +11,7 @@ const ParticipantTable = ({
   resumeSelectedIds = [],
   onTraineesLoaded,
   isResumeMode,
+  engagedParticipants = [], // SURGICAL ADDITION
 }) => {
   const [traineesData, setTraineesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -225,6 +226,27 @@ const ParticipantTable = ({
     });
   }, [batchId, traineesData]); //
 
+  // SURGICAL ADDITION: Helper to check if a row is engaged
+  const getEngagementData = (row) => {
+    if (!engagedParticipants || engagedParticipants.length === 0) return null;
+
+    if (filters.participantType?.toUpperCase() === "TRAINER") {
+      return engagedParticipants.find(
+        (ep) => ep.mobile_no === (row.mobile_no || row.mobile),
+      );
+    } else if (filters.participantType?.toUpperCase() === "STAFF") {
+      return engagedParticipants.find(
+        (ep) => ep.employee_id === row.employee_id,
+      );
+    } else {
+      return engagedParticipants.find(
+        (ep) =>
+          ep.lokos_member_code === (row.lokos_member_code || row.member_code) &&
+          ep.lokos_shg_code === (row.lokos_shg_code || row.shg_code),
+      );
+    }
+  };
+
   return (
     <div
       style={{
@@ -322,84 +344,132 @@ const ParticipantTable = ({
 
             <tbody>
               {traineesData.length > 0 ? (
-                traineesData.map((row, index) => (
-                  <tr
-                    key={row.id || index}
-                    style={{
-                      background: selectedRows.includes(row.id)
-                        ? "#f8fafc"
-                        : "transparent",
-                    }}
-                  >
-                    <td style={{ ...tdStyle, textAlign: "center" }}>
-                      <input
-                        type="checkbox"
-                        checked={selectedRows.includes(row.id)}
-                        onChange={() => handleSelectRow(row.id)}
-                      />
-                    </td>
+                traineesData.map((row, index) => {
+                  const engagementData = getEngagementData(row);
+                  const isEngaged = !!engagementData;
 
-                    <td style={tdStyle}>{index + 1}</td>
+                  return (
+                    <tr
+                      key={row.id || index}
+                      style={{
+                        // SURGICAL FIX: Highlight engaged rows in red
+                        background: isEngaged
+                          ? "#fef2f2"
+                          : selectedRows.includes(row.id)
+                            ? "#f8fafc"
+                            : "transparent",
+                      }}
+                    >
+                      <td style={{ ...tdStyle, textAlign: "center" }}>
+                        <input
+                          type="checkbox"
+                          checked={selectedRows.includes(row.id)}
+                          onChange={() => handleSelectRow(row.id)}
+                        />
+                      </td>
 
-                    {filters.participantType?.toUpperCase() === "TRAINER" ? (
-                      <>
-                        <td style={tdStyle}>{row.full_name || "-"}</td>
-                        <td style={tdStyle}>{row.mobile_no || "-"}</td>
-                        <td style={tdStyle}>{row.district_name_en || "-"}</td>
-                      </>
-                    ) : (
-                      <>
-                        <td style={tdStyle}>
-                          {row.member_name ||
-                            row.name ||
-                            row.participant_name ||
-                            "-"}
-                        </td>
-                        <td style={tdStyle}>{row.lokos_member_code || "-"}</td>
-                        <td style={tdStyle}>{row.lokos_shg_code || "-"}</td>
-                        <td style={tdStyle}>
-                          {row.mobile || row.mobile_number || "-"}
-                        </td>
+                      <td style={tdStyle}>{index + 1}</td>
 
-                        <td style={tdStyle}>{row.gender || "-"}</td>
+                      {filters.participantType?.toUpperCase() === "TRAINER" ? (
+                        <>
+                          <td style={tdStyle}>
+                            {/* SURGICAL ADDITION: Render Badge */}
+                            {isEngaged && engagementData.batch_code && (
+                              <div style={{ marginBottom: "6px" }}>
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    background: "#ef4444",
+                                    color: "#fff",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    fontWeight: "bold",
+                                    letterSpacing: "0.5px",
+                                  }}
+                                >
+                                  BATCH: {engagementData.batch_code}
+                                </span>
+                              </div>
+                            )}
+                            {row.full_name || "-"}
+                          </td>
+                          <td style={tdStyle}>{row.mobile_no || "-"}</td>
+                          <td style={tdStyle}>{row.district_name_en || "-"}</td>
+                        </>
+                      ) : (
+                        <>
+                          <td style={tdStyle}>
+                            {/* SURGICAL ADDITION: Render Badge */}
+                            {isEngaged && engagementData.batch_code && (
+                              <div style={{ marginBottom: "6px" }}>
+                                <span
+                                  style={{
+                                    fontSize: "10px",
+                                    background: "#ef4444",
+                                    color: "#fff",
+                                    padding: "2px 6px",
+                                    borderRadius: "4px",
+                                    fontWeight: "bold",
+                                    letterSpacing: "0.5px",
+                                  }}
+                                >
+                                  BATCH: {engagementData.batch_code}
+                                </span>
+                              </div>
+                            )}
+                            {row.member_name ||
+                              row.name ||
+                              row.participant_name ||
+                              "-"}
+                          </td>
+                          <td style={tdStyle}>
+                            {row.lokos_member_code || "-"}
+                          </td>
+                          <td style={tdStyle}>{row.lokos_shg_code || "-"}</td>
+                          <td style={tdStyle}>
+                            {row.mobile || row.mobile_number || "-"}
+                          </td>
 
-                        <td style={tdStyle}>
-                          {row.social_category ||
-                            row.socialCategory ||
-                            row.category ||
-                            "-"}
-                        </td>
-                        <td style={tdStyle}>
-                          {row.district_name_en ||
-                            row.district ||
-                            row.district_name ||
-                            "-"}
-                        </td>
-                        <td style={tdStyle}>
-                          {row.block_name_en ||
-                            row.block ||
-                            row.block_name ||
-                            "-"}
-                        </td>
-                        <td style={tdStyle}>
-                          {row.panchayat_name_en ||
-                            row.panchayat ||
-                            row.panchayat_name ||
-                            "-"}
-                        </td>
-                        <td style={tdStyle}>
-                          {row.village_name_english ||
-                            row.village ||
-                            row.village_name ||
-                            "-"}
-                        </td>
-                        <td style={tdStyle}>
-                          {row.training || row.training_request || "-"}
-                        </td>
-                      </>
-                    )}
-                  </tr>
-                ))
+                          <td style={tdStyle}>{row.gender || "-"}</td>
+
+                          <td style={tdStyle}>
+                            {row.social_category ||
+                              row.socialCategory ||
+                              row.category ||
+                              "-"}
+                          </td>
+                          <td style={tdStyle}>
+                            {row.district_name_en ||
+                              row.district ||
+                              row.district_name ||
+                              "-"}
+                          </td>
+                          <td style={tdStyle}>
+                            {row.block_name_en ||
+                              row.block ||
+                              row.block_name ||
+                              "-"}
+                          </td>
+                          <td style={tdStyle}>
+                            {row.panchayat_name_en ||
+                              row.panchayat ||
+                              row.panchayat_name ||
+                              "-"}
+                          </td>
+                          <td style={tdStyle}>
+                            {row.village_name_english ||
+                              row.village ||
+                              row.village_name ||
+                              "-"}
+                          </td>
+                          <td style={tdStyle}>
+                            {row.training || row.training_request || "-"}
+                          </td>
+                        </>
+                      )}
+                    </tr>
+                  );
+                })
               ) : (
                 <tr>
                   <td

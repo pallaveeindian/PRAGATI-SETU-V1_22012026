@@ -5,7 +5,7 @@ import Header from "../../pages/TMS/layout/header";
 import Footer from "../../pages/TMS/layout/footer";
 import { AuthContext } from "../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../api/axios";
-
+import { useLocation, useNavigate } from "react-router-dom";
 import { getCanonicalRole, ROLE_WELCOME_MESSAGES } from "../../utils/roleUtils";
 import { useTRState } from "./CreateTR/hooks/useTRState";
 import {
@@ -33,6 +33,7 @@ const TRAINING_THEMES_CACHE = "tms_training_themes_cache_v1";
 const BLOCK_TO_DISTRICT_CACHE = "tms_block_to_district_v1";
 
 export default function CreateTrainingRequest() {
+  const navigate = useNavigate();
   const { user } = useContext(AuthContext) || {};
   const roleKeyNew = getCanonicalRole(user);
   const roleMessage = ROLE_WELCOME_MESSAGES[roleKeyNew] || "Dashboard";
@@ -759,7 +760,7 @@ export default function CreateTrainingRequest() {
 
       // 3. Fire a single request
       const resp = await api.post(
-        "/tms/training-requests/create-oneshot/",
+        "/tms/tr-bulk/create-oneshot/",
         oneShotPayload,
       );
 
@@ -795,6 +796,7 @@ export default function CreateTrainingRequest() {
       });
     } finally {
       trState.setSubmitting(false);
+      navigate("/tms/training-requests/");
     }
   }
 
