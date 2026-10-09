@@ -1,24 +1,20 @@
-// src\pages\HeroComponents\HeroStatsBanner.jsx
-import React, { useState, useEffect } from "react";
+// src/pages/HeroComponents/HeroStatsBanner.jsx
+import React, { useContext, useEffect, useState } from "react";
 import { FaUsers, FaMapMarkedAlt, FaCity, FaStore } from "react-icons/fa";
+import { LanguageContext } from "../../pages/LanguageContext";
 
-// Component to handle the running numbers animation
 const AnimatedNumber = ({ end, decimals, suffix }) => {
   const [val, setVal] = useState(0);
 
   useEffect(() => {
     let startTimestamp = null;
-    const duration = 2000; // 2 seconds animation
+    const duration = 2000;
 
     const step = (timestamp) => {
       if (!startTimestamp) startTimestamp = timestamp;
       const progress = Math.min((timestamp - startTimestamp) / duration, 1);
-
-      // Easing function (easeOutExpo) for a natural fast-to-slow deceleration
       const easeOut = progress === 1 ? 1 : 1 - Math.pow(2, -10 * progress);
-      const currentVal = end * easeOut;
-
-      setVal(currentVal);
+      setVal(end * easeOut);
 
       if (progress < 1) {
         window.requestAnimationFrame(step);
@@ -27,7 +23,8 @@ const AnimatedNumber = ({ end, decimals, suffix }) => {
       }
     };
 
-    window.requestAnimationFrame(step);
+    const animationFrame = window.requestAnimationFrame(step);
+    return () => window.cancelAnimationFrame(animationFrame);
   }, [end]);
 
   return (
@@ -39,35 +36,47 @@ const AnimatedNumber = ({ end, decimals, suffix }) => {
 };
 
 export default function HeroStatsBanner() {
-  // Separated numeric values, decimals, and suffixes for the animation
+  const { lang } = useContext(LanguageContext);
+
+  const content = {
+    en: {
+      shgWomen: "SHG Women",
+      districts: "Districts",
+      blocks: "Blocks",
+      enterprises: "Enterprises",
+    },
+    hi: {
+      shgWomen: "एसएचजी महिलाएं",
+      districts: "जिले",
+      blocks: "ब्लॉक",
+      enterprises: "उद्यम",
+    },
+  };
+
+  const t = content[lang] || content.en;
+
   const stats = [
     {
-      icon: <FaUsers color="#ea580c" />,
+      icon: <FaUsers />,
       end: 30.5,
       decimals: 1,
       suffix: " L+",
-      label: "SHG Women",
+      label: t.shgWomen,
     },
     {
-      icon: <FaMapMarkedAlt color="#ea580c" />,
+      icon: <FaMapMarkedAlt />,
       end: 75,
       decimals: 0,
       suffix: "",
-      label: "Districts",
+      label: t.districts,
     },
+    { icon: <FaCity />, end: 826, decimals: 0, suffix: "", label: t.blocks },
     {
-      icon: <FaCity color="#ea580c" />,
-      end: 826,
-      decimals: 0,
-      suffix: "",
-      label: "Blocks",
-    },
-    {
-      icon: <FaStore color="#ea580c" />,
+      icon: <FaStore />,
       end: 1.2,
       decimals: 1,
       suffix: " L+",
-      label: "Enterprises",
+      label: t.enterprises,
     },
   ];
 
@@ -91,83 +100,55 @@ export default function HeroStatsBanner() {
           </div>
         </div>
       ))}
+
       <style>{`
-        /* =========================================
-           PC / DESKTOP VIEW (LARGE BANNER - 5% SMALLER)
-           ========================================= */
-        .hero-stats-banner {
-          display: flex;
-          align-items: center;
-          background: #ffffff;
-          padding: 22px 34px;          /* Scaled down ~5% */
-          border-radius: 14px;         
-          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12); 
-          width: fit-content;
-        }
-        
-        .stat-item {
-          display: flex;
-          align-items: center;
-          gap: 14px;                   /* Scaled down ~5% */
-          padding: 0 38px;             /* Scaled down ~5% */
-        }
-        
-        .stat-item:first-child { padding-left: 0; }
-        .stat-item:last-child { padding-right: 0; }
-        .border-right { border-right: 2px solid #e2e8f0; }
-        
-        /* Scaled down ~5% */
-        .stat-icon svg {
-          width: 36px;
-          height: 36px;
-        }
+        .hero-stats-banner{display:flex;align-items:center;width:fit-content;padding:22px 34px;background:#fff;border-radius:14px;box-shadow:0 10px 25px rgba(0,0,0,.12)}
+        .stat-item{display:flex;align-items:center;gap:14px;padding:0 38px}
+        .stat-item:first-child{padding-left:0}
+        .stat-item:last-child{padding-right:0}
+        .border-right{border-right:2px solid #e2e8f0}
+        .stat-icon,.stat-icon svg{display:flex;align-items:center;justify-content:center;flex-shrink:0;color:#ea580c;width:36px;height:36px}
+        .stat-text{display:flex;flex-direction:column;justify-content:center}
+        .stat-val{margin:0;color:#0f172a;font-size:calc(30px*var(--font-scale,1));font-weight:900;line-height:1}
+        .stat-label{margin:5px 0 0;color:#64748b;font-size:calc(14px*var(--font-scale,1));font-weight:700;line-height:1.2;text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
 
-        /* Scaled down ~5% */
-        .stat-val { 
-          margin: 0; 
-          font-size: 30px;             
-          font-weight: 900;            
-          color: #0f172a; 
-          line-height: 1; 
+        @media(max-width:1200px){
+          .hero-stats-banner{padding:18px 26px}
+          .stat-item{gap:11px;padding:0 25px}
+          .stat-icon svg{width:30px;height:30px}
+          .stat-val{font-size:calc(25px*var(--font-scale,1))}
+          .stat-label{font-size:calc(11px*var(--font-scale,1))}
         }
-        
-        .stat-label { 
-          margin: 5px 0 0 0; 
-          font-size: 14px;             /* Scaled down ~5% */
-          color: #64748b; 
-          font-weight: 700; 
-          text-transform: uppercase; 
-          letter-spacing: 0.5px;
+        @media(max-width:1024px){
+          .hero-stats-banner{padding:16px 20px}
+          .stat-item{gap:9px;padding:0 18px}
+          .stat-icon svg{width:27px;height:27px}
+          .stat-val{font-size:calc(22px*var(--font-scale,1))}
+          .stat-label{font-size:calc(10px*var(--font-scale,1))}
         }
-
-        /* =========================================
-           MOBILE & TABLET VIEW (COMPACT BANNER)
-           ========================================= */
-        @media (max-width: 900px) {
-          .hero-stats-banner { 
-            flex-wrap: wrap; 
-            justify-content: center; 
-            gap: 16px; 
-            padding: 16px; 
-            border-radius: 12px;
-          }
-          .stat-item { 
-            padding: 0 12px; 
-            gap: 10px;
-          }
-          .border-right { border-right: none; }
-          
-          /* Scale down for mobile */
-          .stat-icon svg {
-            width: 24px;
-            height: 24px;
-          }
-          .stat-val { 
-            font-size: 20px; 
-          }
-          .stat-label { 
-            font-size: 12px; 
-          }
+        @media(max-width:900px){
+          .hero-stats-banner{width:100%;display:grid;grid-template-columns:repeat(2,1fr);gap:0;padding:16px;border-radius:12px}
+          .stat-item{width:100%;padding:14px;gap:10px;justify-content:flex-start}
+          .border-right{border-right:none}
+          .stat-item:nth-child(1),.stat-item:nth-child(2){border-bottom:1px solid #e2e8f0}
+          .stat-item:nth-child(1),.stat-item:nth-child(3){border-right:1px solid #e2e8f0}
+          .stat-icon svg{width:25px;height:25px}
+          .stat-val{font-size:calc(21px*var(--font-scale,1))}
+          .stat-label{font-size:calc(10px*var(--font-scale,1))}
+        }
+        @media(max-width:600px){
+          .hero-stats-banner{padding:10px;border-radius:10px}
+          .stat-item{min-width:0;padding:11px 8px;gap:8px}
+          .stat-icon svg{width:22px;height:22px}
+          .stat-val{font-size:calc(18px*var(--font-scale,1))}
+          .stat-label{font-size:calc(8.5px*var(--font-scale,1));letter-spacing:.2px;white-space:normal}
+        }
+        @media(max-width:400px){
+          .hero-stats-banner{padding:8px}
+          .stat-item{padding:9px 6px;gap:6px}
+          .stat-icon svg{width:19px;height:19px}
+          .stat-val{font-size:calc(16px*var(--font-scale,1))}
+          .stat-label{font-size:calc(7.5px*var(--font-scale,1))}
         }
       `}</style>
     </div>

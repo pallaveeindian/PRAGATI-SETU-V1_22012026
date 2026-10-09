@@ -90,6 +90,11 @@ export default function TrainingBatchList() {
 
   const [currentPage, setCurrentPage] = useState(1);
   const rowsPerPage = 10;
+  const compactCell = (value) => (
+    <span className="batch-cell-text" title={value || "-"}>
+      {value || "-"}
+    </span>
+  );
   const visibleBatches = batches.filter((b) => {
     // Hide DRAFT batches from everyone except DTP
     if (String(b.status).toUpperCase() === "DRAFT" && role !== "dtp") {
@@ -865,6 +870,7 @@ export default function TrainingBatchList() {
 
                 {/* HEADER */}
                 <div
+                  className="batch-list-heading"
                   style={{
                     display: "flex",
                     alignItems: "center",
@@ -896,7 +902,7 @@ export default function TrainingBatchList() {
                     background: "#fff",
                     padding: 14,
                     borderRadius: 10,
-                    border: "2px solid #3d6ba6",
+                    border: "2px solid #2b4e72",
                     boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
                   }}
                 >
@@ -912,7 +918,7 @@ export default function TrainingBatchList() {
                           <th>End</th>
                           <th>Level</th>
                           <th>Type</th>
-                          <th>Theme</th>
+                          <th>THEME</th>
                           <th>Training Plan</th>
                           <th>Block</th>
                           <th>District</th>
@@ -965,10 +971,18 @@ export default function TrainingBatchList() {
                               <td>{formatDate(b.end_date)}</td>
                               <td>{b.level}</td>
                               <td>{b.batch_type}</td>
-                              <td>{b.training_plan.theme.theme_name}</td>
-                              <td>{b.training_plan.training_name}</td>
-                              <td>{b.block?.block_name_en || "-"}</td>
-                              <td>{b.district?.district_name_en || "-"}</td>
+                              <td>
+                                {compactCell(
+                                  b.training_plan?.theme?.theme_name,
+                                )}
+                              </td>
+                              <td>
+                                {compactCell(b.training_plan?.training_name)}
+                              </td>
+                              <td>{compactCell(b.block?.block_name_en)}</td>
+                              <td>
+                                {compactCell(b.district?.district_name_en)}
+                              </td>
                               <td>
                                 {Array.isArray(b.master_trainers) &&
                                 b.master_trainers.length > 0
@@ -977,9 +991,13 @@ export default function TrainingBatchList() {
                                         key={trainer.id}
                                         style={{ marginBottom: 4 }}
                                       >
-                                        <strong>{trainer.full_name}</strong>
+                                        <strong title={trainer.full_name}>
+                                          {trainer.full_name}
+                                        </strong>
                                         <br />
-                                        <span>
+                                        <span
+                                          title={`${trainer.designation} (${trainer.mobile_no})`}
+                                        >
                                           {trainer.designation} (
                                           {trainer.mobile_no})
                                         </span>
@@ -993,7 +1011,7 @@ export default function TrainingBatchList() {
                                   fontWeight: "600",
                                 }}
                               >
-                                {b.pendency_status || "-"}
+                                {compactCell(b.pendency_status)}
                               </td>
                               <td
                                 style={{
@@ -1163,8 +1181,12 @@ export default function TrainingBatchList() {
                       display: "flex",
                       justifyContent: "space-between",
                       alignItems: "center",
+                      gap: 12,
                       marginTop: 12,
+                      paddingTop: 10,
+                      borderTop: "1px solid #e4ecf5",
                     }}
+                    className="batch-pagination"
                   >
                     <div style={{ color: "#2b4e72", fontSize: 14 }}>
                       Page {currentPage} of {totalPages || 1}
@@ -1257,6 +1279,14 @@ export default function TrainingBatchList() {
 
               .training-table-card {
                 overflow: hidden;
+              }
+
+              .batch-list-heading{
+                width:100%;
+                max-width:100%;
+                box-sizing:border-box;
+                border:none !important;
+                box-shadow:none !important;
               }
 
               .filter-row {
@@ -1361,17 +1391,18 @@ export default function TrainingBatchList() {
               /* TABLE */
               .training-table{
                 width:100%;
-                min-width:0;
+                min-width:1750px;
                 table-layout:fixed;
                 border-collapse:collapse;
-                font-size:11px;
+                font-size:12px;
               }
 
               .training-table-scroll {
                 width: 100%;
                 max-width: 100%;
-                overflow: hidden;
-                padding-bottom: 4px;
+                overflow-x: auto;
+                overflow-y: visible;
+                padding-bottom: 8px;
                 box-sizing: border-box;
               }
 
@@ -1385,79 +1416,91 @@ export default function TrainingBatchList() {
               }
 
               .training-table th{
-                padding:6px 3px;
+                padding:9px 6px;
                 text-align:left;
                 font-weight:600;
                 text-align:center;
                 justify-content:center;
                 white-space:normal;
-                overflow-wrap:anywhere;
                 vertical-align:middle;
-                line-height:1.15;
+                line-height:1.20;
               }
 
               /* BODY */
               .training-table td{
-                padding:6px 3px;
+                padding:9px 6px;
                 border-bottom:1px solid #e4ecf5;
                 text-align:center;
                 justify-content:center;
-                box-sizing:border-box;
-                min-width:0;
                 white-space:normal;
-                overflow-wrap:anywhere;
+                overflow-wrap:break-word;
+                word-break:normal;
                 vertical-align:top;
+                line-height:1.3;
+              }
+
+              .batch-cell-text{
+                display:-webkit-box;
+                -webkit-box-orient:vertical;
+                -webkit-line-clamp:3;
+                overflow:hidden;
+                line-height:1.15;
+                max-height:3.45em;
+              }
+
+              .training-table td:nth-child(13) > div{
+                max-height:none;
+                overflow:visible;
                 line-height:1.25;
               }
 
-              .training-table .status-badge{
-                display:block;
-                box-sizing:border-box;
-                width:100%;
-                min-width:0;
-                max-width:100%;
-                padding:3px 2px;
-                font-size:9px;
-                letter-spacing:0;
-                white-space:normal;
-                overflow-wrap:anywhere;
+              .training-table th:nth-child(13),
+              .training-table td:nth-child(13){
+                width:200px !important;
+                min-width:200px !important;
+              }
+
+              .training-table th:nth-child(16),
+              .training-table td:nth-child(16){
+                width:130px !important;
+                min-width:130px !important;
               }
 
               .training-table th:nth-child(1),
-              .training-table td:nth-child(1) { width:4%; }
+              .training-table td:nth-child(1) { width:60px; }
               .training-table th:nth-child(2),
-              .training-table td:nth-child(2) { width:4%; }
+              .training-table td:nth-child(2) { width:82px; }
               .training-table th:nth-child(3),
-              .training-table td:nth-child(3) { width:6%; }
+              .training-table td:nth-child(3) { width:135px; }
               .training-table th:nth-child(4),
-              .training-table td:nth-child(4) { width:6%; }
+              .training-table td:nth-child(4) { width:110px; }
               .training-table th:nth-child(5),
               .training-table td:nth-child(5),
               .training-table th:nth-child(6),
-              .training-table td:nth-child(6) { width:5%; }
+              .training-table td:nth-child(6) { width:92px; white-space:nowrap !important; }
               .training-table th:nth-child(7),
-              .training-table td:nth-child(7) { width:4%; }
+              .training-table td:nth-child(7) { width:82px; }
               .training-table th:nth-child(8),
-              .training-table td:nth-child(8) { width:5%; }
+              .training-table td:nth-child(8) { width:105px; }
               .training-table th:nth-child(9),
-              .training-table td:nth-child(9) { width:6%; }
+              .training-table td:nth-child(9) { width:180px; }
               .training-table th:nth-child(10),
-              .training-table td:nth-child(10) { width:7%; }
-              .training-table th:nth-child(12),
-              .training-table td:nth-child(12),
+              .training-table td:nth-child(10) { width:195px; }
               .training-table th:nth-child(11),
-              .training-table td:nth-child(11) { width:5%; }
+              .training-table td:nth-child(11),
+              .training-table th:nth-child(12),
+              .training-table td:nth-child(12) { width:105px; }
               .training-table th:nth-child(13),
-              .training-table td:nth-child(13) { width:7%;  }
+              .training-table td:nth-child(13) { width:200px !important; min-width:200px; white-space:nowrap !important;  }
               .training-table th:nth-child(14),
-              .training-table td:nth-child(14) { width:6%; }
+              .training-table td:nth-child(14) { width:130px !important; min-width:130px; }
               .training-table th:nth-child(15),
-              .training-table td:nth-child(15) { width:4%; }
+              .training-table td:nth-child(15) { width:70px !important; min-width:70px; white-space:nowrap !important; }
               .training-table th:nth-child(16),
-              .training-table td:nth-child(16) { width:8%; }
+              .training-table td:nth-child(16) { width:130px !important; min-width:130px; white-space:nowrap !important; }
 
               .training-table td:nth-child(13) > div {
-                padding:6px 0;
+                padding:7px 0;
                 border-bottom:1px solid #dbe7f3;
               }
 
@@ -1521,6 +1564,13 @@ export default function TrainingBatchList() {
               .btnPage:disabled{
                 opacity:0.5;
                 cursor:not-allowed;
+              }
+
+              @media (max-width: 768px){
+                .batch-pagination{
+                  flex-wrap:wrap;
+                  justify-content:center !important;
+                }
               }
 
               /* ACTIVE PAGE */
@@ -1672,6 +1722,118 @@ export default function TrainingBatchList() {
                 .fetch-btn{
                   width: 100%;
                 }
+              }
+
+              /* Keep one paginated page visible without table scrolling. */
+              .training-table-scroll{
+                overflow:hidden;
+                padding-bottom:0;
+              }
+
+              .training-table{
+                width:100%;
+                min-width:0;
+                table-layout:fixed;
+                font-size:10px;
+              }
+
+              .training-table th{
+                padding:6px 3px;
+                white-space:normal;
+                line-height:1.05;
+              }
+
+              .training-table td{
+                padding:6px 3px;
+                vertical-align:middle;
+                line-height:1.1;
+                overflow:hidden;
+                text-overflow:ellipsis;
+                word-break:normal;
+              }
+
+              .training-table th:nth-child(1),
+              .training-table td:nth-child(1){ width:4%; }
+              .training-table th:nth-child(2),
+              .training-table td:nth-child(2){ width:6%; }
+              .training-table th:nth-child(3),
+              .training-table td:nth-child(3){ width:7%; }
+              .training-table th:nth-child(4),
+              .training-table td:nth-child(4){ width:7%; }
+              .training-table th:nth-child(5),
+              .training-table td:nth-child(5),
+              .training-table th:nth-child(6),
+              .training-table td:nth-child(6){ width:6%; white-space:nowrap; }
+              .training-table th:nth-child(7),
+              .training-table td:nth-child(7){ width:5%; }
+              .training-table th:nth-child(8),
+              .training-table td:nth-child(8){ width:6%; }
+              .training-table th:nth-child(9),
+              .training-table td:nth-child(9){ width:5%; }
+              .training-table th:nth-child(10),
+              .training-table td:nth-child(10){ width:7%; }
+              .training-table th:nth-child(11),
+              .training-table td:nth-child(11){ width:6%; }
+              .training-table th:nth-child(12),
+              .training-table td:nth-child(12){ width:5%; }
+              .training-table th:nth-child(13),
+              .training-table td:nth-child(13){
+                width:13%;
+                min-width:130px;
+                text-align:left;
+              }
+              .training-table th:nth-child(14),
+              .training-table td:nth-child(14){
+                width:13%;
+                min-width:145px;
+                text-align:center;
+              }
+              .training-table th:nth-child(15),
+              .training-table td:nth-child(15){ width:4%; white-space:nowrap; }
+              .training-table th:nth-child(16),
+              .training-table td:nth-child(16){ width:8%; white-space:nowrap; }
+
+              .training-table td:nth-child(13) > div{
+                max-height:none;
+                overflow:visible;
+                padding:2px 0;
+                line-height:1.1;
+                overflow-wrap:break-word;
+                word-break:normal;
+              }
+
+              .training-table td:nth-child(13),
+              .training-table td:nth-child(14){
+                overflow-wrap:break-word;
+                word-break:normal;
+                white-space:normal;
+              }
+
+              .training-table td:nth-child(13) > div:nth-child(n+2){
+                display:block;
+              }
+
+              .batch-cell-text{
+                display:block;
+                max-height:none;
+                overflow:visible;
+                text-overflow:clip;
+                white-space:normal;
+                line-height:1.1;
+                overflow-wrap:break-word;
+                word-break:normal;
+              }
+
+              .status-badge{
+                min-width:0;
+                width:100%;
+                padding:4px 2px;
+                font-size:9px;
+              }
+
+              .training-table .btnView{
+                padding:4px 5px;
+                font-size:10px;
               }
           `}</style>
             </main>

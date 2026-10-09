@@ -53,9 +53,9 @@ export default function HeroLayout() {
         <Contact />
       </section>
 
-      {/* <section className="hero-section hero-updates">
+      <section className="hero-section hero-updates">
         <LatestUpdates />
-      </section> */}
+      </section>
 
       <style>{`
         .hero-layout {

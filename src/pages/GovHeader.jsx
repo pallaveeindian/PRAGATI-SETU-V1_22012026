@@ -18,9 +18,13 @@ export default function GovHeader({ logo, title, onFontChange }) {
 
         {/* RIGHT */}
         <div className="gov-header-right">
-          <button onClick={() => onFontChange(0.9)}>A-</button>
+          {/* <button onClick={() => onFontChange(0.9)}>A-</button>
           <button onClick={() => onFontChange(1)}>A</button>
-          <button onClick={() => onFontChange(1.1)}>A+</button>
+          <button onClick={() => onFontChange(1.1)}>A+</button> */}
+          <div className="lang-btn">
+            {/* <text> Last Update : 08/10/2026</text> */}
+            <button> Last Update : 09/10/2026</button>
+          </div>
 
           <span className="divider">|</span>
 

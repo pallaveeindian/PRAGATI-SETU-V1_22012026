@@ -1,5 +1,5 @@
 import React, { useContext, useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { FiSearch } from "react-icons/fi";
 import { LanguageContext } from "./LanguageContext.jsx";
 
@@ -155,6 +155,7 @@ const text = {
 };
 
 export default function HeaderTopMenu() {
+  const navigate = useNavigate();
   const { lang } = useContext(LanguageContext);
   const t = text[lang] || text.en;
   const getLabel = (label) => label?.[lang] || label?.en || "";
@@ -181,9 +182,14 @@ export default function HeaderTopMenu() {
 
   const handleSearch = (event) => {
     event.preventDefault();
+
     const searchValue = search.trim();
+
     if (!searchValue) return;
-    console.log("Search:", searchValue);
+
+    navigate("/User-Manual");
+
+    setSearch("");
   };
 
   return (

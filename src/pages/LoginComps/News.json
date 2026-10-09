@@ -9,7 +9,7 @@
         "id": 1,
         "title": "System Scheduled Maintenance",
         "title_hi": "सिस्टम निर्धारित रखरखाव",
-        "date": "12 Sept 2026",
+        "date": "12 Sep 2026",
         "time": "09:30 AM",
         "description": "Planned maintenance window for server optimization and security patching.",
         "description_hi": "सर्वर अनुकूलन और सुरक्षा पैचिंग के लिए नियोजित रखरखाव।"
@@ -228,7 +228,27 @@
         "time": "12:00 PM",
         "description": "A new Attendance Module is now available. No eKYC verification is required, and attendance can be uploaded directly, with an optional CSV upload option.",
         "description_hi": "नया उपस्थिति मॉड्यूल अब उपलब्ध है। इसमें ई-केवाईसी सत्यापन की आवश्यकता नहीं है और उपस्थिति सीधे अपलोड की जा सकती है, साथ ही वैकल्पिक CSV अपलोड की सुविधा भी उपलब्ध है।"
+      },
+       {
+        "id": 20,
+        "title": "Immediate Update to Training Request Engagement Check",
+        "title_hi": "प्रशिक्षण अनुरोध सहभागिता जाँच में तत्काल अपडेट",
+        "date": "08 Oct 2026",
+        "time": "12:00 PM",
+        "description": "Previously, participant eligibility for a training request was checked based on the Training Request status BATCHING and Batch status ONGOING/SCHEDULED.With the new        update, participant eligibility will now be checked based on the participant’s previous training history within the same financial year and the same training module.For stepper modules such as Samuh Sakhi M1, M2, M3, etc., participants can now be selected together as applicable.",
+        "description_hi": "पहले प्रशिक्षण अनुरोध के लिए प्रतिभागियों की पात्रता की जाँच प्रशिक्षण अनुरोध की स्थिति – BATCHING तथा बैच की स्थिति – ONGOING/SCHEDULED के आधार पर की जाती थी।नए अपडेट के अनुसार, अब प्रतिभागियों की पात्रता की जाँच उसी वित्तीय वर्ष और उसी प्रशिक्षण मॉड्यूल में उनके पूर्व प्रशिक्षण इतिहास के आधार पर की जाएगी।समूह सखी M1, M2, M3... आदि जैसे क्रमिक प्रशिक्षण मॉड्यूलों में अब पात्र प्रतिभागियों का चयन एक साथ किया जा सकेगा।"
+      },
+      
+{
+        "id": 21,
+        "title": "Immediate Update to Batch Creation and Updation Module",
+        "title_hi": "बैच निर्माण एवं अद्यतन मॉड्यूल में तत्काल अपडेट",
+        "date": "08 Oct 2026",
+        "time": "12:00 PM",
+        "description": "Due to the removal of the training request limit, Training Partners may see duplicate candidates in their selection pool while creating a batch. Kindly coordinate with the respective BMM/DMM to ensure that the appropriate candidate is selected during batch creation.During batch creation or updation, participants with conflicting dates will now be clearly highlighted. The Batch Code in which the participant is already engaged will be displayed as a red badge above the participant’s name.A conflicting date means that the participant is already engaged in another batch whose start date or end date falls within the selected start date and end date of the batch being created or updated.",
+        "description_hi": "प्रशिक्षण अनुरोध की सीमा हटाए जाने के कारण, बैच बनाते समय प्रशिक्षण भागीदारों को प्रतिभागी चयन सूची में एक ही अभ्यर्थी एक से अधिक बार दिखाई दे सकता है। बैच निर्माण के दौरान उपयुक्त अभ्यर्थी का चयन सुनिश्चित करने के लिए कृपया संबंधित BMM/DMM से समन्वय करें।अब बैच निर्माण या अद्यतन के दौरान तिथियों में टकराव वाले प्रतिभागियों को स्पष्ट रूप से दर्शाया जाएगा। जिस बैच कोड में प्रतिभागी पहले से शामिल है, वह उसके नाम के ऊपर लाल रंग के बैज के रूप में दिखाई देगा।तिथि में टकराव का अर्थ है कि प्रतिभागी पहले से किसी ऐसे बैच में शामिल है, जिसकी प्रारंभ तिथि या समाप्ति तिथि नए बैच के लिए चयनित प्रारंभ तिथि और समाप्ति तिथि के बीच आती है।"
       }
+
     ]
   }
 }

@@ -1,13 +1,14 @@
-// src/pages/TMS/SMMU/smmu_tp_tva.jsx
+// src\pages\AdminPages\TmsPortal\TrainingTarget\TrainigTargetList.jsx
+
 import React, { useContext, useEffect, useMemo, useState } from "react";
-//import AdminHeader from "../../Layout/AdminHeader";
-//import AdminSidebar from "../../Layout/AdminSidebar";
+
 import { AuthContext } from "../../../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../../../api/axios";
 import {
   getCanonicalRole,
   ROLE_WELCOME_MESSAGES,
 } from "../../../../utils/roleUtils";
+import { FaBullseye } from "react-icons/fa";
 
 export default function SmmuTargetAchievement() {
   const { user } = useContext(AuthContext) || {};
@@ -181,8 +182,9 @@ export default function SmmuTargetAchievement() {
           >
             <div
               style={{
-                maxWidth: 1200,
-                margin: "20px auto",
+                width: "100%",
+                maxWidth: "none",
+                margin: "20px 0",
               }}
             >
               {/* FILTERS & EXPORT COMPONENT */}
@@ -417,7 +419,7 @@ export default function SmmuTargetAchievement() {
                 }}
               >
                 <h2 style={{ margin: 0, color: "#2b4e72" }}>
-                  Training Partners - Targets vs Achievement
+                  <FaBullseye /> Training Partners - Targets vs Achievement
                 </h2>
               </div>
 
@@ -435,6 +437,7 @@ export default function SmmuTargetAchievement() {
                   style={{
                     maxHeight: 520,
                     overflow: "auto",
+                    width: "100%",
                   }}
                 >
                   <table className="training-table">
@@ -717,6 +720,7 @@ export default function SmmuTargetAchievement() {
           /* TABLE */
           .training-table{
             width:100%;
+            min-width: 980px;
             border-collapse:collapse;
             font-size:14px;
           }
@@ -822,6 +826,13 @@ export default function SmmuTargetAchievement() {
       <style>{`.content-area {
   display: flex;
   flex: 1;
+  min-width: 0;
+}
+
+.main-area {
+  flex: 1;
+  min-width: 0;
+  width: 100%;
 }`}</style>
     </div>
   );

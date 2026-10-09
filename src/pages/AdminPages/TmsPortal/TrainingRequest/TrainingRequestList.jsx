@@ -6,12 +6,9 @@ import { AuthContext } from "../../../../contexts/AuthContext";
 import { TMS_API, LOOKUP_API } from "../../../../api/axios";
 import { getCanonicalRole } from "../../../../utils/roleUtils";
 import TrainingRequestFilter from "./TrainingRequestFiliter";
-import { ROLE_WELCOME_MESSAGES } from "../../../../utils/roleUtils";
+import { FaFileSignature } from "react-icons/fa";
 
 const CACHE_KEY = "tms_training_requests_cache_v1";
-const USER_MAP_KEY = "tms_user_map_v1";
-const PARTNER_MAP_KEY = "tms_partner_map_v1";
-const PLAN_MAP_KEY = "tms_plan_map_v1";
 const TP_SELF_PARTNER_KEY = "tms_self_partner_id_v1";
 
 /* ---------------- cache helpers ---------------- */
@@ -22,7 +19,9 @@ function saveCache(payload, meta = {}) {
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload, meta }),
     );
-  } catch {}
+  } catch {
+    return null;
+  }
 }
 
 function loadCache() {
@@ -34,18 +33,15 @@ function loadCache() {
   }
 }
 
-function loadMap(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key)) || {};
-  } catch {
-    return {};
-  }
-}
-
-function saveMap(key, map) {
-  try {
-    localStorage.setItem(key, JSON.stringify(map || {}));
-  } catch {}
+async function fetchTrainingRequestsOnce(params = {}) {
+  const response = await TMS_API.trainingRequestsList.list({
+    ...params,
+    page_size: 5000,
+  });
+  const responseData = response?.data;
+  return Array.isArray(responseData)
+    ? responseData
+    : responseData?.results || [];
 }
 
 /* ---------------- partner resolver (SAFE & CACHED) ---------------- */
@@ -56,7 +52,9 @@ async function resolveTrainingPartnerIdForUser(userId) {
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch {}
+  } catch {
+    return null;
+  }
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -70,11 +68,13 @@ async function resolveTrainingPartnerIdForUser(userId) {
     if (partnerId) {
       try {
         localStorage.setItem(TP_SELF_PARTNER_KEY, String(partnerId));
-      } catch {}
+      } catch {
+        // Ignore storage failures; the resolved partner remains usable.
+      }
     }
 
     return partnerId;
-  } catch (e) {
+  } catch {
     console.warn("Partner resolution failed (will retry on refresh)");
     return null;
   }
@@ -85,31 +85,22 @@ async function resolveTrainingPartnerIdForUser(userId) {
 export default function TrainingRequestList() {
   const { user } = useContext(AuthContext) || {};
 
-  const roleKey = getCanonicalRole(user);
-  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
-
   const role = getCanonicalRole(user || {});
   const navigate = useNavigate();
-  const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [requests, setRequests] = useState(() => loadCache()?.payload || []);
-  const [refreshToken, setRefreshToken] = useState(0);
   // PAGINATION CHANGE START
   const [currentPage, setCurrentPage] = useState(1);
-  const [themes, setThemes] = useState([]);
   const rowsPerPage = 10;
   // PAGINATION CHANGE END
-  const [filters, setFilters] = useState({
+  const [filters] = useState({
     status: "",
     level: "",
     training_type: "",
   });
+  const [requestIdSearch, setRequestIdSearch] = useState("");
 
-  const [userMap, setUserMap] = useState(() => loadMap(USER_MAP_KEY));
-  const [partnerMap, setPartnerMap] = useState(() => loadMap(PARTNER_MAP_KEY));
-  const [planMap, setPlanMap] = useState(() => loadMap(PLAN_MAP_KEY));
-
-  const didRunRef = useRef(false);
+  const fetchKeyRef = useRef("");
 
   /* ---------------- geoscope ---------------- */
 
@@ -119,7 +110,9 @@ export default function TrainingRequestList() {
         localStorage.getItem("ps_user_geoscope") || "null",
       );
       if (cached) return cached;
-    } catch {}
+    } catch {
+      // Use the API fallback when cached geoscope data is invalid.
+    }
 
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(user?.id);
@@ -127,7 +120,9 @@ export default function TrainingRequestList() {
         localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
         return resp.data;
       }
-    } catch {}
+    } catch {
+      // Return no geoscope when the lookup is unavailable.
+    }
     return null;
   }
 
@@ -140,99 +135,21 @@ export default function TrainingRequestList() {
         const partnerId = resp.data.partner_id;
         return partnerId;
       }
-    } catch {}
+    } catch {
+      // Return no parent partner when the lookup is unavailable.
+    }
     return null;
-  }
-
-  /* ---------------- lookup maps ---------------- */
-
-  async function fetchAndStoreLookupMaps(items = []) {
-    try {
-      const userIds = new Set();
-      const partnerIds = new Set();
-      const planIds = new Set();
-
-      items.forEach((r) => {
-        if (r.created_by) userIds.add(r.created_by);
-        if (r.partner) partnerIds.add(r.partner);
-        if (r.training_plan) planIds.add(r.training_plan);
-      });
-
-      const missingUsers = [...userIds].filter((i) => !userMap[i]);
-      const missingPartners = [...partnerIds].filter((i) => !partnerMap[i]);
-      const missingPlans = [...planIds].filter((i) => !planMap[i]);
-
-      const [users, partners, plans] = await Promise.all([
-        Promise.all(
-          missingUsers.map(async (id) => {
-            const r = await LOOKUP_API.users.list({
-              search: id,
-              fields: "username",
-            });
-            return { id, v: r?.data?.results?.[0]?.username };
-          }),
-        ),
-        Promise.all(
-          missingPartners.map(async (id) => {
-            const r = await TMS_API.trainingPartners.list({
-              id,
-              fields: "name",
-            });
-            return { id, v: r?.data?.results?.[0]?.name };
-          }),
-        ),
-        Promise.all(
-          missingPlans.map(async (id) => {
-            const r = await TMS_API.trainingPlans.list({
-              id,
-              fields: "training_name",
-            });
-            return {
-              id,
-              v: r?.data?.results?.[0]?.training_name,
-            };
-          }),
-        ),
-      ]);
-
-      const um = { ...userMap };
-      users.forEach((x) => (um[x.id] = x.v));
-
-      const pm = { ...partnerMap };
-      partners.forEach((x) => (pm[x.id] = x.v));
-
-      const plm = { ...planMap };
-      plans.forEach((x) => (plm[x.id] = x.v));
-
-      setUserMap(um);
-      setPartnerMap(pm);
-      setPlanMap(plm);
-
-      saveMap(USER_MAP_KEY, um);
-      saveMap(PARTNER_MAP_KEY, pm);
-      saveMap(PLAN_MAP_KEY, plm);
-    } catch {}
   }
 
   /* ---------------- main fetch ---------------- */
 
-  async function fetchRequests(force = false) {
+  async function fetchRequests() {
     if (!user?.id) return;
 
     setLoading(true);
     try {
-      const params = { page_size: 500 };
+      const params = { page_size: 5000 };
       const geoscope = await ensureUserGeoscope();
-
-      if (role === "smmu") {
-        const myTheme = themes.find(
-          (t) => Number(t.expert) === Number(user?.id),
-        );
-
-        if (myTheme) {
-          params.theme_id = myTheme.id;
-        }
-      }
 
       if (role === "bmmu" && geoscope?.blocks?.[0])
         params.block_id = geoscope.blocks[0];
@@ -260,12 +177,10 @@ export default function TrainingRequestList() {
         params.district_id = geoscope.districts[0];
         params.partner_id = partnerId;
       }
-      const resp = await TMS_API.trainingRequestsList.list(params);
-      const items = resp?.data?.results || [];
+      const items = await fetchTrainingRequestsOnce(params);
 
       setRequests(items);
       saveCache(items, { userId: user.id, role });
-      await fetchAndStoreLookupMaps(items);
     } catch (e) {
       console.error("fetch training requests failed", e);
       setRequests([]);
@@ -275,9 +190,13 @@ export default function TrainingRequestList() {
   }
 
   useEffect(() => {
-    fetchRequests(false);
+    const fetchKey = `${user?.id || ""}:${role}`;
+    if (role !== "smmu" && user?.id && fetchKeyRef.current !== fetchKey) {
+      fetchKeyRef.current = fetchKey;
+      fetchRequests();
+    }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [refreshToken]);
+  }, [role, user?.id]);
 
   /* training req list */
   async function fetchRequestsWithFilters(appliedFilters = {}) {
@@ -286,7 +205,7 @@ export default function TrainingRequestList() {
     setLoading(true);
     try {
       let params = {
-        page_size: 500,
+        page_size: 5000,
         ...Object.fromEntries(
           Object.entries(appliedFilters).filter(
             ([, v]) => v !== "" && v !== false,
@@ -295,16 +214,6 @@ export default function TrainingRequestList() {
       };
 
       const geoscope = await ensureUserGeoscope();
-
-      if (role === "smmu") {
-        const myTheme = themes.find(
-          (t) => Number(t.expert) === Number(user?.id),
-        );
-
-        if (myTheme) {
-          params.theme_id = myTheme.id;
-        }
-      }
 
       if (role === "bmmu" && geoscope?.blocks?.[0])
         params.block_id = geoscope.blocks[0];
@@ -333,11 +242,9 @@ export default function TrainingRequestList() {
       }
 
       // ✅ theme_id now passes straight through
-      const resp = await TMS_API.trainingRequestsList.list(params);
-      const items = resp?.data?.results || [];
+      const items = await fetchTrainingRequestsOnce(params);
 
       setRequests(items);
-      await fetchAndStoreLookupMaps(items);
     } catch (e) {
       console.error("Filtered fetch failed", e);
       setRequests([]);
@@ -360,6 +267,13 @@ export default function TrainingRequestList() {
 
   const filtered = useMemo(() => {
     const result = requests.filter((r) => {
+      if (
+        requestIdSearch.trim() &&
+        !String(r.id || "")
+          .toLowerCase()
+          .includes(requestIdSearch.trim().toLowerCase())
+      )
+        return false;
       if (filters.status && r.status !== filters.status) return false;
       if (filters.level && r.level !== filters.level) return false;
       if (filters.training_type && r.training_type !== filters.training_type)
@@ -371,7 +285,7 @@ export default function TrainingRequestList() {
     setCurrentPage(1);
 
     return result;
-  }, [requests, filters]);
+  }, [requests, filters, requestIdSearch]);
 
   // PAGINATION CHANGE START
 
@@ -383,78 +297,74 @@ export default function TrainingRequestList() {
     return filtered.slice(start, end);
   }, [filtered, currentPage]);
 
-  // PAGINATION CHANGE END
-
-  /* ---------------- TR Deletion Handler Actions ---------------- */
-  const handleDeleteRequest = async (requestId) => {
-    if (
-      !window.confirm(
-        `Are you sure you want to delete Training Request #${requestId}?`,
-      )
-    )
-      return;
-    try {
-      await TMS_API.deleteTrainingRequest(requestId);
-      alert("Training Request deleted successfully.");
-      setRefreshToken((t) => t + 1); // Forces table data to re-fetch
-    } catch (error) {
-      console.error("Deletion failed:", error);
-      alert(
-        error?.response?.data?.detail ||
-          "Failed to delete the training request.",
-      );
-    }
-  };
-
   /* ---------------- render helpers ---------------- */
 
-  const renderUsername = (id) => userMap[id] || id || "-";
-  const renderPartnerName = (id) => partnerMap[id] || id || "-";
-  const renderTrainingName = (id) => planMap[id] || id || "-";
-
-  useEffect(() => {
-    async function loadThemes() {
-      try {
-        const tRes = await TMS_API.trainingThemes.list({
-          page_size: 100,
-        });
-
-        const allThemes = tRes?.data?.results || [];
-
-        if (role === "smmu") {
-          const myTheme = allThemes.find(
-            (t) => Number(t.expert) === Number(user?.id),
-          );
-
-          if (myTheme) {
-            setThemes([myTheme]);
-            // auto fetch only this theme
-            fetchRequestsWithFilters({
-              theme_id: myTheme.id,
-            });
-          } else {
-            setThemes([]);
-          }
-        } else {
-          setThemes(allThemes);
-        }
-      } catch (e) {
-        console.error("Theme load failed", e);
-      }
+  const handleExportExcel = () => {
+    if (!filtered.length) {
+      alert("No training requests available to export.");
+      return;
     }
 
-    if (user?.id) {
-      loadThemes();
-    }
-  }, [user?.id, role]);
+    const escapeCell = (value) =>
+      String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;");
+    const headers = [
+      "ID",
+      "Theme",
+      "Plan",
+      "Level",
+      "Status",
+      "Partner",
+      "District",
+      "Block",
+      "Participant Count",
+      "Financial Year",
+    ];
+    const rows = filtered.map((r) => [
+      r.id,
+      r.theme_name,
+      r.training_plan_name,
+      r.level,
+      r.status,
+      r.partner_name,
+      r.district_name,
+      r.block_name,
+      r.participant_count,
+      r.financial_year,
+    ]);
+    const table = [
+      "<table><thead><tr>",
+      headers.map((header) => `<th>${escapeCell(header)}</th>`).join(""),
+      "</tr></thead><tbody>",
+      rows
+        .map(
+          (row) =>
+            `<tr>${row
+              .map((cell) => `<td>${escapeCell(cell)}</td>`)
+              .join("")}</tr>`,
+        )
+        .join(""),
+      "</tbody></table>",
+    ].join("");
+    const blob = new Blob(
+      [`<html><head><meta charset="UTF-8"></head><body>${table}</body></html>`],
+      { type: "application/vnd.ms-excel;charset=utf-8;" },
+    );
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "Training_Requests.xls";
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
 
   /* ---------------- UI ---------------- */
 
   return (
     <div className="app-shell">
-      
       <div className="content-area">
-        
         <div className="main-area">
           {/* <TopNav
           left={
@@ -474,15 +384,16 @@ export default function TrainingRequestList() {
 
             <div
               style={{
-                maxWidth: 1200,
-                margin: "20px auto",
+                width: "100%",
+                maxWidth: "none",
+                margin: "0 auto",
               }}
+              className="training-request-page"
             >
               {/* FILTER */}
               <div style={{ marginBottom: 14 }}>
                 <TrainingRequestFilter
                   user={user}
-                  themes={themes}
                   lockedTheme={role === "smmu"}
                   onApply={fetchRequestsWithFilters}
                 />
@@ -493,25 +404,65 @@ export default function TrainingRequestList() {
                 style={{
                   display: "flex",
                   alignItems: "center",
+                  flexWrap: "wrap",
+                  gap: 10,
                   marginBottom: 12,
                   borderBottom: "2px solid #a7c6ed",
                   paddingBottom: 8,
                 }}
               >
-                <h2 style={{ margin: 0, color: "#2b4e72" }}>
-                  Training Requests
+                <h2
+                  style={{
+                    margin: 0,
+                    color: "#2b4e72",
+                    fontSize: 20,
+                    fontWeight: 900,
+                  }}
+                >
+                  <FaFileSignature /> Training Requests
                 </h2>
 
-                <div style={{ marginLeft: "auto" }}>
-                  <button
-                    className="btnPrimary"
-                    onClick={() => {
-                      localStorage.removeItem(CACHE_KEY);
-                      localStorage.removeItem(TP_SELF_PARTNER_KEY);
-                      setRefreshToken((t) => t + 1);
+                <div
+                  style={{
+                    marginLeft: "auto",
+                    display: "flex",
+                    alignItems: "center",
+                    gap: 8,
+                    flexWrap: "wrap",
+                  }}
+                >
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 8,
+                      color: "#2b4e72",
+                      fontSize: 14,
+                      fontWeight: 600,
                     }}
                   >
-                    Refresh
+                    Search by ID
+                    <input
+                      type="search"
+                      value={requestIdSearch}
+                      onChange={(event) =>
+                        setRequestIdSearch(event.target.value)
+                      }
+                      placeholder="Enter Training Request ID No."
+                      aria-label="Search training request by ID"
+                      style={{
+                        width: 190,
+                        minHeight: 36,
+                        padding: "8px 10px",
+                        border: "1px solid #9db9d8",
+                        borderRadius: 6,
+                        color: "#1e3a5f",
+                        outline: "none",
+                      }}
+                    />
+                  </label>
+                  <button className="btnPrimary" onClick={handleExportExcel}>
+                    Export to Excel
                   </button>
                 </div>
               </div>
@@ -520,16 +471,19 @@ export default function TrainingRequestList() {
               <div
                 style={{
                   background: "#fff",
-                  padding: 14,
+                  padding: 12,
                   borderRadius: 10,
                   border: "2px solid #3d6ba6",
                   boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
                 }}
+                className="admin-training-table-card"
               >
                 <div
+                  className="training-table-scroll"
                   style={{
-                    maxHeight: 520,
-                    overflow: "auto",
+                    height: "auto",
+                    minHeight: 0,
+                    overflow: "visible",
                   }}
                 >
                   <table className="training-table">
@@ -585,7 +539,6 @@ export default function TrainingRequestList() {
                                 >
                                   View
                                 </button>
-                              
                               </div>
                             </td>
                           </tr>
@@ -651,52 +604,54 @@ export default function TrainingRequestList() {
                             >
                               View
                             </button>
-                           
                           </div>
                         </div>
                       ))
                     )}
                   </div>
-                  {/* PAGINATION CONTROLS */}
-                  <div
-                    style={{
-                      display: "flex",
-                      justifyContent: "space-between",
-                      alignItems: "center",
-                      marginTop: 12,
-                    }}
-                  >
-                    <div style={{ color: "#2b4e72", fontSize: 14 }}>
-                      Page {currentPage} of {totalPages || 1}
-                    </div>
+                </div>
+                {/* PAGINATION CONTROLS */}
+                <div
+                  className="training-pagination"
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    gap: 12,
+                    paddingTop: 12,
+                    minHeight: 42,
+                  }}
+                >
+                  <div style={{ color: "#2b4e72", fontSize: 14 }}>
+                    Page {currentPage} of {totalPages || 1}
+                  </div>
 
-                    <div style={{ display: "flex", gap: 6 }}>
+                  <div style={{ display: "flex", gap: 6 }}>
+                    <button
+                      className="btnPage"
+                      disabled={currentPage === 1}
+                      onClick={() => setCurrentPage((p) => p - 1)}
+                    >
+                      Prev
+                    </button>
+
+                    {[...Array(totalPages)].map((_, i) => (
                       <button
-                        className="btnPage"
-                        disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
+                        key={i}
+                        className={`btnPage ${currentPage === i + 1 ? "activePage" : ""}`}
+                        onClick={() => setCurrentPage(i + 1)}
                       >
-                        Prev
+                        {i + 1}
                       </button>
+                    ))}
 
-                      {[...Array(totalPages)].map((_, i) => (
-                        <button
-                          key={i}
-                          className={`btnPage ${currentPage === i + 1 ? "activePage" : ""}`}
-                          onClick={() => setCurrentPage(i + 1)}
-                        >
-                          {i + 1}
-                        </button>
-                      ))}
-
-                      <button
-                        className="btnPage"
-                        disabled={currentPage === totalPages}
-                        onClick={() => setCurrentPage((p) => p + 1)}
-                      >
-                        Next
-                      </button>
-                    </div>
+                    <button
+                      className="btnPage"
+                      disabled={currentPage === totalPages}
+                      onClick={() => setCurrentPage((p) => p + 1)}
+                    >
+                      Next
+                    </button>
                   </div>
                 </div>
               </div>
@@ -740,8 +695,10 @@ export default function TrainingRequestList() {
 /* TABLE */
 .training-table{
   width:100%;
+  height:auto;
   border-collapse:collapse;
-  font-size:14px;
+  table-layout:fixed;
+  font-size:13px;
 }
 
 /* HEADER */
@@ -751,20 +708,50 @@ export default function TrainingRequestList() {
 }
 
 .training-table th{
-  padding:10px;
+  padding:9px 7px;
   text-align:left;
   font-weight:600;
   text-align:center;
-  justify-content:center;  
+  justify-content:center;
+  white-space:normal;
+  line-height:1.2;
 }
 
 /* BODY */
 .training-table td{
-  padding:10px;
+  padding:8px 7px;
   border-bottom:1px solid #e4ecf5;
   text-align:center;
-  justify-content:center;  
+  justify-content:center;
+  vertical-align:middle;
+  line-height:1.2;
+  overflow-wrap:anywhere;
 }
+
+.training-table th:nth-child(1),
+.training-table td:nth-child(1){ width:5%; }
+.training-table th:nth-child(2),
+.training-table td:nth-child(2){ width:10%; }
+.training-table th:nth-child(3),
+.training-table td:nth-child(3){ width:14%; }
+.training-table th:nth-child(4),
+.training-table td:nth-child(4){ width:8%; }
+.training-table th:nth-child(5),
+.training-table td:nth-child(5){ width:10%; }
+.training-table th:nth-child(6),
+.training-table td:nth-child(6){ width:19%; }
+.training-table th:nth-child(7),
+.training-table td:nth-child(7){ width:10%; }
+.training-table th:nth-child(8),
+.training-table td:nth-child(8){ width:10%; }
+.training-table th:nth-child(9),
+.training-table td:nth-child(9){ width:7%; }
+.training-table th:nth-child(10),
+.training-table td:nth-child(10){ width:9%; }
+.training-table th:nth-child(11),
+.training-table td:nth-child(11){ width:8%; }
+.training-table th:nth-child(12),
+.training-table td:nth-child(12){ display:none; }
 
 /* ROW BACKGROUND */
 .training-table tbody tr{
@@ -778,8 +765,21 @@ export default function TrainingRequestList() {
 
 /* HOVER */
 .training-table tbody tr:hover{
-  background:#a7c6ed;
+  background:#dbeafe;
   transition:background .2s;
+}
+
+.training-table td:nth-child(6){
+  font-size:12px;
+}
+
+.admin-training-table-card{
+  width:100%;
+}
+
+.training-pagination{
+  border-top:1px solid #e4ecf5;
+  color:#2b4e72;
 }
 
 /* LOADING / EMPTY */
@@ -862,6 +862,21 @@ export default function TrainingRequestList() {
 
 @media (max-width: 768px){
 
+  .training-request-page{
+    padding:0 !important;
+  }
+
+  .training-table-scroll{
+    height:auto !important;
+    min-height:0 !important;
+    overflow:visible !important;
+  }
+
+  .training-pagination{
+    flex-wrap:wrap;
+    justify-content:center !important;
+  }
+
   /* 🔥 FORCE HIDE TABLE COMPLETELY */
   .training-table{
     display:none !important; /* 🔽 IMPORTANT FIX */
@@ -908,7 +923,6 @@ export default function TrainingRequestList() {
 
 `}</style>
           </main>
-         
         </div>
       </div>
     </div>

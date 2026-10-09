@@ -48,7 +48,7 @@ export default function HeroContactUs() {
               <p>{t.callDay}</p>
               <p>{t.callTime}</p>
               <a href="tel:+919236434631">+91-9236434631</a>
-              <a href="tel:+918840961627">+91-8840961627</a>
+              <a href="tel:+919140346524">+91-9140346524</a>
             </div>
           </div>
 

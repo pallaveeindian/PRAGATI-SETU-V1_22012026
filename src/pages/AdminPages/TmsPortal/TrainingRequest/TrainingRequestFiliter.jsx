@@ -1,5 +1,5 @@
 // src/pages/TMS/TRs/training_req_list_filters.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 
 import { LOOKUP_API, TMS_API } from "../../../../api/axios";
 import { getCanonicalRole } from "../../../../utils/roleUtils";
@@ -53,10 +53,16 @@ export default function TrainingRequestFilter({ user, onApply }) {
   const [partnerId, setPartnerId] = useState("");
   const [themes, setThemes] = useState([]);
   const [trainingPlans, setTrainingPlans] = useState([]);
+  const lookupLoadKeyRef = useRef("");
+  const onApplyRef = useRef(onApply);
+  onApplyRef.current = onApply;
 
   /* ================= INITIAL LOOKUPS ================= */
   useEffect(() => {
     if (!user?.id) return;
+    const lookupLoadKey = `${user.id}:${role}`;
+    if (lookupLoadKeyRef.current === lookupLoadKey) return;
+    lookupLoadKeyRef.current = lookupLoadKey;
 
     (async () => {
       try {
@@ -85,7 +91,7 @@ export default function TrainingRequestFilter({ user, onApply }) {
             }));
 
             // optional: auto fetch
-            onApply({
+            onApplyRef.current({
               theme_id: myTheme.id,
             });
           } else {
@@ -110,16 +116,14 @@ export default function TrainingRequestFilter({ user, onApply }) {
         }
 
         if (role === "dtp") {
-          const pRes = await TMS_API.trainingPartners.list({ page_size: 100 });
-          setPartners(pRes?.data?.results || []);
           const resp = await TMS_API.parentPartner();
-          setPartnerId(resp.data.partner_id);
+          setPartnerId(resp?.data?.partner_id || "");
         }
       } catch (err) {
         console.error("Training request filter lookup failed", err);
       }
     })();
-  }, [role, user?.id, partnerId]);
+  }, [role, user?.id]);
 
   /* ================= DTP AUTO DISTRICT ================= */
   useEffect(() => {
@@ -436,10 +440,7 @@ export default function TrainingRequestFilter({ user, onApply }) {
             }
           >
             <option value="">Status</option>
-            {[
-              "BATCHING",
-              "COMPLETED",
-            ].map((s) => (
+            {["BATCHING", "COMPLETED"].map((s) => (
               <option key={s} value={s}>
                 {s}
               </option>

@@ -1,6 +1,6 @@
 // src/pages/PublicTMS/TMSModules.jsx
-
-import React, { useContext } from "react";
+import React, { useContext, useState } from "react";
+import Login from "../Login.jsx";
 import {
   FaRegFileAlt,
   FaUsers,
@@ -80,40 +80,47 @@ const content = {
 export default function TMSModules() {
   const { lang } = useContext(LanguageContext);
   const t = content[lang] || content.en;
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
-    <section className="tms-modules">
-      <div className="tms-modules-container">
-        <div className="tms-modules-header">
-          <div className="tms-modules-title">
-            <span className="modules-title-line"></span>
-            <h2>{t.heading}</h2>
+    <>
+      <section className="tms-modules">
+        <div className="tms-modules-container">
+          <div className="tms-modules-header">
+            <div className="tms-modules-title">
+              <span className="modules-title-line"></span>
+              <h2>{t.heading}</h2>
+            </div>
+
+            <button
+              type="button"
+              className="modules-view-btn"
+              onClick={() => setIsLoginOpen(true)}
+            >
+              {t.viewAll}
+
+              <FaArrowRight />
+            </button>
           </div>
 
-          <button className="modules-view-btn">
-            {t.viewAll}
-            <FaArrowRight />
-          </button>
+          <div className="tms-modules-grid">
+            {t.modules.map((module) => (
+              <div className="tms-module-card" key={module.id}>
+                <div className="tms-module-content">
+                  <div className="tms-module-icon">{module.icon}</div>
+                  <h3>{module.title}</h3>
+                  <p>{module.description}</p>
+                </div>
+
+                <div className="tms-module-image">
+                  <img src={module.image} alt={module.title} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="tms-modules-grid">
-          {t.modules.map((module) => (
-            <div className="tms-module-card" key={module.id}>
-              <div className="tms-module-content">
-                <div className="tms-module-icon">{module.icon}</div>
-                <h3>{module.title}</h3>
-                <p>{module.description}</p>
-              </div>
-
-              <div className="tms-module-image">
-                <img src={module.image} alt={module.title} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <style>{`
+        <style>{`
         /* MODULE SECTION */
         .tms-modules {
           width: 100%;
@@ -376,6 +383,8 @@ export default function TMSModules() {
           .tms-module-content p { max-width: 100%; }
         }
       `}</style>
-    </section>
+      </section>
+      <Login isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+    </>
   );
 }

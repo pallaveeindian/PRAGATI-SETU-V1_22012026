@@ -325,13 +325,13 @@ export default function RegisterGrievance() {
             </a>
             <br></br>
             <a
-              href="https://wa.me/918840961627
+              href="https://wa.me/919140346524
 
 "
               target="_blank"
               rel="noreferrer"
             >
-              +91-8840961627
+              +91-9140346524
             </a>
           </div>
         )}

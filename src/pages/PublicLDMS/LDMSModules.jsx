@@ -1,6 +1,6 @@
 // src/pages/PublicLDMS/LDMSModules.jsx
 
-import React, { useContext } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import {
   FaRegFileAlt,
   FaUsers,
@@ -8,6 +8,7 @@ import {
   FaArrowRight,
 } from "react-icons/fa";
 import { LanguageContext } from "../LanguageContext.jsx";
+import Login from "../Login.jsx";
 
 // change only these image names if your file names are different
 import incomePlanningImg from "../../assets/LDMS/income_planning.png";
@@ -80,40 +81,47 @@ const content = {
 export default function LDMSModules() {
   const { lang } = useContext(LanguageContext);
   const t = content[lang] || content.en;
+  const [isLoginOpen, setIsLoginOpen] = useState(false);
 
   return (
-    <section className="ldms-modules">
-      <div className="ldms-modules-container">
-        <div className="ldms-modules-header">
-          <div className="ldms-modules-title">
-            <span className="ldms-modules-line"></span>
-            <h2>{t.heading}</h2>
+    <>
+      <section className="ldms-modules">
+        <div className="ldms-modules-container">
+          <div className="ldms-modules-header">
+            <div className="ldms-modules-title">
+              <span className="ldms-modules-line"></span>
+              <h2>{t.heading}</h2>
+            </div>
+
+            <button
+              type="button"
+              className="ldms-view-modules-btn"
+              onClick={() => setIsLoginOpen(true)}
+            >
+              <span>{t.viewAll}</span>
+
+              <FaArrowRight />
+            </button>
           </div>
 
-          <button className="ldms-view-modules-btn">
-            <span>{t.viewAll}</span>
-            <FaArrowRight />
-          </button>
+          <div className="ldms-modules-grid">
+            {t.modules.map((module) => (
+              <div className="ldms-module-card" key={module.id}>
+                <div className="ldms-module-content">
+                  <div className="ldms-module-icon">{module.icon}</div>
+                  <h3>{module.title}</h3>
+                  <p>{module.description}</p>
+                </div>
+
+                <div className="ldms-module-image">
+                  <img src={module.image} alt={module.title} />
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
 
-        <div className="ldms-modules-grid">
-          {t.modules.map((module) => (
-            <div className="ldms-module-card" key={module.id}>
-              <div className="ldms-module-content">
-                <div className="ldms-module-icon">{module.icon}</div>
-                <h3>{module.title}</h3>
-                <p>{module.description}</p>
-              </div>
-
-              <div className="ldms-module-image">
-                <img src={module.image} alt={module.title} />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      <style>{`
+        <style>{`
         .ldms-modules {
           width: 100%;
           padding: 18px 0 24px;
@@ -380,6 +388,8 @@ export default function LDMSModules() {
           .ldms-module-image::before { display: none; }
         }
       `}</style>
-    </section>
+      </section>
+      <Login isOpen={isLoginOpen} onClose={() => setIsLoginOpen(false)} />
+    </>
   );
 }

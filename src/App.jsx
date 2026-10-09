@@ -1,3 +1,4 @@
+// src\App.jsx
 import React, { useState, useEffect } from "react";
 import {
   Routes,
@@ -30,6 +31,10 @@ import FrequentlyAskedQuestions from "./pages/FrequentlyAskedQuestions";
 import PublicReports from "./pages/PublicReports";
 import WhatsNew from "./pages/WhatsNew";
 import ContactDetails from "./pages/ContactDetails.jsx";
+import NewsUpdates from "./pages/NewsUpdates";
+import PrivacyPolicy from "./pages/PrivacyPolicy";
+import TermsOfUse from "./pages/TermsOfUse";
+import Accessibility from "./pages/Accessibility";
 
 // Grievance Portal
 import RegisterGrievance from "./pages/RegisterGrievance.jsx";
@@ -179,6 +184,10 @@ export default function App() {
           path="/frequently-asked-questions"
           element={<FrequentlyAskedQuestions />}
         />
+        <Route path="/news-updates" element={<NewsUpdates />} />
+        <Route path="/privacy-policy" element={<PrivacyPolicy />} />
+        <Route path="/terms-of-use" element={<TermsOfUse />} />
+        <Route path="/accessibility" element={<Accessibility />} />
         <Route path="/beneficiary-profiling" element={<BMSLayout />} />
 
         <Route path="/contact-us" element={<ContactDetails />} />

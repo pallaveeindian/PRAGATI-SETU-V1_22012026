@@ -1,5 +1,5 @@
 //src/pages/AdminPages/TmsPortal/LearningMaterial/Llm.jsx
-import React, { useContext, useEffect, useState, useRef } from "react";
+import React, { useContext, useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { AuthContext } from "../../../../contexts/AuthContext";
@@ -11,15 +11,15 @@ import {
   FaDownload,
   FaSpinner,
   FaTrash,
+  FaBookOpen,
 } from "react-icons/fa";
 
 export default function Llm() {
-  const { user } = useContext(AuthContext) || {};
+  const { user, authReady, isAuthenticated } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const role = user?.role_id;
   const isSMMU = role == 3;
 
-  const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [materials, setMaterials] = useState([]);
 
@@ -35,8 +35,6 @@ export default function Llm() {
   // Lookups
   const [themes, setThemes] = useState([]);
   const [plans, setPlans] = useState([]);
-
-  const didInitRef = useRef(false);
 
   // 1. Fetch Themes (and lock for SMMU)
   useEffect(() => {
@@ -62,11 +60,13 @@ export default function Llm() {
         console.error("Failed to fetch themes", err);
       }
     };
-    if (user?.id) fetchThemes();
-  }, [isSMMU, user?.id]);
+    if (authReady && isAuthenticated && user?.id) fetchThemes();
+  }, [authReady, isAuthenticated, isSMMU, user?.id]);
 
   // 2. Fetch Plans based on Theme Filter
   useEffect(() => {
+    if (!authReady || !isAuthenticated) return;
+
     if (!themeFilter) {
       setPlans([]);
       setPlanFilter("");
@@ -76,7 +76,7 @@ export default function Llm() {
       .list({ theme: themeFilter, page_size: 200 })
       .then((r) => setPlans(r?.data?.results || []))
       .catch(() => setPlans([]));
-  }, [themeFilter]);
+  }, [authReady, isAuthenticated, themeFilter]);
 
   // 3. Fetch Learning Materials
   const fetchMaterials = async () => {
@@ -102,6 +102,8 @@ export default function Llm() {
   };
 
   useEffect(() => {
+    if (!authReady || !isAuthenticated) return;
+
     // Prevent fetching before SMMU theme is resolved
     if (isSMMU && !themeFilter) return;
 
@@ -112,7 +114,16 @@ export default function Llm() {
 
     return () => clearTimeout(timeoutId);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [page, pageSize, search, themeFilter, planFilter, isSMMU]);
+  }, [
+    authReady,
+    isAuthenticated,
+    page,
+    pageSize,
+    search,
+    themeFilter,
+    planFilter,
+    isSMMU,
+  ]);
 
   // Reset page to 1 when filters change
   useEffect(() => {
@@ -148,9 +159,7 @@ export default function Llm() {
 
   return (
     <div className="app-shell">
-      
       <div className="content-area">
-       
         <div className="main-area">
           <main style={{ padding: 18, minHeight: "100vh" }}>
             {/* Header & Add Button */}
@@ -164,7 +173,7 @@ export default function Llm() {
               }}
             >
               <h2 style={{ margin: 0, color: "#2b4e72" }}>
-                Learning Materials Library
+                <FaBookOpen /> Learning Materials Library
               </h2>
               {isSMMU && (
                 <div
@@ -472,7 +481,6 @@ export default function Llm() {
               )}
             </div>
           </main>
-         
         </div>
       </div>
 

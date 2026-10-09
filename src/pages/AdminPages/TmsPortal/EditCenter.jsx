@@ -1,3 +1,4 @@
+// src\pages\AdminPages\TmsPortal\EditCenter.jsx
 import React, { useContext, useEffect, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -72,22 +73,33 @@ function ConfirmModal({ open, payload, onClose, onConfirm, submitting }) {
 }
 /* ===================== MAIN ===================== */
 
-export default function TpCentreRegistration() {
+export default function TpCentreRegistration({
+  centreId: centreIdProp,
+  onClose,
+}) {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { centreId } = useParams(); // 👈 EDIT MODE
-  const [navCollapsed, setNavCollapsed] = useState(false);
+  const { centreId: routeCentreId } = useParams(); // Route edit mode
+  const centreId = centreIdProp || routeCentreId;
 
   const isEdit = Boolean(centreId);
   const role = getCanonicalRole(user || {});
+  const stepStorageKey = `tms-centre-edit-step-${centreId || "new"}`;
 
-  const [step, setStep] = useState(0);
+  const [step, setStep] = useState(() => {
+    if (typeof window === "undefined") return 0;
+    const savedStep = Number(window.sessionStorage.getItem(stepStorageKey));
+    return Number.isInteger(savedStep) &&
+      savedStep >= 0 &&
+      savedStep < STEPS.length
+      ? savedStep
+      : 0;
+  });
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
 
   /* ===================== SCOPE RESOLUTION ===================== */
   const [resolvedPartnerId, setResolvedPartnerId] = useState(null);
-  const [dtpDistrictId, setDtpDistrictId] = useState(null);
 
   /* ===================== LOOKUPS ===================== */
 
@@ -129,6 +141,10 @@ export default function TpCentreRegistration() {
   const [rooms, setRooms] = useState([{ ...EMPTY_ROOM }]);
   const [media, setMedia] = useState([{ ...EMPTY_MEDIA }]);
 
+  useEffect(() => {
+    window.sessionStorage.setItem(stepStorageKey, String(step));
+  }, [step, stepStorageKey]);
+
   /* ===================== INIT SCOPE (DTP / TP) ===================== */
 
   useEffect(() => {
@@ -150,7 +166,6 @@ export default function TpCentreRegistration() {
           const dId =
             geoRes?.data?.districts?.[0] ?? geoRes?.data?.district ?? null;
           if (dId) {
-            setDtpDistrictId(String(dId));
             if (!isEdit) {
               // Lock the district in form state for new registrations
               setCentre((prev) => ({ ...prev, district: String(dId) }));
@@ -386,22 +401,15 @@ export default function TpCentreRegistration() {
 
   return (
     <div className="app-shell">
-     
       <div className="content-area">
-       
         <div className="main-area">
-          <main style={{ padding: "50px 18px" }}>
+          <main className="edit-centre-main">
             {/* ===== Page Header ===== */}
-            <div className="tp-page-header">
-              <button
-                type="button"
-                className="tp-btn-outline"
-                onClick={() => navigate(-1)}
-                style={{ display: "inline-flex", alignItems: "center", gap: 8 }}
-              >
-                <FaArrowLeft /> Back
-              </button>
+            <div className="tp-page-header edit-centre-header">
               <div>
+                <div className="edit-centre-eyebrow">
+                  TRAINING CENTRE MANAGEMENT
+                </div>
                 <h2 className="tp-page-title">
                   <FaUniversity />
                   {isEdit
@@ -409,23 +417,27 @@ export default function TpCentreRegistration() {
                     : "Training Centre Registration"}
                 </h2>
                 <p className="tp-page-subtitle">
-                  Fill the required details to register your training centre
+                  Update the details below to keep your centre profile complete
                 </p>
               </div>
+              <button
+                type="button"
+                className="tp-btn-outline edit-back-button"
+                onClick={() => (onClose ? onClose() : navigate(-1))}
+              >
+                <FaArrowLeft /> Back to centres
+              </button>
             </div>
             {/* ===== Stepper ===== */}
-            <div className="stepper">
+            <div className="stepper edit-centre-stepper">
               {STEPS.map((s, i) => (
                 <button
                   key={s}
                   className={i === step ? "step active" : "step"}
                   onClick={() => setStep(i)}
                 >
-                  <span
-                    style={{ display: "flex", alignItems: "center", gap: 6 }}
-                  >
-                    {i + 1}. {s}
-                  </span>
+                  <span className="edit-step-number">{i + 1}</span>
+                  <span>{s}</span>
                 </button>
               ))}
             </div>
@@ -557,15 +569,7 @@ export default function TpCentreRegistration() {
                   ],
                   "basic",
                 )}
-                <div
-                  style={{
-                    marginTop: 15,
-                    padding: 12,
-                    background: "#f0f8ff",
-                    borderLeft: "4px solid #5a8cc2",
-                    fontSize: 14,
-                  }}
-                >
+                <div className="edit-instructions">
                   <strong>Instructions for Basic Details:</strong>
                   <ul style={{ margin: "5px 0 0 20px", padding: 0 }}>
                     <li>
@@ -969,7 +973,7 @@ export default function TpCentreRegistration() {
                 )}
 
                 <button
-                  className="tp-btn"
+                  className="tp-btn add-room-button"
                   onClick={() => setRooms([...rooms, { ...EMPTY_ROOM }])}
                 >
                   <FaPlus /> Add Room
@@ -1116,6 +1120,7 @@ export default function TpCentreRegistration() {
 
                           {/* New file upload */}
                           <input
+                            className="photo-file-input"
                             type="file"
                             accept=".jpg,.jpeg,.pdf"
                             onChange={(e) => {
@@ -1183,7 +1188,7 @@ export default function TpCentreRegistration() {
                 )}
 
                 <button
-                  className="tp-btn"
+                  className="tp-btn add-room-button add-photo-button"
                   onClick={() => setMedia([...media, { ...EMPTY_MEDIA }])}
                 >
                   <FaPlus /> Add Photos
@@ -1221,7 +1226,7 @@ export default function TpCentreRegistration() {
             )}
 
             {/* ===================== ACTIONS ===================== */}
-            <div style={{ textAlign: "right", marginTop: 20 }}>
+            <div className="edit-centre-actions">
               {step > 0 && (
                 <button
                   className="tp-btn-outline"
@@ -1254,15 +1259,263 @@ export default function TpCentreRegistration() {
               onConfirm={handleConfirmSubmit}
             />
           </div>
-         
         </div>
       </div>
 
       {/* Confirm Modal */}
       <style>{`
+      /* Polished centre editor surface */
+      .edit-centre-main {
+        min-height: 100%;
+        padding: 28px 32px 42px !important;
+        background:
+          radial-gradient(circle at 96% 0%, rgba(59,130,246,.13), transparent 28%),
+          linear-gradient(180deg, #f7faff 0%, #eef3f9 100%);
+      }
+      .edit-centre-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 22px;
+        margin: 0 auto 18px;
+        max-width: 1180px;
+        padding: 22px 26px;
+        border: 1px solid #dce7f4;
+        border-radius: 20px;
+        background: linear-gradient(110deg, #ffffff 0%, #f8fbff 100%);
+        box-shadow: 0 12px 30px rgba(30,64,175,.08);
+      }
+      .edit-centre-header > div:first-child { flex: 1; }
+      .edit-centre-eyebrow {
+        margin-bottom: 7px;
+        color: #2563eb;
+        font-size: .66rem;
+        font-weight: 900;
+        letter-spacing: .14em;
+      }
+      .edit-centre-header .tp-page-title {
+        margin: 0;
+        font-size: 1.42rem;
+        color: #163b79;
+        letter-spacing: -.02em;
+      }
+      .edit-centre-header .tp-page-title svg {
+        margin-right: 9px;
+        color: #2563eb;
+      }
+      .edit-centre-header .tp-page-subtitle {
+        margin: 7px 0 0;
+        color: #64748b;
+        font-size: .86rem;
+      }
+      .edit-back-button {
+        flex: none;
+        min-height: 42px;
+        padding: 0 16px !important;
+        border-radius: 11px !important;
+        border-color: #b9cbe3 !important;
+        color: #24558f !important;
+        background: #fff !important;
+        box-shadow: 0 4px 10px rgba(37,85,143,.08);
+      }
+      .edit-back-button:hover {
+        color: #fff !important;
+        border-color: #2563eb !important;
+        background: #2563eb !important;
+      }
+      .edit-centre-stepper {
+        max-width: 1180px;
+        margin: 0 auto 18px !important;
+        padding: 8px;
+        gap: 6px !important;
+        border: 1px solid #dce7f4;
+        border-radius: 15px;
+        background: rgba(255,255,255,.9);
+        box-shadow: 0 8px 20px rgba(30,64,175,.06);
+      }
+      .edit-centre-stepper .step {
+        min-height: 44px;
+        border-radius: 11px !important;
+        border: 1px solid transparent !important;
+        background: transparent !important;
+        color: #64748b !important;
+        font-weight: 800 !important;
+        transition: .2s;
+      }
+      .edit-step-number {
+        display: inline-grid;
+        place-items: center;
+        width: 24px;
+        height: 24px;
+        margin-right: 7px;
+        border: 1px solid #cbd5e1;
+        border-radius: 50%;
+        background: #f8fafc;
+        color: #64748b;
+        font-size: .72rem;
+      }
+      .edit-centre-stepper .step:hover { background: #eef2ff !important; color: #4338ca !important; }
+      .edit-centre-stepper .step.active {
+        background: linear-gradient(135deg,#4338ca,#2563eb) !important;
+        color: #fff !important;
+        box-shadow: 0 6px 14px rgba(37,99,235,.22);
+      }
+      .edit-centre-stepper .step.active .edit-step-number {
+        border-color: rgba(255,255,255,.4);
+        background: rgba(255,255,255,.18);
+        color: #fff;
+      }
+      .edit-centre-main .tp-table {
+        max-width: 1180px;
+        margin: 0 auto 18px !important;
+        border: 1px solid #e2e8f0 !important;
+        border-radius: 15px;
+        overflow: hidden;
+        background: #fff;
+        box-shadow: 0 8px 22px rgba(30,41,59,.055);
+      }
+      .edit-centre-main .tp-table td {
+        padding: 14px 16px !important;
+        border-color: #edf1f6 !important;
+      }
+      .edit-centre-main .tp-table td:first-child {
+        width: 28% !important;
+        background: linear-gradient(100deg,#f5f8fc,#fbfdff);
+        color: #27466d;
+        font-size: .82rem;
+        font-weight: 800;
+        letter-spacing: .02em;
+      }
+      .edit-centre-main .input-blue {
+        min-height: 40px;
+        border-color: #cbd5e1 !important;
+        border-radius: 9px;
+        padding: 9px 11px;
+      }
+      .edit-centre-main .input-blue:focus {
+        border-color: #6366f1 !important;
+        box-shadow: 0 0 0 3px rgba(99,102,241,.13);
+      }
+      .edit-instructions {
+        max-width: 1180px;
+        margin: 0 auto 18px;
+        padding: 13px 16px;
+        border: 1px solid #dbeafe;
+        border-left: 4px solid #4f46e5;
+        border-radius: 12px;
+        background: linear-gradient(135deg,#eff6ff,#f5f3ff);
+        color: #475569;
+        font-size: .8rem;
+        line-height: 1.55;
+      }
+      .edit-centre-main > div[style*="margin-top: 15px"] {
+        max-width: 1180px !important;
+        margin: 0 auto 18px !important;
+        padding: 14px 18px !important;
+        border: 1px solid #dbeafe !important;
+        border-left: 4px solid #4f46e5 !important;
+        border-radius: 12px !important;
+        background: linear-gradient(135deg,#eff6ff,#f8faff) !important;
+        color: #475569;
+        font-size: .8rem !important;
+        line-height: 1.55;
+      }
+      .edit-centre-main > div[style*="margin-top: 15px"] strong { color: #3730a3; }
+      .edit-centre-main > div[style*="margin-top: 15px"] ul { margin-bottom: 0 !important; }
+      .edit-instructions strong { color: #3730a3; }
+      .edit-instructions ul { margin-bottom: 0 !important; }
+      .edit-centre-actions {
+        max-width: 1180px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 14px;
+        margin: 22px auto 0;
+        padding: 16px 0 2px;
+        border-top: 1px solid #dbe5f0;
+      }
+      .edit-centre-actions:has(.tp-btn:only-child) { justify-content: flex-end; }
+      .edit-centre-actions .tp-btn,
+      .edit-centre-actions .tp-btn-outline {
+        min-width: 148px;
+        min-height: 48px;
+        padding: 0 20px !important;
+        justify-content: center;
+        gap: 9px;
+        border-radius: 11px !important;
+        font-size: .9rem !important;
+        font-weight: 800 !important;
+        box-shadow: 0 6px 14px rgba(37,99,235,.16);
+      }
+      .edit-centre-actions .tp-btn {
+        background: linear-gradient(135deg,#2563eb,#1d4ed8) !important;
+      }
+      .edit-centre-actions .tp-btn:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 9px 18px rgba(37,99,235,.25);
+      }
+      .edit-centre-actions .tp-btn-outline {
+        border-color: #b7c9df !important;
+        color: #24558f !important;
+        background: #fff !important;
+      }
+      .edit-centre-actions .tp-btn-outline:hover {
+        color: #fff !important;
+        border-color: #2563eb !important;
+        background: #2563eb !important;
+      }
+      .add-room-button {
+        display: flex !important;
+        width: fit-content;
+        min-height: 42px;
+        margin: 0 auto 18px;
+        padding: 0 18px !important;
+        border-radius: 10px !important;
+        box-shadow: 0 5px 12px rgba(37,99,235,.15);
+      }
+      .add-photo-button {
+        margin-top: 2px;
+        margin-bottom: 20px;
+      }
+      .photo-file-input {
+        min-height: 42px;
+        width: 100%;
+        padding: 5px !important;
+        border: 1px dashed #9bb5d4 !important;
+        border-radius: 10px !important;
+        background: #f8fbff !important;
+        color: #536b86;
+        cursor: pointer;
+      }
+      .photo-file-input::file-selector-button {
+        margin-right: 10px;
+        padding: 8px 14px;
+        border: 0;
+        border-radius: 7px;
+        background: #2563eb;
+        color: #fff;
+        font-weight: 800;
+        cursor: pointer;
+      }
+      .photo-file-input::file-selector-button:hover {
+        background: #1d4ed8;
+      }
+      @media (max-width: 720px) {
+        .edit-centre-main { padding: 16px 10px 28px !important; }
+        .edit-centre-header { align-items: stretch; flex-direction: column; padding: 18px; }
+        .edit-back-button { align-self: flex-start; }
+        .edit-centre-stepper { overflow-x: auto; justify-content: flex-start !important; }
+        .edit-centre-stepper .step { flex: 0 0 auto; }
+        .edit-centre-main .tp-table { min-width: 0 !important; }
+        .edit-centre-main .tp-table td { display: block; width: auto !important; }
+        .edit-centre-main .tp-table td:first-child { padding-bottom: 7px !important; }
+        .edit-centre-actions { justify-content: stretch; }
+        .edit-centre-actions button { flex: 1; }
+        .edit-centre-actions .tp-btn,
+        .edit-centre-actions .tp-btn-outline { min-width: 0; }
+      }
 
-
-/* MAIN CONTENT AREA */
+      /* MAIN CONTENT AREA */
 .content-area {
   display: flex;
   flex: 1;

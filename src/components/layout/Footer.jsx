@@ -1,6 +1,7 @@
-// src\components\layout\Footer.jsx
+// src/components/layout/Footer.jsx
 import React, { useContext } from "react";
 import { LanguageContext } from "../../pages/LanguageContext";
+import { Link } from "react-router-dom";
 import psLogo from "../../assets/PS_TRANS.png";
 import bdoLogo from "../../assets/BDO_logo.png";
 import footerBg from "../../assets/Hero/footer_bg2.png";
@@ -11,58 +12,87 @@ const content = {
       "A Digital Bridge for a Stronger Rural and Prosperous Uttar Pradesh.",
     quickLinks: "Quick Links",
     quickLinksItems: [
-      "About Us",
-      "Contact Us",
-      "Dashboards",
-      "Resource Centre",
+      { label: "About Us", to: "/about-us" },
+      { label: "Contact Us", to: "/contact-us" },
+      { label: "Dashboards", to: "/" },
+      { label: "Resource Centre", to: "/user-manual" },
     ],
     services: "Our Services",
     serviceItems: [
-      "Beneficiary Management",
-      "Training Management",
-      "Enterprise Sakhi",
-      "Lakhpati Didi",
+      { label: "Beneficiary Management", to: "/beneficiary-profiling" },
+      { label: "Training Management", to: "/training-management" },
+      { label: "Enterprise Sakhi", to: "/Enterprise-Tracking" },
+      { label: "Lakhpati Didi", to: "/Lakhpati-Didi" },
     ],
     support: "Help & Support",
     supportItems: [
-      "FAQs",
-      "Release Notes",
-      "Guidelines",
-      "Grievance Redressal",
+      { label: "FAQs", to: "/frequently-asked-questions" },
+      { label: "Release Notes", to: "/frequently-asked-questionss" },
+      { label: "Guidelines", to: "/user-manual" },
+      { label: "Grievance Redressal", to: "/register-grievance" },
     ],
     powered: "Powered by",
     rights: "All rights reserved.",
     copyright:
       "© 2026 Pragati Setu | Uttar Pradesh State Rural Livelihoods Mission",
-    bottomLinks: ["Privacy Policy", "Terms of Use", "Accessibility"],
+    bottomLinks: [
+      {
+        label: "Privacy Policy",
+        to: "/privacy-policy",
+      },
+      {
+        label: "Terms of Use",
+        to: "/terms-of-use",
+      },
+      {
+        label: "Accessibility",
+        to: "/accessibility",
+      },
+    ],
   },
   hi: {
     description: "सशक्त ग्रामीण और समृद्ध उत्तर प्रदेश के लिए एक डिजिटल सेतु।",
     quickLinks: "त्वरित लिंक",
     quickLinksItems: [
-      "हमारे बारे में",
-      "संपर्क करें",
-      "डैशबोर्ड",
-      "संसाधन केंद्र",
+      { label: "हमारे बारे में", to: "/about-us" },
+      { label: "संपर्क करें", to: "/contact-us" },
+      { label: "डैशबोर्ड", to: "/" },
+      { label: "संसाधन केंद्र", to: "/user-manual" },
     ],
     services: "हमारी सेवाएं",
     serviceItems: [
-      "लाभार्थी प्रबंधन",
-      "प्रशिक्षण प्रबंधन",
-      "एंटरप्राइज सखी",
-      "लखपति दीदी",
+      { label: "लाभार्थी प्रबंधन", to: "/beneficiary-profiling" },
+      { label: "प्रशिक्षण प्रबंधन", to: "/training-management" },
+      { label: "एंटरप्राइज सखी", to: "/Enterprise-Tracking" },
+      { label: "लखपति दीदी", to: "/Lakhpati-Didi" },
     ],
     support: "सहायता एवं समर्थन",
     supportItems: [
-      "अक्सर पूछे जाने वाले प्रश्न",
-      "रिलीज नोट्स",
-      "दिशानिर्देश",
-      "शिकायत निवारण",
+      {
+        label: "अक्सर पूछे जाने वाले प्रश्न",
+        to: "/frequently-asked-questions",
+      },
+      { label: "रिलीज नोट्स", to: "/what's-new" },
+      { label: "दिशानिर्देश", to: "/user-manual" },
+      { label: "शिकायत निवारण", to: "/register-grievance" },
     ],
     powered: "द्वारा संचालित",
     rights: "सभी अधिकार सुरक्षित।",
     copyright: "© 2026 प्रगति सेतु | उत्तर प्रदेश राज्य ग्रामीण आजीविका मिशन",
-    bottomLinks: ["गोपनीयता नीति", "उपयोग की शर्तें", "सुगम्यता"],
+    bottomLinks: [
+      {
+        label: "गोपनीयता नीति",
+        to: "/privacy-policy",
+      },
+      {
+        label: "उपयोग की शर्तें",
+        to: "/terms-of-use",
+      },
+      {
+        label: "सुगम्यता",
+        to: "/accessibility",
+      },
+    ],
   },
 };
 
@@ -79,8 +109,8 @@ function FooterColumn({ title, items }) {
       <h4>{title}</h4>
       <ul>
         {items.map((item) => (
-          <li key={item}>
-            <a href="#">{item}</a>
+          <li key={item.to}>
+            <Link to={item.to}>{item.label}</Link>
           </li>
         ))}
       </ul>
@@ -122,24 +152,22 @@ export default function Footer() {
             <small>{t.rights}</small>
           </div>
         </div>
-      </div>
 
-      <div className="footer-bottom">
-        <div className="footer-bottom-inner">
-          <p>{t.copyright}</p>
-          <div className="footer-bottom-links">
-            {t.bottomLinks.map((item, index) => (
-              <React.Fragment key={item}>
-                <a href="#">{item}</a>
-                {index < t.bottomLinks.length - 1 && <span>|</span>}
-              </React.Fragment>
-            ))}
+        <div className="footer-bottom">
+          <div className="footer-bottom-inner">
+            <p>{t.copyright}</p>
+            <div className="footer-bottom-links">
+              {t.bottomLinks.map((item) => (
+                <Link key={item.to} to={item.to} className="footer-policy-box">
+                  {item.label}
+                </Link>
+              ))}
+            </div>
           </div>
         </div>
       </div>
 
       <style>{`
-        /* FOOTER */
         .ps-footer, .ps-footer * {
           box-sizing: border-box;
         }
@@ -149,7 +177,7 @@ export default function Footer() {
           font-family: inherit;
         }
 
-        /* MAIN FOOTER — desktop shows the full background image, no cropping */
+        /* main footer — desktop shows the full background image, no cropping */
         .ps-footer-main {
           width: 100%;
           background-color: #06345e;
@@ -159,57 +187,35 @@ export default function Footer() {
           color: #ffffff;
         }
 
-        /* CONTENT */
         .footer-content {
-  width: 100%;
-  max-width: 1500px;
+          width: 100%;
+          max-width: 1500px;
+          margin: 0 auto;
+          padding: 18px 350px 18px 42px;
+          display: grid;
+          grid-template-columns: 180px 120px 155px 145px 95px;
+          gap: 24px;
+          align-items: start;
+          text-align: left;
+        }
 
-  margin: 0 auto;
-
-  padding:
-    18px
-    350px
-    18px
-    42px;
-
-  display: grid;
-
-  grid-template-columns:
-    180px
-    120px
-    155px
-    145px
-    95px;
-
-  gap: 24px;
-
-  align-items: start;
-
-  text-align: left;
-}
-
-        /* BRAND */
         .footer-brand { min-width: 0; }
         .footer-ps-logo {
           display: block;
-          width: 105px;
+          width: 85px;
           height: auto;
-          margin-bottom: 7px;
+          margin-bottom: 6px;
         }
         .footer-brand p {
           max-width: 185px;
-          margin: 0 0 11px;
+          margin: 0 0 8px;
           color: rgba(255, 255, 255, 0.9);
           font-size: 11px;
           font-weight: 600;
-          line-height: 1.45;
+          line-height: 1.4;
         }
 
-        /* SOCIAL */
-        .footer-social {
-          display: flex;
-          gap: 8px;
-        }
+        .footer-social { display: flex; gap: 8px; }
         .footer-social a {
           width: 28px;
           height: 28px;
@@ -229,14 +235,13 @@ export default function Footer() {
           color: #06345e;
         }
 
-        /* COLUMNS */
         .footer-column { min-width: 0; }
         .footer-column h4 {
-          margin: 0 0 9px;
+          margin: 0 0 8px;
           color: #ffffff;
           font-size: 13px;
           font-weight: 800;
-          line-height: 0.2;
+          line-height: 1.2;
         }
         .footer-column ul {
           list-style: none;
@@ -244,12 +249,19 @@ export default function Footer() {
           padding: 0;
           display: flex;
           flex-direction: column;
-          gap: 7px;
+          gap: 5px;
+        }
+        .footer-column li {
+          margin: 0;
+          padding: 0;
+          line-height: 1.2;
         }
         .footer-column a {
+          display: inline-block;
           color: rgba(255, 255, 255, 0.88);
           font-size: 10.5px;
           font-weight: 600;
+          line-height: 1.2;
           text-decoration: none;
         }
         .footer-column a:hover {
@@ -257,7 +269,6 @@ export default function Footer() {
           text-decoration: underline;
         }
 
-        /* POWERED BY */
         .footer-powered {
           min-width: 0;
           display: flex;
@@ -285,41 +296,59 @@ export default function Footer() {
           font-size: 8px;
         }
 
-        /* BOTTOM FOOTER */
+        /* bottom footer — inside the same background image, no middle divider line */
         .footer-bottom {
           width: 100%;
-          background: #ffffff;
-          border-top: 1px solid #e2e8f0;
+          background: transparent;
+          border-top: none;
         }
         .footer-bottom-inner {
           width: 100%;
           max-width: 1500px;
-          min-height: 38px;
+          min-height: 36px;
           margin: 0 auto;
-          padding: 6px 45px;
+          padding: 4px 45px 6px;
           display: flex;
           align-items: center;
           justify-content: space-between;
-          gap: 14px;
+          gap: 18px;
         }
         .footer-bottom p {
           margin: 0;
-          color: #64748b;
+          color: rgba(255, 255, 255, .92);
           font-size: 9px;
+          font-weight: 600;
         }
         .footer-bottom-links {
           display: flex;
           align-items: center;
+          gap: 8px;
           flex-wrap: wrap;
-          gap: 7px;
         }
-        .footer-bottom-links a {
-          color: #475569;
+        /* each policy link is its own box */
+        .footer-policy-box {
+          min-height: 26px;
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 4px 12px;
+          border: 1px solid rgba(255, 255, 255, .45);
+          border-radius: 5px;
+          background: #ffffff;
+          color: #000000;
           font-size: 9px;
+          font-weight: 700;
+          text-decoration: none;
+          white-space: nowrap;
+          transition: background .25s ease, color .25s ease, border-color .25s ease, transform .25s ease;
+        }
+        .footer-policy-box:hover {
+          background: #ffffff;
+          color: #06345e;
+          border-color: #ffffff;
+          transform: translateY(-2px);
           text-decoration: none;
         }
-        .footer-bottom-links a:hover { text-decoration: underline; }
-        .footer-bottom-links span { color: #cbd5e1; }
 
         /* 1400px+ large desktop */
         @media (min-width: 1400px) {
@@ -329,7 +358,7 @@ export default function Footer() {
           }
           .footer-content {
             max-width: 1600px;
-            padding: 32px 260px 34px 55px;
+            padding: 16px 260px 14px 55px;
             grid-template-columns: 200px 145px 185px 165px 115px;
             gap: 32px;
           }
@@ -337,7 +366,8 @@ export default function Footer() {
           .footer-column a { font-size: 11px; }
           .footer-bottom-inner {
             max-width: 1600px;
-            padding: 6px 55px;
+            min-height: 36px;
+            padding: 4px 55px;
           }
         }
 
@@ -348,11 +378,11 @@ export default function Footer() {
             background-position: center bottom;
           }
           .footer-content {
-            padding: 28px 155px 32px 30px;
+            padding: 20px 155px 22px 30px;
             grid-template-columns: 165px 115px 150px 135px 95px;
             gap: 20px;
           }
-          .footer-ps-logo { width: 95px; }
+          .footer-ps-logo { width: 85px; }
           .footer-brand p {
             max-width: 160px;
             font-size: 10px;
@@ -368,17 +398,17 @@ export default function Footer() {
             background-position: center bottom;
           }
           .footer-content {
-            padding: 26px 65px 55px 24px;
+            padding: 22px 65px 45px 24px;
             grid-template-columns: repeat(3, 1fr);
             column-gap: 28px;
-            row-gap: 20px;
+            row-gap: 16px;
           }
           .footer-brand { grid-row: 1 / span 2; }
           .footer-column h4 {
             font-size: 12px;
             margin-bottom: 7px;
           }
-          .footer-column ul { gap: 6px; }
+          .footer-column ul { gap: 5px; }
           .footer-column a { font-size: 9.5px; }
         }
 
@@ -389,10 +419,10 @@ export default function Footer() {
             background-color: #06345e;
           }
           .footer-content {
-            padding: 24px 20px 28px;
+            padding: 22px 20px 24px;
             grid-template-columns: 1fr 1fr;
             column-gap: 30px;
-            row-gap: 20px;
+            row-gap: 18px;
           }
           .footer-brand {
             grid-column: 1 / -1;
@@ -407,7 +437,7 @@ export default function Footer() {
             margin-bottom: 7px;
             font-size: 12px;
           }
-          .footer-column ul { gap: 6px; }
+          .footer-column ul { gap: 5px; }
           .footer-column a { font-size: 10px; }
           .footer-bottom-inner {
             padding: 8px 16px;
@@ -426,13 +456,13 @@ export default function Footer() {
             background-color: #06345e;
           }
           .footer-content {
-            padding: 22px 16px 24px;
+            padding: 20px 16px 22px;
             grid-template-columns: 1fr 1fr;
             column-gap: 18px;
-            row-gap: 18px;
+            row-gap: 16px;
           }
           .footer-brand { grid-column: 1 / -1; }
-          .footer-ps-logo { width: 92px; }
+          .footer-ps-logo { width: 85px; }
           .footer-brand p {
             max-width: 250px;
             margin-bottom: 9px;
@@ -451,7 +481,7 @@ export default function Footer() {
             margin-bottom: 7px;
             font-size: 11.5px;
           }
-          .footer-column ul { gap: 6px; }
+          .footer-column ul { gap: 5px; }
           .footer-column a {
             font-size: 9.5px;
             line-height: 1.4;
@@ -470,12 +500,12 @@ export default function Footer() {
             background-color: #06345e;
           }
           .footer-content {
-            padding: 20px 12px 22px;
+            padding: 18px 12px 20px;
             grid-template-columns: 1fr 1fr;
             column-gap: 12px;
-            row-gap: 15px;
+            row-gap: 14px;
           }
-          .footer-ps-logo { width: 86px; }
+          .footer-ps-logo { width: 80px; }
           .footer-brand p {
             max-width: 235px;
             font-size: 9.5px;
@@ -486,7 +516,7 @@ export default function Footer() {
           }
           .footer-column, .footer-powered { padding-top: 8px; }
           .footer-column h4 { font-size: 11px; }
-          .footer-column ul { gap: 5px; }
+          .footer-column ul { gap: 4px; }
           .footer-column a { font-size: 9px; }
           .footer-powered img { width: 48px; }
           .footer-bottom-inner { padding: 7px 9px; }
