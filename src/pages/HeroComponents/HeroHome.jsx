@@ -323,6 +323,18 @@ export default function HeroHome() {
           .hero-floating-card { display: none; }
           .hero-stats-wrapper { display: none; }
         }
+
+        @media (max-width: 960px) {
+          .hero-background-img {
+            position: absolute;
+            top: 0;
+            left: 42rem;
+            bottom: 0;
+            height: 100%;
+            width: 100%;
+            margin-top:150px;
+          }
+        }
       `}</style>
     </div>
   );

@@ -1,23 +1,109 @@
 // src\pages\TMS\TP\tp_tmsSummary.jsx
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { FaDownload, FaSpinner, FaChartBar, FaSearch } from "react-icons/fa";
-import api from "../../../api/axios";
+import React, {
+  useState,
+  useEffect,
+  useCallback,
+  useMemo,
+  useContext,
+} from "react";
+import { FaSpinner, FaChartBar, FaSearch } from "react-icons/fa";
+import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
+import { AuthContext } from "../../../contexts/AuthContext";
+import { getCanonicalRole } from "../../../utils/roleUtils";
+import TpTmsSummaryExport from "./tp_tmsSummaryExport";
 
 // Layout Imports
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 
+/* ================= GEO SCOPE HELPERS ================= */
+const GEOSCOPE_KEY = "ps_user_geoscope";
+
+function getGeoscope() {
+  try {
+    const raw = localStorage.getItem(GEOSCOPE_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch {
+    return null;
+  }
+}
+
+function safeFirst(arr) {
+  return Array.isArray(arr) && arr.length ? arr[0] : null;
+}
+/* ===================================================== */
+
 export default function TpTmsSummary() {
+  const { user } = useContext(AuthContext) || {};
+  const role = getCanonicalRole(user || {});
+
   // Layout State
   const [navCollapsed, setNavCollapsed] = useState(false);
 
-  // Report State
+  // Report & Filter State
   const [financialYear, setFinancialYear] = useState("2026-27");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
   const [reportData, setReportData] = useState(null);
   const [searchQuery, setSearchQuery] = useState("");
+
+  // Dropdown States
+  const [themesList, setThemesList] = useState([]);
+  const [plansList, setPlansList] = useState([]);
+  const [trainingPlansLoading, setTrainingPlansLoading] = useState(true);
+  const [trainingPlansLoadError, setTrainingPlansLoadError] = useState(false);
+  const [selectedTheme, setSelectedTheme] = useState("");
+  const [selectedPlan, setSelectedPlan] = useState("");
+
+  // 1. Fetch Themes and Plans on Mount (with SMMU Role Lock)
+  useEffect(() => {
+    const fetchDropdownData = async () => {
+      setTrainingPlansLoading(true);
+      setTrainingPlansLoadError(false);
+      try {
+        const [themesRes, plansRes] = await Promise.all([
+          TMS_API.trainingThemes.list({ limit: 500 }),
+          TMS_API.trainingPlans.list({ limit: 500 }),
+        ]);
+
+        const allThemes = themesRes?.data?.results || themesRes?.data || [];
+        const allPlans = plansRes?.data?.results || plansRes?.data || [];
+        setPlansList(allPlans);
+
+        if (role === "smmu" && user?.id) {
+          const myTheme = allThemes.find(
+            (t) => Number(t.expert) === Number(user?.id),
+          );
+
+          if (myTheme) {
+            setThemesList([myTheme]);
+            setSelectedTheme(String(myTheme.id));
+          } else {
+            setThemesList(allThemes);
+          }
+        } else {
+          setThemesList(allThemes);
+        }
+      } catch (error) {
+        setTrainingPlansLoadError(true);
+        console.error("Failed to load themes/plans:", error);
+      } finally {
+        setTrainingPlansLoading(false);
+      }
+    };
+    fetchDropdownData();
+  }, [role, user?.id]);
+
+  // Dynamically filter plans based on selected theme
+  const filteredPlans = useMemo(() => {
+    if (!selectedTheme) return plansList;
+    return plansList.filter(
+      (p) =>
+        String(p.theme) === String(selectedTheme) ||
+        String(p.theme?.id) === String(selectedTheme),
+    );
+  }, [plansList, selectedTheme]);
 
   // Fetch Report Data
   const fetchReport = useCallback(async () => {
@@ -29,7 +115,11 @@ export default function TpTmsSummary() {
 
     try {
       const response = await api.get("/tms/reports/portal-summary/", {
-        params: { financial_year: financialYear },
+        params: {
+          financial_year: financialYear,
+          theme: selectedTheme || undefined,
+          training_plan: selectedPlan || undefined,
+        },
       });
       if (response.data?.status === "success") {
         setReportData(response.data);
@@ -45,7 +135,7 @@ export default function TpTmsSummary() {
     } finally {
       setLoading(false);
     }
-  }, [financialYear]);
+  }, [financialYear, selectedTheme, selectedPlan]);
 
   useEffect(() => {
     fetchReport();
@@ -63,138 +153,6 @@ export default function TpTmsSummary() {
       return sno.includes(query) || distName.includes(query);
     });
   }, [reportData, searchQuery]);
-
-  // ======================================================================
-  // BEAUTIFUL EXCEL EXPORT (HTML to XLS trick for precise styling)
-  // ======================================================================
-  const handleExportExcel = () => {
-    if (!reportData) return;
-    const { report_date, state_wide_summary, district_summaries } = reportData;
-
-    // Helper to extract values
-    const val = (v) => (v !== null && v !== undefined ? v : "");
-
-    // Helper to generate stacked HTML cells for Excel
-    const getStackedCell = (b, p, cls = "") => `
-      <td class="${cls}">
-        <span class="val-batch">${val(b)}</span>
-        <br style="mso-data-placement:same-cell;"/>
-        <span class="val-pax">${val(p)}</span>
-      </td>
-    `;
-
-    // Row Generator
-    const generateRow = (sno, name, summary) => {
-      const b = summary.batch_counts || {};
-      const p = summary.participant_counts || {};
-      return `
-        <tr>
-          <td>${sno}</td>
-          <td style="text-align: left;">
-            <span class="dist-name">${name}</span><br style="mso-data-placement:same-cell;"/>
-            <span class="val-batch">Batch Count</span><br style="mso-data-placement:same-cell;"/>
-            <span class="val-pax">Participant Count</span>
-          </td>
-          ${getStackedCell(b["1_total_batches_created"], p["1_total_batches_created"])}
-          ${getStackedCell(b["2_scheduled_batches"], p["2_scheduled_batches"])}
-          ${getStackedCell(b["3_batches_pending_at_dmm"], p["3_batches_pending_at_dmm"])}
-          ${getStackedCell(b["4_ongoing_batches"], p["4_ongoing_batches"])}
-          ${getStackedCell(b["5_completed_batches"], p["5_completed_batches"])}
-          ${getStackedCell(b["6_completed_batches_for_verification"], p["6_completed_batches_for_verification"])}
-          ${getStackedCell(b["7_completed_batch_closed"], p["7_completed_batch_closed"])}
-          ${getStackedCell(b["8_batches_rejected_by_dmm"], p["8_batches_rejected_by_dmm"], "text-danger")}
-          ${getStackedCell(b["9_total_batches_completed"], p["9_total_batches_completed"], "highlight-blue")}
-          ${getStackedCell(b["10_total_target"], p["10_total_target"], "highlight-purple")}
-          ${getStackedCell(b["11_participants_onboarded"], p["11_participants_onboarded"])}
-          ${getStackedCell(b["12_participants_enrolled_in_batches"], p["12_participants_enrolled_in_batches"])}
-          ${getStackedCell(b["13_remaining_participants_for_enrollment"], p["13_remaining_participants_for_enrollment"], "text-warning")}
-          ${getStackedCell(b["14_achievement_percentage"], p["14_achievement_percentage"], "highlight-green")}
-        </tr>
-      `;
-    };
-
-    let tableHTML = `
-      <html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
-      <head>
-        <meta charset="utf-8" />
-        <style>
-          table { border-collapse: collapse; font-family: 'Segoe UI', Arial, sans-serif; font-size: 12px; }
-          th, td { border: 1px solid #94a3b8; text-align: center; vertical-align: middle; padding: 6px; }
-          .header-main { background-color: #1e3a8a; color: #ffffff; font-size: 16px; font-weight: bold; padding: 12px; text-transform: uppercase; }
-          .col-headers th { background-color: #f1f5f9; color: #0f172a; font-weight: bold; font-size: 12px; }
-          .col-nums th { background-color: #e2e8f0; color: #475569; font-weight: bold; font-size: 11px; }
-          .highlight-blue { background-color: #eff6ff; }
-          .highlight-purple { background-color: #fdf4ff; }
-          .highlight-green { background-color: #f0fdf4; }
-          .val-batch { color: #1d4ed8; font-weight: bold; }
-          .val-pax { color: #0f766e; font-weight: bold; }
-          .dist-name { color: #0f172a; font-weight: bold; font-size: 14px; text-transform: uppercase; }
-          .text-danger { color: #dc2626; }
-          .text-warning { color: #b45309; }
-        </style>
-      </head>
-      <body>
-        <table>
-          <tr>
-            <th colspan="16" class="header-main">PRAGATI SETU-TMS PORTAL SUMMARY REPORT - DATED: ${report_date} - FY: ${financialYear}</th>
-          </tr>
-          <tr class="col-headers">
-            <th>S. No.</th>
-            <th style="text-align: left;">District / State Name</th>
-            <th>Total batches Created</th>
-            <th>Scheduled Batches</th>
-            <th>Batches Pending At DMM</th>
-            <th>Ongoing Batches</th>
-            <th>Completed Batches</th>
-            <th>Completed Batches for Verification</th>
-            <th>Completed batch Closed</th>
-            <th>Batches Rejected By DMM</th>
-            <th class="highlight-blue">Total Batches Completed (5+6+7)</th>
-            <th class="highlight-purple">Total Target (Slot 1+2)</th>
-            <th>Participants Onboarded</th>
-            <th>Participants Enrolled In Batches</th>
-            <th>Remaining Participants for Enrollment</th>
-            <th class="highlight-green">Achievement %</th>
-          </tr>
-          <tr class="col-nums">
-            <th></th><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>13</th><th>14</th>
-          </tr>
-    `;
-
-    // Add State Row
-    tableHTML += generateRow("—", "STATE WIDE SUMMARY", state_wide_summary);
-
-    // Add Blank Separator Row
-    tableHTML += `<tr><td colspan="16" style="background: #e2e8f0; height: 10px;"></td></tr>`;
-
-    // Add District Rows
-    if (district_summaries && district_summaries.length > 0) {
-      district_summaries.forEach((dist, idx) => {
-        tableHTML += generateRow(idx + 1, dist.district_name, dist.summary);
-      });
-    }
-
-    tableHTML += `
-        </table>
-      </body>
-      </html>
-    `;
-
-    // Download Blob
-    const blob = new Blob([tableHTML], {
-      type: "application/vnd.ms-excel;charset=utf-8;",
-    });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    link.setAttribute("href", url);
-    link.setAttribute(
-      "download",
-      `TMS_Portal_Summary_Report_${financialYear}.xls`,
-    );
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
 
   // ======================================================================
   // UI HELPER COMPONENTS
@@ -236,6 +194,42 @@ export default function TpTmsSummary() {
               </div>
 
               <div className="st-right">
+                <div className="filter-group">
+                  <select
+                    value={selectedTheme}
+                    disabled={role === "smmu"}
+                    onChange={(e) => {
+                      setSelectedTheme(e.target.value);
+                      setSelectedPlan(""); // Reset plan when theme changes
+                    }}
+                    style={{
+                      background: role === "smmu" ? "#f1f5f9" : "#f8fafc",
+                      cursor: role === "smmu" ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    <option value="">All Themes</option>
+                    {themesList.map((t) => (
+                      <option key={t.id} value={t.id}>
+                        {t.theme_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div className="filter-group">
+                  <select
+                    value={selectedPlan}
+                    onChange={(e) => setSelectedPlan(e.target.value)}
+                  >
+                    <option value="">All Plans</option>
+                    {filteredPlans.map((p) => (
+                      <option key={p.id} value={p.id}>
+                        {p.training_name}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
                 <select
                   value={financialYear}
                   onChange={(e) => setFinancialYear(e.target.value)}
@@ -244,13 +238,27 @@ export default function TpTmsSummary() {
                   <option value="2025-26">2025-26</option>
                   <option value="2026-27">2026-27</option>
                 </select>
-                <button
-                  className="btn-export"
-                  onClick={handleExportExcel}
-                  disabled={loading || !reportData}
-                >
-                  <FaDownload /> Export Excel
-                </button>
+
+                <TpTmsSummaryExport
+                  reportData={reportData}
+                  financialYear={financialYear}
+                  role={role}
+                  selectedTheme={selectedTheme}
+                  selectedPlan={selectedPlan}
+                  themeName={
+                    themesList.find(
+                      (theme) => String(theme.id) === String(selectedTheme),
+                    )?.theme_name || ""
+                  }
+                  trainingPlans={filteredPlans}
+                  trainingPlansLoading={trainingPlansLoading}
+                  trainingPlansLoadError={trainingPlansLoadError}
+                  disabled={
+                    loading ||
+                    !reportData ||
+                    (role === "smmu" && !selectedPlan && trainingPlansLoading)
+                  }
+                />
               </div>
             </div>
 
@@ -297,6 +305,17 @@ export default function TpTmsSummary() {
                           <th className="highlight-col">
                             Total Batches Completed (5+6+7)
                           </th>
+                          <th className="highlight-col">
+                            Participants Trained
+                          </th>
+                          <th
+                            style={{
+                              color: "#b45309",
+                              backgroundColor: "#fef3c7",
+                            }}
+                          >
+                            Participants Dropout
+                          </th>
                           <th className="highlight-col-alt">
                             Total Target (Slot 1+2)
                           </th>
@@ -319,6 +338,8 @@ export default function TpTmsSummary() {
                           <th>7</th>
                           <th>8</th>
                           <th>9</th>
+                          <th>9A</th>
+                          <th>9B</th>
                           <th>10</th>
                           <th>11</th>
                           <th>12</th>
@@ -382,6 +403,14 @@ export default function TpTmsSummary() {
                                 bVal={b["9_total_batches_completed"]}
                                 pVal={p["9_total_batches_completed"]}
                                 className="highlight-cell"
+                              />
+                              <StackedCell
+                                bVal={b["9a_participants_trained"]}
+                                className="highlight-cell"
+                              />
+                              <StackedCell
+                                bVal={b["9b_participants_dropout"]}
+                                className="text-warning"
                               />
                               <StackedCell
                                 bVal={b["10_total_target"]}
@@ -452,6 +481,17 @@ export default function TpTmsSummary() {
                           <th className="highlight-col">
                             Total Batches Completed (5+6+7)
                           </th>
+                          <th className="highlight-col">
+                            Participants Trained
+                          </th>
+                          <th
+                            style={{
+                              color: "#b45309",
+                              backgroundColor: "#fef3c7",
+                            }}
+                          >
+                            Participants Dropout
+                          </th>
                           <th className="highlight-col-alt">
                             Total Target (Slot 1+2)
                           </th>
@@ -474,6 +514,8 @@ export default function TpTmsSummary() {
                           <th>7</th>
                           <th>8</th>
                           <th>9</th>
+                          <th>9A</th>
+                          <th>9B</th>
                           <th>10</th>
                           <th>11</th>
                           <th>12</th>
@@ -484,13 +526,12 @@ export default function TpTmsSummary() {
                       <tbody>
                         {filteredDistricts.length === 0 ? (
                           <tr>
-                            <td colSpan={16} className="empty-state">
+                            <td colSpan={18} className="empty-state">
                               No districts found matching "{searchQuery}"
                             </td>
                           </tr>
                         ) : (
                           filteredDistricts.map((dist) => {
-                            // Find original index to maintain correct S.No regardless of filter
                             const originalIdx =
                               reportData.district_summaries.findIndex(
                                 (d) => d.district_id === dist.district_id,
@@ -560,6 +601,14 @@ export default function TpTmsSummary() {
                                   className="highlight-cell"
                                 />
                                 <StackedCell
+                                  bVal={b["9a_participants_trained"]}
+                                  className="highlight-cell"
+                                />
+                                <StackedCell
+                                  bVal={b["9b_participants_dropout"]}
+                                  className="text-warning"
+                                />
+                                <StackedCell
                                   bVal={b["10_total_target"]}
                                   pVal={p["10_total_target"]}
                                   className="highlight-cell-alt"
@@ -608,11 +657,11 @@ export default function TpTmsSummary() {
           <Footer />
         </div>
       </div>
+
       <style>{`
-        /* PAGE BACKGROUND */
-        .content-area { display: flex; flex: 1; min-height: 0; }
-        .app-shell-TP-CP { display: flex; flex-direction: column; flex: 1; min-width: 0; }
-        .app-shell-TP-CP main { flex: 1; }
+        .content-area { display: flex; flex: 1; min-width: 0; }
+        .main-area { display: flex; flex-direction: column; flex: 1; min-width: 0; background-color: #f8fafc; }
+        footer { margin-top: auto; }
 
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
         .fade-in { animation: fadeIn 0.4s ease-out forwards; }
@@ -627,20 +676,18 @@ export default function TpTmsSummary() {
         .st-left { display: flex; align-items: center; gap: 12px; }
         .st-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         
-        .fy-select {
-          padding: 10px 16px; border-radius: 8px; border: 1px solid #cbd5e1;
+        .filter-group { display: flex; align-items: center; gap: 8px; }
+        .filter-group select {
+          padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1;
           font-weight: 600; color: #0f172a; outline: none; background: #f8fafc; cursor: pointer;
-          font-size: 14px;
+        }
+        .filter-group select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
+
+        .fy-select {
+          padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1;
+          font-weight: 600; color: #0f172a; outline: none; background: #f8fafc; cursor: pointer;
         }
         .fy-select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
-
-        .btn-export {
-          display: flex; align-items: center; gap: 8px; background: #16a34a; color: white;
-          border: none; padding: 10px 20px; border-radius: 8px; font-weight: 700;
-          cursor: pointer; transition: all 0.2s; box-shadow: 0 2px 4px rgba(22,163,74,0.2);
-        }
-        .btn-export:hover:not(:disabled) { background: #15803d; transform: translateY(-2px); box-shadow: 0 4px 8px rgba(22,163,74,0.3); }
-        .btn-export:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
 
         /* Report Tables */
         .reports-container { display: flex; flex-direction: column; gap: 30px; }
@@ -681,7 +728,7 @@ export default function TpTmsSummary() {
         /* Sticky Headers for District Table */
         .district-table thead th { position: sticky; z-index: 10; }
         .district-table .col-names-row th { top: 0; }
-        .district-table .col-numbers-row th { top: 60px; /* Adjust based on header height */ box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .district-table .col-numbers-row th { top: 60px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         .col-names-row th { background: #f8fafc; color: #0f172a; font-weight: 700; white-space: normal; line-height: 1.4; vertical-align: bottom; }
         .col-numbers-row th { background: #e2e8f0; color: #475569; font-weight: 800; font-size: 12px; }
@@ -701,7 +748,7 @@ export default function TpTmsSummary() {
         .highlight-cell-success { background: #f0fdf4; color: #15803d; }
         
         .text-danger { color: #dc2626 !important; }
-        .text-danger .val-batch { color: #dc2626; } /* Override batch color for danger */
+        .text-danger .val-batch { color: #dc2626; }
         .text-warning { color: #b45309 !important; }
 
         .tms-summary-table tbody tr:hover td { background-color: #f8fafc; transition: background 0.2s; }

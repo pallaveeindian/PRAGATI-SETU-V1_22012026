@@ -12,6 +12,7 @@ import {
 } from "../../../utils/roleUtils";
 import BatchListExport from "./BatchListExport";
 import BatchRescheduleModal from "./BatchRescheduleModal";
+import ExcelJS from "exceljs";
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
@@ -86,24 +87,11 @@ export default function TrainingBatchList() {
   const [dtpPartnerId, setDtpPartnerId] = useState(null);
   const [dtpPartnerName, setDtpPartnerName] = useState("");
   const formatDate = (date) => new Date(date).toLocaleDateString("en-GB");
-
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
-  const visibleBatches = batches.filter((b) => {
-    // Hide DRAFT batches from everyone except DTP
-    if (String(b.status).toUpperCase() === "DRAFT" && role !== "dtp") {
-      return false;
-    }
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
-    return true;
-  });
-
-  const totalPages = Math.ceil(visibleBatches.length / rowsPerPage);
-
-  const paginatedBatches = visibleBatches.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage,
-  );
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const queryParams = new URLSearchParams(location.search);
   const initialStatus = queryParams.get("status") || "";
@@ -364,13 +352,547 @@ export default function TrainingBatchList() {
       .catch(() => setPlans([]));
   }, [filters.theme]);
 
-  async function fetchBatches() {
+  // SURGICAL ADDITION: Dynamic Export Handler
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportBatches = async () => {
+    if (!user?.id) return;
+
+    setIsExporting(true);
+
+    try {
+      let finalParams = {};
+
+      if (isRequestScoped) {
+        finalParams = { request_id: requestId, page_size: "MAX" };
+      } else {
+        const baseParams = await getDefaultScopeParams();
+        let effectiveFilters = filters;
+
+        if (role === "bmmu") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(
+              ([key]) =>
+                ![
+                  "district_id",
+                  "block_id",
+                  "mandal_id",
+                  "district_category_id",
+                ].includes(key),
+            ),
+          );
+        }
+
+        if (role === "dmmu") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(([key]) => key !== "district_id"),
+          );
+        }
+
+        if (role === "training_partner") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(([key]) => key !== "partner"),
+          );
+        }
+
+        if (role === "dtp") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(
+              ([key]) => !["district_id", "partner"].includes(key),
+            ),
+          );
+        }
+
+        finalParams = {
+          ...baseParams,
+          search,
+          ...Object.fromEntries(
+            Object.entries(effectiveFilters).filter(
+              ([, value]) => value !== "" && value !== false,
+            ),
+          ),
+          page_size: "MAX",
+          exclude_status: role !== "dtp" ? "DRAFT" : undefined,
+        };
+      }
+
+      const query = new URLSearchParams(
+        Object.entries(finalParams)
+          .filter(([, value]) => value != null)
+          .map(([key, value]) => [key, String(value)]),
+      ).toString();
+
+      const response = await api.get(`/tms/batches-list/?${query}`);
+      const exportItems = response?.data?.results || [];
+
+      if (!exportItems.length) {
+        alert("No batches found matching the current filters.");
+        return;
+      }
+
+      const colors = {
+        navy: "FF153E75",
+        blue: "FF2563A6",
+        lightBlue: "FFEAF3FC",
+        paleBlue: "FFF4F8FD",
+        white: "FFFFFFFF",
+        text: "FF24364B",
+        muted: "FF66788A",
+        border: "FFD8E4F0",
+        green: "FFE8F5EC",
+        orange: "FFFFF2DB",
+        red: "FFFCE9E9",
+        gray: "FFF0F3F6",
+      };
+
+      const displayText = (value) =>
+        value === null || value === undefined || value === ""
+          ? "—"
+          : String(value);
+
+      const toExcelDate = (value) => {
+        if (!value) return "—";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "—" : date;
+      };
+
+      const participantCount = (batch) => {
+        const value = Number(batch.pax_count ?? 0);
+        return Number.isFinite(value) ? value : 0;
+      };
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Training Management System";
+      workbook.created = new Date();
+      workbook.subject = "Batch export";
+
+      const columns = [
+        { header: "S.No", key: "serial", width: 9 },
+        { header: "Financial Year", key: "financialYear", width: 16 },
+        { header: "Batch Code", key: "code", width: 18 },
+        { header: "Status", key: "status", width: 16 },
+        { header: "Start Date", key: "startDate", width: 16 },
+        { header: "End Date", key: "endDate", width: 16 },
+        { header: "Level", key: "level", width: 14 },
+        { header: "Type", key: "type", width: 18 },
+        { header: "Theme", key: "theme", width: 24 },
+        { header: "Training Plan", key: "trainingPlan", width: 28 },
+        { header: "Partner", key: "partner", width: 24 },
+        { header: "Block", key: "block", width: 20 },
+        { header: "District", key: "district", width: 22 },
+        { header: "Assigned Trainers", key: "trainers", width: 32 },
+        { header: "Pendency Status", key: "pendency", width: 20 },
+        { header: "Participant Count", key: "participants", width: 20 },
+      ];
+
+      const batchSheet = workbook.addWorksheet("TMS-Batch List");
+      batchSheet.properties.tabColor = { argb: colors.blue };
+      batchSheet.views = [
+        {
+          state: "frozen",
+          ySplit: 4,
+          topLeftCell: "A5",
+          showGridLines: false,
+        },
+      ];
+      batchSheet.columns = columns.map(({ key, width }) => ({ key, width }));
+
+      const lastColumn = columns.length;
+      const lastColumnLetter = "P";
+
+      batchSheet.mergeCells(1, 1, 1, lastColumn);
+      batchSheet.getCell("A1").value = "PRAGATI SETU TMS - BATCH LIST";
+      batchSheet.getCell("A1").font = {
+        name: "Aptos Display",
+        size: 20,
+        bold: true,
+        color: { argb: colors.white },
+      };
+      batchSheet.getCell("A1").alignment = {
+        vertical: "middle",
+        horizontal: "left",
+        indent: 1,
+      };
+      batchSheet.getCell("A1").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.navy },
+      };
+      batchSheet.getRow(1).height = 38;
+
+      batchSheet.mergeCells(2, 1, 2, lastColumn);
+      batchSheet.getCell("A2").value =
+        `Filtered batch export  •  ${exportItems.length} records  •  Generated ${new Date().toLocaleDateString()}`;
+      batchSheet.getCell("A2").font = {
+        name: "Aptos",
+        size: 10,
+        color: { argb: colors.muted },
+      };
+      batchSheet.getCell("A2").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.lightBlue },
+      };
+      batchSheet.getCell("A2").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      batchSheet.getRow(2).height = 24;
+
+      batchSheet.mergeCells(3, 1, 3, lastColumn);
+      batchSheet.getCell("A3").value =
+        "Use the header filters to sort and narrow the exported records.";
+      batchSheet.getCell("A3").font = {
+        name: "Aptos",
+        size: 9,
+        italic: true,
+        color: { argb: colors.muted },
+      };
+      batchSheet.getCell("A3").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      batchSheet.getRow(3).height = 20;
+
+      const headerRow = batchSheet.getRow(4);
+      headerRow.values = columns.map(({ header }) => header);
+      headerRow.height = 30;
+      headerRow.eachCell((cell) => {
+        cell.font = {
+          name: "Aptos",
+          bold: true,
+          color: { argb: colors.white },
+          size: 10,
+        };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.blue },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
+        cell.border = {
+          bottom: { style: "medium", color: { argb: colors.navy } },
+        };
+      });
+
+      const batchRows = exportItems.map((batch, index) => [
+        index + 1,
+        displayText(batch.financial_year),
+        displayText(batch.code),
+        displayText(batch.status),
+        toExcelDate(batch.start_date),
+        toExcelDate(batch.end_date),
+        displayText(batch.level),
+        displayText(batch.batch_type),
+        displayText(batch.training_plan?.theme?.theme_name),
+        displayText(batch.training_plan?.training_name),
+        displayText(batch.centre?.partner?.name),
+        displayText(batch.block?.block_name_en),
+        displayText(batch.district?.district_name_en),
+        Array.isArray(batch.master_trainers) && batch.master_trainers.length > 0
+          ? batch.master_trainers
+              .map((trainer) =>
+                [
+                  trainer.full_name,
+                  `${trainer.designation || "—"} (${trainer.mobile_no || "—"})`,
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+              )
+              .join("\n\n")
+          : "—",
+        displayText(batch.pendency_status),
+        participantCount(batch),
+      ]);
+
+      batchRows.forEach((values, index) => {
+        const row = batchSheet.addRow(values);
+        row.height = 25;
+
+        row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+          cell.font = { name: "Aptos", size: 10, color: { argb: colors.text } };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: {
+              argb: index % 2 === 0 ? colors.white : colors.paleBlue,
+            },
+          };
+          cell.border = {
+            bottom: { style: "hair", color: { argb: colors.border } },
+          };
+          cell.alignment = {
+            vertical: "middle",
+            horizontal:
+              columnNumber === 1 || columnNumber === 16 ? "center" : "left",
+            wrapText: columnNumber === 14,
+          };
+        });
+
+        row.getCell(5).numFmt = "dd mmm yyyy";
+        row.getCell(6).numFmt = "dd mmm yyyy";
+        row.getCell(16).numFmt = "#,##0";
+      });
+
+      const finalDataRow = Math.max(4, batchSheet.rowCount);
+      batchSheet.autoFilter = {
+        from: { row: 4, column: 1 },
+        to: { row: finalDataRow, column: lastColumn },
+      };
+
+      const overview = workbook.addWorksheet("Overview");
+      overview.properties.tabColor = { argb: colors.navy };
+      overview.views = [{ showGridLines: false }];
+      overview.columns = Array.from({ length: 8 }, () => ({ width: 19 }));
+
+      overview.mergeCells("A1:H1");
+      overview.getCell("A1").value = "BATCH EXPORT OVERVIEW";
+      overview.getCell("A1").font = {
+        name: "Aptos Display",
+        size: 22,
+        bold: true,
+        color: { argb: colors.white },
+      };
+      overview.getCell("A1").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      overview.getCell("A1").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.navy },
+      };
+      overview.getRow(1).height = 44;
+
+      overview.mergeCells("A2:H2");
+      overview.getCell("A2").value =
+        `Exported ${new Date().toLocaleString()}  •  Based on the current batch filters`;
+      overview.getCell("A2").font = {
+        name: "Aptos",
+        size: 10,
+        color: { argb: colors.muted },
+      };
+      overview.getCell("A2").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      overview.getRow(2).height = 24;
+
+      const uniqueCount = (selector) =>
+        new Set(
+          exportItems.map(selector).filter((value) => value && value !== "—"),
+        ).size;
+
+      const totalParticipants = exportItems.reduce(
+        (sum, batch) => sum + participantCount(batch),
+        0,
+      );
+
+      const cards = [
+        { start: 1, end: 2, label: "TOTAL BATCHES", value: exportItems.length },
+        {
+          start: 3,
+          end: 4,
+          label: "TOTAL PARTICIPANTS",
+          value: totalParticipants,
+        },
+        {
+          start: 5,
+          end: 6,
+          label: "DISTRICTS",
+          value: uniqueCount((batch) => batch.district?.district_name_en),
+        },
+        {
+          start: 7,
+          end: 8,
+          label: "TRAINING PARTNERS",
+          value: uniqueCount((batch) => batch.centre?.partner?.name),
+        },
+      ];
+
+      cards.forEach(({ start, end, label, value }) => {
+        overview.mergeCells(4, start, 4, end);
+        overview.mergeCells(5, start, 6, end);
+
+        const labelCell = overview.getCell(4, start);
+        labelCell.value = label;
+        labelCell.font = {
+          name: "Aptos",
+          size: 9,
+          bold: true,
+          color: { argb: colors.blue },
+        };
+        labelCell.alignment = { horizontal: "center", vertical: "middle" };
+        labelCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.lightBlue },
+        };
+
+        const valueCell = overview.getCell(5, start);
+        valueCell.value = value;
+        valueCell.font = {
+          name: "Aptos Display",
+          size: 23,
+          bold: true,
+          color: { argb: colors.navy },
+        };
+        valueCell.alignment = { horizontal: "center", vertical: "middle" };
+        valueCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.paleBlue },
+        };
+        valueCell.numFmt = "#,##0";
+      });
+
+      overview.getRow(4).height = 25;
+      overview.getRow(5).height = 32;
+      overview.getRow(6).height = 20;
+
+      const groupBy = (selector) => {
+        const groups = new Map();
+
+        exportItems.forEach((batch) => {
+          const label = displayText(selector(batch));
+          const current = groups.get(label) || { batches: 0, participants: 0 };
+          current.batches += 1;
+          current.participants += participantCount(batch);
+          groups.set(label, current);
+        });
+
+        return [...groups.entries()]
+          .map(([label, totals]) => ({ label, ...totals }))
+          .sort(
+            (a, b) => b.batches - a.batches || a.label.localeCompare(b.label),
+          );
+      };
+
+      const addBreakdown = (startColumn, title, heading, entries) => {
+        overview.mergeCells(8, startColumn, 8, startColumn + 3);
+
+        const titleCell = overview.getCell(8, startColumn);
+        titleCell.value = title;
+        titleCell.font = {
+          name: "Aptos",
+          size: 12,
+          bold: true,
+          color: { argb: colors.white },
+        };
+        titleCell.alignment = { vertical: "middle", indent: 1 };
+        titleCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.blue },
+        };
+
+        heading.forEach((text, index) => {
+          const cell = overview.getCell(9, startColumn + index);
+          cell.value = text;
+          cell.font = {
+            name: "Aptos",
+            bold: true,
+            color: { argb: colors.navy },
+          };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: colors.lightBlue },
+          };
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+        });
+
+        entries.forEach((entry, index) => {
+          const rowNumber = 10 + index;
+          const values = [
+            entry.label,
+            entry.batches,
+            entry.participants,
+            exportItems.length ? entry.batches / exportItems.length : 0,
+          ];
+
+          values.forEach((value, columnIndex) => {
+            const cell = overview.getCell(rowNumber, startColumn + columnIndex);
+            cell.value = value;
+            cell.font = {
+              name: "Aptos",
+              size: 10,
+              color: { argb: colors.text },
+            };
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: {
+                argb: index % 2 === 0 ? colors.white : colors.paleBlue,
+              },
+            };
+            cell.border = {
+              bottom: { style: "hair", color: { argb: colors.border } },
+            };
+            cell.alignment = {
+              vertical: "middle",
+              horizontal: columnIndex === 0 ? "left" : "center",
+            };
+          });
+
+          overview.getCell(rowNumber, startColumn + 2).numFmt = "#,##0";
+          overview.getCell(rowNumber, startColumn + 3).numFmt = "0%";
+        });
+
+        overview.getRow(8).height = 28;
+        overview.getRow(9).height = 24;
+      };
+
+      addBreakdown(
+        1,
+        "BATCHES BY STATUS",
+        ["Status", "Batches", "Participants", "Share"],
+        groupBy((batch) => batch.status),
+      );
+
+      addBreakdown(
+        5,
+        "BATCHES BY LEVEL",
+        ["Level", "Batches", "Participants", "Share"],
+        groupBy((batch) => batch.level),
+      );
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `Batches_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export Failed", error);
+      alert("Failed to export batches. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // SURGICAL FIX: Restored strict role-scoped parameter builder & Server-Side Pagination
+  async function fetchBatches(pageToFetch = 1, sizeToFetch = pageSize) {
     if (!user?.id) return;
     setLoading(true);
     try {
       let finalParams = {};
       if (isRequestScoped) {
-        finalParams = { request_id: requestId, page_size: 500 };
+        finalParams = {
+          request_id: requestId,
+          page: pageToFetch,
+          page_size: sizeToFetch,
+        };
       } else {
         const baseParams = await getDefaultScopeParams();
         let effectiveFilters = filters;
@@ -411,25 +933,43 @@ export default function TrainingBatchList() {
           search,
           ...Object.fromEntries(
             Object.entries(effectiveFilters).filter(
-              ([, v]) => v !== "" && v !== false,
+              ([, v]) => v !== "" && v !== false && v != null,
             ),
           ),
-          page_size: "MAX",
+          page: pageToFetch,
+          page_size: sizeToFetch,
+          exclude_status: role !== "dtp" ? "DRAFT" : undefined,
         };
       }
 
-      const qs = new URLSearchParams(finalParams).toString();
+      // Clean out undefined or null parameters safely
+      const cleanParams = Object.fromEntries(
+        Object.entries(finalParams).filter(
+          ([, v]) => v !== undefined && v !== null && v !== "",
+        ),
+      );
+
+      const qs = new URLSearchParams(cleanParams).toString();
       const resp = await api.get(`/tms/batches-list/?${qs}`);
-      const items = resp?.data?.results || [];
-      setBatches(items);
-      setCurrentPage(1);
-      if (!isRequestScoped) saveCache(getScopeKey(), items);
+      // SURGICAL FIX: Extract paginated DRF response (results + count)
+      setBatches(resp?.data?.results || []);
+      setTotalCount(resp?.data?.count || 0);
+      setCurrentPage(pageToFetch);
+
+      // Note: Client caching removed as it breaks server-side pagination synchronicity.
     } catch (e) {
       setBatches([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
   }
+
+  // SURGICAL ADDITION: Handle Page Size Change (Resets to page 1)
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    fetchBatches(1, newSize);
+  };
 
   const handleDeleteBatch = async (batchId) => {
     const confirmed = window.confirm(
@@ -485,10 +1025,7 @@ export default function TrainingBatchList() {
     if (role === "smmu" && !filters.theme) return;
 
     didInitRef.current = true;
-
-    const cached = loadCache(getScopeKey());
-    if (cached?.payload) setBatches(cached.payload);
-    else fetchBatches();
+    fetchBatches(1, pageSize);
   }, [user?.id, role, requestId, filters.theme]);
 
   useEffect(() => {
@@ -856,7 +1393,10 @@ export default function TrainingBatchList() {
                       marginTop: 16,
                     }}
                   >
-                    <button className="fetch-btn" onClick={fetchBatches}>
+                    <button
+                      className="fetch-btn"
+                      onClick={() => fetchBatches(1, pageSize)}
+                    >
                       Fetch Batches
                     </button>
                   </div>
@@ -879,7 +1419,23 @@ export default function TrainingBatchList() {
                 <div
                   style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
                 >
-                  <BatchListExport batches={visibleBatches} />
+                  {/* SURGICAL FIX: Independent Max-Record Export Button */}
+                  <button
+                    className="btnPrimary"
+                    style={{
+                      backgroundColor: "#16a34a",
+                      border: "1px solid #15803d",
+                      opacity: isExporting ? 0.7 : 1,
+                      cursor: isExporting ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                    onClick={handleExportBatches}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? "Exporting Data..." : "Export All (CSV)"}
+                  </button>
                 </div>
               </div>
 
@@ -927,7 +1483,7 @@ export default function TrainingBatchList() {
                             Loading data...
                           </td>
                         </tr>
-                      ) : visibleBatches.length === 0 ? (
+                      ) : batches.length === 0 ? (
                         <tr>
                           <td
                             colSpan={14}
@@ -937,9 +1493,9 @@ export default function TrainingBatchList() {
                           </td>
                         </tr>
                       ) : (
-                        paginatedBatches.map((b, i) => (
+                        batches.map((b, i) => (
                           <tr key={b.id}>
-                            <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
+                            <td>{(currentPage - 1) * pageSize + i + 1}</td>
                             <td style={{ fontWeight: "600" }}>
                               {b.financial_year}
                             </td>
@@ -1166,34 +1722,122 @@ export default function TrainingBatchList() {
                   </table>
                 </div>
 
-                {/* PAGINATION CONTROLS */}
+                {/* SERVER-SIDE PAGINATION CONTROLS */}
                 <div
                   style={{
                     display: "flex",
                     justifyContent: "space-between",
                     alignItems: "center",
-                    marginTop: 12,
+                    marginTop: 16,
+                    padding: "14px 20px",
+                    backgroundColor: "#f8fafc",
+                    borderTop: "1px solid #e2e8f0",
+                    borderRadius: "0 0 10px 10px",
+                    flexWrap: "wrap",
+                    gap: "16px",
                   }}
                 >
-                  <div style={{ color: "#2b4e72", fontSize: 14 }}>
-                    Page {currentPage} of {totalPages || 1}
+                  <div
+                    style={{ color: "#475569", fontSize: 14, fontWeight: 500 }}
+                  >
+                    Showing{" "}
+                    <strong>
+                      {(currentPage - 1) * pageSize +
+                        (batches.length > 0 ? 1 : 0)}
+                    </strong>{" "}
+                    to{" "}
+                    <strong>
+                      {Math.min(currentPage * pageSize, totalCount)}
+                    </strong>{" "}
+                    of{" "}
+                    <strong style={{ color: "#0f172a" }}>{totalCount}</strong>{" "}
+                    total batches
                   </div>
 
-                  <div style={{ display: "flex", gap: 6 }}>
-                    <button
-                      className="btnPage"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((p) => p - 1)}
+                  <div
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "24px",
+                      flexWrap: "wrap",
+                    }}
+                  >
+                    {/* Page Size Selector */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
                     >
-                      Prev
-                    </button>
-                    <button
-                      className="btnPage"
-                      disabled={currentPage === totalPages || totalPages === 0}
-                      onClick={() => setCurrentPage((p) => p + 1)}
+                      <label
+                        style={{
+                          fontSize: "13px",
+                          color: "#64748b",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Rows per page:
+                      </label>
+                      <select
+                        value={pageSize}
+                        onChange={(e) =>
+                          handlePageSizeChange(Number(e.target.value))
+                        }
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          outline: "none",
+                          cursor: "pointer",
+                          background: "#fff",
+                          color: "#334155",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={500}>500</option>
+                      </select>
+                    </div>
+
+                    {/* Navigation Buttons */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
                     >
-                      Next
-                    </button>
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          color: "#475569",
+                          fontWeight: 600,
+                          marginRight: "8px",
+                        }}
+                      >
+                        Page {currentPage} of {totalPages}
+                      </span>
+                      <button
+                        className="btnPage"
+                        disabled={currentPage === 1}
+                        onClick={() => fetchBatches(currentPage - 1, pageSize)}
+                      >
+                        Prev
+                      </button>
+                      <button
+                        className="btnPage"
+                        disabled={
+                          currentPage === totalPages || totalPages === 0
+                        }
+                        onClick={() => fetchBatches(currentPage + 1, pageSize)}
+                      >
+                        Next
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>

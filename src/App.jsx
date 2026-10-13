@@ -1,5 +1,5 @@
 // src\App.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Routes,
   Route,
@@ -73,6 +73,8 @@ export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navType = useNavigationType();
+  const PORTAL_TAB_LOCK = "pragati-setu-portal-single-tab";
+
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
@@ -123,6 +125,80 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  const [tabAccess, setTabAccess] = useState("checking");
+  const lockRequestStartedRef = useRef(false);
+  const lockEffectActiveRef = useRef(false);
+  const releaseLockRef = useRef(null);
+
+  useEffect(() => {
+    lockEffectActiveRef.current = true;
+
+    const cleanup = () => {
+      lockEffectActiveRef.current = false;
+
+      // Deferring cleanup lets React StrictMode's development-only
+      // effect replay reuse this tab's lock.
+      queueMicrotask(() => {
+        if (!lockEffectActiveRef.current) {
+          releaseLockRef.current?.();
+          releaseLockRef.current = null;
+        }
+      });
+    };
+
+    if (lockRequestStartedRef.current) {
+      return cleanup;
+    }
+    lockRequestStartedRef.current = true;
+
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.locks ||
+      typeof navigator.locks.request !== "function"
+    ) {
+      setTabAccess("unsupported");
+      return cleanup;
+    }
+
+    navigator.locks
+      .request(
+        PORTAL_TAB_LOCK,
+        { mode: "exclusive", ifAvailable: true },
+        async (lock) => {
+          if (!lock) {
+            if (lockEffectActiveRef.current) {
+              setTabAccess("duplicate");
+            }
+            return;
+          }
+
+          if (!lockEffectActiveRef.current) return;
+
+          setTabAccess("active");
+
+          // Keep the lock until this tab is closed or the App unmounts.
+          await new Promise((resolve) => {
+            releaseLockRef.current = resolve;
+
+            if (!lockEffectActiveRef.current) {
+              releaseLockRef.current = null;
+              resolve();
+            }
+          });
+
+          releaseLockRef.current = null;
+        },
+      )
+      .catch((error) => {
+        console.error("Could not acquire the portal tab lock:", error);
+        if (lockEffectActiveRef.current) {
+          setTabAccess("unsupported");
+        }
+      });
+
+    return cleanup;
+  }, []);
+
   // Check if a module is Active based on config + timer
   const isModuleActive = (moduleId) => {
     const mod = MODULES_CONFIG.find((m) => m.id === moduleId);
@@ -159,6 +235,169 @@ export default function App() {
 
   if (!authReady) {
     return <div>Restoring session…</div>;
+  }
+
+  if (tabAccess === "duplicate") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+          padding: 24,
+          background: "#f1f5f9",
+          zIndex: 9999999,
+        }}
+      >
+        <div
+          style={{
+            width: "min(480px, 100%)",
+            padding: 32,
+            borderRadius: 16,
+            background: "#fff",
+            border: "1px solid #dbe5f0",
+            boxShadow: "0 20px 50px rgba(15, 35, 62, 0.16)",
+            textAlign: "center",
+          }}
+        >
+          <div style={{ fontSize: 42, marginBottom: 12 }}>🔒</div>
+          <h2 style={{ margin: "0 0 12px", color: "#17365d" }}>
+            Portal already open
+          </h2>
+          <p style={{ color: "#475569", lineHeight: 1.6 }}>
+            The portal is already open in another tab or window. Close this tab
+            and continue in the existing one. If you have closed the other
+            window, retry here.
+          </p>
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const acquired = await navigator.locks.request(
+                  PORTAL_TAB_LOCK,
+                  { mode: "exclusive", ifAvailable: true },
+                  async (lock) => {
+                    if (!lock) return false;
+
+                    const clearTasks = [
+                      () => localStorage.clear(),
+                      () => sessionStorage.clear(),
+
+                      async () => {
+                        if (!("caches" in window)) return;
+                        const cacheNames = await window.caches.keys();
+                        await Promise.all(
+                          cacheNames.map((name) => window.caches.delete(name)),
+                        );
+                      },
+
+                      async () => {
+                        if (!("serviceWorker" in navigator)) return;
+                        const registrations =
+                          await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(
+                          registrations.map((registration) =>
+                            registration.unregister(),
+                          ),
+                        );
+                      },
+
+                      async () => {
+                        if (typeof indexedDB.databases !== "function") return;
+                        const databases = await indexedDB.databases();
+
+                        await Promise.all(
+                          databases
+                            .filter((database) => database.name)
+                            .map(
+                              (database) =>
+                                new Promise((resolve) => {
+                                  const request = indexedDB.deleteDatabase(
+                                    database.name,
+                                  );
+                                  request.onsuccess = resolve;
+                                  request.onerror = resolve;
+                                  request.onblocked = resolve;
+                                }),
+                            ),
+                        );
+                      },
+                    ];
+
+                    // Attempt every cleanup even if one storage type fails.
+                    await Promise.allSettled(
+                      clearTasks.map((clear) => Promise.resolve().then(clear)),
+                    );
+
+                    await new Promise((resolve) => {
+                      let timeoutId;
+
+                      const finish = () => {
+                        window.clearTimeout(timeoutId);
+                        window.removeEventListener("pagehide", finish);
+                        resolve();
+                      };
+
+                      window.addEventListener("pagehide", finish, {
+                        once: true,
+                      });
+                      timeoutId = window.setTimeout(finish, 1500);
+                      window.location.replace("/");
+                    });
+
+                    return true;
+                  },
+                );
+
+                if (!acquired) {
+                  alert(
+                    "The other portal tab is still open. Close it, then retry.",
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  "Could not clear portal data or retry access:",
+                  error,
+                );
+                alert(
+                  "Could not clear portal data. Please close this tab and reopen the portal.",
+                );
+              }
+            }}
+            style={{
+              marginTop: 12,
+              width: "100%",
+              padding: "12px 18px",
+              border: 0,
+              borderRadius: 8,
+              background: "#2563a6",
+              color: "#fff",
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            Retry access
+          </button>
+        </div>
+      </div>
+    );
+  }
+
+  if (tabAccess === "unsupported") {
+    return (
+      <div style={{ padding: 32, color: "#17365d", textAlign: "center" }}>
+        <h2>Cannot verify a single active portal tab</h2>
+        <p>
+          Open the portal over HTTPS in a current browser, then reload. Access
+          is blocked here to protect your session data.
+        </p>
+      </div>
+    );
+  }
+
+  if (!authReady || tabAccess === "checking") {
+    return <div>Checking portal session…</div>;
   }
 
   return (

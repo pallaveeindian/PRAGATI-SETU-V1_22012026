@@ -215,7 +215,12 @@ const MENU = {
         },
       ],
     },
-    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
+    // { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
+    {
+      label: "Reports",
+      to: "/tms/smmu/tms-portal-summary",
+      icon: FaClipboardCheck,
+    },
     {
       label: "User Management",
       to: "/tms/smmu/dmmu-users",

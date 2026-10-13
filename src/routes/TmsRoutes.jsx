@@ -104,6 +104,7 @@ export default function TmsRoutes() {
           path="smmu/master-trainers/approvals"
           element={<MTPendingApprovalsConductor />}
         />
+        <Route path="smmu/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
 
       {/* MT APPROVAL */}
