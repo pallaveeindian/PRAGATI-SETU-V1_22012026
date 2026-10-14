@@ -54,6 +54,7 @@ import BmmuTargetAchievement from "../pages/TMS/BMMU/bmmu_tp_tvs";
 import DmmuTargetAchievement from "../pages/TMS/DMMU/dmmu_tp_tvs";
 import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
 import StaffBatchCreatorDashboard from "../pages/TMS/StaffBatchCreator/StaffBatchCreatorDashboard";
+import BulkCreateTrainingRequest from "../pages/TMS/tms_bulk_create_tr";
 
 // Backlog Batch Creator
 import BacklogBatchDashboard from "../pages/TMS/BacklogBatchCreator/BacklogBatchDashboard";
@@ -84,6 +85,10 @@ export default function TmsRoutes() {
         <Route
           path="smmu/bulk-assign-targets"
           element={<SmmuBulkUploadTargets />}
+        />
+        <Route
+          path="bulk-create-training-request"
+          element={<BulkCreateTrainingRequest />}
         />
         <Route path="smmu/tp-TvA" element={<SmmuTargetAchievement />} />
         <Route

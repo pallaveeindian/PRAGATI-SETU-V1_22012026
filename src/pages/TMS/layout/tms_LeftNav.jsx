@@ -23,6 +23,8 @@ import {
   FaUserEdit,
   FaChalkboard,
   FaBackward,
+  FaPencilAlt,
+  FaPencilRuler,
 } from "react-icons/fa";
 
 /**
@@ -191,8 +193,19 @@ const MENU = {
     },
     {
       label: "Create Training Request",
-      to: "/tms/create-training-request",
       icon: FaBook,
+      children: [
+        {
+          label: "Create Single Training Request",
+          to: "/tms/create-training-request",
+          icon: FaPencilAlt,
+        },
+        {
+          label: "Create Bulk Training Request",
+          to: "/tms/bulk-create-training-request",
+          icon: FaPencilRuler,
+        },
+      ],
     },
     {
       label: "Training Requests",
