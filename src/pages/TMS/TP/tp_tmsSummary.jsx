@@ -105,9 +105,10 @@ export default function TpTmsSummary() {
     );
   }, [plansList, selectedTheme]);
 
-  // Fetch Report Data
+  // Fetch Report Data (Guarded against premature fetching before SMMU role initialization)
   const fetchReport = useCallback(async () => {
     if (!financialYear) return;
+    if (role === "smmu" && trainingPlansLoading) return; // SURGICAL FIX: Wait for SMMU theme initialization
 
     setLoading(true);
     setError(null);
@@ -242,7 +243,6 @@ export default function TpTmsSummary() {
                 <TpTmsSummaryExport
                   reportData={reportData}
                   financialYear={financialYear}
-                  role={role}
                   selectedTheme={selectedTheme}
                   selectedPlan={selectedPlan}
                   themeName={

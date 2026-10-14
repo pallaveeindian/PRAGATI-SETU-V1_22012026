@@ -1176,7 +1176,7 @@ export default function TpTmsSummaryExport({
   reportData,
   financialYear,
   disabled,
-  role,
+  role = "smmu",
   selectedTheme,
   selectedPlan,
   themeName,
@@ -1190,6 +1190,7 @@ export default function TpTmsSummaryExport({
 
   const handleExport = async () => {
     if (!reportData) return;
+    if (!selectedTheme) role = "training_partner";
 
     const isSmmuAllPlansExport =
       String(role || "").toLowerCase() === "smmu" && !selectedPlan;

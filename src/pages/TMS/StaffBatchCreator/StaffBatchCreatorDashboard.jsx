@@ -180,9 +180,9 @@ export default function StaffBatchCreatorDashboard() {
                   .get("/tms/training-partner-targets/", {
                     params: {
                       financial_year: tr.financial_year,
-                      training_plan_id: tr.training_plan,
-                      partner_id: tr.partner,
-                      district_id: tr.district,
+                      training_plan: tr.training_plan,
+                      partner: tr.partner,
+                      district: tr.district,
                     },
                   })
                   .then(({ data }) => {
