@@ -17,10 +17,10 @@ const getBlockName = (block) =>
   block.name ||
   `Block ${getBlockId(block)}`;
 const PARTICIPANT_TYPES = [
-  {
-    value: "BENEFICIARY",
-    label: "Beneficiaries (SHG)",
-  },
+  // {
+  //   value: "BENEFICIARY",
+  //   label: "Beneficiaries (SHG)",
+  // },
   {
     value: "TRAINER",
     label: "Master Trainers",
