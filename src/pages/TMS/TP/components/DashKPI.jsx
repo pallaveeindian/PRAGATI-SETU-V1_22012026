@@ -80,16 +80,6 @@ export default function DashKPI({ data, batchesFilter }) {
       status: "ALL",
     },
     {
-      title: "Scheduled Batches",
-      value: scheduled_batches,
-      icon: <FaClock />,
-      iconBg: "#fef08a",
-      color: "#ca8a04",
-      trendText: "Awaiting",
-      trendSuffix: "approvals",
-      status: "SCHEDULED",
-    },
-    {
       title: "Pending Batches",
       value: pending_batches,
       icon: <FaClock />,
@@ -98,6 +88,16 @@ export default function DashKPI({ data, batchesFilter }) {
       trendText: "Awaiting",
       trendSuffix: "approvals",
       status: "PENDING",
+    },
+    {
+      title: "Scheduled Batches",
+      value: scheduled_batches,
+      icon: <FaClock />,
+      iconBg: "#fef08a",
+      color: "#ca8a04",
+      trendText: "Upcoming",
+      trendSuffix: "trainings",
+      status: "SCHEDULED",
     },
     {
       title: "Ongoing Batches",

@@ -529,7 +529,60 @@ export default function App() {
   // }
 
   if (!authReady || tabAccess === "checking") {
-    return <div>Checking portal session…</div>;
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "#f8fafc",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 9999999,
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            width: "64px",
+            height: "64px",
+            border: "4px solid #e2e8f0",
+            borderTopColor: "#2563eb",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            marginBottom: "20px",
+          }}
+        />
+        <h3
+          style={{
+            margin: "0 0 8px 0",
+            color: "#1e3a8a",
+            fontSize: "20px",
+            fontWeight: "700",
+            letterSpacing: "0.5px",
+          }}
+        >
+          PRAGATI SETU 1.0
+        </h3>
+        <p
+          style={{
+            margin: 0,
+            color: "#64748b",
+            fontSize: "14px",
+            fontWeight: "500",
+          }}
+        >
+          Initializing secure workspace & verifying session...
+        </p>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
   }
 
   return (
