@@ -35,6 +35,7 @@ import NewsUpdates from "./pages/NewsUpdates";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import Accessibility from "./pages/Accessibility";
+import missionBg from "./assets/mission_bg.png";
 
 // Grievance Portal
 import RegisterGrievance from "./pages/RegisterGrievance.jsx";
@@ -245,31 +246,123 @@ export default function App() {
           inset: 0,
           display: "grid",
           placeItems: "center",
-          padding: 24,
-          background: "#f1f5f9",
+          padding: "clamp(16px, 4vw, 32px)",
+          backgroundColor: "#fff8f2",
+          backgroundImage: `linear-gradient(rgba(255, 248, 242, 0.42), rgba(255, 248, 242, 0.42)), url(${missionBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
           zIndex: 9999999,
         }}
       >
         <div
           style={{
-            width: "min(480px, 100%)",
-            padding: 32,
-            borderRadius: 16,
-            background: "#fff",
-            border: "1px solid #dbe5f0",
-            boxShadow: "0 20px 50px rgba(15, 35, 62, 0.16)",
+            position: "relative",
+            width: "min(640px, 100%)",
+            padding: "48px clamp(24px, 5vw, 40px) 34px",
+            borderRadius: 18,
+            background: "rgba(255, 255, 255, 0.97)",
+            border: "1px solid rgba(244, 91, 22, 0.14)",
+            boxShadow: "0 24px 60px rgba(29, 42, 65, 0.16)",
             textAlign: "center",
+            overflow: "hidden",
+            boxSizing: "border-box",
           }}
         >
-          <div style={{ fontSize: 42, marginBottom: 12 }}>🔒</div>
-          <h2 style={{ margin: "0 0 12px", color: "#17365d" }}>
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 8,
+              background: "linear-gradient(90deg, #f45b16, #ff7627)",
+            }}
+          />
+
+          <div
+            style={{
+              width: 88,
+              height: 88,
+              margin: "0 auto 20px",
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "50%",
+              background: "#fff0e5",
+            }}
+          >
+            <svg
+              width="42"
+              height="42"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M7 10V7a5 5 0 0 1 10 0v3"
+                stroke="#10264a"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+              <rect
+                x="4"
+                y="10"
+                width="16"
+                height="11"
+                rx="2"
+                fill="#fff"
+                stroke="#10264a"
+                strokeWidth="1.8"
+              />
+              <circle cx="12" cy="15" r="1.4" fill="#f45b16" />
+              <path
+                d="M12 16.5V18"
+                stroke="#f45b16"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <div
+            style={{
+              marginBottom: 12,
+              color: "#f45b16",
+              fontSize: 14,
+              fontWeight: 800,
+              letterSpacing: "0.2em",
+            }}
+          >
+            SECURE ACCESS
+          </div>
+
+          <h2
+            style={{
+              margin: "0 0 16px",
+              color: "#10264a",
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontSize: "clamp(29px, 4vw, 38px)",
+              fontWeight: 700,
+              lineHeight: 1.15,
+            }}
+          >
             Portal already open
           </h2>
-          <p style={{ color: "#475569", lineHeight: 1.6 }}>
+
+          <p
+            style={{
+              maxWidth: 520,
+              margin: "0 auto 28px",
+              color: "#4b5568",
+              fontSize: 17,
+              lineHeight: 1.65,
+            }}
+          >
             The portal is already open in another tab or window. Close this tab
             and continue in the existing one. If you have closed the other
             window, retry here.
           </p>
+
           <button
             type="button"
             onClick={async () => {
@@ -366,19 +459,58 @@ export default function App() {
               }
             }}
             style={{
-              marginTop: 12,
               width: "100%",
-              padding: "12px 18px",
+              minHeight: 60,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              padding: "14px 20px",
               border: 0,
-              borderRadius: 8,
-              background: "#2563a6",
+              borderRadius: 10,
+              background: "linear-gradient(90deg, #f45b16, #ff681b)",
+              boxShadow: "0 8px 18px rgba(244, 91, 22, 0.2)",
               color: "#fff",
+              fontSize: 17,
               fontWeight: 700,
               cursor: "pointer",
             }}
           >
+            <svg
+              width="23"
+              height="23"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M20 7v5h-5M4 17v-5h5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M5.6 9a7 7 0 0 1 11.7-2L20 9M4 15l2.7 2a7 7 0 0 0 11.7-2"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
             Retry access
           </button>
+
+          <div
+            style={{
+              marginTop: 22,
+              color: "#657087",
+              fontSize: 14,
+            }}
+          >
+            Pragati Setu <span style={{ padding: "0 6px" }}>•</span> Secure
+            session
+          </div>
         </div>
       </div>
     );
@@ -431,7 +563,7 @@ export default function App() {
 
         <Route path="/contact-us" element={<ContactDetails />} />
         <Route path="/what's-new" element={<WhatsNew />} />
-        <Route path="/public-reports" element={<PublicReports />} />
+        {/* <Route path="/public-reports" element={<PublicReports />} /> */}
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
 
         {/* Grievance Portal Routes */}
