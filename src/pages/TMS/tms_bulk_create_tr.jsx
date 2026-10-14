@@ -18,6 +18,7 @@ import BulkStep1PlanSelection from "./BulkCreateTR/BulkStep1PlanSelection";
 import BulkStep2Participants from "./BulkCreateTR/BulkStep2Participants";
 import BulkRequestList from "./BulkCreateTR/BulkRequestList";
 import { useBulkTRState } from "./BulkCreateTR/hooks/useBulkTRState";
+import { useNavigate } from "react-router-dom";
 // -----------------------------------------
 // Helpers
 // -----------------------------------------
@@ -100,6 +101,8 @@ export default function BulkCreateTrainingRequest() {
   const [submissionResult, setSubmissionResult] = useState(null);
   const formRef = useRef(null);
   const listRef = useRef(null);
+
+  const navigate = useNavigate();
   // Bulk TR always uses STATE level for every participant type.
   useEffect(() => {
     if (state.form.level !== "STATE") {
@@ -1279,7 +1282,10 @@ export default function BulkCreateTrainingRequest() {
               <button
                 type="button"
                 className="bulk-primary-btn"
-                onClick={() => setSubmissionResult(null)}
+                onClick={() => {
+                  setSubmissionResult(null);
+                  navigate('/tms/training-requests');
+                }}
               >
                 Close
               </button>
