@@ -108,6 +108,14 @@ export default function BulkCreateTrainingRequest() {
       );
     }
   }, [state.form.level, state.setForm]);
+  // By default, Bulk TR starts with TRAINER type for new requests.
+  useEffect(() => {
+    state.setForm((previous) => ({
+      ...previous,
+      training_type: "TRAINER",
+      level: "STATE",
+    }));
+  }, [state.setForm]);
   // =========================================
   // LOAD MASTER DATA
   // =========================================
@@ -796,7 +804,7 @@ export default function BulkCreateTrainingRequest() {
       state.setSelectedTheme(null);
       state.setForm({
         financial_year: "",
-        training_type: "BENEFICIARY",
+        training_type: "TRAINER",
         level: "STATE",
         partner: "",
         notes: "",
