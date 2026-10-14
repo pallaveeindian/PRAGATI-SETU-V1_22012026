@@ -1,6 +1,6 @@
 // src/pages/LDMS/District Maps/AMBEDKAR NAGAR/AMBEDKAR NAGAR.jsx
 import React, { useState, useRef, useEffect } from "react";
-import "./Ambedkar Nagar.css";
+import "./Ambedkar_Nagar.css";
 
 const blocks = [
   { id: 313128, name: "AKBARPUR" },

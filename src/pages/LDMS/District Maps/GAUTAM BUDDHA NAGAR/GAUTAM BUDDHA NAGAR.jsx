@@ -1,6 +1,6 @@
 //Gautam Buddha Nagar Map
 import React, { useState, useRef, useEffect } from "react";
-import "./GAUTAM BUDDHA NAGAR MAP.css";
+import "./style.css";
 
 const blocks = [
   { id: 313376, name: "BISRAKH" },
