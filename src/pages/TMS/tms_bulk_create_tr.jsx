@@ -1256,8 +1256,8 @@ export default function BulkCreateTrainingRequest() {
                         >
                           <td>{index + 1}</td>
                           <td>
-                            {result.TH_urid ||
-                              result.training_request_id ||
+                            {result.training_request_id ||
+                              result.TH_urid ||
                               "—"}
                           </td>
                           <td>
