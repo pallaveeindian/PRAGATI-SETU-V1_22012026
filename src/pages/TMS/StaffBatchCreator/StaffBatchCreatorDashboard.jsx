@@ -2,11 +2,9 @@
 import React, { useState, useEffect, useContext, useRef } from "react";
 import { useParams, useNavigate, useLocation } from "react-router-dom";
 import Header from "../layout/header";
-import Footer from "../layout/footer";
 import TmsLeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
-
 import TRSummaryHeader from "./TRSummaryHeader";
 import StaffTRSearch from "./StaffTRSearch";
 import StaffTRParticipantTable from "./StaffTRParticipantTable";
@@ -15,50 +13,42 @@ import CentreSelectionTable from "./CentreSelectionTable";
 import BatchDateConfig from "./BatchDateConfig";
 import StaffBatchCounter from "./StaffBatchCounter";
 import StaffPreviewModal from "./StaffPreviewModal";
-
+import ScreenLoader from "./components/common/ScreenLoader";
 export default function StaffBatchCreatorDashboard() {
   const { id: paramTrId } = useParams();
   const location = useLocation();
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
-
   // Fallback to extract Base TR ID from router state or URL params
   const baseTrId = Number(paramTrId || location.state?.trId);
-
   // --- Core States ---
   const [loadingBase, setLoadingBase] = useState(true);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
-
   // --- Left Navigation State ---
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-
   // --- Context & Aggregation Data ---
   const [baseTrDetails, setBaseTrDetails] = useState(null);
   const [trainingPlanDays, setTrainingPlanDays] = useState(0);
   const [trainingPlanName, setTrainingPlanName] = useState("");
-
   // SURGICAL FIX: Dynamic participant type extraction
   const [participantType, setParticipantType] = useState("STAFF");
-
   // Multi-TR Aggregation States
   const [selectedTrIds, setSelectedTrIds] = useState([]);
   const [unallocatedStaff, setUnallocatedStaff] = useState([]);
-
+  const [trDetails, setTrDetails] = useState({});
+  const [targetsLoading, setTargetsLoading] = useState(false);
   // --- User Selection States ---
   const [selectedStaffIds, setSelectedStaffIds] = useState([]);
   const [selectedCentre, setSelectedCentre] = useState(null);
   const [startDate, setStartDate] = useState("");
   const [endDate, setEndDate] = useState("");
-
   // SURGICAL ADDITION: State for handling 409 Engagement Conflicts
   const [engagedParticipants, setEngagedParticipants] = useState([]);
   const [showEngagementModal, setShowEngagementModal] = useState(false);
-
   const initialSelectDoneRef = useRef(false);
   const maxAllowed = 60;
-
   // ==========================================
   // 1. BASE DATA INITIALIZATION (Runs Once)
   // ==========================================
@@ -68,7 +58,6 @@ export default function StaffBatchCreatorDashboard() {
       navigate(-1);
       return;
     }
-
     const fetchBaseDashboardData = async () => {
       setLoadingBase(true);
       try {
@@ -76,10 +65,8 @@ export default function StaffBatchCreatorDashboard() {
         const trResp = await TMS_API.trainingRequests.retrieve(baseTrId);
         const trData = trResp?.data ?? trResp;
         setBaseTrDetails(trData);
-
         // SURGICAL FIX: Extract Participant Type directly from Base TR
         setParticipantType(trData?.training_type || "STAFF");
-
         // B. Fetch Plan Details to get "no_of_days"
         if (trData?.training_plan) {
           const planResp = await TMS_API.trainingPlans.retrieve(
@@ -89,7 +76,6 @@ export default function StaffBatchCreatorDashboard() {
           setTrainingPlanDays(planData?.no_of_days || 1);
           setTrainingPlanName(planData?.training_name || "");
         }
-
         // C. Initialize TR Selection pool with the base TR
         setSelectedTrIds([baseTrId]);
       } catch (error) {
@@ -100,10 +86,8 @@ export default function StaffBatchCreatorDashboard() {
         setLoadingBase(false);
       }
     };
-
     fetchBaseDashboardData();
   }, [baseTrId, navigate]);
-
   // =======================================================
   // 2. THE GLOBAL PARTICIPANT AGGREGATOR (Runs on TR Change)
   // =======================================================
@@ -112,7 +96,6 @@ export default function StaffBatchCreatorDashboard() {
       setUnallocatedStaff([]);
       return;
     }
-
     const fetchAggregatedParticipants = async () => {
       setLoadingParticipants(true);
       try {
@@ -120,14 +103,11 @@ export default function StaffBatchCreatorDashboard() {
         const responses = await Promise.all(
           selectedTrIds.map((id) => api.get(`/tms/tr/${id}/participants/`)),
         );
-
         let mergedPool = [];
-
         // Flatten responses and dynamically inject the Source TR ID for traceability
         responses.forEach((resp, index) => {
           const sourceTrId = selectedTrIds[index];
           const participants = resp?.data?.results || resp?.data || [];
-
           participants.forEach((p) => {
             // ONLY strictly unallocated participants
             if (!p.CB_selected) {
@@ -138,15 +118,12 @@ export default function StaffBatchCreatorDashboard() {
             }
           });
         });
-
         setUnallocatedStaff(mergedPool);
-
         // Auto-select Base TR participants only on the very first load
         if (!initialSelectDoneRef.current && mergedPool.length > 0) {
           const baseTrParticipants = mergedPool
             .filter((p) => p.source_tr_id === baseTrId)
             .map((p) => p.id);
-
           const safeInitialSelection = baseTrParticipants.slice(0, maxAllowed);
           if (safeInitialSelection.length > 0) {
             setSelectedStaffIds(safeInitialSelection);
@@ -165,28 +142,191 @@ export default function StaffBatchCreatorDashboard() {
         setLoadingParticipants(false);
       }
     };
-
     fetchAggregatedParticipants();
   }, [selectedTrIds, baseTrId]);
+  // Fetch district targets using one API.
+  useEffect(() => {
+    let active = true;
+
+    if (!baseTrDetails || !selectedTrIds.length) {
+      setTrDetails({});
+      setTargetsLoading(false);
+      return;
+    }
+
+    setTargetsLoading(true);
+    const targetRequests = new Map();
+
+    const fetchTargets = async () => {
+      const rows = await Promise.all(
+        selectedTrIds.map(async (id) => {
+          let key = String(id);
+          let districtName = "District unavailable";
+
+          try {
+            const response =
+              Number(id) === baseTrId
+                ? baseTrDetails
+                : await TMS_API.trainingRequests.retrieve(id);
+            const tr = response?.data ?? response;
+            key = `${tr.financial_year}:${tr.training_plan}:${tr.partner}:${tr.district}`;
+            districtName = tr.district_name_en || districtName;
+
+            // Share a single request when selected TRs have the same target key.
+            if (!targetRequests.has(key)) {
+              targetRequests.set(
+                key,
+                api
+                  .get("/tms/training-partner-targets/", {
+                    params: {
+                      financial_year: tr.financial_year,
+                      training_plan_id: tr.training_plan,
+                      partner_id: tr.partner,
+                      district_id: tr.district,
+                    },
+                  })
+                  .then(({ data }) => {
+                    const items = Array.isArray(data)
+                      ? data
+                      : Array.isArray(data?.results)
+                        ? data.results
+                        : Array.isArray(data?.data)
+                          ? data.data
+                          : [data?.data ?? data];
+
+                    const matches = items.filter((item) => {
+                      const meta = item?.meta ?? item;
+                      return (
+                        meta &&
+                        [
+                          [meta.district_id ?? meta.district, tr.district],
+                          [meta.partner_id ?? meta.partner, tr.partner],
+                          [
+                            meta.training_plan_id ?? meta.training_plan,
+                            tr.training_plan,
+                          ],
+                          [meta.financial_year, tr.financial_year],
+                        ].every(
+                          ([value, expected]) =>
+                            value == null || String(value) === String(expected),
+                        )
+                      );
+                    });
+
+                    return matches.length === 1 ? matches[0] : null;
+                  }),
+              );
+            }
+
+            const item = await targetRequests.get(key);
+            const value =
+              item?.total_target_count ??
+              item?.target_count ??
+              item?.target ??
+              item?.participant_target ??
+              item?.remaining_target ??
+              null;
+            const target =
+              value !== null && value !== "" && Number.isFinite(Number(value))
+                ? Number(value)
+                : null;
+
+            return [
+              String(id),
+              {
+                target,
+                districtName:
+                  item?.district_name_en ||
+                  item?.meta?.district_name ||
+                  item?.district_name ||
+                  districtName,
+                key,
+              },
+            ];
+          } catch (error) {
+            console.error(`Failed to fetch target for TR ${id}:`, error);
+            return [
+              String(id),
+              {
+                target: null,
+                districtName,
+                key,
+              },
+            ];
+          }
+        }),
+      );
+
+      if (active) setTrDetails(Object.fromEntries(rows));
+    };
+
+    fetchTargets().finally(() => {
+      if (active) setTargetsLoading(false);
+    });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedTrIds, baseTrId, baseTrDetails]);
 
   // ==========================================
   // 3. VALIDATION LOGIC
   // ==========================================
-  // Dynamic minimum: 20, OR the exact remaining pool if less than 20 participants are left globally
-  const minRequired = Math.min(20, unallocatedStaff.length);
+  const minRequired = 20;
   const currentSelectedCount = selectedStaffIds.length;
-
+  const selectedSet = new Set(selectedStaffIds.map(String));
+  // Several TRs may share a district/plan/partner target.
+  const selectedByTarget = {};
+  unallocatedStaff.forEach((p) => {
+    if (selectedSet.has(String(p.id))) {
+      const key =
+        trDetails[String(p.source_tr_id)]?.key ?? String(p.source_tr_id);
+      selectedByTarget[key] = (selectedByTarget[key] || 0) + 1;
+    }
+  });
+  // One target card per district/partner/plan/year, not per TR.
+  const trTargets = Object.values(
+    selectedTrIds.reduce((groups, trId) => {
+      const details = trDetails[String(trId)] || {};
+      const key = details.key || String(trId);
+      if (
+        !groups[key] ||
+        (groups[key].target == null && details.target != null)
+      ) {
+        groups[key] = {
+          trId,
+          districtName: details.districtName || "Loading...",
+          target: details.target ?? null,
+          selected: selectedByTarget[key] || 0,
+        };
+      }
+      return groups;
+    }, {}),
+  );
+  const exceededTR = trTargets.find(
+    (tr) => tr.target !== null && tr.selected > tr.target,
+  );
+  const missingTargetTR = trTargets.find((tr) => tr.target === null);
   const isSelectionValid =
-    currentSelectedCount >= minRequired && currentSelectedCount <= maxAllowed;
-  const isFormComplete =
-    isSelectionValid && selectedCentre?.id && startDate && endDate;
-
+    currentSelectedCount > 0 &&
+    currentSelectedCount >= minRequired &&
+    currentSelectedCount <= maxAllowed;
+  const isFormComplete = Boolean(
+    isSelectionValid &&
+    selectedCentre?.id &&
+    startDate &&
+    endDate &&
+    !targetsLoading &&
+    !loadingParticipants &&
+    trTargets.length &&
+    !missingTargetTR &&
+    !exceededTR,
+  );
   // ==========================================
   // 4. SUBMISSION HANDLER
   // ==========================================
   const handleConfirmAndSave = async () => {
     if (!isFormComplete) return;
-
     setIsSubmitting(true);
     try {
       // SURGICAL FIX: Send dynamic participant_type (STAFF or TRAINER)
@@ -205,9 +345,7 @@ export default function StaffBatchCreatorDashboard() {
         start_date: startDate,
         end_date: endDate,
       };
-
       await TMS_API.batchCreator.create(payload);
-
       alert(`Aggregated ${participantType} Batch created successfully!`);
       setIsPreviewOpen(false);
       navigate(`/tms/tr-detail/${baseTrId}`);
@@ -231,32 +369,16 @@ export default function StaffBatchCreatorDashboard() {
       setIsSubmitting(false);
     }
   };
-
   // ==========================================
   // 5. RENDER ORCHESTRATION
   // ==========================================
-  if (loadingBase) {
-    return (
-      <div className="app-shell">
-        <Header />
-        <div
-          className="content-area"
-          style={{
-            display: "flex",
-            justifyContent: "center",
-            alignItems: "center",
-            width: "100%",
-            height: "100vh",
-          }}
-        >
-          <h2>Loading Batch Workspace...</h2>
-        </div>
-      </div>
-    );
-  }
+  if (loadingBase) return <ScreenLoader />;
 
   return (
     <div className="app-shell">
+      {(loadingParticipants || targetsLoading || isSubmitting) && (
+        <ScreenLoader />
+      )}
       <Header />
       <div
         style={{
@@ -270,7 +392,6 @@ export default function StaffBatchCreatorDashboard() {
           collapsed={sidebarCollapsed}
           onToggle={() => setSidebarCollapsed((prev) => !prev)}
         />
-
         <div
           style={{
             flex: 1,
@@ -291,11 +412,11 @@ export default function StaffBatchCreatorDashboard() {
           >
             <StaffBatchCounter
               selectedCount={currentSelectedCount}
-              minRequired={minRequired}
+              // minRequired={minRequired}
               maxAllowed={maxAllowed}
+              trTargets={targetsLoading ? [] : trTargets}
             />
           </div>
-
           <div
             style={{
               backgroundColor: "#ffffff",
@@ -312,7 +433,6 @@ export default function StaffBatchCreatorDashboard() {
               trainingPlanName={trainingPlanName}
               participantType={participantType} // PROP DRILLING
             />
-
             <div
               style={{
                 display: "grid",
@@ -327,7 +447,6 @@ export default function StaffBatchCreatorDashboard() {
                 onTrSelectionChange={setSelectedTrIds}
                 participantType={participantType} // PROP DRILLING
               />
-
               <StaffTRParticipantTable
                 staffPool={unallocatedStaff}
                 loading={loadingParticipants}
@@ -338,7 +457,6 @@ export default function StaffBatchCreatorDashboard() {
                 participantType={participantType}
                 engagedParticipants={engagedParticipants} // SURGICAL ADDITION
               />
-
               <StaffSelectionTable
                 staffPool={unallocatedStaff}
                 selectedIds={selectedStaffIds}
@@ -347,14 +465,12 @@ export default function StaffBatchCreatorDashboard() {
                 participantType={participantType}
                 engagedParticipants={engagedParticipants} // SURGICAL ADDITION
               />
-
               {/* Centre Selection (Pass Partner ID from Base TR to fetch centres) */}
               <CentreSelectionTable
                 partnerId={baseTrDetails?.partner}
                 selectedCentre={selectedCentre}
                 onSelectCentre={setSelectedCentre}
               />
-
               {/* Date Configuration */}
               <BatchDateConfig
                 trainingDays={trainingPlanDays}
@@ -366,7 +482,6 @@ export default function StaffBatchCreatorDashboard() {
                 }}
               />
             </div>
-
             {/* Action Footer */}
             <div
               style={{
@@ -385,15 +500,24 @@ export default function StaffBatchCreatorDashboard() {
                   fontSize: "14px",
                 }}
               >
-                {!isSelectionValid
-                  ? `⚠ Please select between ${minRequired} and ${maxAllowed} participants.`
-                  : !selectedCentre?.id
-                    ? "⚠ Please select a Training Centre."
-                    : !startDate
-                      ? "⚠ Please select a Start Date."
-                      : "✓ Configuration is valid and ready."}
+                {targetsLoading || loadingParticipants
+                  ? "⚠ Loading selected Training Requests and targets."
+                  : !selectedTrIds.length
+                    ? "⚠ Please select a Training Request."
+                    : exceededTR
+                      ? `⚠ ${exceededTR.districtName}: ${exceededTR.selected} selected exceeds target ${exceededTR.target}.`
+                      : missingTargetTR
+                        ? `⚠ Target unavailable for ${missingTargetTR.districtName}.`
+                        : !isSelectionValid
+                          ? `⚠ Please select between ${minRequired} and ${maxAllowed} participants.`
+                          : !selectedCentre?.id
+                            ? "⚠ Please select a Training Centre."
+                            : !startDate
+                              ? "⚠ Please select a Start Date."
+                              : !endDate
+                                ? "⚠ Please select an End Date."
+                                : "✓ Configuration is valid and ready."}
               </div>
-
               <div style={{ display: "flex", gap: "12px" }}>
                 <button
                   onClick={() => navigate(-1)}
@@ -434,7 +558,6 @@ export default function StaffBatchCreatorDashboard() {
           </div>
         </div>
       </div>
-
       {/* Pre-Flight Modal */}
       {isPreviewOpen && (
         <StaffPreviewModal
@@ -450,7 +573,6 @@ export default function StaffBatchCreatorDashboard() {
           participantType={participantType} // PROP DRILLING
         />
       )}
-
       {/* SURGICAL ADDITION: Engagement Conflict Modal */}
       {showEngagementModal && (
         <div
