@@ -1,4 +1,4 @@
-// src/pages/TMS/TRs/training_req_detail.jsx
+// src\pages\AdminPages\TmsPortal\TrainingRequest\TraningRequestDetail.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";

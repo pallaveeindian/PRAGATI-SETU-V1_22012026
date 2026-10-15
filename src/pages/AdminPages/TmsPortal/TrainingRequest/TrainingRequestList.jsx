@@ -1,4 +1,4 @@
-// src/pages/TMS/TRs/training_req_list.jsx
+// src\pages\AdminPages\TmsPortal\TrainingRequest\TrainingRequestList.jsx
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
