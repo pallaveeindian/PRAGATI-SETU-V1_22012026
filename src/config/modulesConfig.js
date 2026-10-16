@@ -24,7 +24,7 @@ export const MODULES_CONFIG = [
     bg: tmsBG,
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: "2026-10-14T17:15:00",
+    maintenanceUntil: null,
   },
   {
     id: "crp",
@@ -36,7 +36,7 @@ export const MODULES_CONFIG = [
     bg: mapBG,
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: "2026-10-14T17:15:00",
+    maintenanceUntil: null,
   },
   {
     id: "ldms",
@@ -74,7 +74,7 @@ export const MODULES_CONFIG = [
     bg: epsmsBG,
     path: "/module-login?module=epsms",
     level: "Block",
-    maintenanceUntil: "2026-10-14T17:15:00",
+    maintenanceUntil: null,
   },
   {
     id: "prerna",
@@ -110,6 +110,6 @@ export const MODULES_CONFIG = [
     bg: mdBG,
     path: "/module-login?module=admin",
     level: "Block",
-    maintenanceUntil: "2026-10-14T17:15:00",
+    maintenanceUntil: null,
   },
 ];

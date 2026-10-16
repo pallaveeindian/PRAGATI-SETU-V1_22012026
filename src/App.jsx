@@ -13,6 +13,9 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 // Configuration for Dynamic Maintenance Control
 import { MODULES_CONFIG } from "./config/modulesConfig";
 
+// News Popup
+import NewsPopup from "./components/ui/NewsPopup.jsx";
+
 // Public Pages
 import Home from "./pages/Home";
 import Login from "./pages/Login";
@@ -75,6 +78,7 @@ export default function App() {
   const location = useLocation();
   const navType = useNavigationType();
   const PORTAL_TAB_LOCK = "pragati-setu-portal-single-tab";
+  const [showNewsPopup, setShowNewsPopup] = useState(true);
 
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
@@ -587,6 +591,11 @@ export default function App() {
 
   return (
     <LanguageProvider>
+      {/* SURGICAL ADDITION: Render Popup on Home Page Only */}
+      {showNewsPopup && location.pathname === "/" && (
+        <NewsPopup onClose={() => setShowNewsPopup(false)} />
+      )}
+
       <Routes>
         {/* ----- Public Routes ----- */}
         <Route path="/" element={<Home />} />
