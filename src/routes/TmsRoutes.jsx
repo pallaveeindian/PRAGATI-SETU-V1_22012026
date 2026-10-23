@@ -62,6 +62,10 @@ import BacklogBatchDashboard from "../pages/TMS/BacklogBatchCreator/BacklogBatch
 import LMList from "../pages/TMS/LearnMat/LMList";
 import AddLM from "../pages/TMS/LearnMat/AddLM";
 
+import TrainerCheck from "../pages/TMS/EligibilityCheck/TrainerCheck";
+import BenificiaryCheck from "../pages/TMS/EligibilityCheck/BenificiaryCheck";
+import HrManagement from "../pages/TMS/SMMU/Hrm/HrManagement";
+
 // Master Trainer Management V2
 import {
   MTDirectoryConductor,
@@ -230,6 +234,11 @@ export default function TmsRoutes() {
       <Route element={<ProtectedRoute allowedRoles={["smmu", "dmmu"]} />}>
         <Route path="dmmu/batch-review/:id" element={<DmmuBatchReview />} />
         <Route path="dmmu/tr-closure/:id" element={<DmmuRequestClosure />} />
+        <Route path="eligibility-check/trainer" element={<TrainerCheck />} />
+        <Route
+          path="eligibility-check/beneficiary"
+          element={<BenificiaryCheck />}
+        />
       </Route>
 
       {/* Batch Detail Permissions */}
@@ -272,6 +281,9 @@ export default function TmsRoutes() {
       >
         <Route path="learning-materials/list" element={<LMList />} />
         <Route path="learning-materials/add" element={<AddLM />} />
+      </Route>
+      <Route element={<ProtectedRoute />}>
+        <Route path="hr-management" element={<HrManagement />} />
       </Route>
     </Routes>
   );

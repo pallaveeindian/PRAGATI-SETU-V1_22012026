@@ -23,6 +23,7 @@ import {
   FaUserEdit,
   FaChalkboard,
   FaBackward,
+  FaCheckCircle,
 } from "react-icons/fa";
 
 /**
@@ -139,6 +140,24 @@ const MENU = {
       to: "/admin/grievances",
       icon: FaHandsHelping,
     },
+
+    {
+      label: "Eligibility Check",
+      icon: FaCheckCircle,
+      children: [
+        {
+          label: "Trainer Eligibility Check",
+          to: "/tms/eligibility-check/trainer",
+          icon: FaUserCheck,
+        },
+        {
+          label: "Beneficiary Eligibility Check",
+          to: "/tms/eligibility-check/beneficiary",
+          icon: FaUserCheck,
+        },
+      ],
+     
+    },
   ],
   smmu: [
     { label: "Dashboard", to: "/tms/smmu/dashboard", icon: FaTachometerAlt },
@@ -226,6 +245,11 @@ const MENU = {
       to: "/admin/grievances",
       icon: FaHandsHelping,
     },
+    {
+      label: "Hr Management",
+      to: "/tms/hr-management",
+      icon: FaUsers,
+    }
   ],
   training_partner: [
     {

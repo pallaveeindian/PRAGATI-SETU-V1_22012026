@@ -1,4 +1,4 @@
-// src/pages/TMS/TRs/training_req_list.jsx
+// src/pages/AdminPages/TmsPortal/TrainingRequest/TrainingRequestList.jsx
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -36,7 +36,7 @@ function loadCache() {
 async function fetchTrainingRequestsOnce(params = {}) {
   const response = await TMS_API.trainingRequestsList.list({
     ...params,
-    page_size: 5000,
+    limit: 5000,
   });
   const responseData = response?.data;
   return Array.isArray(responseData)
@@ -281,9 +281,6 @@ export default function TrainingRequestList() {
       return true;
     });
 
-    // PAGINATION CHANGE
-    setCurrentPage(1);
-
     return result;
   }, [requests, filters, requestIdSearch]);
 
@@ -291,11 +288,38 @@ export default function TrainingRequestList() {
 
   const totalPages = Math.ceil(filtered.length / rowsPerPage);
 
+  const paginationItems = useMemo(() => {
+    const visiblePages = new Set();
+    for (let page = 1; page <= totalPages; page += 1) {
+      if (
+        totalPages <= 7 ||
+        page === 1 ||
+        page === totalPages ||
+        Math.abs(page - currentPage) <= 1
+      ) {
+        visiblePages.add(page);
+      }
+    }
+
+    const items = [];
+    let previousPage = 0;
+    visiblePages.forEach((page) => {
+      if (page - previousPage > 1) items.push(`ellipsis-${page}`);
+      items.push(page);
+      previousPage = page;
+    });
+    return items;
+  }, [currentPage, totalPages]);
+
   const paginatedData = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     const end = start + rowsPerPage;
     return filtered.slice(start, end);
   }, [filtered, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filtered]);
 
   /* ---------------- render helpers ---------------- */
 
@@ -622,11 +646,11 @@ export default function TrainingRequestList() {
                     minHeight: 42,
                   }}
                 >
-                  <div style={{ color: "#2b4e72", fontSize: 14 }}>
+                  <div className="training-pagination__label" style={{ color: "#2b4e72", fontSize: 14 }}>
                     Page {currentPage} of {totalPages || 1}
                   </div>
 
-                  <div style={{ display: "flex", gap: 6 }}>
+                  <div className="training-pagination__buttons">
                     <button
                       className="btnPage"
                       disabled={currentPage === 1}
@@ -635,15 +659,22 @@ export default function TrainingRequestList() {
                       Prev
                     </button>
 
-                    {[...Array(totalPages)].map((_, i) => (
-                      <button
-                        key={i}
-                        className={`btnPage ${currentPage === i + 1 ? "activePage" : ""}`}
-                        onClick={() => setCurrentPage(i + 1)}
-                      >
-                        {i + 1}
-                      </button>
-                    ))}
+                    {paginationItems.map((item) =>
+                      typeof item === "number" ? (
+                        <button
+                          key={item}
+                          className={`btnPage ${currentPage === item ? "activePage" : ""}`}
+                          aria-current={currentPage === item ? "page" : undefined}
+                          onClick={() => setCurrentPage(item)}
+                        >
+                          {item}
+                        </button>
+                      ) : (
+                        <span key={item} className="training-pagination__ellipsis" aria-hidden="true">
+                          …
+                        </span>
+                      ),
+                    )}
 
                     <button
                       className="btnPage"
@@ -780,6 +811,26 @@ export default function TrainingRequestList() {
 .training-pagination{
   border-top:1px solid #e4ecf5;
   color:#2b4e72;
+  min-width:0;
+}
+
+.training-pagination__label{
+  flex:0 0 auto;
+  white-space:nowrap;
+}
+
+.training-pagination__buttons{
+  display:flex;
+  align-items:center;
+  justify-content:flex-end;
+  gap:6px;
+  flex-wrap:wrap;
+  min-width:0;
+}
+
+.training-pagination__ellipsis{
+  padding:0 2px;
+  color:#64748b;
 }
 
 /* LOADING / EMPTY */
@@ -875,6 +926,10 @@ export default function TrainingRequestList() {
   .training-pagination{
     flex-wrap:wrap;
     justify-content:center !important;
+  }
+
+  .training-pagination__buttons{
+    justify-content:center;
   }
 
   /* 🔥 FORCE HIDE TABLE COMPLETELY */

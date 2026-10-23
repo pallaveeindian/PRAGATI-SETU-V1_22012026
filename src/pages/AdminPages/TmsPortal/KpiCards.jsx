@@ -48,6 +48,7 @@ const KpiCards = ({ kpiData }) => {
       batches: bCounts["1_total_batches_created"],
       pax: pCounts["1_total_batches_created"],
       batchLabel: "Total Batches",
+      participantLabel: "Participants",
       border: "border-purple",
       icon: FaLayerGroup,
     },
@@ -56,14 +57,25 @@ const KpiCards = ({ kpiData }) => {
       batches: bCounts["3_batches_pending_at_dmm"],
       pax: pCounts["3_batches_pending_at_dmm"],
       batchLabel: "Pending Batches",
+      participantLabel: "Participants",
       border: "border-orange",
       icon: FaClock,
+    },
+    {
+      label: "Participants Trained & Dropout",
+      batches: bCounts["9a_participants_trained"],
+      pax: pCounts["9b_participants_dropout"],
+      batchLabel: "Eligible Participants",
+      participantLabel: "Not Eligible ",
+      border: "border-green",
+      icon: FaCheckCircle,
     },
     {
       label: "Scheduled Batches",
       batches: bCounts["2_scheduled_batches"],
       pax: pCounts["2_scheduled_batches"],
       batchLabel: "Scheduled",
+      participantLabel: "Participants",
       border: "border-teal",
       icon: FaRegCalendarAlt,
     },
@@ -73,6 +85,7 @@ const KpiCards = ({ kpiData }) => {
       batches: bCounts["4_ongoing_batches"],
       pax: pCounts["4_ongoing_batches"],
       batchLabel: "Ongoing Batches",
+      participantLabel: "Participants",
       border: "border-blue",
       icon: FaTasks,
     },
@@ -81,6 +94,7 @@ const KpiCards = ({ kpiData }) => {
       batches: bCounts["5_completed_batches"],
       pax: pCounts["5_completed_batches"],
       batchLabel: "Completed Batches",
+      participantLabel: "Participants",
       border: "border-green",
       icon: FaCheckCircle,
     },
@@ -89,6 +103,7 @@ const KpiCards = ({ kpiData }) => {
       batches: bCounts["6_completed_batches_for_verification"],
       pax: pCounts["6_completed_batches_for_verification"],
       batchLabel: "Verification Batches",
+      participantLabel: "Participants",
       border: "border-pink",
       icon: FaExclamationTriangle,
     },
@@ -97,6 +112,7 @@ const KpiCards = ({ kpiData }) => {
       batches: bCounts["7_completed_batch_closed"],
       pax: pCounts["7_completed_batch_closed"],
       batchLabel: "Closed Batches",
+      participantLabel: "Participants",
       border: "border-teal",
       icon: FaClipboardList,
     },
@@ -105,6 +121,7 @@ const KpiCards = ({ kpiData }) => {
       batches: bCounts["8_batches_rejected_by_dmm"],
       pax: pCounts["8_batches_rejected_by_dmm"],
       batchLabel: "Rejected Batches",
+      participantLabel: "Participants",
       border: "border-red",
       icon: FaTimesCircle,
     },
@@ -249,7 +266,7 @@ const KpiCards = ({ kpiData }) => {
                 </div>
                 <div className="stat-item right">
                   <span className="stat-val">{formatValue(card.pax)}</span>
-                  <span className="stat-title">Participants</span>
+                  <span className="stat-title">{card.participantLabel}</span>
                 </div>
               </div>
             )}

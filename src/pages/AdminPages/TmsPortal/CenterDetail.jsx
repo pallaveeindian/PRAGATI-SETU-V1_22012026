@@ -35,7 +35,9 @@ const CenterDetail = () => {
       setLoading(true);
       setError(null);
 
-      const response = await api.get("/tms/training-partner-centres/");
+      const response = await api.get("/tms/training-partner-centres/", {
+        params: { page_size: 1000 },
+      });
       const results = response?.data?.results || response?.data || [];
 
       // Data ko District ke hisaab se group karna
