@@ -1,8 +1,9 @@
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useContext } from "react";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { TMS_API, EPSAKHI_API, LOOKUP_API } from "../../../api/axios";
+import { AuthContext } from "../../../contexts/AuthContext";
 import {
   FaCheckCircle,
   FaIdCard,
@@ -68,11 +69,13 @@ const BeneficiaryRow = React.memo(function BeneficiaryRow({ row, srNo }) {
 });
 
 export default function BeneficiaryCheck() {
-  const DISTRICT_ID = "31354"; 
+  const { user, authReady } = useContext(AuthContext) || {};
 
   useEffect(() => {
     window.scrollTo(0, 0);
   }, []);
+
+  const [districtId, setDistrictId] = useState(null);
 
   // ==========================================
   // 1. STATUS CHECK FORM STATES
@@ -95,34 +98,105 @@ export default function BeneficiaryCheck() {
   const [rows, setRows] = useState([]); // Members
   
   const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0 });
-  const [loadingTable, setLoadingTable] = useState(false);
+  const [loadingTable, setLoadingTable] = useState(true);
   const [tableError, setTableError] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
 
-  // Load Blocks on Mount
+  // Resolve the signed-in user's district before loading the directory.
   useEffect(() => {
+    let cancelled = false;
+    if (!authReady) return undefined;
+
+    setDistrictId(null);
+    setBlocks([]);
+    setShgs([]);
+    setRows([]);
+    setActiveBlock(null);
+    setActiveShg(null);
+    setViewLevel("BLOCKS");
+    setLoadingTable(true);
+    setTableError("");
+
+    const resolveDistrict = async () => {
+      try {
+        const response = user?.id
+          ? await LOOKUP_API.userGeoscopeByUserId(user.id)
+          : null;
+        const geoScope = response?.data || {};
+        const assignedDistrictId =
+          geoScope.district_id ||
+          geoScope.districts?.[0] ||
+          geoScope.district ||
+          user?.district_id;
+
+        if (!assignedDistrictId) {
+          throw new Error("No district mapping found for your account.");
+        }
+
+        if (!cancelled) {
+          setDistrictId(String(assignedDistrictId));
+          setTableError("");
+        }
+      } catch (e) {
+        console.error("Failed to resolve user's district", e);
+        if (!cancelled) {
+          setDistrictId(null);
+          setTableError(
+            e.message === "No district mapping found for your account."
+              ? e.message
+              : "Failed to load your district. Please try again.",
+          );
+          setLoadingTable(false);
+        }
+      }
+    };
+
+    resolveDistrict();
+    return () => {
+      cancelled = true;
+    };
+  }, [authReady, user?.id, user?.district_id]);
+
+  // Load only the blocks assigned to the signed-in user's district.
+  useEffect(() => {
+    if (!districtId) return undefined;
+
     let cancelled = false;
     const fetchBlocks = async () => {
       setLoadingTable(true);
+      setBlocks([]);
+      setShgs([]);
+      setRows([]);
+      setActiveBlock(null);
+      setActiveShg(null);
+      setViewLevel("BLOCKS");
       try {
         const res = await LOOKUP_API.blocks.list({
-          district: DISTRICT_ID,
-          district_id: DISTRICT_ID,
+          district: districtId,
+          district_id: districtId,
           limit: 500,
         });
         const payload = res?.data || {};
-        const data = Array.isArray(payload.results) ? payload.results : Array.isArray(payload.data) ? payload.data : Array.isArray(payload) ? payload : [];
+        const data = Array.isArray(payload.results)
+          ? payload.results
+          : Array.isArray(payload.data)
+            ? payload.data
+            : Array.isArray(payload)
+              ? payload
+              : [];
         if (!cancelled) setBlocks(data);
       } catch (e) {
         console.error("Failed to load blocks", e);
-        if (!cancelled) setTableError("Failed to load blocks for this district.");
+        if (!cancelled) setTableError("Failed to load blocks for your district.");
       } finally {
         if (!cancelled) setLoadingTable(false);
       }
     };
     fetchBlocks();
-    return () => { cancelled = true; };
-  }, []);
+    return () => {
+      cancelled = true;
+    };
+  }, [districtId]);
 
   // Load SHGs when a Block is selected
   const fetchShgs = async (block) => {
@@ -148,10 +222,15 @@ export default function BeneficiaryCheck() {
 
   // Fetch Members when an SHG is selected (Paginated)
   const loadMembersData = useCallback(async (shg, page = 1, { force = false } = {}) => {
-    if (!shg) return;
+    if (!shg || !districtId) return;
 
     const pageSize = meta.page_size || 20;
-    const cacheKey = JSON.stringify({ shg: shg.code, page, page_size: pageSize });
+    const cacheKey = JSON.stringify({
+      district: districtId,
+      shg: shg.code,
+      page,
+      page_size: pageSize,
+    });
 
     if (!force && beneficiaryListCache.has(cacheKey)) {
       const cached = beneficiaryListCache.get(cacheKey);
@@ -188,7 +267,7 @@ export default function BeneficiaryCheck() {
     } finally {
       setLoadingTable(false);
     }
-  }, [meta.page_size]);
+  }, [districtId, meta.page_size]);
 
 
   // Navigation Handlers
@@ -603,7 +682,7 @@ export default function BeneficiaryCheck() {
                             if (viewLevel === "MEMBERS") {
                               return (
                                 <BeneficiaryRow 
-                                  key={row.member_id || row.member_code || row.lokos_member_code || row.id || index} 
+                                  key={`${row.member_id || row.member_code || row.lokos_member_code || row.id || "member"}-${index}`}
                                   row={row} 
                                   srNo={srNo} 
                                 />
