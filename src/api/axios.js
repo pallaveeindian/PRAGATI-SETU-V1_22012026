@@ -628,6 +628,11 @@ export const TMS_API = {
   // - TMS_API.staff.list({ search: '...', district: 1, designation: '...' }) -> Hits GET /api/v1/tms/staff/
   // - TMS_API.staff.detail('UP-EMP-071') -> Hits GET /api/v1/tms/staff/UP-EMP-071/
   staff: makeCrud("/tms/staff/"),
+  add: (data) => api.post("/tms/add/", data),
+  update: (employeeId, data) =>
+    api.patch(`/tms/update/${encodeURIComponent(employeeId)}/`, data),
+  delete: (employeeId) =>
+    api.delete(`/tms/delete/${encodeURIComponent(employeeId)}/`),
 
   // ------------------------------------
   // User Management
