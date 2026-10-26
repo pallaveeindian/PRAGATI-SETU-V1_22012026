@@ -934,7 +934,7 @@ export const SUPPORT_API = {
       },
     }),
 
-  listTickets: () => api.get("/support/tickets/list/"),
+  listTickets: (params) => api.get("/support/tickets/list/", { params }),
 
   getTicketDetails: (ticketCode) => api.get(`/support/tickets/${ticketCode}/`),
 
