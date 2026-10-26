@@ -40,24 +40,49 @@ const TmsPortal = () => {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const [themeResp, planResp] = await Promise.all([
-          TMS_API.trainingThemes.list({ page_size: 500 }),
-          TMS_API.trainingPlans.list({ page_size: 500 }),
-        ]);
-
-        const getItems = (response) =>
-          Array.isArray(response?.data)
-            ? response.data
-            : response?.data?.results || [];
-
-        setThemes(getItems(themeResp));
-        setTrainingPlans(getItems(planResp));
+        const themeResp = await TMS_API.trainingThemes.list({
+          page_size: 500,
+        });
+        setThemes(
+          Array.isArray(themeResp?.data)
+            ? themeResp.data
+            : themeResp?.data?.results || [],
+        );
       } catch (err) {
-        console.error("Error fetching themes or plans:", err);
+        console.error("Error fetching themes:", err);
       }
     };
     fetchDropdownData();
   }, []);
+
+  useEffect(() => {
+    let isCurrentRequest = true;
+    setTrainingPlans([]);
+
+    const fetchTrainingPlans = async () => {
+      try {
+        const planResp = await TMS_API.trainingPlans.list({
+          page_size: 500,
+          ...(selectedTheme ? { theme: selectedTheme } : {}),
+        });
+        if (!isCurrentRequest) return;
+
+        setTrainingPlans(
+          Array.isArray(planResp?.data)
+            ? planResp.data
+            : planResp?.data?.results || [],
+        );
+      } catch (err) {
+        if (!isCurrentRequest) return;
+        console.error("Error fetching training plans:", err);
+      }
+    };
+
+    fetchTrainingPlans();
+    return () => {
+      isCurrentRequest = false;
+    };
+  }, [selectedTheme]);
 
   useEffect(() => {
     const fetchPortalSummary = async () => {
@@ -142,6 +167,8 @@ const TmsPortal = () => {
       "Batches Rejected By DMM - Participant Count",
       "Total Batches Completed (5+6+7) - Batch Count",
       "Total Batches Completed (5+6+7) - Participant Count",
+      "Participants Trained Participants Dropout - Batch Count",
+      "Participants Trained Participants Dropout - Participant Count",
       "Total Target (Slot 1+2) - Batch Count",
       "Total Target (Slot 1+2) - Participant Count",
       "Participants Onboarded - Batch Count",
@@ -163,6 +190,8 @@ const TmsPortal = () => {
       "7_completed_batch_closed",
       "8_batches_rejected_by_dmm",
       "9_total_batches_completed",
+      "9a_participants_trained",
+      "9b_participants_dropout",
       "10_total_target",
       "11_participants_onboarded",
       "12_participants_enrolled_in_batches",
@@ -279,7 +308,10 @@ const TmsPortal = () => {
 
                 <select
                   value={selectedTheme}
-                  onChange={(e) => setSelectedTheme(e.target.value)}
+                  onChange={(e) => {
+                    setSelectedTheme(e.target.value);
+                    setSelectedPlan("");
+                  }}
                   style={{
                     padding: "8px 12px",
                     borderRadius: "5px",
@@ -378,6 +410,9 @@ const TmsPortal = () => {
                             Total Batches Completed (5+6+7)
                           </th>
                           <th className="highlight-col-alt">
+                            Participants Trained Participants Dropout
+                          </th>
+                          <th className="highlight-col-alt">
                             Total Target (Slot 1+2)
                           </th>
                           <th>Participants Onboarded</th>
@@ -404,6 +439,7 @@ const TmsPortal = () => {
                           <th>12</th>
                           <th>13</th>
                           <th>14</th>
+                          <th>15</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -486,6 +522,12 @@ const TmsPortal = () => {
                                   pVal={p["9_total_batches_completed"]}
                                   className="highlight-cell"
                                 />
+                                <StackedCell
+                                  bVal={b["9a_participants_trained"]}
+                                  pVal={p["9b_participants_dropout"]}
+                                  className="highlight-cell"
+                                />
+
                                 <StackedCell
                                   bVal={b["10_total_target"]}
                                   pVal={p["10_total_target"]}

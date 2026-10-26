@@ -1,4 +1,4 @@
-// src\pages\AdminPages\TmsPortal\TrainingRequest\TrainingRequestList.jsx
+// src/pages/TMS/TRs/training_req_list.jsx
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
@@ -36,7 +36,7 @@ function loadCache() {
 async function fetchTrainingRequestsOnce(params = {}) {
   const response = await TMS_API.trainingRequestsList.list({
     ...params,
-    page_size: 5000,
+    limit: 5000,
   });
   const responseData = response?.data;
   return Array.isArray(responseData)
@@ -281,9 +281,6 @@ export default function TrainingRequestList() {
       return true;
     });
 
-    // PAGINATION CHANGE
-    setCurrentPage(1);
-
     return result;
   }, [requests, filters, requestIdSearch]);
 
@@ -296,6 +293,10 @@ export default function TrainingRequestList() {
     const end = start + rowsPerPage;
     return filtered.slice(start, end);
   }, [filtered, currentPage]);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [filtered]);
 
   /* ---------------- render helpers ---------------- */
 

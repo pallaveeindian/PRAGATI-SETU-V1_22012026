@@ -180,11 +180,37 @@ const FilterComponent = ({ filters, handleChange }) => {
   }, [filters.trainingThemeId]);
 
   const displayedPlans = useMemo(() => {
+    // Array of plan IDs to strictly hide
+    const excludedIds = [
+      "100",
+      "101",
+      "103",
+      "98",
+      "96",
+      "154",
+      "33",
+      "35",
+      "67",
+      "68",
+      "70",
+      "117",
+      "118",
+    ];
+
     if (!filters.trainingThemeId) {
-      return fallbackPlans;
+      // Also filter fallback plans just in case
+      return fallbackPlans.filter(
+        (plan) => !excludedIds.includes(String(plan.id)),
+      );
     }
 
     return apiPlans.filter((plan) => {
+      // 1. Exclude the specific sequence/step IDs
+      if (excludedIds.includes(String(plan.id))) {
+        return false;
+      }
+
+      // 2. Standard theme matching
       const planThemeId = String(
         plan.theme_id ||
           plan.theme ||
@@ -193,6 +219,7 @@ const FilterComponent = ({ filters, handleChange }) => {
           "",
       );
       const selectedThemeId = String(filters.trainingThemeId);
+
       return planThemeId === selectedThemeId;
     });
   }, [apiPlans, filters.trainingThemeId]);
