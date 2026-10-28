@@ -1,4 +1,4 @@
-// src\pages\AdminPages\TmsPortal\TrainingRequest\TraningRequestDetail.jsx
+// src/pages/TMS/TRs/training_req_detail.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 // import TopNav from "../layout/tms_TopNav";
@@ -601,7 +601,8 @@ export default function TrainingRequestDetail() {
   }, [tr?.remarks, id]);
 
   // Gradient for Training Request Detail page (matching Training Request List)
-  const currentGradient = "linear-gradient(to bottom, rgb(5, 46, 22) 0%, rgb(20, 83, 45) 12%, rgb(22, 101, 52) 28%, rgb(21, 128, 61) 45%, rgb(22, 163, 74) 60%, rgb(34, 197, 94) 75%, rgb(74, 222, 128) 88%, rgb(187, 247, 208) 100%)";
+  const currentGradient =
+    "linear-gradient(to bottom, rgb(5, 46, 22) 0%, rgb(20, 83, 45) 12%, rgb(22, 101, 52) 28%, rgb(21, 128, 61) 45%, rgb(22, 163, 74) 60%, rgb(34, 197, 94) 75%, rgb(74, 222, 128) 88%, rgb(187, 247, 208) 100%)";
 
   return (
     <div className="app-shell">

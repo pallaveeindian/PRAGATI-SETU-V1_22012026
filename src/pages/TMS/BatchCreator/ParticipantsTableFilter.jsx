@@ -210,7 +210,7 @@ const ParticipantTableFilters = ({
 
   const getMinStartDate = () => {
     const minDate = new Date();
-    minDate.setDate(minDate.getDate() + 1);
+    minDate.setDate(minDate.getDate());
     return minDate.toISOString().split("T")[0];
   };
 

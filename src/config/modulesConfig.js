@@ -12,7 +12,7 @@ import pmuBG from "../assets/LoginBG/pmu_space.png";
 import inactiveBG from "../assets/LoginBG/inactive_space.png";
 
 export const MODULES_CONFIG = [
-  // 2026-09-28T14:30:00
+  // 2026-10-28T19:15:00
 
   {
     id: "tms",

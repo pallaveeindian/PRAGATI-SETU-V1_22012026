@@ -56,6 +56,9 @@ import TrainingBatchHistory from "../pages/TMS/TRs/TrainingBatchHistory";
 import StaffBatchCreatorDashboard from "../pages/TMS/StaffBatchCreator/StaffBatchCreatorDashboard";
 import BulkCreateTrainingRequest from "../pages/TMS/tms_bulk_create_tr";
 
+// SMM HR MANAGEMENT
+import HrManagement from "../pages/TMS/SMMU/Hrm/HrManagement";
+
 // Backlog Batch Creator
 import BacklogBatchDashboard from "../pages/TMS/BacklogBatchCreator/BacklogBatchDashboard";
 
@@ -69,6 +72,10 @@ import {
   MTPendingApprovalsConductor,
   MTProfileRegistrationsConductor,
 } from "../pages/TMS/MTManagementV2";
+
+// ELLIGIBILITY CHECKs
+import BeneficiaryCheck from "../pages/TMS/EligibilityCheck/BenificiaryCheck";
+import TrainerCheck from "../pages/TMS/EligibilityCheck/TrainerCheck";
 
 export default function TmsRoutes() {
   return (
@@ -109,6 +116,8 @@ export default function TmsRoutes() {
           path="smmu/master-trainers/approvals"
           element={<MTPendingApprovalsConductor />}
         />
+        {/* HRM */}
+        <Route path="smmu/hrm" element={<HrManagement />} />
         <Route path="smmu/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
 
@@ -217,6 +226,15 @@ export default function TmsRoutes() {
           element={<CreateTrainingRequest />}
         />
         <Route path="batch-certificate/:id" element={<BatchCertificate />} />
+      </Route>
+
+      {/* Engagement Checks */}
+      <Route element={<ProtectedRoute allowedRoles={["dmmu", "bmmu", "smmu", "pmu_admin"]} />}>
+        <Route
+          path="engagement-check/beneficiary"
+          element={<BeneficiaryCheck />}
+        />
+        <Route path="engagement-check/trainer" element={<TrainerCheck />} />
       </Route>
 
       <Route

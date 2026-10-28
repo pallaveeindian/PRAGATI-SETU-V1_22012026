@@ -619,6 +619,29 @@ export const TMS_API = {
   // - TMS_API.staff.list({ search: '...', district: 1, designation: '...' }) -> Hits GET /api/v1/tms/staff/
   // - TMS_API.staff.detail('UP-EMP-071') -> Hits GET /api/v1/tms/staff/UP-EMP-071/
   staff: makeCrud("/tms/staff/"),
+  // STAFF CUD
+  addStaff: (data) => api.post("/tms/staffCUD/add/", data),
+  updateStaff: (employeeId, data) =>
+    api.patch(`/tms/staffCUD/update/${encodeURIComponent(employeeId)}/`, data),
+  deleteStaff: (employeeId) =>
+    api.delete(`/tms/staffCUD/delete/${encodeURIComponent(employeeId)}/`),
+
+  // Participant Engagement Checks
+  participantStatus: (params) =>
+    api.get("/tms/participant/status/", {
+      params,
+      paramsSerializer: {
+        encode: (value) => encodeURIComponent(value),
+      },
+    }),
+
+  // Training Plan Sequence APIs
+  listTrainingPlanSequences: (params) =>
+    api.get("/tms/tplan-sequence/list/", { params }),
+
+  // Training Plan Sequence Registration
+  createTrainingPlanSequence: (data) =>
+    api.post("/tms/tplan-sequence/create/", data),
 
   // ------------------------------------
   // User Management

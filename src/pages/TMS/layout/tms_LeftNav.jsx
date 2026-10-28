@@ -1,5 +1,5 @@
 // src/pages/TMS/layout/tms_LeftNav.jsx
-import React, { useContext, useState, useEffect } from "react";
+import React, { useContext, useState, useEffect, useMemo } from "react";
 import { NavLink, useNavigate } from "react-router-dom";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { TMS_API } from "../../../api/axios";
@@ -79,6 +79,22 @@ const MENU = {
         },
       ],
     },
+    {
+      label: "Engagement Checks",
+      icon: FaBuilding,
+      children: [
+        {
+          label: "Beneficiary Engagement",
+          to: "/tms/engagement-check/beneficiary",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Trainer Engagement",
+          to: "/tms/engagement-check/trainer",
+          icon: FaBook,
+        },
+      ],
+    },
     { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
     {
       label: "Grievances",
@@ -100,6 +116,22 @@ const MENU = {
         {
           label: "Master Trainer Registration Status",
           to: "/tms/master-trainers/status",
+          icon: FaBook,
+        },
+      ],
+    },
+    {
+      label: "Engagement Checks",
+      icon: FaBuilding,
+      children: [
+        {
+          label: "Beneficiary Engagement",
+          to: "/tms/engagement-check/beneficiary",
+          icon: FaAddressBook,
+        },
+        {
+          label: "Trainer Engagement",
+          to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
       ],
@@ -187,6 +219,22 @@ const MENU = {
         {
           label: "Master Trainer Registration Status",
           to: "/tms/master-trainers/status",
+          icon: FaBook,
+        },
+      ],
+    },
+    {
+      label: "Engagement Checks",
+      icon: FaBuilding,
+      children: [
+        // {
+        //   label: "Beneficiary Engagement",
+        //   to: "/tms/engagement-check/beneficiary",
+        //   icon: FaAddressBook,
+        // },
+        {
+          label: "Trainer Engagement",
+          to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
       ],
@@ -482,12 +530,28 @@ export default function TmsLeftNav({ collapsed, onToggle }) {
   const { user } = useContext(AuthContext) || {};
   const navigate = useNavigate();
   const [mobileOpen, setMobileOpen] = useState(false);
-  const roleKey = getRoleKey(user);
-  const menu = MENU[roleKey] || [];
   const username = user?.username || user?.name || "Guest";
   const initial = username.charAt(0).toUpperCase();
   const [showUserPopup, setShowUserPopup] = useState(false);
   const [openDropdown, setOpenDropdown] = useState(null);
+  const hasHrAccess = username === "SMM_HR";
+  const roleKey = getRoleKey(user);
+  const menu = useMemo(() => {
+    const items = MENU[roleKey] ?? [];
+
+    if (!hasHrAccess || items.some((item) => item.to === "/tms/smmu/hrm")) {
+      return items;
+    }
+
+    return [
+      ...items,
+      {
+        label: "HR Management",
+        to: "/tms/smmu/hrm",
+        icon: FaUsers,
+      },
+    ];
+  }, [roleKey, hasHrAccess]);
 
   // 👈 NEW: State to hold Organization Name
   const [orgName, setOrgName] = useState(() => {
