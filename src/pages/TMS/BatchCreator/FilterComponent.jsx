@@ -182,18 +182,18 @@ const FilterComponent = ({ filters, handleChange }) => {
   const displayedPlans = useMemo(() => {
     // Array of plan IDs to strictly hide
     const excludedIds = [
-      "100",
+      // "100",
       "101",
       "103",
-      "98",
-      "96",
-      "154",
-      "33",
+      // "98",
+      // "96",
+      // "154",
+      // "33",
       "35",
-      "67",
+      // "67",
       "68",
-      "70",
-      "117",
+      // "70",
+      // "117",
       "118",
     ];
 

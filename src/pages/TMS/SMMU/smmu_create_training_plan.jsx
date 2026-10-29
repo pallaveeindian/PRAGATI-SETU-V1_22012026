@@ -1,4 +1,4 @@
-// src/pages/TMS/SMMU/smmu_create_training_plan.jsx
+//src\pages\TMS\SMMU\smmu_create_training_plan.jsx
 import React, { useContext, useEffect, useState } from "react";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
@@ -200,27 +200,35 @@ export default function SmmuCreateTrainingPlan() {
   }
 
   // ----------------------------------------
-  // FETCH EXISTING RECURRING SEQUENCE FOR EDIT
-  // Previous Training Plan is no longer used.
+  // FETCH EXISTING RECURRING SEQUENCE
   // ----------------------------------------
 
   async function fetchExistingSequence(planId) {
+    // Reset first so a previous sequence cannot be reused accidentally.
+    setExistingSequence(null);
+    setIsRecurringPlan("no");
+    setSequenceNo("");
+    setSequenceGroupName("");
+    setNextPlan("");
+
     try {
       const response = await TMS_API.listTrainingPlanSequences();
       const sequences = getResults(response);
 
-      const sequence = sequences.find(
-        (item) =>
-          Number(item.training_plan) === Number(planId) &&
-          item.is_active !== false,
-      );
+      const sequence = sequences.find((item) => {
+        const linkedPlanId =
+          typeof item.training_plan === "object"
+            ? item.training_plan?.id
+            : item.training_plan;
 
+        return (
+          Number(linkedPlanId) === Number(planId) && item.is_active !== false
+        );
+      });
+
+      // No sequence means this plan is currently non-recurring.
+      // It is valid to switch it to recurring while editing.
       if (!sequence) {
-        setExistingSequence(null);
-        setIsRecurringPlan("no");
-        setSequenceNo("");
-        setSequenceGroupName("");
-        setNextPlan("");
         return;
       }
 
@@ -228,11 +236,13 @@ export default function SmmuCreateTrainingPlan() {
       setIsRecurringPlan("yes");
       setSequenceNo(String(sequence.step_order ?? ""));
       setSequenceGroupName(sequence.sequence_group_name || "");
-      setNextPlan(
-        sequence.next_training_plan != null
-          ? String(sequence.next_training_plan)
-          : "",
-      );
+
+      const linkedNextPlan =
+        typeof sequence.next_training_plan === "object"
+          ? sequence.next_training_plan?.id
+          : sequence.next_training_plan;
+
+      setNextPlan(linkedNextPlan != null ? String(linkedNextPlan) : "");
 
       await fetchAvailableTrainingPlans();
     } catch (error) {
@@ -375,6 +385,8 @@ export default function SmmuCreateTrainingPlan() {
     }
 
     // Validate recurring-plan details.
+    // Do not require existingSequence here:
+    // No -> Yes must create a new sequence.
     if (isRecurringPlan === "yes") {
       if (!sequenceNo || Number(sequenceNo) < 1) {
         window.alert("Please select Sequence No.");
@@ -390,14 +402,6 @@ export default function SmmuCreateTrainingPlan() {
 
       if (!sequenceGroupName.trim()) {
         window.alert("Please enter Sequence Group Name.");
-        return;
-      }
-
-      // Editing a recurring sequence must use its existing ID.
-      if (isEditing && !existingSequence?.id) {
-        window.alert(
-          "No existing sequence record was found for this training plan. Reload the page and try again.",
-        );
         return;
       }
     }
@@ -432,7 +436,7 @@ export default function SmmuCreateTrainingPlan() {
         const data = response?.data ?? response;
         currentPlanId = data?.id ?? editPlanData.id;
 
-        // Preserve the existing scope-update behavior.
+        // Preserve existing scope-update behavior.
         const scopeResponse = await TMS_API.trpUserScopes.list({
           training_id: currentPlanId,
           limit: 100,
@@ -472,11 +476,12 @@ export default function SmmuCreateTrainingPlan() {
       // ----------------------------------------
       // CREATE OR UPDATE RECURRING SEQUENCE
       //
-      // Both operations use:
-      // POST /tms/tplan-sequence/create/
+      // No -> Yes: create sequence (no existing ID).
+      // Yes -> Yes: send existing sequence ID.
+      // No -> No: do not create a sequence.
       //
-      // On update, include the EXISTING SEQUENCE ID.
-      // Previous Training Plan is no longer sent.
+      // Uses POST /tms/tplan-sequence/create/.
+      // Backend must update when an existing ID is supplied.
       // ----------------------------------------
 
       if (isRecurringPlan === "yes") {
@@ -487,7 +492,7 @@ export default function SmmuCreateTrainingPlan() {
           training_plan: Number(currentPlanId),
         };
 
-        if (isEditing) {
+        if (existingSequence?.id) {
           await TMS_API.createTrainingPlanSequence({
             ...sequencePayload,
             id: existingSequence.id,
@@ -784,10 +789,8 @@ export default function SmmuCreateTrainingPlan() {
                 <form onSubmit={handleSubmit}>
                   <div className="form-grid">
                     {/* THEME */}
-
                     <div className="form-group full-width">
                       <label className="form-label">Assigned Theme</label>
-
                       <div className="theme-box">
                         {loading
                           ? "Loading theme..."
@@ -798,14 +801,12 @@ export default function SmmuCreateTrainingPlan() {
                     </div>
 
                     {/* TRAINING NAME */}
-
                     <div className="form-group full-width">
                       <label className="form-label">
                         {isEditing
                           ? "Training Module Name"
                           : "New Training Module Name"}
                       </label>
-
                       <input
                         type="text"
                         name="training_name"
@@ -818,12 +819,10 @@ export default function SmmuCreateTrainingPlan() {
                     </div>
 
                     {/* TRAINING TYPE */}
-
                     <div className="form-group">
                       <label className="form-label">
                         Which Type of Training is this?
                       </label>
-
                       <select
                         name="type_of_training"
                         className="form-select"
@@ -837,12 +836,10 @@ export default function SmmuCreateTrainingPlan() {
                     </div>
 
                     {/* TRAINING LEVEL */}
-
                     <div className="form-group">
                       <label className="form-label">
                         At what Level this module will be implemented?
                       </label>
-
                       <select
                         name="level_of_training"
                         className="form-select"
@@ -865,12 +862,10 @@ export default function SmmuCreateTrainingPlan() {
                     </div>
 
                     {/* DURATION */}
-
                     <div className="form-group">
                       <label className="form-label">
                         What will be the Duration of this Module? (Days)
                       </label>
-
                       <input
                         type="number"
                         min="1"
@@ -884,12 +879,10 @@ export default function SmmuCreateTrainingPlan() {
                     </div>
 
                     {/* CADRE SELECTION AUTHORITY */}
-
                     <div className="form-group">
                       <label className="form-label">
                         Who has the authority to select Cadre for this Module?
                       </label>
-
                       <select
                         name="cadre_selection_authority"
                         className="form-select"
@@ -912,7 +905,6 @@ export default function SmmuCreateTrainingPlan() {
                   </div>
 
                   {/* RECURRING PLAN */}
-
                   <div className="recurring-box">
                     <h2 className="recurring-title">Recurring Training Plan</h2>
 
@@ -920,7 +912,6 @@ export default function SmmuCreateTrainingPlan() {
                       <label className="form-label">
                         Is this a recurring plan?
                       </label>
-
                       <select
                         className="form-select"
                         value={isRecurringPlan}
@@ -942,10 +933,8 @@ export default function SmmuCreateTrainingPlan() {
 
                         <div className="form-grid" style={{ marginTop: 18 }}>
                           {/* SEQUENCE NUMBER */}
-
                           <div className="form-group">
                             <label className="form-label">Sequence No.</label>
-
                             <select
                               className="form-select"
                               value={sequenceNo}
@@ -953,7 +942,6 @@ export default function SmmuCreateTrainingPlan() {
                               required
                             >
                               <option value="">Select Sequence</option>
-
                               {Array.from(
                                 { length: 10 },
                                 (_, index) => index + 1,
@@ -966,12 +954,10 @@ export default function SmmuCreateTrainingPlan() {
                           </div>
 
                           {/* GROUP NAME */}
-
                           <div className="form-group">
                             <label className="form-label">
                               Sequence Group Name
                             </label>
-
                             <input
                               type="text"
                               className="form-input"
@@ -985,12 +971,10 @@ export default function SmmuCreateTrainingPlan() {
                           </div>
 
                           {/* NEXT PLAN */}
-
                           <div className="form-group">
                             <label className="form-label">
                               Next Training Plan
                             </label>
-
                             <select
                               className="form-select"
                               value={nextPlan}
@@ -1029,7 +1013,6 @@ export default function SmmuCreateTrainingPlan() {
                   </div>
 
                   {/* BUTTONS */}
-
                   <div style={{ marginTop: 24 }}>
                     <button
                       type="submit"
