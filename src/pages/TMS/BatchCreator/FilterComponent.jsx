@@ -183,18 +183,18 @@ const FilterComponent = ({ filters, handleChange }) => {
     // Array of plan IDs to strictly hide
     const excludedIds = [
       // "100",
-      "101",
+      // "101",
       "103",
       // "98",
       // "96",
       // "154",
       // "33",
-      "35",
+      // "35",
       // "67",
-      "68",
+      // "68",
       // "70",
       // "117",
-      "118",
+      // "118",
     ];
 
     if (!filters.trainingThemeId) {
