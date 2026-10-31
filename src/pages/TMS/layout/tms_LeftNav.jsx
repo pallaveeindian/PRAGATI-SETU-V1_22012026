@@ -389,6 +389,22 @@ const MENU = {
       icon: FaBuilding,
     },
     {
+      label: "Engagement Checks",
+      icon: FaBuilding,
+      children: [
+        // {
+        //   label: "Beneficiary Engagement",
+        //   to: "/tms/engagement-check/beneficiary",
+        //   icon: FaAddressBook,
+        // },
+        {
+          label: "Trainer Engagement",
+          to: "/tms/engagement-check/trainer",
+          icon: FaBook,
+        },
+      ],
+    },
+    {
       label: "Learning Materials",
       to: "/tms/learning-materials/list",
       icon: FaDatabase,

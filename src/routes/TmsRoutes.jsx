@@ -229,7 +229,7 @@ export default function TmsRoutes() {
       </Route>
 
       {/* Engagement Checks */}
-      <Route element={<ProtectedRoute allowedRoles={["dmmu", "bmmu", "smmu", "pmu_admin"]} />}>
+      <Route element={<ProtectedRoute allowedRoles={["dmmu", "bmmu", "smmu", "pmu_admin", "dtp"]} />}>
         <Route
           path="engagement-check/beneficiary"
           element={<BeneficiaryCheck />}
