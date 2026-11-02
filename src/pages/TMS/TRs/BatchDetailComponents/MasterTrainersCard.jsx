@@ -109,11 +109,12 @@ export default function MasterTrainersCard({
   const isBMMU = role == 1;
   const isDMMU = role == 2;
   const isSMMU = role == 3;
+  const isPMMUAdmin = role == 9;
 
   // Determine if replacement is allowed (Only for ONGOING or SCHEDULED)
   const canReplace =
     batchData &&
-    (isDMMU || isSMMU) &&
+    (isDMMU || isSMMU || isPMMUAdmin) &&
     ["ONGOING", "SCHEDULED"].includes(batchData.status);
 
   /* ---------------- Fetch Themes ---------------- */
