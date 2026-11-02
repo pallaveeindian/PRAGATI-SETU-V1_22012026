@@ -1,5 +1,5 @@
 // src\App.jsx
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import {
   Routes,
   Route,
@@ -12,6 +12,9 @@ import ProtectedRoute from "./routes/ProtectedRoute";
 
 // Configuration for Dynamic Maintenance Control
 import { MODULES_CONFIG } from "./config/modulesConfig";
+
+// News Popup
+import NewsPopup from "./components/ui/NewsPopup.jsx";
 
 // Public Pages
 import Home from "./pages/Home";
@@ -35,6 +38,7 @@ import NewsUpdates from "./pages/NewsUpdates";
 import PrivacyPolicy from "./pages/PrivacyPolicy";
 import TermsOfUse from "./pages/TermsOfUse";
 import Accessibility from "./pages/Accessibility";
+import missionBg from "./assets/mission_bg.png";
 
 // Grievance Portal
 import RegisterGrievance from "./pages/RegisterGrievance.jsx";
@@ -73,6 +77,9 @@ export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
   const location = useLocation();
   const navType = useNavigationType();
+  const PORTAL_TAB_LOCK = "pragati-setu-portal-single-tab";
+  const [showNewsPopup, setShowNewsPopup] = useState(true);
+
   useEffect(() => {
     if ("scrollRestoration" in window.history) {
       window.history.scrollRestoration = "manual";
@@ -123,6 +130,80 @@ export default function App() {
     return () => clearInterval(timer);
   }, []);
 
+  const [tabAccess, setTabAccess] = useState("checking");
+  const lockRequestStartedRef = useRef(false);
+  const lockEffectActiveRef = useRef(false);
+  const releaseLockRef = useRef(null);
+
+  useEffect(() => {
+    lockEffectActiveRef.current = true;
+
+    const cleanup = () => {
+      lockEffectActiveRef.current = false;
+
+      // Deferring cleanup lets React StrictMode's development-only
+      // effect replay reuse this tab's lock.
+      queueMicrotask(() => {
+        if (!lockEffectActiveRef.current) {
+          releaseLockRef.current?.();
+          releaseLockRef.current = null;
+        }
+      });
+    };
+
+    if (lockRequestStartedRef.current) {
+      return cleanup;
+    }
+    lockRequestStartedRef.current = true;
+
+    if (
+      typeof navigator === "undefined" ||
+      !navigator.locks ||
+      typeof navigator.locks.request !== "function"
+    ) {
+      setTabAccess("unsupported");
+      return cleanup;
+    }
+
+    navigator.locks
+      .request(
+        PORTAL_TAB_LOCK,
+        { mode: "exclusive", ifAvailable: true },
+        async (lock) => {
+          if (!lock) {
+            if (lockEffectActiveRef.current) {
+              setTabAccess("duplicate");
+            }
+            return;
+          }
+
+          if (!lockEffectActiveRef.current) return;
+
+          setTabAccess("active");
+
+          // Keep the lock until this tab is closed or the App unmounts.
+          await new Promise((resolve) => {
+            releaseLockRef.current = resolve;
+
+            if (!lockEffectActiveRef.current) {
+              releaseLockRef.current = null;
+              resolve();
+            }
+          });
+
+          releaseLockRef.current = null;
+        },
+      )
+      .catch((error) => {
+        console.error("Could not acquire the portal tab lock:", error);
+        if (lockEffectActiveRef.current) {
+          setTabAccess("unsupported");
+        }
+      });
+
+    return cleanup;
+  }, []);
+
   // Check if a module is Active based on config + timer
   const isModuleActive = (moduleId) => {
     const mod = MODULES_CONFIG.find((m) => m.id === moduleId);
@@ -161,8 +242,360 @@ export default function App() {
     return <div>Restoring session…</div>;
   }
 
+  if (tabAccess === "duplicate") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          display: "grid",
+          placeItems: "center",
+          padding: "clamp(16px, 4vw, 32px)",
+          backgroundColor: "#fff8f2",
+          backgroundImage: `linear-gradient(rgba(255, 248, 242, 0.42), rgba(255, 248, 242, 0.42)), url(${missionBg})`,
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+          zIndex: 9999999,
+        }}
+      >
+        <div
+          style={{
+            position: "relative",
+            width: "min(640px, 100%)",
+            padding: "48px clamp(24px, 5vw, 40px) 34px",
+            borderRadius: 18,
+            background: "rgba(255, 255, 255, 0.97)",
+            border: "1px solid rgba(244, 91, 22, 0.14)",
+            boxShadow: "0 24px 60px rgba(29, 42, 65, 0.16)",
+            textAlign: "center",
+            overflow: "hidden",
+            boxSizing: "border-box",
+          }}
+        >
+          <div
+            style={{
+              position: "absolute",
+              top: 0,
+              left: 0,
+              right: 0,
+              height: 8,
+              background: "linear-gradient(90deg, #f45b16, #ff7627)",
+            }}
+          />
+
+          <div
+            style={{
+              width: 88,
+              height: 88,
+              margin: "0 auto 20px",
+              display: "grid",
+              placeItems: "center",
+              borderRadius: "50%",
+              background: "#fff0e5",
+            }}
+          >
+            <svg
+              width="42"
+              height="42"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M7 10V7a5 5 0 0 1 10 0v3"
+                stroke="#10264a"
+                strokeWidth="1.8"
+                strokeLinecap="round"
+              />
+              <rect
+                x="4"
+                y="10"
+                width="16"
+                height="11"
+                rx="2"
+                fill="#fff"
+                stroke="#10264a"
+                strokeWidth="1.8"
+              />
+              <circle cx="12" cy="15" r="1.4" fill="#f45b16" />
+              <path
+                d="M12 16.5V18"
+                stroke="#f45b16"
+                strokeWidth="1.6"
+                strokeLinecap="round"
+              />
+            </svg>
+          </div>
+
+          <div
+            style={{
+              marginBottom: 12,
+              color: "#f45b16",
+              fontSize: 14,
+              fontWeight: 800,
+              letterSpacing: "0.2em",
+            }}
+          >
+            SECURE ACCESS
+          </div>
+
+          <h2
+            style={{
+              margin: "0 0 16px",
+              color: "#10264a",
+              fontFamily: "Georgia, 'Times New Roman', serif",
+              fontSize: "clamp(29px, 4vw, 38px)",
+              fontWeight: 700,
+              lineHeight: 1.15,
+            }}
+          >
+            Portal already open
+          </h2>
+
+          <p
+            style={{
+              maxWidth: 520,
+              margin: "0 auto 28px",
+              color: "#4b5568",
+              fontSize: 17,
+              lineHeight: 1.65,
+            }}
+          >
+            The portal is already open in another tab or window. Close this tab
+            and continue in the existing one. If you have closed the other
+            window, retry here.
+          </p>
+
+          <button
+            type="button"
+            onClick={async () => {
+              try {
+                const acquired = await navigator.locks.request(
+                  PORTAL_TAB_LOCK,
+                  { mode: "exclusive", ifAvailable: true },
+                  async (lock) => {
+                    if (!lock) return false;
+
+                    const clearTasks = [
+                      () => localStorage.clear(),
+                      () => sessionStorage.clear(),
+
+                      async () => {
+                        if (!("caches" in window)) return;
+                        const cacheNames = await window.caches.keys();
+                        await Promise.all(
+                          cacheNames.map((name) => window.caches.delete(name)),
+                        );
+                      },
+
+                      async () => {
+                        if (!("serviceWorker" in navigator)) return;
+                        const registrations =
+                          await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(
+                          registrations.map((registration) =>
+                            registration.unregister(),
+                          ),
+                        );
+                      },
+
+                      async () => {
+                        if (typeof indexedDB.databases !== "function") return;
+                        const databases = await indexedDB.databases();
+
+                        await Promise.all(
+                          databases
+                            .filter((database) => database.name)
+                            .map(
+                              (database) =>
+                                new Promise((resolve) => {
+                                  const request = indexedDB.deleteDatabase(
+                                    database.name,
+                                  );
+                                  request.onsuccess = resolve;
+                                  request.onerror = resolve;
+                                  request.onblocked = resolve;
+                                }),
+                            ),
+                        );
+                      },
+                    ];
+
+                    // Attempt every cleanup even if one storage type fails.
+                    await Promise.allSettled(
+                      clearTasks.map((clear) => Promise.resolve().then(clear)),
+                    );
+
+                    await new Promise((resolve) => {
+                      let timeoutId;
+
+                      const finish = () => {
+                        window.clearTimeout(timeoutId);
+                        window.removeEventListener("pagehide", finish);
+                        resolve();
+                      };
+
+                      window.addEventListener("pagehide", finish, {
+                        once: true,
+                      });
+                      timeoutId = window.setTimeout(finish, 1500);
+                      window.location.replace("/");
+                    });
+
+                    return true;
+                  },
+                );
+
+                if (!acquired) {
+                  alert(
+                    "The other portal tab is still open. Close it, then retry.",
+                  );
+                }
+              } catch (error) {
+                console.error(
+                  "Could not clear portal data or retry access:",
+                  error,
+                );
+                alert(
+                  "Could not clear portal data. Please close this tab and reopen the portal.",
+                );
+              }
+            }}
+            style={{
+              width: "100%",
+              minHeight: 60,
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              gap: 12,
+              padding: "14px 20px",
+              border: 0,
+              borderRadius: 10,
+              background: "linear-gradient(90deg, #f45b16, #ff681b)",
+              boxShadow: "0 8px 18px rgba(244, 91, 22, 0.2)",
+              color: "#fff",
+              fontSize: 17,
+              fontWeight: 700,
+              cursor: "pointer",
+            }}
+          >
+            <svg
+              width="23"
+              height="23"
+              viewBox="0 0 24 24"
+              fill="none"
+              aria-hidden="true"
+            >
+              <path
+                d="M20 7v5h-5M4 17v-5h5"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+              <path
+                d="M5.6 9a7 7 0 0 1 11.7-2L20 9M4 15l2.7 2a7 7 0 0 0 11.7-2"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+              />
+            </svg>
+            Retry access
+          </button>
+
+          <div
+            style={{
+              marginTop: 22,
+              color: "#657087",
+              fontSize: 14,
+            }}
+          >
+            Pragati Setu <span style={{ padding: "0 6px" }}>•</span> Secure
+            session
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // if (tabAccess === "unsupported") {
+  //   return (
+  //     <div style={{ padding: 32, color: "#17365d", textAlign: "center" }}>
+  //       <h2>Cannot verify a single active portal tab</h2>
+  //       <p>
+  //         Open the portal over HTTPS in a current browser, then reload. Access
+  //         is blocked here to protect your session data.
+  //       </p>
+  //     </div>
+  //   );
+  // }
+
+  if (!authReady || tabAccess === "checking") {
+    return (
+      <div
+        style={{
+          position: "fixed",
+          inset: 0,
+          background: "#f8fafc",
+          display: "flex",
+          flexDirection: "column",
+          justifyContent: "center",
+          alignItems: "center",
+          zIndex: 9999999,
+          fontFamily: "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif",
+        }}
+      >
+        <div
+          style={{
+            width: "64px",
+            height: "64px",
+            border: "4px solid #e2e8f0",
+            borderTopColor: "#2563eb",
+            borderRadius: "50%",
+            animation: "spin 0.8s linear infinite",
+            marginBottom: "20px",
+          }}
+        />
+        <h3
+          style={{
+            margin: "0 0 8px 0",
+            color: "#1e3a8a",
+            fontSize: "20px",
+            fontWeight: "700",
+            letterSpacing: "0.5px",
+          }}
+        >
+          PRAGATI SETU 1.0
+        </h3>
+        <p
+          style={{
+            margin: 0,
+            color: "#64748b",
+            fontSize: "14px",
+            fontWeight: "500",
+          }}
+        >
+          Initializing secure workspace & verifying session...
+        </p>
+        <style>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
+    );
+  }
+
   return (
     <LanguageProvider>
+      {/* SURGICAL ADDITION: Render Popup on Home Page Only */}
+      {showNewsPopup && location.pathname === "/" && (
+        <NewsPopup onClose={() => setShowNewsPopup(false)} />
+      )}
+
       <Routes>
         {/* ----- Public Routes ----- */}
         <Route path="/" element={<Home />} />
@@ -192,7 +625,7 @@ export default function App() {
 
         <Route path="/contact-us" element={<ContactDetails />} />
         <Route path="/what's-new" element={<WhatsNew />} />
-        <Route path="/public-reports" element={<PublicReports />} />
+        {/* <Route path="/public-reports" element={<PublicReports />} /> */}
         <Route path="/future-updates" element={<SiteDevErrorPage />} />
 
         {/* Grievance Portal Routes */}

@@ -130,6 +130,8 @@ export default function TMSPortalSummary({ financialYear }) {
           ${getStackedCell(b["7_completed_batch_closed"], p["7_completed_batch_closed"])}
           ${getStackedCell(b["8_batches_rejected_by_dmm"], p["8_batches_rejected_by_dmm"], "text-danger")}
           ${getStackedCell(b["9_total_batches_completed"], p["9_total_batches_completed"], "highlight-blue")}
+          ${getStackedCell(b["9a_participants_trained"], p["9a_participants_trained"], "highlight-blue")}
+          ${getStackedCell(b["9b_participants_dropout"], p["9b_participants_dropout"], "text-warning")}
           ${getStackedCell(b["10_total_target"], p["10_total_target"], "highlight-purple")}
           ${getStackedCell(b["11_participants_onboarded"], p["11_participants_onboarded"])}
           ${getStackedCell(b["12_participants_enrolled_in_batches"], p["12_participants_enrolled_in_batches"])}
@@ -165,10 +167,10 @@ export default function TMSPortalSummary({ financialYear }) {
         <table>
           <tr><th colspan="16" class="header-main">PRAGATI SETU-TMS PORTAL SUMMARY REPORT - DATED: ${report_date} - FY: ${financialYear}</th></tr>
           <tr class="col-headers">
-            <th>S. No.</th><th style="text-align: left;">District / State Name</th><th>Total batches Created</th><th>Scheduled Batches</th><th>Batches Pending At DMM</th><th>Ongoing Batches</th><th>Completed Batches</th><th>Completed Batches for Verification</th><th>Completed batch Closed</th><th>Batches Rejected By DMM</th><th class="highlight-blue">Total Batches Completed (5+6+7)</th><th class="highlight-purple">Total Target (Slot 1+2)</th><th>Participants Onboarded</th><th>Participants Enrolled In Batches</th><th>Remaining Participants for Enrollment</th><th class="highlight-green">Achievement %</th>
+            <th>S. No.</th><th style="text-align: left;">District / State Name</th><th>Total batches Created</th><th>Scheduled Batches</th><th>Batches Pending At DMM</th><th>Ongoing Batches</th><th>Completed Batches</th><th>Completed Batches for Verification</th><th>Completed batch Closed</th><th>Batches Rejected By DMM</th><th class="highlight-blue">Total Batches Completed (5+6+7)</th><th class="highlight-blue">Participants Trained</th><th class="text-warning">Participants Dropout</th><th class="highlight-purple">Total Target (Slot 1+2)</th><th>Participants Onboarded</th><th>Participants Enrolled In Batches</th><th>Remaining Participants for Enrollment</th><th class="highlight-green">Achievement %</th>
           </tr>
           <tr class="col-nums">
-            <th></th><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>10</th><th>11</th><th>12</th><th>13</th><th>14</th>
+            <th></th><th></th><th>1</th><th>2</th><th>3</th><th>4</th><th>5</th><th>6</th><th>7</th><th>8</th><th>9</th><th>9A</th><th>9B</th><th>10</th><th>11</th><th>12</th><th>13</th><th>14</th>
           </tr>
           ${generateRow("—", "STATE WIDE SUMMARY", state_wide_summary)}
     `;
@@ -326,6 +328,17 @@ export default function TMSPortalSummary({ financialYear }) {
                           <th className="highlight-col">
                             Total Batches Completed (5+6+7)
                           </th>
+                          <th className="highlight-col">
+                            Participants Trained
+                          </th>
+                          <th
+                            style={{
+                              color: "#b45309",
+                              backgroundColor: "#fef3c7",
+                            }}
+                          >
+                            Participants Dropout
+                          </th>
                           <th className="highlight-col-alt">
                             Total Target (Slot 1+2)
                           </th>
@@ -348,6 +361,8 @@ export default function TMSPortalSummary({ financialYear }) {
                           <th>7</th>
                           <th>8</th>
                           <th>9</th>
+                          <th>9A</th>
+                          <th>9B</th>
                           <th>10</th>
                           <th>11</th>
                           <th>12</th>
@@ -411,6 +426,14 @@ export default function TMSPortalSummary({ financialYear }) {
                                 bVal={b["9_total_batches_completed"]}
                                 pVal={p["9_total_batches_completed"]}
                                 className="highlight-cell"
+                              />
+                              <StackedCell
+                                bVal={b["9a_participants_trained"]}
+                                className="highlight-cell"
+                              />
+                              <StackedCell
+                                bVal={b["9b_participants_dropout"]}
+                                className="text-warning"
                               />
                               <StackedCell
                                 bVal={b["10_total_target"]}
@@ -481,6 +504,17 @@ export default function TMSPortalSummary({ financialYear }) {
                           <th className="highlight-col">
                             Total Batches Completed (5+6+7)
                           </th>
+                          <th className="highlight-col">
+                            Participants Trained
+                          </th>
+                          <th
+                            style={{
+                              color: "#b45309",
+                              backgroundColor: "#fef3c7",
+                            }}
+                          >
+                            Participants Dropout
+                          </th>
                           <th className="highlight-col-alt">
                             Total Target (Slot 1+2)
                           </th>
@@ -503,6 +537,8 @@ export default function TMSPortalSummary({ financialYear }) {
                           <th>7</th>
                           <th>8</th>
                           <th>9</th>
+                          <th>9A</th>
+                          <th>9B</th>
                           <th>10</th>
                           <th>11</th>
                           <th>12</th>
@@ -584,6 +620,14 @@ export default function TMSPortalSummary({ financialYear }) {
                                   bVal={b["9_total_batches_completed"]}
                                   pVal={p["9_total_batches_completed"]}
                                   className="highlight-cell"
+                                />
+                                <StackedCell
+                                  bVal={b["9a_participants_trained"]}
+                                  className="highlight-cell"
+                                />
+                                <StackedCell
+                                  bVal={b["9b_participants_dropout"]}
+                                  className="text-warning"
                                 />
                                 <StackedCell
                                   bVal={b["10_total_target"]}
@@ -707,7 +751,7 @@ export default function TMSPortalSummary({ financialYear }) {
         /* Sticky Headers for District Table */
         .district-table thead th { position: sticky; z-index: 10; }
         .district-table .col-names-row th { top: 0; }
-        .district-table .col-numbers-row th { top: 60px; /* Adjust based on header height */ box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .district-table .col-numbers-row th { top: 88px; /* Adjust based on header height */ box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         .col-names-row th { background: #f8fafc; color: #0f172a; font-weight: 700; white-space: normal; line-height: 1.4; vertical-align: bottom; }
         .col-numbers-row th { background: #e2e8f0; color: #475569; font-weight: 800; font-size: 12px; }

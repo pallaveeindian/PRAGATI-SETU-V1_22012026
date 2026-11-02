@@ -780,6 +780,9 @@ export default function CreateTrainingRequest() {
         })),
         failures: [],
       });
+
+      trState.setSubmitting(false);
+      navigate("/tms/training-requests/");
     } catch (e) {
       trState.setSubmitSummary({
         trId: null,
@@ -794,9 +797,6 @@ export default function CreateTrainingRequest() {
           },
         ],
       });
-    } finally {
-      trState.setSubmitting(false);
-      navigate("/tms/training-requests/");
     }
   }
 

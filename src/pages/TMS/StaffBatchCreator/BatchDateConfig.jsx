@@ -62,7 +62,7 @@ const BatchDateConfig = ({
   // 1. Min/Max Date Constraints
   const getMinStartDate = () => {
     const minDate = new Date();
-    minDate.setDate(minDate.getDate() + 1); // Earliest start is tomorrow
+    minDate.setDate(minDate.getDate()+1); // Earliest start is tomorrow
     return minDate.toISOString().split("T")[0];
   };
 

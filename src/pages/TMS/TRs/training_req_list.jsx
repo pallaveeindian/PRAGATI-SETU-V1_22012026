@@ -565,7 +565,7 @@ export default function TrainingRequestList() {
                   style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
                 >
                   {/* SURGICAL ADDITION: Backlog Action Buttons */}
-                  {isSelectionValidForBacklog &&
+                  {/* {isSelectionValidForBacklog &&
                     [1, 2, 3].includes(Number(user?.role_id)) && (
                       <button
                         className="Backlogbtn"
@@ -574,7 +574,7 @@ export default function TrainingRequestList() {
                       >
                         Mark for Backlog Batches
                       </button>
-                    )}
+                    )} */}
 
                   {/* {isSelectionValidForBacklog &&
                     Number(user?.role_id) === 13 && (

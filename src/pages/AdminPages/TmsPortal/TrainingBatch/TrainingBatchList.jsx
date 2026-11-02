@@ -95,14 +95,7 @@ export default function TrainingBatchList() {
       {value || "-"}
     </span>
   );
-  const visibleBatches = batches.filter((b) => {
-    // Hide DRAFT batches from everyone except DTP
-    if (String(b.status).toUpperCase() === "DRAFT" && role !== "dtp") {
-      return false;
-    }
-
-    return true;
-  });
+  const visibleBatches = batches;
 
   const totalPages = Math.ceil(visibleBatches.length / rowsPerPage);
 

@@ -95,9 +95,14 @@ export default function BmmuTargetAchievement() {
   }
 
   /* ================= PAGE CHANGE ================= */
+  /* Fetch only after the BMM district has been resolved */
   useEffect(() => {
+    if (!isGeoReady || !userDistrict) return;
+
     fetchTargetsWithAchievements(currentPage);
-  }, [currentPage]);
+
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage, isGeoReady, userDistrict]);
 
   /* ================= INITIAL LOAD ================= */
   useEffect(() => {
@@ -114,8 +119,6 @@ export default function BmmuTargetAchievement() {
     if (isGeoReady) {
       fetchTargetsWithAchievements(1);
     }
-
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isGeoReady]);
 
   /* ================= PROCESS DATA ================= */

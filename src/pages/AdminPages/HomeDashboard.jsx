@@ -209,20 +209,20 @@ export default function HomeDashboard() {
       tone: "slate",
     },
     {
-      label: "Not Enorlled Participants",
+      label: "Not Enrolled Participants",
       value: Math.max(0, resolvedOnboarded - resolvedEnrolled),
       icon: FaExclamationTriangle,
       tone: "red",
     },
     {
       label: "Eligible Participants",
-      value: metric(batches),
+      value: metric(batches, "9a_participants_trained"),
       icon: FaClock,
       tone: "yellow",
     },
     {
       label: "Not Eligible Participants",
-      value: metric(batches),
+      value: metric(batches, "9b_participants_dropout"),
       icon: FaExclamationTriangle,
       tone: "rose",
     },

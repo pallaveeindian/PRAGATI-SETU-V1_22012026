@@ -20,7 +20,7 @@ export default function AdminHeader({ currentGradient, transparent = false }) {
     } catch (err) {
       console.error(err);
     }
-    navigate("/mou/login", { replace: true });
+    navigate("/");
   };
 
   

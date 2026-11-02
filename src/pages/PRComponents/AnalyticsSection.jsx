@@ -71,10 +71,8 @@ export default function AnalyticsSection({ currentReport }) {
       }
 
       try {
-        const res = await LOOKUP_API.blocksByDistrict(filters.district_id, {
-          params: {
-            page_size: 5000,
-          },
+        const res = await LOOKUP_API.FULLblocksByDistrict(filters.district_id, {
+          page_size: 5000,
         });
 
         setBlocks(

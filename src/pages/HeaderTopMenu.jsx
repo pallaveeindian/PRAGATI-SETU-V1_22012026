@@ -125,12 +125,12 @@ const NAV_ITEMS = [
       },
     ],
   },
-  {
-    type: "link",
-    key: "reports",
-    label: { en: "Reports", hi: "रिपोर्ट" },
-    to: "/public-reports",
-  },
+  // {
+  //   type: "link",
+  //   key: "reports",
+  //   label: { en: "Reports", hi: "रिपोर्ट" },
+  //   to: "/public-reports",
+  // },
   {
     type: "link",
     key: "contact",

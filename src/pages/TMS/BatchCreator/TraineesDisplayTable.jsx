@@ -43,7 +43,10 @@ const ParticipantTable = ({
       }
 
       // 1. Deep Location Filtering (Block + Panchayat + Village)
-      if (filters.block && !Array.isArray(filters.block)) {
+      if (Array.isArray(filters.block)) {
+        const blockIds = filters.block.filter(Boolean);
+        if (blockIds.length) params.block_id = blockIds.join(",");
+      } else if (filters.block) {
         params.block_id = filters.block;
       }
       if (filters.panchayat) {
@@ -200,9 +203,30 @@ const ParticipantTable = ({
     setSelectedRows([]);
   }, [filters.participantType, filters.block]);
 
+  const visibleTrainees = useMemo(() => {
+    const isTrainer = filters.participantType?.toUpperCase() === "TRAINER";
+    const seen = new Set();
+
+    return traineesData.filter((row) => {
+      const identifier = isTrainer
+        ? row.mobile_no || row.mobile_number
+        : row.lokos_member_code;
+
+      // Keep rows with no usable identifier; they cannot be safely deduplicated.
+      if (!identifier) return true;
+
+      const key = String(identifier).trim();
+
+      if (seen.has(key)) return false;
+
+      seen.add(key);
+      return true;
+    });
+  }, [traineesData, filters.participantType]);
+
   const handleSelectAll = (e) => {
     if (e.target.checked) {
-      setSelectedRows(traineesData.map((row) => row.id));
+      setSelectedRows(visibleTrainees.map((row) => row.id));
     } else {
       setSelectedRows([]);
     }
@@ -310,8 +334,8 @@ const ParticipantTable = ({
                     type="checkbox"
                     onChange={handleSelectAll}
                     checked={
-                      traineesData.length > 0 &&
-                      selectedRows.length === traineesData.length
+                      visibleTrainees.length > 0 &&
+                      selectedRows.length === visibleTrainees.length
                     }
                   />
                 </th>
@@ -343,8 +367,8 @@ const ParticipantTable = ({
             </thead>
 
             <tbody>
-              {traineesData.length > 0 ? (
-                traineesData.map((row, index) => {
+              {visibleTrainees.length > 0 ? (
+                visibleTrainees.map((row, index) => {
                   const engagementData = getEngagementData(row);
                   const isEngaged = !!engagementData;
 

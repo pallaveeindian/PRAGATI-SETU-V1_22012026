@@ -169,14 +169,14 @@ export default function MTTable({
                             <FaEdit /> Edit
                           </button>
                         )}
-                        {/* 
+                        
                         <button
                           className="nic-btn-action btn-cert"
                           onClick={() => onCertificatesClick(trainer)}
                           title="Manage & Upload Certificates"
                         >
                           <FaFileContract /> Certs
-                        </button> */}
+                        </button>
                       </div>
                     </td>
                   </tr>

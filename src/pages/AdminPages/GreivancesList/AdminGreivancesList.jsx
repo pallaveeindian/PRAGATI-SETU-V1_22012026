@@ -27,6 +27,8 @@ export default function AdminGreivancesList() {
   const { user } = useContext(AuthContext);
   const [tickets, setTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
+  const [totalTicketCount, setTotalTicketCount] = useState(0);
+  const [serverPaginated, setServerPaginated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ticketCode, setTicketCode] = useState("");
   const [open, setOpen] = useState(false);
@@ -38,18 +40,50 @@ export default function AdminGreivancesList() {
   const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
-    loadTickets();
-  }, []);
+    loadTickets(currentPage);
+    // The current page is the only request parameter for this effect.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [currentPage]);
 
-  const loadTickets = async () => {
+  const filterTickets = (data, code = ticketCode, status = statusFilter) => {
+    let filtered = [...data];
+
+    if (code.trim()) {
+      filtered = filtered.filter((ticket) =>
+        ticket.ticket_code.toLowerCase().includes(code.toLowerCase()),
+      );
+    }
+
+    if (status !== "all") {
+      filtered = filtered.filter((ticket) =>
+        status === "pending" ? !ticket.is_solved : ticket.is_solved,
+      );
+    }
+
+    return filtered;
+  };
+
+  const loadTickets = async (page = 1) => {
     try {
       setLoading(true);
-      const res = await SUPPORT_API.listTickets();
-      const data = Array.isArray(res.data) ? res.data : res.data.results || [];
+      const res = await SUPPORT_API.listTickets({
+        page,
+        page_size: ITEMS_PER_PAGE,
+      });
+      const serverData = !Array.isArray(res.data) && res.data;
+      const data = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(serverData?.results)
+          ? serverData.results
+          : [];
+      const hasServerPagination = Number.isFinite(serverData?.count);
+
+      setServerPaginated(hasServerPagination);
+      setTotalTicketCount(hasServerPagination ? serverData.count : data.length);
       setTickets(data);
-      setFilteredTickets(data);
+      setFilteredTickets(filterTickets(data));
     } catch (err) {
-      console.log(err);
+      console.error("Failed to load grievance tickets:", err);
     } finally {
       setLoading(false);
     }
@@ -57,21 +91,7 @@ export default function AdminGreivancesList() {
 
   const searchTicket = () => {
     setCurrentPage(1);
-    let data = [...tickets];
-
-    if (ticketCode.trim()) {
-      data = data.filter((x) =>
-        x.ticket_code.toLowerCase().includes(ticketCode.toLowerCase()),
-      );
-    }
-
-    if (statusFilter !== "all") {
-      data = data.filter((x) =>
-        statusFilter === "pending" ? !x.is_solved : x.is_solved,
-      );
-    }
-
-    setFilteredTickets(data);
+    setFilteredTickets(filterTickets(tickets));
   };
 
   useEffect(() => {
@@ -115,22 +135,58 @@ export default function AdminGreivancesList() {
       alert("Ticket resolved successfully.");
       setOpen(false);
       setPmuResponse("");
-      loadTickets();
+      loadTickets(currentPage);
     } catch (err) {
       console.error(err);
       alert("Failed to resolve ticket.");
     }
   };
 
-  const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
-
-  const paginatedTickets = filteredTickets.slice(
-    (currentPage - 1) * ITEMS_PER_PAGE,
-    currentPage * ITEMS_PER_PAGE,
+  const totalPages = Math.ceil(
+    (serverPaginated ? totalTicketCount : filteredTickets.length) /
+      ITEMS_PER_PAGE,
   );
+
+  const paginationItems = (() => {
+    if (totalPages <= 7) {
+      return Array.from({ length: totalPages }, (_, index) => index + 1);
+    }
+
+    let startPage = Math.max(2, currentPage - 1);
+    let endPage = Math.min(totalPages - 1, currentPage + 1);
+
+    if (currentPage <= 2) endPage = 3;
+    if (currentPage >= totalPages - 1) startPage = totalPages - 2;
+
+    return [
+      1,
+      ...(startPage > 2 ? ["start-ellipsis"] : []),
+      ...Array.from(
+        { length: endPage - startPage + 1 },
+        (_, index) => startPage + index,
+      ),
+      ...(endPage < totalPages - 1 ? ["end-ellipsis"] : []),
+      totalPages,
+    ];
+  })();
+
+  useEffect(() => {
+    if (currentPage > totalPages) {
+      setCurrentPage(Math.max(1, totalPages));
+    }
+  }, [currentPage, totalPages]);
+
+  const paginatedTickets = serverPaginated
+    ? filteredTickets
+    : filteredTickets.slice(
+        (currentPage - 1) * ITEMS_PER_PAGE,
+        currentPage * ITEMS_PER_PAGE,
+      );
   const pendingCount = tickets.filter((ticket) => !ticket.is_solved).length;
   const solvedCount = tickets.filter((ticket) => ticket.is_solved).length;
-  const visibleCount = filteredTickets.length;
+  const visibleCount = serverPaginated
+    ? totalTicketCount
+    : filteredTickets.length;
 
   return (
     <div
@@ -214,12 +270,15 @@ export default function AdminGreivancesList() {
           .btn-resolve { display:inline-flex; align-items:center; gap:8px; padding:.7rem 1.25rem; background:linear-gradient(135deg,#16a34a,#15803d); color:white; border:0; border-radius:10px; cursor:pointer; font-weight:800; box-shadow:0 6px 14px rgba(22,163,74,.2); }
           .btn-resolve:hover { transform:translateY(-1px); box-shadow:0 8px 17px rgba(22,163,74,.28); }
           .error-placeholder { width: 100px; height: 75px; background: #e2e8f0; display: flex; align-items: center; justify-content: center; color: #64748b; font-weight: bold; border-radius: 4px; }
-          .pagination { display:flex; justify-content:space-between; align-items:center; gap:8px; margin-top:1rem; flex-wrap:wrap; }
+          .pagination { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-top:1rem; flex-wrap:wrap; }
           .page-summary { color:#64748b; font-size:.78rem; font-weight:700; }
-          .pagination button { min-width:38px; height:38px; border:1px solid #d1d5db; background:#fff; color:#334155; border-radius:8px; cursor:pointer; transition:.2s; font-weight:600; }
+          .pagination-controls { display:flex; align-items:center; justify-content:center; gap:8px; }
+          .pagination-pages { display:flex; align-items:center; gap:6px; }
+          .pagination button { min-width:38px; height:38px; padding:0 10px; border:1px solid #d1d5db; background:#fff; color:#334155; border-radius:8px; cursor:pointer; transition:.2s; font-weight:600; }
           .pagination button:hover:not(:disabled) { background:#2563eb; color:#fff; border-color:#2563eb; }
           .pagination button.active { background:#2563eb; color:#fff; border-color:#2563eb; }
           .pagination button:disabled { opacity:.5; cursor:not-allowed; }
+          .pagination-ellipsis { min-width:20px; text-align:center; color:#64748b; }
           .image-preview-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.85); display:flex; justify-content:center; align-items:center; z-index:99999; }
           .image-preview-box { position:relative; max-width:90vw; max-height:90vh; }
           .image-preview-box img { max-width:90vw; max-height:90vh; object-fit:contain; border-radius:8px; background:#fff; }
@@ -307,7 +366,7 @@ export default function AdminGreivancesList() {
               setTicketCode("");
               setStatusFilter("all");
               setCurrentPage(1);
-              setFilteredTickets(tickets);
+              setFilteredTickets(filterTickets(tickets, "", "all"));
             }}
           >
             <FontAwesomeIcon icon={faTimes} /> Clear
@@ -413,36 +472,58 @@ export default function AdminGreivancesList() {
           </table>
         </div>
 
-        <div className="pagination">
+        <nav className="pagination" aria-label="Grievance list pagination">
           <span className="page-summary">
             Showing {visibleCount ? (currentPage - 1) * ITEMS_PER_PAGE + 1 : 0}-
-            {Math.min(currentPage * ITEMS_PER_PAGE, visibleCount)} of{" "}
-            {visibleCount}
+            {Math.min(
+              serverPaginated
+                ? (currentPage - 1) * ITEMS_PER_PAGE + filteredTickets.length
+                : currentPage * ITEMS_PER_PAGE,
+              visibleCount,
+            )}{" "}
+            of {visibleCount}
           </span>
-          <button
-            onClick={() => setCurrentPage((p) => p - 1)}
-            disabled={currentPage === 1}
-          >
-            <FontAwesomeIcon icon={faChevronLeft} /> Previous
-          </button>
-
-          {Array.from({ length: totalPages }, (_, i) => (
+          <div className="pagination-controls">
             <button
-              key={i}
-              className={currentPage === i + 1 ? "active" : ""}
-              onClick={() => setCurrentPage(i + 1)}
+              type="button"
+              onClick={() => setCurrentPage((page) => page - 1)}
+              disabled={currentPage === 1}
             >
-              {i + 1}
+              <FontAwesomeIcon icon={faChevronLeft} /> Previous
             </button>
-          ))}
-
-          <button
-            onClick={() => setCurrentPage((p) => p + 1)}
-            disabled={currentPage === totalPages || totalPages === 0}
-          >
-            Next <FontAwesomeIcon icon={faChevronRight} />
-          </button>
-        </div>
+            <div className="pagination-pages">
+              {paginationItems.map((item) =>
+                typeof item === "number" ? (
+                  <button
+                    type="button"
+                    key={item}
+                    className={currentPage === item ? "active" : ""}
+                    aria-label={`Go to page ${item}`}
+                    aria-current={currentPage === item ? "page" : undefined}
+                    onClick={() => setCurrentPage(item)}
+                  >
+                    {item}
+                  </button>
+                ) : (
+                  <span
+                    key={item}
+                    className="pagination-ellipsis"
+                    aria-hidden="true"
+                  >
+                    ...
+                  </span>
+                ),
+              )}
+            </div>
+            <button
+              type="button"
+              onClick={() => setCurrentPage((page) => page + 1)}
+              disabled={currentPage === totalPages || totalPages === 0}
+            >
+              Next <FontAwesomeIcon icon={faChevronRight} />
+            </button>
+          </div>
+        </nav>
       </div>
 
       {open && selectedTicket && (

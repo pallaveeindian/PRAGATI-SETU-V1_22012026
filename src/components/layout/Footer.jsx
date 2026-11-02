@@ -3,7 +3,7 @@ import React, { useContext } from "react";
 import { LanguageContext } from "../../pages/LanguageContext";
 import { Link } from "react-router-dom";
 import psLogo from "../../assets/PS_TRANS.png";
-import bdoLogo from "../../assets/BDO_logo.png";
+import bdoLogo from "../../assets/BDO_logo_1.png";
 import footerBg from "../../assets/Hero/footer_bg2.png";
 
 const content = {
@@ -27,7 +27,7 @@ const content = {
     support: "Help & Support",
     supportItems: [
       { label: "FAQs", to: "/frequently-asked-questions" },
-      { label: "Release Notes", to: "/frequently-asked-questionss" },
+      { label: "Release Notes", to: "/news-updates" },
       { label: "Guidelines", to: "/user-manual" },
       { label: "Grievance Redressal", to: "/register-grievance" },
     ],
@@ -281,7 +281,7 @@ export default function Footer() {
           font-size: 9px;
         }
         .footer-powered img {
-          width: 58px;
+          width: 84px;
           height: auto;
           margin-bottom: 2px;
         }

@@ -56,6 +56,7 @@ const AdminSidebar = ({
         { name: "Training Request List", icon: <FaFileSignature /> },
         { name: "Training Target", icon: <FaBullseye /> },
         { name: "Learning Material", icon: <FaBook /> },
+        { name: "Sequence Plans", icon: <FaChartBar /> },
         { name: "Center Management", icon: <FaClipboardList /> },
       ],
     },

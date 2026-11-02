@@ -2,6 +2,7 @@
 
 import React, { useContext } from "react";
 import { LanguageContext } from "./LanguageContext.jsx";
+import { useNavigate } from "react-router-dom";
 
 const HEADLINES = [
   `Pragati Setu Portal में आपका स्वागत है।`,
@@ -30,10 +31,11 @@ const content = {
 };
 
 export default function HeaderTopHeadline() {
+  const navigate = useNavigate();
   const { lang } = useContext(LanguageContext);
   const t = content[lang] || content.en;
   return (
-    <div className="headline-bar">
+    <div className="headline-bar" onClick={() => navigate("/news-updates")}>
       {/* LEFT LABEL */}
 
       <div className="headline-label">
@@ -75,7 +77,7 @@ export default function HeaderTopHeadline() {
 
         .headline-bar {
           width: 100%;
-
+          cursor: pointer;
           min-height: 38px;
 
           display: flex;

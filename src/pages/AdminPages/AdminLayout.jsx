@@ -13,6 +13,8 @@ import TrainingTarget from "./TmsPortal/TrainingTarget/TrainigTargetList";
 import LearningMaterial from "./TmsPortal/LearningMaterial/Llm";
 import CenterDetail from "./TmsPortal/CenterDetail";
 import HomeDashboard from "./HomeDashboard";
+// Recurring Plan Analytics
+import SPAnalytics from "./TmsPortal/SequencePlans/SPAnalytics";
 
 const tabGradients = {
   "Grievances List":
@@ -35,6 +37,9 @@ const tabGradients = {
 
   "Learning Material":
     "linear-gradient(to bottom, rgb(2, 25, 46) 0%, rgb(4, 33, 82) 12%, rgb(6, 44, 110) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(61, 130, 224) 88%, rgb(16, 25, 35) 100%)",
+
+  "Sequence Plans":
+    "linear-gradient(to bottom, rgb(2, 19, 46) 0%, rgb(6, 44, 110) 30%, rgb(10, 74, 170) 65%, rgb(61, 130, 224) 100%)",
 
   Default: "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)",
 };
@@ -177,6 +182,18 @@ export default function AdminLayout({
               }}
             >
               <LearningMaterial />
+            </div>
+          ) : activeMenu === "Sequence Plans" ||
+            activeMenu === "SPAnalytics" ? (
+            <div
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                overflowX: "hidden",
+              }}
+            >
+              <SPAnalytics />
             </div>
           ) : activeMenu === "Center Management" ? (
             <div

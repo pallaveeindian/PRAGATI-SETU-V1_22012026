@@ -1,4 +1,4 @@
-// src/pages/TMS/TRs/training_req_list_filters.jsx
+// src\pages\AdminPages\TmsPortal\TrainingRequest\TrainingRequestFiliter.jsx
 import React, { useEffect, useRef, useState } from "react";
 
 import { LOOKUP_API, TMS_API } from "../../../../api/axios";
