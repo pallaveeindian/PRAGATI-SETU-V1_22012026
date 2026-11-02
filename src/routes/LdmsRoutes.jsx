@@ -1,6 +1,7 @@
 // src/routes/LdmsRoutes.jsx
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "./ProtectedRoute";
 
 // LDMS Layout & Pages
 import LdmsLayout from "../pages/LDMS/Layout/LdmsLayout";
@@ -28,15 +29,24 @@ export default function LdmsRoutes() {
     <Routes>
       <Route path="" element={<LdmsLayout />}>
         {/* BMMU Routes */}
-        <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
-        <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
+        <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
+          <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
+          <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
+        </Route>
 
         {/* DMMU Routes */}
-        <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
-        <Route path="dmmu/approve-support/:id" element={<DmmuLdmsApprove />} />
+        <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
+          <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
+          <Route
+            path="dmmu/approve-support/:id"
+            element={<DmmuLdmsApprove />}
+          />
+        </Route>
 
         {/* SMMU Routes */}
-        <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
+        <Route element={<ProtectedRoute allowedRoles="smmu" />}>
+          <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
+        </Route>
 
         {/* Global / Mapping Routes */}
         <Route path="support-capture" element={<SupportCapture />} />

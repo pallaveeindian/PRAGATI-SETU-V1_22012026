@@ -158,18 +158,6 @@ export default function LdmsLogin() {
           />{" "}
           Admin
         </label>
-        <label>
-          <input
-            type="radio"
-            value="General"
-            {...register("userType")}
-            onChange={() => {
-              setValue("userType", "General");
-              setValue("role", "");
-            }}
-          />{" "}
-          General
-        </label>
       </div>
 
       <label className="block-label">Role</label>
