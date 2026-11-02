@@ -15,7 +15,7 @@ import mouBG from "../assets/LoginBG/mou_space.png";
 import canteenBG from "../assets/LoginBG/canteen_space.png";
 
 export const MODULES_CONFIG = [
-  // 2026-10-28T19:15:00
+  // 2026-11-02T14:50:00
 
   {
     id: "tms",
@@ -27,7 +27,7 @@ export const MODULES_CONFIG = [
     bg: tmsBG,
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "crp",
@@ -39,7 +39,7 @@ export const MODULES_CONFIG = [
     bg: mapBG,
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "ldms",
@@ -77,7 +77,7 @@ export const MODULES_CONFIG = [
     bg: epsmsBG,
     path: "/module-login?module=epsms",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "prerna",
@@ -101,7 +101,7 @@ export const MODULES_CONFIG = [
     bg: pmuBG,
     path: "/module-login?module=pmuadmin",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "masteradmin",
@@ -113,6 +113,6 @@ export const MODULES_CONFIG = [
     bg: mdBG,
     path: "/module-login?module=admin",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
 ];

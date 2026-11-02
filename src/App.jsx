@@ -523,17 +523,17 @@ export default function App() {
     );
   }
 
-  // if (tabAccess === "unsupported") {
-  //   return (
-  //     <div style={{ padding: 32, color: "#17365d", textAlign: "center" }}>
-  //       <h2>Cannot verify a single active portal tab</h2>
-  //       <p>
-  //         Open the portal over HTTPS in a current browser, then reload. Access
-  //         is blocked here to protect your session data.
-  //       </p>
-  //     </div>
-  //   );
-  // }
+  if (tabAccess === "unsupported") {
+    return (
+      <div style={{ padding: 32, color: "#17365d", textAlign: "center" }}>
+        <h2>Cannot verify a single active portal tab</h2>
+        <p>
+          Open the portal over HTTPS in a current browser, then reload. Access
+          is blocked here to protect your session data.
+        </p>
+      </div>
+    );
+  }
 
   if (!authReady || tabAccess === "checking") {
     return (
@@ -595,9 +595,9 @@ export default function App() {
   return (
     <LanguageProvider>
       {/* SURGICAL ADDITION: Render Popup on Home Page Only */}
-      {showNewsPopup && location.pathname === "/" && (
+      {/* {showNewsPopup && location.pathname === "/" && (
         <NewsPopup onClose={() => setShowNewsPopup(false)} />
-      )}
+      )} */}
 
       <Routes>
         {/* ----- Public Routes ----- */}
