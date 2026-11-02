@@ -34,7 +34,10 @@ export default function SmmuDemandAnalytics() {
   /* ---------------- LOAD DEPARTMENTS ---------------- */
   useEffect(() => {
     LDMS_API.departments()
-      .then((res) => setDepartments(res?.data?.results || []))
+      .then((res) => {
+        const data = res?.data?.results;
+        setDepartments(Array.isArray(data) ? data : []);
+      })
       .catch(() => setDepartments([]));
   }, []);
 
@@ -46,13 +49,16 @@ export default function SmmuDemandAnalytics() {
     }
 
     LDMS_API.schemes({ department: selectedDept })
-      .then((res) => setSchemes(res?.data?.results || []))
+      .then((res) => {
+        const data = res?.data?.results;
+        setSchemes(Array.isArray(data) ? data : []);
+      })
       .catch(() => setSchemes([]));
   }, [selectedDept]);
 
   /* ---------------- PIE DATA (SCHEME-WISE) ---------------- */
   const pieData = useMemo(() => {
-    if (!schemes.length) return [];
+    if (!Array.isArray(schemes) || !schemes.length) return [];
 
     // hypothetical distribution
     return schemes.map((s, i) => ({
@@ -72,6 +78,7 @@ export default function SmmuDemandAnalytics() {
 
   /* ---------------- BAR DATA (ALL DEPARTMENTS) ---------------- */
   const barData = useMemo(() => {
+    if (!Array.isArray(departments)) return [];
     return departments.map((d, i) => ({
       name: d.name,
       value: 45 + ((i * 11) % 40), // hypothetical %

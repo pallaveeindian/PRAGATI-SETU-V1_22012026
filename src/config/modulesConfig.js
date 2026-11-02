@@ -5,11 +5,14 @@ import esmLogo from "../assets/ems_logo.png";
 import epsmsBG from "../assets/LoginBG/epsms_space.png";
 import mapBG from "../assets/LoginBG/crpmap_space.png";
 import ldmsLogo from "../assets/ldms_logo.png";
+import ldmsBG from "../assets/LoginBG/ldms_space.png";
 import prernaLogo from "../assets/prernaHd.png";
 import mdBG from "../assets/LoginBG/md_space.png";
 import BDOLogo from "../assets/BDOLogo.png";
 import pmuBG from "../assets/LoginBG/pmu_space.png";
 import inactiveBG from "../assets/LoginBG/inactive_space.png";
+import mouBG from "../assets/LoginBG/mou_space.png";
+import canteenBG from "../assets/LoginBG/canteen_space.png";
 
 export const MODULES_CONFIG = [
   // 2026-10-28T19:15:00
@@ -45,10 +48,10 @@ export const MODULES_CONFIG = [
     subtitle: "Lakhpati Didi",
     desc: "Lakhpati Didi Management System is currently under development.",
     color: "#b91c1c",
-    bg: inactiveBG,
-    path: "#",
+    bg: ldmsBG,
+    path: "/module-login?module=ldms",
     level: "All",
-    maintenanceUntil: "permanent", // "permanent" means ALWAYS INACTIVE
+    maintenanceUntil: null, // "permanent" means ALWAYS INACTIVE
   },
   {
     id: "mou",
@@ -57,12 +60,12 @@ export const MODULES_CONFIG = [
     subtitle: "Memorandum of Understanding",
     desc: "Securely manage and monitor enterprise MOUs and related institutional agreements.",
     color: "#9333ea",
-    bg: inactiveBG,
+    bg: mouBG,
     path: "/module-login?module=mou",
     level: "Block",
     // Example of a module under maintenance. Change this date to test the countdown!
     // Format: "YYYY-MM-DDTHH:mm:ss"
-    maintenanceUntil: "permanent",
+    maintenanceUntil: null,
   },
   {
     id: "epsms",
@@ -79,14 +82,14 @@ export const MODULES_CONFIG = [
   {
     id: "prerna",
     logo: esmLogo,
-    bg: inactiveBG,
+    bg: canteenBG,
     title: "Prerna Canteen Portal",
     subtitle: "Portal for Prerna Canteen Management",
     desc: "Portal for Prerna Canteen Management is currently under development.",
     color: "#ea3333",
     path: "/module-login?module=prerna",
     level: "Block",
-    maintenanceUntil: "permanent",
+    maintenanceUntil: null,
   },
   {
     id: "pmuadmin",

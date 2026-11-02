@@ -4,22 +4,33 @@ import { Outlet } from "react-router-dom";
 import LdmsLeftNav from "./ldms_leftnav";
 import LdmsHeader from "./ldms_header";
 import LdmsFooter from "./ldms_footer";
-// import bgImage from "../../../assets/LDMS/background_vector.jpg";
+import bgImage from "../../../assets/LDMS/background_vector.jpg";
 
 export default function LdmsLayout() {
   const [navCollapsed, setNavCollapsed] = useState(false);
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   return (
     <div className="ldms-app-shell">
       {/* ---------------- HEADER ---------------- */}
-      <LdmsHeader />
+      <LdmsHeader onBurgerClick={() => setMobileNavOpen(true)} />
 
       {/* ---------------- BODY ---------------- */}
       <div className="ldms-body">
+        {/* Overlay for mobile */}
+        {mobileNavOpen && (
+          <div
+            className="ldms-mobile-overlay"
+            onClick={() => setMobileNavOpen(false)}
+          />
+        )}
+
         {/* LEFT NAV */}
         <LdmsLeftNav
           collapsed={navCollapsed}
           onToggle={() => setNavCollapsed((v) => !v)}
+          mobileOpen={mobileNavOpen}
+          onCloseMobile={() => setMobileNavOpen(false)}
         />
 
         {/* MAIN / HERO */}
@@ -63,12 +74,19 @@ export default function LdmsLayout() {
         .ldms-hero {
           flex: 1;
           overflow-y: auto;
-          padding: 16px 20px;
-          background-image: url("/assets/ldms/background_vector.jpg");
+          padding: 0;
+          background-image: background-image: url(${bgImage});
           background-repeat: no-repeat;
           background-position: center bottom;
           background-size: cover;
         }
+
+        .ldms-mobile-overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.4);
+          z-index: 80;
+        }        
       `}</style>
     </div>
   );

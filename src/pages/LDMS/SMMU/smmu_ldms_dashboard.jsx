@@ -1,12 +1,13 @@
 // src/pages/LDMS/SMMU/smmu_ldms_dashboard.jsx
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useContext } from "react";
+import { AuthContext } from "../../../contexts/AuthContext";
 import SmmuUpMap from "./smmu_up_map";
+import DashboardHeader from "../Layout/ldms_dash_header";
 import DmmuBlockMap from "../DMMU/dmmu_dashboard_blk_map";
 import BlockMap from "../BMMU/bmmu_dashboard_blk_map";
 import SmmuMeetings from "./smmu_dashboard_meetings";
 import SmmuDemandAnalytics from "./smmu_dashboard_demand_fulfill";
 import { LOOKUP_API } from "../../../api/axios";
-import { getCached, setCached } from "../../../utils/storage";
 
 /* ==================================================
    SMMU – FILTER BASED DRILLDOWN
@@ -24,51 +25,48 @@ export default function SmmuLdmsDashboard() {
   const [loadingDistricts, setLoadingDistricts] = useState(true);
   const [loadingBlocks, setLoadingBlocks] = useState(false);
 
+  const { user } = useContext(AuthContext);
+
   /* ==================================================
-     LOAD DISTRICTS (CACHED)
+     LOAD DISTRICTS
   ================================================== */
   useEffect(() => {
-    const cached = getCached("lookup:districts");
-    if (cached) {
-      setDistricts(cached);
-      setLoadingDistricts(false);
-      return;
-    }
+    setLoadingDistricts(true);
 
     LOOKUP_API.districts
       .list({ page_size: 80 })
       .then((res) => {
-        const data = res?.data?.results || [];
-        setDistricts(data);
-        setCached("lookup:districts", data);
+        const data = res?.data?.results;
+        setDistricts(Array.isArray(data) ? data : []);
+      })
+      .catch((err) => {
+        console.error("District load failed:", err);
+        setDistricts([]);
       })
       .finally(() => setLoadingDistricts(false));
   }, []);
 
   /* ==================================================
-     LOAD BLOCKS WHEN DISTRICT CHANGES (CACHED)
+     LOAD BLOCKS WHEN DISTRICT CHANGES 
   ================================================== */
   const loadBlocks = async (distId) => {
     setLoadingBlocks(true);
     setBlocks([]);
 
-    const cacheKey = `lookup:blocks:${distId}`;
-    const cached = getCached(cacheKey);
-    if (cached) {
-      setBlocks(cached);
+    try {
+      const res = await LOOKUP_API.blocks.list({
+        district_id: distId,
+        page_size: 80,
+      });
+
+      const data = res?.data?.results;
+      setBlocks(Array.isArray(data) ? data : []);
+    } catch (err) {
+      console.error("Block load failed:", err);
+      setBlocks([]);
+    } finally {
       setLoadingBlocks(false);
-      return;
     }
-
-    const res = await LOOKUP_API.blocks.list({
-      district_id: distId,
-      page_size: 80,
-    });
-
-    const data = res?.data?.results || [];
-    setBlocks(data);
-    setCached(cacheKey, data);
-    setLoadingBlocks(false);
   };
 
   /* ==================================================
@@ -123,23 +121,20 @@ export default function SmmuLdmsDashboard() {
     setLoadingMeetBlocks(true);
     setMeetBlocks([]);
 
-    const cacheKey = `lookup:blocks:${distId}`;
-    const cached = getCached(cacheKey);
-    if (cached) {
-      setMeetBlocks(cached);
+    try {
+      const res = await LOOKUP_API.blocks.list({
+        district_id: distId,
+        page_size: 80,
+      });
+
+      const data = res?.data?.results || [];
+      setMeetBlocks(data);
+    } catch (err) {
+      console.error("Meet Blocks load failed:", err);
+      setMeetBlocks([]);
+    } finally {
       setLoadingMeetBlocks(false);
-      return;
     }
-
-    const res = await LOOKUP_API.blocks.list({
-      district_id: distId,
-      page_size: 80,
-    });
-
-    const data = res?.data?.results || [];
-    setMeetBlocks(data);
-    setCached(cacheKey, data);
-    setLoadingMeetBlocks(false);
   };
 
   const onMeetDistrictChange = async (id) => {
@@ -164,6 +159,9 @@ export default function SmmuLdmsDashboard() {
   ================================================== */
   return (
     <div className="smmu-ldms-dashboard">
+      {/* Page Header */}
+      <DashboardHeader title="SMMU Dashboard" username={user?.username} />
+
       {/* ==================================================
          CARD 1 – MAP + FILTERS
       ================================================== */}
@@ -183,11 +181,12 @@ export default function SmmuLdmsDashboard() {
             <option value="">
               {loadingDistricts ? "Loading districts…" : "Select District"}
             </option>
-            {districts.map((d) => (
-              <option key={d.district_id} value={d.district_id}>
-                {d.district_name_en}
-              </option>
-            ))}
+            {Array.isArray(districts) &&
+              districts.map((d) => (
+                <option key={d.district_id} value={d.district_id}>
+                  {d.district_name_en}
+                </option>
+              ))}
           </select>
 
           <select
@@ -236,11 +235,12 @@ export default function SmmuLdmsDashboard() {
             onChange={(e) => onMeetDistrictChange(e.target.value)}
           >
             <option value="">Select District</option>
-            {districts.map((d) => (
-              <option key={d.district_id} value={d.district_id}>
-                {d.district_name_en}
-              </option>
-            ))}
+            {Array.isArray(districts) &&
+              districts.map((d) => (
+                <option key={d.district_id} value={d.district_id}>
+                  {d.district_name_en}
+                </option>
+              ))}
           </select>
 
           <select
@@ -290,12 +290,12 @@ export default function SmmuLdmsDashboard() {
           display: flex;
           flex-direction: column;
           gap: 16px;
+          background: #ffffff;
         }
 
         .ldms-card {
           background: #ffffff;
           border: 2px solid #ce0000b0;
-          box-shadow: 0 8px 35px rgba(163, 19, 19, 0.35);
           border-radius: 12px;
           padding: 12px;
           min-height: 220px;
@@ -311,18 +311,29 @@ export default function SmmuLdmsDashboard() {
         /* -------- FILTER BAR -------- */
         .filter-bar {
           display: flex;
+          flex-wrap: wrap;              
           gap: 10px;
           align-items: center;
           margin-bottom: 12px;
+          width: 100%;
         }
+
+        /* SELECTS */
 
         .filter-bar select {
           padding: 8px 10px;
           border-radius: 8px;
           border: 1px solid #b71c1c;
           font-weight: 600;
-          min-width: 220px;
+
+          min-width: 180px;
+          max-width: 100%;
+
+          flex: 1 1 200px;              
+          background: #ffffff;
         }
+
+        /* BUTTONS */
 
         .back-btn {
           background: transparent;
@@ -330,22 +341,30 @@ export default function SmmuLdmsDashboard() {
           font-weight: 700;
           color: #8b1d1d;
           cursor: pointer;
-        }
-
-        .back-btn:hover {
-          text-decoration: underline;
+          white-space: nowrap;
         }
 
         .refresh-btn {
-          margin-left: auto;
           width: 34px;
           height: 34px;
           border-radius: 50%;
           border: none;
           cursor: pointer;
+
           background: #c62828;
-          color: #fff;
+          color: #ffffff;
+
           font-size: 16px;
+          font-weight: 700;
+
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+
+        /* push refresh right only when space exists */
+        .filter-bar .refresh-btn {
+          margin-left: auto;
         }
 
         .placeholder {
@@ -360,6 +379,35 @@ export default function SmmuLdmsDashboard() {
           border: 1px dashed #e5b3b3;
           border-radius: 8px;
         }
+
+        /* -------- TABLET -------- */
+
+        @media (max-width: 900px) {
+
+          .filter-bar select {
+            flex: 1 1 160px;
+          }
+
+        }
+
+        /* -------- MOBILE -------- */
+
+        @media (max-width: 600px) {
+
+          .filter-bar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .filter-bar select {
+            width: 100%;
+          }
+
+          .filter-bar .refresh-btn {
+            align-self: flex-end;
+          }
+
+        }        
       `}</style>
     </div>
   );

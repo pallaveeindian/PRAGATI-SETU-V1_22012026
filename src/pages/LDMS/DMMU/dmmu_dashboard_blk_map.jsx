@@ -71,41 +71,6 @@ export default function DmmuBlockMap({
       .catch((e) => console.error("Failed to load district name", e));
   }, [districtId]);
 
-  /* ---------------------------
-    STEP 3+4: Get ALL blocks + analytics (SINGLE CALL)
-  --------------------------- */
-  async function enrichBlocksWithAspirational(apiBlocks) {
-    const enriched = await Promise.all(
-      apiBlocks.map(async (b) => {
-        try {
-          const res = await api.get(
-            "/lookups/blocks/is-aspirational/" + encodeURIComponent(b.block_id),
-          );
-
-          return {
-            block_id: b.block_id,
-            block_name_en: b.block_name,
-            is_aspirational: Number(res?.data?.is_aspirational) === 1,
-          };
-        } catch (e) {
-          console.error(
-            "Failed to resolve aspirational flag for block",
-            b.block_id,
-            e,
-          );
-
-          return {
-            block_id: b.block_id,
-            block_name_en: b.block_name,
-            is_aspirational: false,
-          };
-        }
-      }),
-    );
-
-    return enriched;
-  }
-
   useEffect(() => {
     if (!districtId) return;
 
@@ -125,10 +90,15 @@ export default function DmmuBlockMap({
 
         const apiBlocks = res?.data?.blocks || [];
 
-        // ✅ NEW: resolve aspirational per block
-        enrichBlocksWithAspirational(apiBlocks).then((finalBlocks) => {
-          if (!cancelled) setBlocks(finalBlocks);
-        });
+        if (!cancelled) {
+          setBlocks(
+            apiBlocks.map((b) => ({
+              block_id: b.block_id,
+              block_name_en: b.block_name,
+              is_aspirational: Number(b.is_aspirational) === 1,
+            })),
+          );
+        }
 
         // analytics cache stays untouched
         const cache = {};
@@ -247,9 +217,9 @@ export default function DmmuBlockMap({
             }}
           >
             <strong>{tooltipData.block_name}</strong>
-            <div>VOs: {tooltipData.totals?.total_vos ?? "—"}</div>
             <div>CLFs: {tooltipData.totals?.total_clfs ?? "—"}</div>
-            <div>SHGs: {tooltipData.totals?.total_shgs ?? "—"}</div>
+            <div>VOs: {tooltipData.totals?.total_vos ?? "—"}</div>            
+            <div>SHGs: {tooltipData.totals?.total_shgs ?? "—"}</div>            
             <div>
               Rural Households: {tooltipData.totals?.total_rural_hh ?? "—"}
             </div>
@@ -268,8 +238,8 @@ export default function DmmuBlockMap({
             <tr>
               <th>#</th>
               <th>Block</th>
-              <th>VOs</th>
               <th>CLFs</th>
+              <th>VOs</th>              
               <th>SHGs</th>
               <th>Rural HouseHolds</th>
               <th>Households under SHGs</th>
@@ -297,8 +267,8 @@ export default function DmmuBlockMap({
                     )}
                   </div>
                 </td>
-                <td>{b.analytics?.totals?.total_vos ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_clfs ?? "—"}</td>
+                <td>{b.analytics?.totals?.total_vos ?? "—"}</td>                
                 <td>{b.analytics?.totals?.total_shgs ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_rural_hh ?? "—"}</td>
                 <td>{b.analytics?.totals?.total_hh_under_shgs ?? "—"}</td>

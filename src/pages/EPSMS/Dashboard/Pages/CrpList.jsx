@@ -443,7 +443,6 @@ const CrpList = ({ isOpen, crps = [], title, loading = false, error = '', onSele
                               try {
                                 event.stopPropagation();
                                 const originalIndex = (currentPage - 1) * PAGE_SIZE + index;
-                                console.log('CRP List: View clicked', filteredCrps[originalIndex]);
                                 onSelectDistrict?.(filteredCrps[originalIndex]);
                               } catch (e) {
                                 console.error('Error handling View click', e);

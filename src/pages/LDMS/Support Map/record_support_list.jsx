@@ -210,14 +210,18 @@ export default function SupportBucketList() {
                   >
                     <FaEye />
                   </button>
-                  {isBMMU && r.approval_status === "DRAFT" && (
-                    <button
-                      className="edit"
-                      onClick={() => navigate(`/ldms/support-map/edit/${r.id}`)}
-                    >
-                      <FaEdit />
-                    </button>
-                  )}
+                  {isBMMU &&
+                    (r.approval_status === "DRAFT" ||
+                      r.approval_status === "REJECTED") && (
+                      <button
+                        className="edit"
+                        onClick={() =>
+                          navigate(`/ldms/support-map/edit/${r.id}`)
+                        }
+                      >
+                        <FaEdit />
+                      </button>
+                    )}
                   {isDMMU && r.approval_status === "PENDING" && (
                     <button
                       className="edit"

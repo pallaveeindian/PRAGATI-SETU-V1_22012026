@@ -928,6 +928,16 @@ export const LDMS_API = {
     api.get(`/ldms/reports/recorded-beneficiaries/`, {
       params,
     }),
+
+  // Notification endpoints
+  NotificationsList: (params) => api.get("/ldms/notifications/", { params }),
+  MarkNotificationRead: (notifId) =>
+    api.patch(`/ldms/notifications/${encodeURIComponent(notifId)}/read/`),
+
+  // DLCC Meet endpoints
+  dlccMeetings: makeCrud("/ldms/dlcc-meetings/"),
+  // BLCC Meet endpoints
+  blccMeetings: makeCrud("/ldms/blcc-meetings/"),
 };
 
 // ------------------------
@@ -949,6 +959,49 @@ export const SUPPORT_API = {
 
   resolveTicket: (ticketCode, data) =>
     api.patch(`/support/tickets/resolve/${ticketCode}/`, data),
+};
+
+// Prerna APIs
+export const PRERNA_API = {
+  // =========================
+  // CREATE CANTEEN
+  // =========================
+  createCanteen: (formData) =>
+    api.post("/prerna/canteen/create/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  // =========================
+  // DELETE CANTEEN
+  // =========================
+  deleteCanteen: (homeId) =>
+    api.delete(`/prerna/canteen/delete/${encodeURIComponent(homeId)}/`),
+
+  // =========================
+  // GENERIC UPDATE
+  // =========================
+  updateCanteenField: (formData) =>
+    api.patch("/prerna/canteen/update/", formData, {
+      headers: {
+        "Content-Type": "multipart/form-data",
+      },
+    }),
+
+  // =========================
+  // LIST
+  // =========================
+  canteenList: (params = {}) =>
+    api.get("/prerna/canteen-list/", {
+      params,
+    }),
+
+  // =========================
+  // DETAIL
+  // =========================
+  canteenDetail: (homeId) =>
+    api.get(`/prerna/canteen-detail/${encodeURIComponent(homeId)}/`),
 };
 
 // ------------------------

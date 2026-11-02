@@ -45,22 +45,17 @@ export default function SCPLDs({ beneficiaries = [], onRemove }) {
       <div className="scplds-list">
         {pageData.map(({ member, shg }) => {
           const memberCode =
-            member.member_code ||
-            member.lokos_member_code ||
-            member.id ||
-            "-";
+            member.member_code || member.lokos_member_code || member.id || "-";
 
           const designation =
             member.designation ||
             member.member_designations?.[0]?.designation ||
             "-";
 
-          const age =
-            member.age ??
-            calculateAge(member.dob) ??
-            "-";
+          const age = member.age ?? calculateAge(member.dob) ?? "-";
 
-          const isPLD = member.pld_status === true || member.pld_status === "Yes";
+          const isPLD =
+            member.pld_status === true || member.pld_status === "Yes";
 
           return (
             <div
@@ -102,9 +97,9 @@ export default function SCPLDs({ beneficiaries = [], onRemove }) {
 
                 <div className="scplds-location">
                   <FaMapMarkerAlt />
-                  District: {shg?.districtId || "-"}, Block: {shg?.blockId || "-"},
-                  Panchayat: {shg?.panchayatId || "-"}, Village:{" "}
-                  {shg?.villageId || "-"}
+                  District: {shg?.districtId || "-"}, Block:{" "}
+                  {shg?.blockId || "-"}, Panchayat: {shg?.panchayatId || "-"},
+                  Village: {shg?.villageId || "-"}
                 </div>
               </div>
 
@@ -142,7 +137,7 @@ export default function SCPLDs({ beneficiaries = [], onRemove }) {
           Next
         </button>
       </div>
-      
+
       {/* ---- styles ---- */}
       <style>{`
         .scplds {

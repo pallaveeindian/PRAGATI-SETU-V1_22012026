@@ -1,6 +1,8 @@
 // src/pages/LDMS/DMMU/dmmu_ldms_dashboard.jsx
-import React, { useState } from "react";
+import React, { useState, useContext } from "react";
+import { AuthContext } from "../../../contexts/AuthContext";
 import DmmuBlockMap from "./dmmu_dashboard_blk_map";
+import DashboardHeader from "../Layout/ldms_dash_header";
 import BlockMap from "../BMMU/bmmu_dashboard_blk_map";
 import Meetings from "../BMMU/bmmu_dashboard_meetings";
 import DemandAnalytics from "../DMMU/dmmu_dashboard_demand_analytics";
@@ -13,6 +15,7 @@ import SupportBenefitExt from "../DMMU/dmmu_dashboard_support_benefit_ext";
 export default function DmmuLdmsDashboard() {
   /* ---------------- STATE ---------------- */
   const [blockId, setBlockId] = useState(null);
+  const { user } = useContext(AuthContext);
 
   /* ---------------- HANDLERS ---------------- */
   const openBlock = (id) => setBlockId(id);
@@ -21,6 +24,9 @@ export default function DmmuLdmsDashboard() {
   /* ---------------- RENDER ---------------- */
   return (
     <div className="dmmu-ldms-dashboard">
+      {/* Page Header */}
+      <DashboardHeader title="DMMU Dashboard" username={user?.username} />
+
       {/* ==================================================
          CARD 1 – DISTRICT / BLOCK MAP
       ================================================== */}
@@ -76,13 +82,13 @@ export default function DmmuLdmsDashboard() {
         .dmmu-ldms-dashboard {
           display: flex;
           flex-direction: column;
+          background: #ffffff;
           gap: 16px;
         }
 
         .ldms-card {
           background: #ffffff;
           border: 2px solid #ce0000b0;
-          box-shadow: 0 8px 35px rgba(163, 19, 19, 0.25);
           border-radius: 12px;
           padding: 12px;
           min-height: 220px;
@@ -122,7 +128,7 @@ export default function DmmuLdmsDashboard() {
           font-size: 14px;
           font-weight: 600;
           color: #9b1c1c;
-          background: #fff5f5;
+          background:  #ffffff;
           border: 1px dashed #e5b3b3;
           border-radius: 8px;
         }

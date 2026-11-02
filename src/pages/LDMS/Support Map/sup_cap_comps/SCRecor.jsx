@@ -88,8 +88,13 @@ export default function SCRecor({ selectedScheme, supportData, onChange }) {
             <input
               type="text"
               placeholder="Enter support bucket type"
-              value={customBucket}
-              onChange={(e) => update("customBucket", e.target.value)}
+              // Strip the prefix for the UI display so the user just sees their text
+              value={customBucket ? customBucket.replace(/^Others-/, "") : ""}
+              onChange={(e) => {
+                const val = e.target.value;
+                // Add the prefix dynamically to the state for the backend
+                update("customBucket", val ? `Others-${val}` : "");
+              }}
             />
           </div>
         )}

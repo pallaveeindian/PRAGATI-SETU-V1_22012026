@@ -19,6 +19,9 @@ import SupportBucketList from "../pages/LDMS/Support Map/record_support_list";
 import RecordSupportDetail from "../pages/LDMS/Support Map/record_support_detail";
 import DmmuLdmsApprove from "../pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "../pages/LDMS/Reports/ldms_reports";
+import MeetingsList from "../pages/LDMS/Meetings Map/ldms_meetings_list";
+import MeetCreate from "../pages/LDMS/Meetings Map/meet_create.jsx";
+import MeetUpload from "../pages/LDMS/Meetings Map/meet_upload.jsx";
 
 export default function LdmsRoutes() {
   return (
@@ -54,6 +57,7 @@ export default function LdmsRoutes() {
           element={<SupPLDDetail />}
         />
         <Route path="reports" element={<LdmsReports />} />
+        <Route path="meetings-list" element={<MeetingsList />} />
         <Route path="dash-block/:blockId" element={<BlockMap />} />
         <Route path="dash-district/:districtId" element={<DmmuBlockMap />} />
       </Route>
