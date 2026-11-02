@@ -5,6 +5,7 @@ import {
   Route,
   useLocation,
   useNavigationType,
+  Navigate,
 } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./pages/LanguageContext.jsx";
@@ -632,6 +633,9 @@ export default function App() {
 
         {/* Grievance Portal Routes */}
         <Route path="/register-grievance" element={<RegisterGrievance />} />
+
+        {/* Login Route-Fix */}
+        <Route path="/login" element={<Navigate to="/" replace />} />
 
         {/* ----- Login Routes ----- */}
         <Route path="/upsrlm-planning/login" element={<PDULogin />} />
