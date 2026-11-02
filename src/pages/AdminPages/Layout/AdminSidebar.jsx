@@ -13,15 +13,26 @@ import {
   FaBullseye,
   FaBook,
   FaFileSignature,
+  FaDatabase,
+  FaListAlt,
 } from "react-icons/fa";
 
+const ENGAGEMENT_CHILD_NAMES = ["Trainer Check", "Beneficiary Check"];
+const MASTER_TRAINER_CHILD_NAMES = [
+  "Master Trainer Registration Status",
+  "All Trainer List",
+];
 const TMS_CHILD_NAMES = [
+  "TMS Portal Summary",
   "User Management",
   "Training Batch List",
   "Training Request List",
   "Training Target",
   "Learning Material",
   "Center Management",
+  ...ENGAGEMENT_CHILD_NAMES,
+  "Master Trainer DB",
+  ...MASTER_TRAINER_CHILD_NAMES,
 ];
 
 const AdminSidebar = ({
@@ -33,47 +44,72 @@ const AdminSidebar = ({
   transparent = false,
   currentGradient,
 }) => {
-  const [isTmsOpen, setIsTmsOpen] = useState(() =>
-    TMS_CHILD_NAMES.includes(activeMenu),
-  );
+  const [openMenus, setOpenMenus] = useState(() => ({
+    "TMS Portal": TMS_CHILD_NAMES.includes(activeMenu),
+    "Master Trainer DB":
+      activeMenu === "Master Trainer DB" ||
+      MASTER_TRAINER_CHILD_NAMES.includes(activeMenu),
+  }));
 
   useEffect(() => {
     if (TMS_CHILD_NAMES.includes(activeMenu)) {
-      setIsTmsOpen(true);
+      setOpenMenus((menus) => ({ ...menus, "TMS Portal": true }));
+    } ;
+    if (MASTER_TRAINER_CHILD_NAMES.includes(activeMenu)) {
+      setOpenMenus((menus) => ({ ...menus, "Master Trainer DB": true }));
     }
   }, [activeMenu]);
 
-  const menuItems = [
-    { name: "Home Dashboard", icon: <FaHome /> },
-    { name: "Grievances List", icon: <FaChartBar /> },
-    {
-      name: "TMS Portal",
-      icon: <FaFileAlt />,
-      isParent: true,
-      children: [
-        { name: "User Management", icon: <FaUsers /> },
-        { name: "Training Batch List", icon: <FaClipboardList /> },
-        { name: "Training Request List", icon: <FaFileSignature /> },
-        { name: "Training Target", icon: <FaBullseye /> },
-        { name: "Learning Material", icon: <FaBook /> },
-        { name: "Center Management", icon: <FaClipboardList /> },
-      ],
-    },
-  ];
+ const menuItems = [
+  { name: "Home Dashboard", icon: <FaHome /> },
+  { name: "Grievances List", icon: <FaChartBar /> },
+  {
+    name: "TMS Portal",
+    icon: <FaFileAlt />,
+    isParent: true,
+    children: [
+      { name: "TMS Portal Summary", icon: <FaChartBar /> },
+      { name: "User Management", icon: <FaUsers /> },
+      { name: "Training Batch List", icon: <FaClipboardList /> },
+      { name: "Training Request List", icon: <FaFileSignature /> },
+      { name: "Training Target", icon: <FaBullseye /> },
+      { name: "Learning Material", icon: <FaBook /> },
+      { name: "Center Management", icon: <FaClipboardList /> },
+      { name: "Trainer Check", icon: <FaClipboardList /> },
+      { name: "Beneficiary Check", icon: <FaBullseye /> },
+      
+      // --- NEW NESTED PARENT ADDED HERE ---
+      {
+        name: "Master Trainer DB",
+        icon: <FaDatabase />, 
+        isParent: true,
+        children: [
+          { name: "Master Trainer Registration Status", icon: <FaClipboardList /> },
+          { name: "All Trainer List", icon: <FaListAlt /> },
+        ],
+      },
+      // ------------------------------------
+    ],
+  },
+];
+
 
   const handleMenuClick = (item) => {
-    // 1. Always update the active menu so the data loads on the main dashboard
-    setActiveMenu(item.name);
-
-    // 2. If it is a parent menu, also toggle the nested dropdown visibility
     if (item.isParent) {
-      setIsTmsOpen(!isTmsOpen);
+      setOpenMenus((menus) => ({
+        ...menus,
+        [item.name]: !menus[item.name],
+      }));
+      return;
     }
+
+    setActiveMenu(item.name);
   };
 
   // Reusable function to render menu buttons (both parent and children)
   const renderMenuButton = (item, isChild = false) => {
     const isActive = activeMenu === item.name;
+    const isOpen = Boolean(openMenus[item.name]);
 
     return (
       <button
@@ -132,12 +168,36 @@ const AdminSidebar = ({
         {/* Show toggle arrow only for parent menus when sidebar is expanded */}
         {!isCollapsed && item.isParent && (
           <span style={{ fontSize: "12px" }}>
-            {isTmsOpen ? <FaChevronDown /> : <FaChevronRight />}
+            {isOpen ? <FaChevronDown /> : <FaChevronRight />}
           </span>
         )}
       </button>
     );
   };
+
+  const renderMenuItems = (items, level = 0) =>
+    items.map((item) => (
+      <React.Fragment key={item.name}>
+        {renderMenuButton(item, level > 0)}
+        {item.isParent && openMenus[item.name] && (
+          <div
+            style={{
+              display: "flex",
+              flexDirection: "column",
+              gap: "4px",
+              paddingLeft: isCollapsed ? "0px" : "25px",
+              marginTop: "4px",
+              borderLeft: isCollapsed
+                ? "none"
+                : "2px solid rgba(255, 255, 255, 0.2)",
+              marginLeft: isCollapsed ? "0px" : "15px",
+            }}
+          >
+            {renderMenuItems(item.children || [], level + 1)}
+          </div>
+        )}
+      </React.Fragment>
+    ));
 
   return (
     <div
@@ -147,7 +207,7 @@ const AdminSidebar = ({
         minWidth: isCollapsed ? "72px" : "260px",
         height: "calc(100vh - 70px)",
 
-        // Yahan par dynamic color pass ho raha hai (jab transparent nahi hoga)
+       
         background: transparent ? "rgba(15, 23, 42, 0.38)" : currentGradient,
 
         color: "#fff",
@@ -155,7 +215,7 @@ const AdminSidebar = ({
         boxSizing: "border-box",
         zIndex: "999",
         overflowY: "auto",
-        // Background change hone par smooth 0.5s ka transition effect aayega
+        
         transition:
           "width 0.25s ease, min-width 0.25s ease, background 0.5s ease",
         boxShadow: "2px 0 12px rgba(15, 23, 42, 0.15)",
@@ -213,32 +273,7 @@ const AdminSidebar = ({
 
       {/* Menu Items List */}
       <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
-        {menuItems.map((item) => (
-          <React.Fragment key={item.name}>
-            {/* Render Main Menu Button */}
-            {renderMenuButton(item)}
-
-            {/* Render Nested Sub-Menu if parent is open */}
-            {item.isParent && isTmsOpen && (
-              <div
-                style={{
-                  display: "flex",
-                  flexDirection: "column",
-                  gap: "4px",
-                  // Indent the sub-menu items to create a tree structure
-                  paddingLeft: isCollapsed ? "0px" : "25px",
-                  marginTop: "4px",
-                  borderLeft: isCollapsed
-                    ? "none"
-                    : "2px solid rgba(255, 255, 255, 0.2)",
-                  marginLeft: isCollapsed ? "0px" : "15px",
-                }}
-              >
-                {item.children.map((child) => renderMenuButton(child, true))}
-              </div>
-            )}
-          </React.Fragment>
-        ))}
+        {renderMenuItems(menuItems)}
       </div>
     </div>
   );

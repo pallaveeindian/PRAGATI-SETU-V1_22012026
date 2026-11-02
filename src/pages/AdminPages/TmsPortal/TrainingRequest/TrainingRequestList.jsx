@@ -33,15 +33,42 @@ function loadCache() {
   }
 }
 
-async function fetchTrainingRequestsOnce(params = {}) {
-  const response = await TMS_API.trainingRequestsList.list({
-    ...params,
-    limit: 5000,
-  });
-  const responseData = response?.data;
-  return Array.isArray(responseData)
-    ? responseData
-    : responseData?.results || [];
+async function fetchAllTrainingRequests(params = {}) {
+  const pageSize = 5000;
+  const requests = [];
+  let offset = Number(params.offset) || 0;
+  let hasMore = true;
+
+  while (hasMore) {
+    const response = await TMS_API.trainingRequestsList.list({
+      ...params,
+      limit: pageSize,
+      page_size: pageSize,
+      offset,
+    });
+    const responseData = response?.data;
+
+    if (Array.isArray(responseData)) {
+      requests.push(...responseData);
+      break;
+    }
+
+    const pageResults = Array.isArray(responseData?.results)
+      ? responseData.results
+      : Array.isArray(responseData?.data)
+        ? responseData.data
+        : [];
+    requests.push(...pageResults);
+
+    const totalCount = Number(responseData?.count);
+    offset += pageResults.length;
+    hasMore =
+      pageResults.length > 0 &&
+      (Boolean(responseData?.next) ||
+        (Number.isFinite(totalCount) && requests.length < totalCount));
+  }
+
+  return requests;
 }
 
 /* ---------------- partner resolver (SAFE & CACHED) ---------------- */
@@ -177,7 +204,7 @@ export default function TrainingRequestList() {
         params.district_id = geoscope.districts[0];
         params.partner_id = partnerId;
       }
-      const items = await fetchTrainingRequestsOnce(params);
+      const items = await fetchAllTrainingRequests(params);
 
       setRequests(items);
       saveCache(items, { userId: user.id, role });
@@ -242,7 +269,7 @@ export default function TrainingRequestList() {
       }
 
       // ✅ theme_id now passes straight through
-      const items = await fetchTrainingRequestsOnce(params);
+      const items = await fetchAllTrainingRequests(params);
 
       setRequests(items);
     } catch (e) {

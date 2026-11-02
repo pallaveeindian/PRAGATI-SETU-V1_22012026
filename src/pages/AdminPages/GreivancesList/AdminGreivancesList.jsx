@@ -27,23 +27,20 @@ export default function AdminGreivancesList() {
   const { user } = useContext(AuthContext);
   const [tickets, setTickets] = useState([]);
   const [filteredTickets, setFilteredTickets] = useState([]);
-  const [totalTicketCount, setTotalTicketCount] = useState(0);
-  const [serverPaginated, setServerPaginated] = useState(false);
   const [loading, setLoading] = useState(false);
   const [ticketCode, setTicketCode] = useState("");
   const [open, setOpen] = useState(false);
   const [selectedTicket, setSelectedTicket] = useState(null);
   const [pmuResponse, setPmuResponse] = useState("");
-  const ITEMS_PER_PAGE = 15;
+  const ITEMS_PER_PAGE = 10;
   const [currentPage, setCurrentPage] = useState(1);
   const [statusFilter, setStatusFilter] = useState("all");
   const [previewImage, setPreviewImage] = useState(null);
 
   useEffect(() => {
-    loadTickets(currentPage);
-    // The current page is the only request parameter for this effect.
+    loadTickets();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentPage]);
+  }, []);
 
   const filterTickets = (data, code = ticketCode, status = statusFilter) => {
     let filtered = [...data];
@@ -63,27 +60,34 @@ export default function AdminGreivancesList() {
     return filtered;
   };
 
-  const loadTickets = async (page = 1) => {
+  const loadTickets = async () => {
     try {
       setLoading(true);
-      const res = await SUPPORT_API.listTickets({
-        page,
-        page_size: ITEMS_PER_PAGE,
-      });
-      const serverData = !Array.isArray(res.data) && res.data;
-      const data = Array.isArray(res.data)
-        ? res.data
-        : Array.isArray(serverData?.results)
-          ? serverData.results
-          : [];
-      const hasServerPagination = Number.isFinite(serverData?.count);
+      const allTickets = [];
+      let offset = 0;
+      let hasNextPage = true;
 
-      setServerPaginated(hasServerPagination);
-      setTotalTicketCount(
-        hasServerPagination ? serverData.count : data.length,
-      );
-      setTickets(data);
-      setFilteredTickets(filterTickets(data));
+      while (hasNextPage) {
+        const res = await SUPPORT_API.listTickets({ limit: 50, offset });
+        const serverData = !Array.isArray(res.data) && res.data;
+        const data = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(serverData?.results)
+            ? serverData.results
+            : [];
+
+        allTickets.push(...data);
+        hasNextPage =
+          !Array.isArray(res.data) &&
+          Boolean(serverData?.next) &&
+          data.length > 0 &&
+          (!Number.isFinite(serverData?.count) ||
+            allTickets.length < serverData.count);
+        offset += data.length;
+      }
+
+      setTickets(allTickets);
+      setFilteredTickets(filterTickets(allTickets));
     } catch (err) {
       console.error("Failed to load grievance tickets:", err);
     } finally {
@@ -137,17 +141,14 @@ export default function AdminGreivancesList() {
       alert("Ticket resolved successfully.");
       setOpen(false);
       setPmuResponse("");
-      loadTickets(currentPage);
+      loadTickets();
     } catch (err) {
       console.error(err);
       alert("Failed to resolve ticket.");
     }
   };
 
-  const totalPages = Math.ceil(
-    (serverPaginated ? totalTicketCount : filteredTickets.length) /
-      ITEMS_PER_PAGE,
-  );
+  const totalPages = Math.ceil(filteredTickets.length / ITEMS_PER_PAGE);
 
   const paginationItems = (() => {
     if (totalPages <= 7) {
@@ -178,17 +179,13 @@ export default function AdminGreivancesList() {
     }
   }, [currentPage, totalPages]);
 
-  const paginatedTickets = serverPaginated
-    ? filteredTickets
-    : filteredTickets.slice(
-        (currentPage - 1) * ITEMS_PER_PAGE,
-        currentPage * ITEMS_PER_PAGE,
-      );
+  const paginatedTickets = filteredTickets.slice(
+    (currentPage - 1) * ITEMS_PER_PAGE,
+    currentPage * ITEMS_PER_PAGE,
+  );
   const pendingCount = tickets.filter((ticket) => !ticket.is_solved).length;
   const solvedCount = tickets.filter((ticket) => ticket.is_solved).length;
-  const visibleCount = serverPaginated
-    ? totalTicketCount
-    : filteredTickets.length;
+  const visibleCount = filteredTickets.length;
 
   return (
     <div
@@ -482,10 +479,7 @@ export default function AdminGreivancesList() {
               : 0}
             -
             {Math.min(
-              serverPaginated
-                ? (currentPage - 1) * ITEMS_PER_PAGE +
-                    filteredTickets.length
-                : currentPage * ITEMS_PER_PAGE,
+              currentPage * ITEMS_PER_PAGE,
               visibleCount,
             )}{" "}
             of{" "}
