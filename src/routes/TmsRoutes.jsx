@@ -142,6 +142,7 @@ export default function TmsRoutes() {
         />
         {/* MT Management V2 (DMMU is geoscope locked by the component automatically) */}
         <Route path="dmmu/master-trainers" element={<MTDirectoryConductor />} />
+        <Route path="dmmu/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
 
       {/* BMMU Routes */}

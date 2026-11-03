@@ -3,6 +3,7 @@ import React, {
   useState,
   useEffect,
   useCallback,
+  useRef,
   useMemo,
   useContext,
 } from "react";
@@ -51,25 +52,46 @@ export default function TpTmsSummary() {
   // Dropdown States
   const [themesList, setThemesList] = useState([]);
   const [plansList, setPlansList] = useState([]);
+  const [districtsList, setDistrictsList] = useState([]);
   const [trainingPlansLoading, setTrainingPlansLoading] = useState(true);
   const [trainingPlansLoadError, setTrainingPlansLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
+  const [selectedDistrict, setSelectedDistrict] = useState("");
+  const [blockWise, setBlockWise] = useState(role === "dmmu");
+  const reportRequestsInFlight = useRef(new Set());
 
-  // 1. Fetch Themes and Plans on Mount (with SMMU Role Lock)
+  // DMMU Geoscope Lock Initializer
+  useEffect(() => {
+    if (role === "dmmu") {
+      const geo = getGeoscope() || {};
+      const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
+      if (dmmuDistrictId) {
+        setSelectedDistrict(String(dmmuDistrictId));
+      }
+      setBlockWise(true);
+    }
+  }, [role]);
+
+  // 1. Fetch Themes, Plans, and Districts on Mount
   useEffect(() => {
     const fetchDropdownData = async () => {
       setTrainingPlansLoading(true);
       setTrainingPlansLoadError(false);
       try {
-        const [themesRes, plansRes] = await Promise.all([
+        const [themesRes, plansRes, districtsRes] = await Promise.all([
           TMS_API.trainingThemes.list({ limit: 500 }),
           TMS_API.trainingPlans.list({ limit: 500 }),
+          LOOKUP_API.districts.list({ page_size: 100 }),
         ]);
 
         const allThemes = themesRes?.data?.results || themesRes?.data || [];
         const allPlans = plansRes?.data?.results || plansRes?.data || [];
+        const allDistricts =
+          districtsRes?.data?.results || districtsRes?.data || [];
+
         setPlansList(allPlans);
+        setDistrictsList(allDistricts);
 
         if (role === "smmu" && user?.id) {
           const myTheme = allThemes.find(
@@ -87,7 +109,7 @@ export default function TpTmsSummary() {
         }
       } catch (error) {
         setTrainingPlansLoadError(true);
-        console.error("Failed to load themes/plans:", error);
+        console.error("Failed to load themes/plans/districts:", error);
       } finally {
         setTrainingPlansLoading(false);
       }
@@ -105,10 +127,30 @@ export default function TpTmsSummary() {
     );
   }, [plansList, selectedTheme]);
 
-  // Fetch Report Data (Guarded against premature fetching before SMMU role initialization)
+  // Fetch Report Data
+  // Fetch Report Data
   const fetchReport = useCallback(async () => {
     if (!financialYear) return;
-    if (role === "smmu" && trainingPlansLoading) return; // SURGICAL FIX: Wait for SMMU theme initialization
+    if (role === "smmu" && trainingPlansLoading) return;
+    // Do not send an unscoped request while the DMMU district is initializing.
+    if (role === "dmmu" && !selectedDistrict) return;
+
+    const params = {
+      financial_year: financialYear,
+      theme: selectedTheme || undefined,
+      training_plan: selectedPlan || undefined,
+    };
+
+    if (selectedDistrict) {
+      params.district_id = selectedDistrict;
+      if (blockWise) params.block_wise = 1;
+    }
+
+    // React StrictMode and initialization updates can invoke this effect twice.
+    // Skip an identical request while the first one is still in flight.
+    const requestKey = JSON.stringify(params);
+    if (reportRequestsInFlight.current.has(requestKey)) return;
+    reportRequestsInFlight.current.add(requestKey);
 
     setLoading(true);
     setError(null);
@@ -116,11 +158,7 @@ export default function TpTmsSummary() {
 
     try {
       const response = await api.get("/tms/reports/portal-summary/", {
-        params: {
-          financial_year: financialYear,
-          theme: selectedTheme || undefined,
-          training_plan: selectedPlan || undefined,
-        },
+        params,
       });
       if (response.data?.status === "success") {
         setReportData(response.data);
@@ -134,26 +172,44 @@ export default function TpTmsSummary() {
           "Failed to load the report. Please try again.",
       );
     } finally {
+      reportRequestsInFlight.current.delete(requestKey);
       setLoading(false);
     }
-  }, [financialYear, selectedTheme, selectedPlan]);
+  }, [
+    financialYear,
+    selectedTheme,
+    selectedPlan,
+    selectedDistrict,
+    blockWise,
+    role,
+    trainingPlansLoading,
+  ]);
 
   useEffect(() => {
     fetchReport();
   }, [fetchReport]);
 
-  // Filtered Districts Logic
-  const filteredDistricts = useMemo(() => {
-    if (!reportData?.district_summaries) return [];
-    if (!searchQuery.trim()) return reportData.district_summaries;
+  // Filtered Sub-Summaries Logic (Handles District Summaries or Block Summaries)
+  const isBlockView = Boolean(
+    reportData?.block_wise && reportData?.block_summaries,
+  );
+
+  const displayedRows = useMemo(() => {
+    const list = isBlockView
+      ? reportData?.block_summaries || []
+      : reportData?.district_summaries || [];
+
+    if (!searchQuery.trim()) return list;
 
     const query = searchQuery.toLowerCase();
-    return reportData.district_summaries.filter((dist, index) => {
+    return list.filter((item, index) => {
       const sno = (index + 1).toString();
-      const distName = (dist.district_name || "").toLowerCase();
-      return sno.includes(query) || distName.includes(query);
+      const name = (
+        isBlockView ? item.block_name : item.district_name || ""
+      ).toLowerCase();
+      return sno.includes(query) || name.includes(query);
     });
-  }, [reportData, searchQuery]);
+  }, [reportData, searchQuery, isBlockView]);
 
   // ======================================================================
   // UI HELPER COMPONENTS
@@ -201,7 +257,7 @@ export default function TpTmsSummary() {
                     disabled={role === "smmu"}
                     onChange={(e) => {
                       setSelectedTheme(e.target.value);
-                      setSelectedPlan(""); // Reset plan when theme changes
+                      setSelectedPlan("");
                     }}
                     style={{
                       background: role === "smmu" ? "#f1f5f9" : "#f8fafc",
@@ -229,6 +285,63 @@ export default function TpTmsSummary() {
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {/* District Filter Dropdown */}
+                <div className="filter-group">
+                  <select
+                    value={selectedDistrict}
+                    disabled={role === "dmmu"}
+                    onChange={(e) => {
+                      const val = e.target.value;
+                      setSelectedDistrict(val);
+                      if (!val) {
+                        setBlockWise(false);
+                      }
+                    }}
+                    style={{
+                      background: role === "dmmu" ? "#f1f5f9" : "#f8fafc",
+                      cursor: role === "dmmu" ? "not-allowed" : "pointer",
+                    }}
+                  >
+                    {role !== "dmmu" && <option value="">All Districts</option>}
+                    {districtsList.map((d) => (
+                      <option key={d.district_id} value={d.district_id}>
+                        {d.district_name_en}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Block Wise Checkbox Filter */}
+                <div className="filter-group">
+                  <label
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: selectedDistrict ? "#1e3a8a" : "#94a3b8",
+                      cursor: selectedDistrict ? "pointer" : "not-allowed",
+                      userSelect: "none",
+                      padding: "6px 12px",
+                      background: selectedDistrict ? "#eff6ff" : "#f1f5f9",
+                      borderRadius: "6px",
+                      border: "1px solid #cbd5e1",
+                    }}
+                  >
+                    <input
+                      type="checkbox"
+                      checked={blockWise}
+                      disabled={!selectedDistrict}
+                      onChange={(e) => setBlockWise(e.target.checked)}
+                      style={{
+                        cursor: selectedDistrict ? "pointer" : "not-allowed",
+                      }}
+                    />
+                    Block Wise
+                  </label>
                 </div>
 
                 <select
@@ -274,15 +387,20 @@ export default function TpTmsSummary() {
                   Compiling comprehensive portal summary for {financialYear}
                   ...
                 </p>
-                <small>This aggregates data across all 75 districts.</small>
+                <small>
+                  This aggregates data across all selected parameters.
+                </small>
               </div>
             ) : reportData ? (
               <div className="reports-container fade-in">
-                {/* 1. STATE WIDE SUMMARY */}
+                {/* 1. STATE WIDE / OVERALL SUMMARY */}
                 <div className="report-table-wrapper state-wrapper">
                   <div className="report-table-header">
                     <h3 className="rt-title">
-                      PRAGATI SETU-TMS PORTAL SUMMARY REPORT (STATE WIDE)
+                      PRAGATI SETU-TMS PORTAL SUMMARY REPORT{" "}
+                      {reportData.district_name
+                        ? `(${reportData.district_name})`
+                        : "(STATE WIDE)"}
                     </h3>
                     <span className="rt-date">
                       DATED: {reportData.report_date}
@@ -361,7 +479,9 @@ export default function TpTmsSummary() {
                               </td>
                               <td className="stacked-label-cell">
                                 <div className="dist-name">
-                                  STATE WIDE SUMMARY
+                                  {reportData.district_name
+                                    ? `${reportData.district_name} TOTAL SUMMARY`
+                                    : "STATE WIDE SUMMARY"}
                                 </div>
                                 <div className="val-batch">Batch Count</div>
                                 <div className="val-pax">Participant Count</div>
@@ -447,17 +567,20 @@ export default function TpTmsSummary() {
                   </div>
                 </div>
 
-                {/* 2. DISTRICT WISE COMBINED TABLE */}
+                {/* 2. DISTRICT / BLOCK WISE SUB-TABLE */}
                 <div className="report-table-wrapper district-wrapper">
                   <div className="report-table-header">
-                    <h3 className="rt-title">
-                      PRAGATI SETU-TMS PORTAL SUMMARY REPORT (DISTRICT WISE)
+                    <h3 className="xrt-title">
+                      PRAGATI SETU-TMS PORTAL SUMMARY REPORT (
+                      {isBlockView ? "BLOCK WISE" : "DISTRICT WISE"})
                     </h3>
                     <div className="district-search-box">
                       <FaSearch className="ds-icon" />
                       <input
                         type="text"
-                        placeholder="Search by S.No. or District Name..."
+                        placeholder={`Search by S.No. or ${
+                          isBlockView ? "Block" : "District"
+                        } Name...`}
                         value={searchQuery}
                         onChange={(e) => setSearchQuery(e.target.value)}
                       />
@@ -469,7 +592,9 @@ export default function TpTmsSummary() {
                       <thead>
                         <tr className="col-names-row">
                           <th>S. No.</th>
-                          <th style={{ textAlign: "left" }}>District Name</th>
+                          <th style={{ textAlign: "left" }}>
+                            {isBlockView ? "Block Name" : "District Name"}
+                          </th>
                           <th>Total batches Created</th>
                           <th>Scheduled Batches</th>
                           <th>Batches Pending At DMM</th>
@@ -524,35 +649,36 @@ export default function TpTmsSummary() {
                         </tr>
                       </thead>
                       <tbody>
-                        {filteredDistricts.length === 0 ? (
+                        {displayedRows.length === 0 ? (
                           <tr>
                             <td colSpan={18} className="empty-state">
-                              No districts found matching "{searchQuery}"
+                              No {isBlockView ? "blocks" : "districts"} found
+                              matching "{searchQuery}"
                             </td>
                           </tr>
                         ) : (
-                          filteredDistricts.map((dist) => {
-                            const originalIdx =
-                              reportData.district_summaries.findIndex(
-                                (d) => d.district_id === dist.district_id,
-                              );
-                            const b = dist.summary.batch_counts || {};
-                            const p = dist.summary.participant_counts || {};
+                          displayedRows.map((item, idx) => {
+                            const name = isBlockView
+                              ? item.block_name
+                              : item.district_name;
+                            const keyId = isBlockView
+                              ? item.block_id
+                              : item.district_id;
+                            const b = item.summary?.batch_counts || {};
+                            const p = item.summary?.participant_counts || {};
 
                             return (
-                              <tr key={dist.district_id}>
+                              <tr key={keyId || idx}>
                                 <td
                                   style={{
                                     fontWeight: 800,
                                     color: "#475569",
                                   }}
                                 >
-                                  {originalIdx + 1}
+                                  {idx + 1}
                                 </td>
                                 <td className="stacked-label-cell">
-                                  <div className="dist-name">
-                                    {dist.district_name}
-                                  </div>
+                                  <div className="dist-name">{name}</div>
                                   <div className="val-batch">Batch Count</div>
                                   <div className="val-pax">
                                     Participant Count
@@ -707,6 +833,7 @@ export default function TpTmsSummary() {
           background: #f1f5f9; padding: 16px 20px; border-bottom: 1px solid #cbd5e1; flex-wrap: wrap; gap: 12px;
         }
         .rt-title { margin: 0; font-size: 16px; font-weight: 800; color: inherit; letter-spacing: 0.5px; }
+        .xrt-title { margin: 0; font-size: 16px; font-weight: 800; color: #1E3A8A; letter-spacing: 0.5px; }
         .rt-date { font-size: 14px; font-weight: 700; color: #64748b; }
 
         /* Search Box */
@@ -728,7 +855,7 @@ export default function TpTmsSummary() {
         /* Sticky Headers for District Table */
         .district-table thead th { position: sticky; z-index: 10; }
         .district-table .col-names-row th { top: 0; }
-        .district-table .col-numbers-row th { top: 60px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
+        .district-table .col-numbers-row th { top: 90px; z-index: 11; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
 
         .col-names-row th { background: #f8fafc; color: #0f172a; font-weight: 700; white-space: normal; line-height: 1.4; vertical-align: bottom; }
         .col-numbers-row th { background: #e2e8f0; color: #475569; font-weight: 800; font-size: 12px; }

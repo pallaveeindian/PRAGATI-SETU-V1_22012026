@@ -105,6 +105,11 @@ const MENU = {
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
     {
+      label: "Performance Report",
+      to: "/tms/dmmu/tms-portal-summary",
+      icon: FaClipboardCheck,
+    },
+    {
       label: "Master Trainer DB",
       icon: FaBuilding,
       children: [
@@ -162,7 +167,7 @@ const MENU = {
         },
       ],
     },
-    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
+    // { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
     {
       label: "User Management",
       to: "/tms/dmmu/bmmu-users",
