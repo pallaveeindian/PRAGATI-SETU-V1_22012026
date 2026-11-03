@@ -43,7 +43,7 @@ export const getFinancialYear = (date = new Date()) => {
  * @returns {number} - 1 to 12
  */
 export const getApiMonthCode = (date = new Date()) => {
-  return date.getMonth() + 1; // JS months are 0-11, API needs 1-12
+  return date.getMonth(); // JS months are 0-11, API needs 1-12
 };
 
 /**
