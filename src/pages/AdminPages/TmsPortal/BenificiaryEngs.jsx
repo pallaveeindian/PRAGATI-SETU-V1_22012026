@@ -144,9 +144,9 @@ export default function BeneficiaryCheck({ embedded = false }) {
         if (!cancelled) {
           setDistrictId(null);
           setTableError(
-            e.message === "No district mapping found for your account."
+            e.message === "Please select a district."
               ? e.message
-              : "Failed to load your district. Please try again.",
+              : "Please select a district to proceed.",
           );
           setLoadingTable(false);
         }

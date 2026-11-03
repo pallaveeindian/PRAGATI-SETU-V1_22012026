@@ -1057,7 +1057,9 @@ export default function TrainingRequestDetail() {
                                             fontSize: 12,
                                           }}
                                           onClick={() =>
-                                            navigate(`/tms/tr-detail/${r.id}`)
+                                            navigate(
+                                              `/admin/trainingrequestdetail/${r.id}?from=training-requests`,
+                                            )
                                           }
                                         >
                                           View Request

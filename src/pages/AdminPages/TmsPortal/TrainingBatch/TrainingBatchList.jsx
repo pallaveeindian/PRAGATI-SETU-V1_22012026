@@ -8,10 +8,12 @@ import {
   getCanonicalRole,
   ROLE_WELCOME_MESSAGES,
 } from "../../../../utils/roleUtils";
+import BatchRescheduleModal from "../../../TMS/TRs/BatchRescheduleModal";
 import BatchExport from "../../TmsPortal/TrainingBatch/BatchExport";
 
 import TrainingBatchDetail from "./TrainingBatchDetail";
-import BatchRescheduleModal from "../../../TMS/TRs/BatchRescheduleModal";
+
+import ExcelJS from "exceljs";
 
 const CACHE_KEY = "tms_training_batches_cache_v1";
 const GEOSCOPE_KEY = "ps_user_geoscope";
@@ -87,22 +89,11 @@ export default function TrainingBatchList() {
   const [dtpPartnerId, setDtpPartnerId] = useState(null);
   const [dtpPartnerName, setDtpPartnerName] = useState("");
   const formatDate = (date) => new Date(date).toLocaleDateString("en-GB");
-
   const [currentPage, setCurrentPage] = useState(1);
-  const rowsPerPage = 10;
-  const compactCell = (value) => (
-    <span className="batch-cell-text" title={value || "-"}>
-      {value || "-"}
-    </span>
-  );
-  const visibleBatches = batches;
+  const [pageSize, setPageSize] = useState(10);
+  const [totalCount, setTotalCount] = useState(0);
 
-  const totalPages = Math.ceil(visibleBatches.length / rowsPerPage);
-
-  const paginatedBatches = visibleBatches.slice(
-    (currentPage - 1) * rowsPerPage,
-    currentPage * rowsPerPage,
-  );
+  const totalPages = Math.max(1, Math.ceil(totalCount / pageSize));
 
   const queryParams = new URLSearchParams(location.search);
   const initialStatus = queryParams.get("status") || "";
@@ -340,11 +331,13 @@ export default function TrainingBatchList() {
       setBlocks([]);
       return;
     }
-    LOOKUP_API.blocksByDistrict(filters.district_id)
+    LOOKUP_API.blocks
+      .list({ district_id: filters.district_id, page_size: 100 })
       .then((r) => {
         let data = r?.data?.results || [];
-        if (filters.aspirational_only)
-          data = data.filter((b) => b.is_aspirational === 1);
+        if (filters.aspirational_only) {
+          data = data.filter((b) => Number(b.is_aspirational) === 1);
+        }
         setBlocks(data);
       })
       .catch(() => setBlocks([]));
@@ -361,13 +354,547 @@ export default function TrainingBatchList() {
       .catch(() => setPlans([]));
   }, [filters.theme]);
 
-  async function fetchBatches() {
+  // SURGICAL ADDITION: Dynamic Export Handler
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExportBatches = async () => {
+    if (!user?.id) return;
+
+    setIsExporting(true);
+
+    try {
+      let finalParams = {};
+
+      if (isRequestScoped) {
+        finalParams = { request_id: requestId, page_size: "MAX" };
+      } else {
+        const baseParams = await getDefaultScopeParams();
+        let effectiveFilters = filters;
+
+        if (role === "bmmu") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(
+              ([key]) =>
+                ![
+                  "district_id",
+                  "block_id",
+                  "mandal_id",
+                  "district_category_id",
+                ].includes(key),
+            ),
+          );
+        }
+
+        if (role === "dmmu") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(([key]) => key !== "district_id"),
+          );
+        }
+
+        if (role === "training_partner") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(([key]) => key !== "partner"),
+          );
+        }
+
+        if (role === "dtp") {
+          effectiveFilters = Object.fromEntries(
+            Object.entries(filters).filter(
+              ([key]) => !["district_id", "partner"].includes(key),
+            ),
+          );
+        }
+
+        finalParams = {
+          ...baseParams,
+          search,
+          ...Object.fromEntries(
+            Object.entries(effectiveFilters).filter(
+              ([, value]) => value !== "" && value !== false,
+            ),
+          ),
+          page_size: "MAX",
+          exclude_status: role !== "dtp" ? "DRAFT" : undefined,
+        };
+      }
+
+      const query = new URLSearchParams(
+        Object.entries(finalParams)
+          .filter(([, value]) => value != null)
+          .map(([key, value]) => [key, String(value)]),
+      ).toString();
+
+      const response = await api.get(`/tms/batches-list/?${query}`);
+      const exportItems = response?.data?.results || [];
+
+      if (!exportItems.length) {
+        alert("No batches found matching the current filters.");
+        return;
+      }
+
+      const colors = {
+        navy: "FF153E75",
+        blue: "FF2563A6",
+        lightBlue: "FFEAF3FC",
+        paleBlue: "FFF4F8FD",
+        white: "FFFFFFFF",
+        text: "FF24364B",
+        muted: "FF66788A",
+        border: "FFD8E4F0",
+        green: "FFE8F5EC",
+        orange: "FFFFF2DB",
+        red: "FFFCE9E9",
+        gray: "FFF0F3F6",
+      };
+
+      const displayText = (value) =>
+        value === null || value === undefined || value === ""
+          ? "—"
+          : String(value);
+
+      const toExcelDate = (value) => {
+        if (!value) return "—";
+        const date = new Date(value);
+        return Number.isNaN(date.getTime()) ? "—" : date;
+      };
+
+      const participantCount = (batch) => {
+        const value = Number(batch.pax_count ?? 0);
+        return Number.isFinite(value) ? value : 0;
+      };
+
+      const workbook = new ExcelJS.Workbook();
+      workbook.creator = "Training Management System";
+      workbook.created = new Date();
+      workbook.subject = "Batch export";
+
+      const columns = [
+        { header: "S.No", key: "serial", width: 9 },
+        { header: "Financial Year", key: "financialYear", width: 16 },
+        { header: "Batch Code", key: "code", width: 18 },
+        { header: "Status", key: "status", width: 16 },
+        { header: "Start Date", key: "startDate", width: 16 },
+        { header: "End Date", key: "endDate", width: 16 },
+        { header: "Level", key: "level", width: 14 },
+        { header: "Type", key: "type", width: 18 },
+        { header: "Theme", key: "theme", width: 24 },
+        { header: "Training Plan", key: "trainingPlan", width: 28 },
+        { header: "Partner", key: "partner", width: 24 },
+        { header: "Block", key: "block", width: 20 },
+        { header: "District", key: "district", width: 22 },
+        { header: "Assigned Trainers", key: "trainers", width: 32 },
+        { header: "Pendency Status", key: "pendency", width: 20 },
+        { header: "Participant Count", key: "participants", width: 20 },
+      ];
+
+      const batchSheet = workbook.addWorksheet("TMS-Batch List");
+      batchSheet.properties.tabColor = { argb: colors.blue };
+      batchSheet.views = [
+        {
+          state: "frozen",
+          ySplit: 4,
+          topLeftCell: "A5",
+          showGridLines: false,
+        },
+      ];
+      batchSheet.columns = columns.map(({ key, width }) => ({ key, width }));
+
+      const lastColumn = columns.length;
+      const lastColumnLetter = "P";
+
+      batchSheet.mergeCells(1, 1, 1, lastColumn);
+      batchSheet.getCell("A1").value = "PRAGATI SETU TMS - BATCH LIST";
+      batchSheet.getCell("A1").font = {
+        name: "Aptos Display",
+        size: 20,
+        bold: true,
+        color: { argb: colors.white },
+      };
+      batchSheet.getCell("A1").alignment = {
+        vertical: "middle",
+        horizontal: "left",
+        indent: 1,
+      };
+      batchSheet.getCell("A1").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.navy },
+      };
+      batchSheet.getRow(1).height = 38;
+
+      batchSheet.mergeCells(2, 1, 2, lastColumn);
+      batchSheet.getCell("A2").value =
+        `Filtered batch export  •  ${exportItems.length} records  •  Generated ${new Date().toLocaleDateString()}`;
+      batchSheet.getCell("A2").font = {
+        name: "Aptos",
+        size: 10,
+        color: { argb: colors.muted },
+      };
+      batchSheet.getCell("A2").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.lightBlue },
+      };
+      batchSheet.getCell("A2").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      batchSheet.getRow(2).height = 24;
+
+      batchSheet.mergeCells(3, 1, 3, lastColumn);
+      batchSheet.getCell("A3").value =
+        "Use the header filters to sort and narrow the exported records.";
+      batchSheet.getCell("A3").font = {
+        name: "Aptos",
+        size: 9,
+        italic: true,
+        color: { argb: colors.muted },
+      };
+      batchSheet.getCell("A3").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      batchSheet.getRow(3).height = 20;
+
+      const headerRow = batchSheet.getRow(4);
+      headerRow.values = columns.map(({ header }) => header);
+      headerRow.height = 30;
+      headerRow.eachCell((cell) => {
+        cell.font = {
+          name: "Aptos",
+          bold: true,
+          color: { argb: colors.white },
+          size: 10,
+        };
+        cell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.blue },
+        };
+        cell.alignment = {
+          vertical: "middle",
+          horizontal: "center",
+          wrapText: true,
+        };
+        cell.border = {
+          bottom: { style: "medium", color: { argb: colors.navy } },
+        };
+      });
+
+      const batchRows = exportItems.map((batch, index) => [
+        index + 1,
+        displayText(batch.financial_year),
+        displayText(batch.code),
+        displayText(batch.status),
+        toExcelDate(batch.start_date),
+        toExcelDate(batch.end_date),
+        displayText(batch.level),
+        displayText(batch.batch_type),
+        displayText(batch.training_plan?.theme?.theme_name),
+        displayText(batch.training_plan?.training_name),
+        displayText(batch.centre?.partner?.name),
+        displayText(batch.block?.block_name_en),
+        displayText(batch.district?.district_name_en),
+        Array.isArray(batch.master_trainers) && batch.master_trainers.length > 0
+          ? batch.master_trainers
+              .map((trainer) =>
+                [
+                  trainer.full_name,
+                  `${trainer.designation || "—"} (${trainer.mobile_no || "—"})`,
+                ]
+                  .filter(Boolean)
+                  .join("\n"),
+              )
+              .join("\n\n")
+          : "—",
+        displayText(batch.pendency_status),
+        participantCount(batch),
+      ]);
+
+      batchRows.forEach((values, index) => {
+        const row = batchSheet.addRow(values);
+        row.height = 25;
+
+        row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
+          cell.font = { name: "Aptos", size: 10, color: { argb: colors.text } };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: {
+              argb: index % 2 === 0 ? colors.white : colors.paleBlue,
+            },
+          };
+          cell.border = {
+            bottom: { style: "hair", color: { argb: colors.border } },
+          };
+          cell.alignment = {
+            vertical: "middle",
+            horizontal:
+              columnNumber === 1 || columnNumber === 16 ? "center" : "left",
+            wrapText: columnNumber === 14,
+          };
+        });
+
+        row.getCell(5).numFmt = "dd mmm yyyy";
+        row.getCell(6).numFmt = "dd mmm yyyy";
+        row.getCell(16).numFmt = "#,##0";
+      });
+
+      const finalDataRow = Math.max(4, batchSheet.rowCount);
+      batchSheet.autoFilter = {
+        from: { row: 4, column: 1 },
+        to: { row: finalDataRow, column: lastColumn },
+      };
+
+      const overview = workbook.addWorksheet("Overview");
+      overview.properties.tabColor = { argb: colors.navy };
+      overview.views = [{ showGridLines: false }];
+      overview.columns = Array.from({ length: 8 }, () => ({ width: 19 }));
+
+      overview.mergeCells("A1:H1");
+      overview.getCell("A1").value = "BATCH EXPORT OVERVIEW";
+      overview.getCell("A1").font = {
+        name: "Aptos Display",
+        size: 22,
+        bold: true,
+        color: { argb: colors.white },
+      };
+      overview.getCell("A1").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      overview.getCell("A1").fill = {
+        type: "pattern",
+        pattern: "solid",
+        fgColor: { argb: colors.navy },
+      };
+      overview.getRow(1).height = 44;
+
+      overview.mergeCells("A2:H2");
+      overview.getCell("A2").value =
+        `Exported ${new Date().toLocaleString()}  •  Based on the current batch filters`;
+      overview.getCell("A2").font = {
+        name: "Aptos",
+        size: 10,
+        color: { argb: colors.muted },
+      };
+      overview.getCell("A2").alignment = {
+        vertical: "middle",
+        indent: 1,
+      };
+      overview.getRow(2).height = 24;
+
+      const uniqueCount = (selector) =>
+        new Set(
+          exportItems.map(selector).filter((value) => value && value !== "—"),
+        ).size;
+
+      const totalParticipants = exportItems.reduce(
+        (sum, batch) => sum + participantCount(batch),
+        0,
+      );
+
+      const cards = [
+        { start: 1, end: 2, label: "TOTAL BATCHES", value: exportItems.length },
+        {
+          start: 3,
+          end: 4,
+          label: "TOTAL PARTICIPANTS",
+          value: totalParticipants,
+        },
+        {
+          start: 5,
+          end: 6,
+          label: "DISTRICTS",
+          value: uniqueCount((batch) => batch.district?.district_name_en),
+        },
+        {
+          start: 7,
+          end: 8,
+          label: "TRAINING PARTNERS",
+          value: uniqueCount((batch) => batch.centre?.partner?.name),
+        },
+      ];
+
+      cards.forEach(({ start, end, label, value }) => {
+        overview.mergeCells(4, start, 4, end);
+        overview.mergeCells(5, start, 6, end);
+
+        const labelCell = overview.getCell(4, start);
+        labelCell.value = label;
+        labelCell.font = {
+          name: "Aptos",
+          size: 9,
+          bold: true,
+          color: { argb: colors.blue },
+        };
+        labelCell.alignment = { horizontal: "center", vertical: "middle" };
+        labelCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.lightBlue },
+        };
+
+        const valueCell = overview.getCell(5, start);
+        valueCell.value = value;
+        valueCell.font = {
+          name: "Aptos Display",
+          size: 23,
+          bold: true,
+          color: { argb: colors.navy },
+        };
+        valueCell.alignment = { horizontal: "center", vertical: "middle" };
+        valueCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.paleBlue },
+        };
+        valueCell.numFmt = "#,##0";
+      });
+
+      overview.getRow(4).height = 25;
+      overview.getRow(5).height = 32;
+      overview.getRow(6).height = 20;
+
+      const groupBy = (selector) => {
+        const groups = new Map();
+
+        exportItems.forEach((batch) => {
+          const label = displayText(selector(batch));
+          const current = groups.get(label) || { batches: 0, participants: 0 };
+          current.batches += 1;
+          current.participants += participantCount(batch);
+          groups.set(label, current);
+        });
+
+        return [...groups.entries()]
+          .map(([label, totals]) => ({ label, ...totals }))
+          .sort(
+            (a, b) => b.batches - a.batches || a.label.localeCompare(b.label),
+          );
+      };
+
+      const addBreakdown = (startColumn, title, heading, entries) => {
+        overview.mergeCells(8, startColumn, 8, startColumn + 3);
+
+        const titleCell = overview.getCell(8, startColumn);
+        titleCell.value = title;
+        titleCell.font = {
+          name: "Aptos",
+          size: 12,
+          bold: true,
+          color: { argb: colors.white },
+        };
+        titleCell.alignment = { vertical: "middle", indent: 1 };
+        titleCell.fill = {
+          type: "pattern",
+          pattern: "solid",
+          fgColor: { argb: colors.blue },
+        };
+
+        heading.forEach((text, index) => {
+          const cell = overview.getCell(9, startColumn + index);
+          cell.value = text;
+          cell.font = {
+            name: "Aptos",
+            bold: true,
+            color: { argb: colors.navy },
+          };
+          cell.fill = {
+            type: "pattern",
+            pattern: "solid",
+            fgColor: { argb: colors.lightBlue },
+          };
+          cell.alignment = { vertical: "middle", horizontal: "center" };
+        });
+
+        entries.forEach((entry, index) => {
+          const rowNumber = 10 + index;
+          const values = [
+            entry.label,
+            entry.batches,
+            entry.participants,
+            exportItems.length ? entry.batches / exportItems.length : 0,
+          ];
+
+          values.forEach((value, columnIndex) => {
+            const cell = overview.getCell(rowNumber, startColumn + columnIndex);
+            cell.value = value;
+            cell.font = {
+              name: "Aptos",
+              size: 10,
+              color: { argb: colors.text },
+            };
+            cell.fill = {
+              type: "pattern",
+              pattern: "solid",
+              fgColor: {
+                argb: index % 2 === 0 ? colors.white : colors.paleBlue,
+              },
+            };
+            cell.border = {
+              bottom: { style: "hair", color: { argb: colors.border } },
+            };
+            cell.alignment = {
+              vertical: "middle",
+              horizontal: columnIndex === 0 ? "left" : "center",
+            };
+          });
+
+          overview.getCell(rowNumber, startColumn + 2).numFmt = "#,##0";
+          overview.getCell(rowNumber, startColumn + 3).numFmt = "0%";
+        });
+
+        overview.getRow(8).height = 28;
+        overview.getRow(9).height = 24;
+      };
+
+      addBreakdown(
+        1,
+        "BATCHES BY STATUS",
+        ["Status", "Batches", "Participants", "Share"],
+        groupBy((batch) => batch.status),
+      );
+
+      addBreakdown(
+        5,
+        "BATCHES BY LEVEL",
+        ["Level", "Batches", "Participants", "Share"],
+        groupBy((batch) => batch.level),
+      );
+
+      const buffer = await workbook.xlsx.writeBuffer();
+      const blob = new Blob([buffer], {
+        type: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+      });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement("a");
+
+      link.href = url;
+      link.download = `Batches_Export_${new Date().toISOString().slice(0, 10)}.xlsx`;
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error("Export Failed", error);
+      alert("Failed to export batches. Please try again.");
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  // SURGICAL FIX: Restored strict role-scoped parameter builder & Server-Side Pagination
+  async function fetchBatches(pageToFetch = 1, sizeToFetch = pageSize) {
     if (!user?.id) return;
     setLoading(true);
     try {
       let finalParams = {};
       if (isRequestScoped) {
-        finalParams = { request_id: requestId, page_size: 500 };
+        finalParams = {
+          request_id: requestId,
+          page: pageToFetch,
+          page_size: sizeToFetch,
+        };
       } else {
         const baseParams = await getDefaultScopeParams();
         let effectiveFilters = filters;
@@ -408,25 +935,43 @@ export default function TrainingBatchList() {
           search,
           ...Object.fromEntries(
             Object.entries(effectiveFilters).filter(
-              ([, v]) => v !== "" && v !== false,
+              ([, v]) => v !== "" && v !== false && v != null,
             ),
           ),
-          page_size: "MAX",
+          page: pageToFetch,
+          page_size: sizeToFetch,
+          exclude_status: role !== "dtp" ? "DRAFT" : undefined,
         };
       }
 
-      const qs = new URLSearchParams(finalParams).toString();
+      // Clean out undefined or null parameters safely
+      const cleanParams = Object.fromEntries(
+        Object.entries(finalParams).filter(
+          ([, v]) => v !== undefined && v !== null && v !== "",
+        ),
+      );
+
+      const qs = new URLSearchParams(cleanParams).toString();
       const resp = await api.get(`/tms/batches-list/?${qs}`);
-      const items = resp?.data?.results || [];
-      setBatches(items);
-      setCurrentPage(1);
-      if (!isRequestScoped) saveCache(getScopeKey(), items);
+      // SURGICAL FIX: Extract paginated DRF response (results + count)
+      setBatches(resp?.data?.results || []);
+      setTotalCount(resp?.data?.count || 0);
+      setCurrentPage(pageToFetch);
+
+      // Note: Client caching removed as it breaks server-side pagination synchronicity.
     } catch (e) {
       setBatches([]);
+      setTotalCount(0);
     } finally {
       setLoading(false);
     }
   }
+
+  // SURGICAL ADDITION: Handle Page Size Change (Resets to page 1)
+  const handlePageSizeChange = (newSize) => {
+    setPageSize(newSize);
+    fetchBatches(1, newSize);
+  };
 
   const handleDeleteBatch = async (batchId) => {
     const confirmed = window.confirm(
@@ -447,7 +992,7 @@ export default function TrainingBatchList() {
     }
   };
 
-  const handleViewBatch = async (batchId) => {
+  const handleViewBatch = (batchId) => {
     setSelectedBatchId(batchId);
   };
 
@@ -471,10 +1016,7 @@ export default function TrainingBatchList() {
     if (role === "smmu" && !filters.theme) return;
 
     didInitRef.current = true;
-
-    const cached = loadCache(getScopeKey());
-    if (cached?.payload) setBatches(cached.payload);
-    else fetchBatches();
+    fetchBatches(1, pageSize);
   }, [user?.id, role, requestId, filters.theme]);
 
   useEffect(() => {
@@ -483,562 +1025,558 @@ export default function TrainingBatchList() {
   }, [requestId, user?.id]);
 
   const renderCentreName = (c) => c?.venue_name || c?.partner?.name || "-";
+  
 
-  const canRescheduleBatch = (batch) =>
-    role === "pmu_admin" &&
-    ["ONGOING", "SCHEDULED", "PENDING"].includes(
-      String(batch.status).toUpperCase(),
+  if (selectedBatchId) {
+    return (
+      <TrainingBatchDetail
+        key={selectedBatchId}
+        batchId={selectedBatchId}
+        onBack={() => setSelectedBatchId(null)}
+      />
     );
-
-  const canDeleteBatch = (batch) =>
-    role === "pmu_admin" &&
-    ["SCHEDULED", "ONGOING"].includes(String(batch.status).toUpperCase());
+  }
 
   return (
-    <div className="admin-training-requests">
-      <main className="admin-training-content">
-        <div className="admin-training-body">
-          {selectedBatchId ? (
-            <TrainingBatchDetail
-              batchId={selectedBatchId}
-              onBack={() => setSelectedBatchId(null)}
-            />
-          ) : (
-            <main style={{ padding: 18, minHeight: "100vh" }}>
-              <div style={{ width: "100%", margin: "10px 0" }}>
-                {!isRequestScoped && (
-                  <div
-                    className="training-filter-card"
-                    style={{
-                      background: "#e4ecf5",
-                      padding: 16,
-                      borderRadius: 10,
-                      marginBottom: 14,
-                      border: "2px solid #3d6ba6",
-                      boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
-                    }}
-                  >
-                    <div
-                      className="filter-row"
-                      style={{
-                        display: "flex",
-                        flexWrap: "nowrap",
-                        gap: 8,
-                        alignItems: "center",
-                        whiteSpace: "nowrap",
-                        overflow: "auto",
-                      }}
-                    >
-                      {role === "smmu" && (
-                        <>
-                          <select
-                            className="filter-input"
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                mandal_id: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">Mandal</option>
-                            {mandals.map((m) => (
-                              <option key={m.id} value={m.id}>
-                                {m.name}
-                              </option>
-                            ))}
-                          </select>
-                          <select
-                            className="filter-input"
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                district_category_id: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">District Category</option>
-                            {districtCategories.map((d) => (
-                              <option key={d.id} value={d.id}>
-                                {d.name}
-                              </option>
-                            ))}
-                          </select>
-                        </>
-                      )}
-
-                      {role !== "bmmu" && (
-                        <select
-                          className="filter-input"
-                          value={filters.district_id}
-                          disabled={role === "dmmu" || role === "dtp"}
-                          onChange={(e) => {
-                            if (role === "dmmu" || role === "dtp") return;
-                            setBlocks([]);
-                            setFilters((f) => ({
-                              ...f,
-                              district_id: e.target.value,
-                              block_id: "",
-                              aspirational_only: false,
-                            }));
-                          }}
-                        >
-                          <option value="">District</option>
-                          {districts.map((d) => (
-                            <option key={d.district_id} value={d.district_id}>
-                              {d.district_name_en}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {role !== "bmmu" && (
-                        <label
-                          className="aspirational-box"
-                          style={{
-                            display: "flex",
-                            alignItems: "center",
-                            gap: 6,
-                            fontSize: 14,
-                            color: "#2b4e72",
-                            background: "#fff",
-                            padding: "6px 10px",
-                            borderRadius: 6,
-                            border: "1px solid #a7c6ed",
-                          }}
-                        >
-                          <input
-                            type="checkbox"
-                            checked={filters.aspirational_only}
-                            disabled={role === "dtp"}
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                aspirational_only: e.target.checked,
-                                block_id: "",
-                              }))
-                            }
-                          />
-                          Aspirational
-                        </label>
-                      )}
-
-                      {role !== "bmmu" && filters.district_id && (
-                        <select
-                          key={filters.district_id}
-                          className="filter-input"
-                          value={filters.block_id}
-                          onChange={(e) =>
-                            setFilters((f) => ({
-                              ...f,
-                              block_id: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Block</option>
-                          {blocks.map((b) => (
-                            <option key={b.block_id} value={b.block_id}>
-                              {b.block_name_en}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {role === "training_partner" && (
-                        <select
-                          className="filter-input"
-                          value={filters.centre_id}
-                          onChange={(e) =>
-                            setFilters((f) => ({
-                              ...f,
-                              centre_id: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Centre</option>
-                          {centres.map((c) => (
-                            <option key={c.id} value={c.id}>
-                              {c.venue_name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {role !== "training_partner" &&
-                        role !== "dtp" &&
-                        role !== "tpcp" && (
-                          <select
-                            className="filter-input"
-                            value={filters.partner}
-                            onChange={(e) =>
-                              setFilters((f) => ({
-                                ...f,
-                                partner: e.target.value,
-                              }))
-                            }
-                          >
-                            <option value="">Training Partner</option>
-                            {partners.map((p) => (
-                              <option key={p.id} value={p.id}>
-                                {p.name}
-                              </option>
-                            ))}
-                          </select>
-                        )}
-
-                      {role === "dtp" && (
-                        <select
-                          className="filter-input"
-                          value={filters.partner}
-                          disabled
-                        >
-                          <option value={filters.partner}>
-                            {dtpPartnerName}
-                          </option>
-                        </select>
-                      )}
-
-                      <select
-                        className="filter-input"
-                        value={filters.theme}
-                        disabled={role === "smmu"}
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            theme: e.target.value,
-                            training_plan: "",
-                          }))
-                        }
-                      >
-                        <option value="">Training Theme</option>
-                        {themes.map((t) => (
-                          <option key={t.id} value={t.id}>
-                            {t.theme_name}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        className="filter-input"
-                        value={filters.financial_year}
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            financial_year: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Financial Year</option>
-                        {["2025-26", "2026-27"].map((fy) => (
-                          <option key={fy} value={fy}>
-                            {fy}
-                          </option>
-                        ))}
-                      </select>
-
-                      {plans.length > 0 && (
-                        <select
-                          className="filter-input"
-                          onChange={(e) =>
-                            setFilters((f) => ({
-                              ...f,
-                              training_plan: e.target.value,
-                            }))
-                          }
-                        >
-                          <option value="">Training Plan</option>
-                          {plans.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.training_name}
-                            </option>
-                          ))}
-                        </select>
-                      )}
-
-                      {/* ===== Training Type (Residential / Non-residential) ===== */}
-                      <select
-                        className="filter-input"
-                        value={filters.type_of_training}
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            type_of_training: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Type of Training</option>
-                        <option value="RES">Residential</option>
-                        <option value="NON RES">Non-residential</option>
-                        <option value="OTHER">Other</option>
-                      </select>
-
-                      <select
-                        className="filter-input"
-                        onChange={(e) =>
-                          setFilters((f) => ({ ...f, level: e.target.value }))
-                        }
-                      >
-                        <option value="">Level</option>
-                        {["BLOCK", "DISTRICT", "STATE"].map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        className="filter-input"
-                        onChange={(e) =>
-                          setFilters((f) => ({ ...f, status: e.target.value }))
-                        }
-                      >
-                        <option value="">Status</option>
-                        {[
-                          "DRAFT",
-                          "PENDING",
-                          "REJECTED",
-                          "ONGOING",
-                          "SCHEDULED",
-                          "COMPLETED",
-                          "REVIEW",
-                          "CLOSED",
-                        ].map((s) => (
-                          <option key={s} value={s}>
-                            {s}
-                          </option>
-                        ))}
-                      </select>
-
-                      <select
-                        className="filter-input"
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            training_type: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Participant</option>
-                        <option value="BENEFICIARY">Beneficiary</option>
-                        <option value="TRAINER">Trainer</option>
-                        <option value="STAFF">Staff</option>
-                      </select>
-
-                      <select
-                        className="filter-input"
-                        onChange={(e) =>
-                          setFilters((f) => ({
-                            ...f,
-                            batch_type: e.target.value,
-                          }))
-                        }
-                      >
-                        <option value="">Batch Type</option>
-                        <option value="SEPARATE">Separate</option>
-                        <option value="COMBINED">Combined</option>
-                      </select>
-                    </div>
-
-                    <input
-                      type="text"
-                      placeholder="Search Batch Code..."
-                      value={search}
-                      onChange={(e) => setSearch(e.target.value)}
-                      className="batch-search-input"
-                    />
-
-                    <div
-                      style={{
-                        width: "100%",
-                        display: "flex",
-                        justifyContent: "center",
-                        marginTop: 16,
-                      }}
-                    >
-                      <button className="fetch-btn" onClick={fetchBatches}>
-                        Fetch Batches
-                      </button>
-                    </div>
-                  </div>
-                )}
-
-                {/* HEADER */}
-                <div
-                  className="batch-list-heading"
-                  style={{
-                    display: "flex",
-                    alignItems: "center",
-                    marginBottom: 12,
-                    paddingBottom: 8,
-                  }}
-                >
-                  <h2 style={{ margin: 0, color: "#2b4e72" }}>
-                    Training Batches
-                  </h2>
-                  <div
-                    style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
-                  >
-                    {role === "dtp" && (
-                      <button
-                        className="fetch-btn"
-                        onClick={() => navigate("/tms/batch-creator/")}
-                      >
-                        Add Batch
-                      </button>
-                    )}
-                    <BatchExport batches={visibleBatches} />
-                  </div>
-                </div>
-
-                {/* TABLE CARD */}
+    <div className="app-shell">
+      
+      <div className="content-area">
+        
+        <div className="main-area">
+          <main style={{ padding: 18, minHeight: "100vh" }}>
+            <div style={{ width: "100%", margin: "10px 0" }}>
+              {!isRequestScoped && (
                 <div
                   style={{
-                    background: "#fff",
-                    padding: 14,
+                    background: "#e4ecf5",
+                    padding: 16,
                     borderRadius: 10,
-                    border: "2px solid #2b4e72",
+                    marginBottom: 14,
+                    border: "2px solid #3d6ba6",
                     boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
                   }}
                 >
-                  <div className="training-table-scroll">
-                    <table className="training-table">
-                      <thead>
+                  <div
+                    className="filter-row"
+                    style={{
+                      display: "flex",
+                      flexWrap: "nowrap",
+                      gap: 12,
+                      alignItems: "center",
+                      whiteSpace: "nowrap",
+                      overflow: "auto",
+                    }}
+                  >
+                    {role === "smmu" && (
+                      <>
+                        <select
+                          className="filter-input"
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              mandal_id: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Mandal</option>
+                          {mandals.map((m) => (
+                            <option key={m.id} value={m.id}>
+                              {m.name}
+                            </option>
+                          ))}
+                        </select>
+                        <select
+                          className="filter-input"
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              district_category_id: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">District Category</option>
+                          {districtCategories.map((d) => (
+                            <option key={d.id} value={d.id}>
+                              {d.name}
+                            </option>
+                          ))}
+                        </select>
+                      </>
+                    )}
+
+                    {role !== "bmmu" && (
+                      <select
+                        className="filter-input"
+                        value={filters.district_id}
+                        disabled={role === "dmmu" || role === "dtp"}
+                        onChange={(e) => {
+                          if (role === "dmmu" || role === "dtp") return;
+                          setBlocks([]);
+                          setFilters((f) => ({
+                            ...f,
+                            district_id: e.target.value,
+                            block_id: "",
+                            aspirational_only: false,
+                          }));
+                        }}
+                      >
+                        <option value="">District</option>
+                        {districts.map((d) => (
+                          <option key={d.district_id} value={d.district_id}>
+                            {d.district_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role !== "bmmu" && (
+                      <label
+                        className="aspirational-box"
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 6,
+                          fontSize: 14,
+                          color: "#2b4e72",
+                          background: "#fff",
+                          padding: "6px 10px",
+                          borderRadius: 6,
+                          border: "1px solid #a7c6ed",
+                        }}
+                      >
+                        <input
+                          type="checkbox"
+                          checked={filters.aspirational_only}
+                          disabled={role === "dtp"}
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              aspirational_only: e.target.checked,
+                              block_id: "",
+                            }))
+                          }
+                        />
+                        Aspirational
+                      </label>
+                    )}
+
+                    {role !== "bmmu" && filters.district_id && (
+                      <select
+                        key={filters.district_id}
+                        className="filter-input"
+                        value={filters.block_id}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            block_id: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Block</option>
+                        {blocks.map((b) => (
+                          <option key={b.block_id} value={b.block_id}>
+                            {b.block_name_en}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role === "training_partner" && (
+                      <select
+                        className="filter-input"
+                        value={filters.centre_id}
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            centre_id: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Centre</option>
+                        {centres.map((c) => (
+                          <option key={c.id} value={c.id}>
+                            {c.venue_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {role !== "training_partner" &&
+                      role !== "dtp" &&
+                      role !== "tpcp" && (
+                        <select
+                          className="filter-input"
+                          value={filters.partner}
+                          onChange={(e) =>
+                            setFilters((f) => ({
+                              ...f,
+                              partner: e.target.value,
+                            }))
+                          }
+                        >
+                          <option value="">Training Partner</option>
+                          {partners.map((p) => (
+                            <option key={p.id} value={p.id}>
+                              {p.name}
+                            </option>
+                          ))}
+                        </select>
+                      )}
+
+                    {role === "dtp" && (
+                      <select
+                        className="filter-input"
+                        value={filters.partner}
+                        disabled
+                      >
+                        <option value={filters.partner}>
+                          {dtpPartnerName}
+                        </option>
+                      </select>
+                    )}
+
+                    <select
+                      className="filter-input"
+                      value={filters.theme}
+                      disabled={role === "smmu"}
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          theme: e.target.value,
+                          training_plan: "",
+                        }))
+                      }
+                    >
+                      <option value="">Training Theme</option>
+                      {themes.map((t) => (
+                        <option key={t.id} value={t.id}>
+                          {t.theme_name}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      className="filter-input"
+                      value={filters.financial_year}
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          financial_year: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Financial Year</option>
+                      {["2025-26", "2026-27"].map((fy) => (
+                        <option key={fy} value={fy}>
+                          {fy}
+                        </option>
+                      ))}
+                    </select>
+
+                    {plans.length > 0 && (
+                      <select
+                        className="filter-input"
+                        onChange={(e) =>
+                          setFilters((f) => ({
+                            ...f,
+                            training_plan: e.target.value,
+                          }))
+                        }
+                      >
+                        <option value="">Training Plan</option>
+                        {plans.map((p) => (
+                          <option key={p.id} value={p.id}>
+                            {p.training_name}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+
+                    {/* ===== Training Type (Residential / Non-residential) ===== */}
+                    <select
+                      className="filter-input"
+                      value={filters.type_of_training}
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          type_of_training: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Type of Training</option>
+                      <option value="RES">Residential</option>
+                      <option value="NON RES">Non-residential</option>
+                      <option value="OTHER">Other</option>
+                    </select>
+
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, level: e.target.value }))
+                      }
+                    >
+                      <option value="">Level</option>
+                      {["BLOCK", "DISTRICT", "STATE"].map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({ ...f, status: e.target.value }))
+                      }
+                    >
+                      <option value="">Status</option>
+                      {[
+                        "DRAFT",
+                        "PENDING",
+                        "REJECTED",
+                        "ONGOING",
+                        "SCHEDULED",
+                        "COMPLETED",
+                        "REVIEW",
+                        "CLOSED",
+                      ].map((s) => (
+                        <option key={s} value={s}>
+                          {s}
+                        </option>
+                      ))}
+                    </select>
+
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          training_type: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Participant</option>
+                      <option value="BENEFICIARY">Beneficiary</option>
+                      <option value="TRAINER">Trainer</option>
+                      <option value="STAFF">Staff</option>
+                    </select>
+
+                    <select
+                      className="filter-input"
+                      onChange={(e) =>
+                        setFilters((f) => ({
+                          ...f,
+                          batch_type: e.target.value,
+                        }))
+                      }
+                    >
+                      <option value="">Batch Type</option>
+                      <option value="SEPARATE">Separate</option>
+                      <option value="COMBINED">Combined</option>
+                    </select>
+                  </div>
+
+                  <input
+                    type="text"
+                    placeholder="Search Batch Code..."
+                    value={search}
+                    onChange={(e) => setSearch(e.target.value)}
+                    className="..."
+                  />
+
+                  <div
+                    style={{
+                      width: "100%",
+                      display: "flex",
+                      justifyContent: "center",
+                      marginTop: 16,
+                    }}
+                  >
+                    <button
+                      className="fetch-btn"
+                      onClick={() => fetchBatches(1, pageSize)}
+                    >
+                      Fetch Batches
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              {/* HEADER */}
+              <div
+                style={{
+                  display: "flex",
+                  alignItems: "center",
+                  marginBottom: 12,
+                  borderBottom: "2px solid #a7c6ed",
+                  paddingBottom: 8,
+                }}
+              >
+                <h2 style={{ margin: 0, color: "#2b4e72" }}>
+                  Training Batches
+                </h2>
+                <div
+                  style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
+                >
+                  {/* SURGICAL FIX: Independent Max-Record Export Button */}
+                  <button
+                    className="btnPrimary"
+                    style={{
+                      backgroundColor: "#16a34a",
+                      border: "1px solid #15803d",
+                      opacity: isExporting ? 0.7 : 1,
+                      cursor: isExporting ? "not-allowed" : "pointer",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "6px",
+                    }}
+                    onClick={handleExportBatches}
+                    disabled={isExporting}
+                  >
+                    {isExporting ? "Exporting Data..." : "Export All (CSV)"}
+                  </button>
+                </div>
+              </div>
+
+              {/* TABLE CARD */}
+              <div
+                style={{
+                  background: "#fff",
+                  padding: 14,
+                  borderRadius: 10,
+                  border: "2px solid #3d6ba6",
+                  boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
+                }}
+              >
+                <div style={{ maxHeight: "100%", overflow: "auto" }}>
+                  <table className="training-table">
+                    <thead>
+                      <tr>
+                        <th>S.No.</th>
+                        <th>FY</th>
+                        <th>Batch Code</th>
+                        <th>Status</th>
+                        <th>Start</th>
+                        <th>End</th>
+                        <th>Level</th>
+                        <th>Type</th>
+                        <th>Theme</th>
+                        <th>Training Plan</th>
+                        <th>Partner</th>
+                        <th>Block</th>
+                        <th>District</th>
+                        <th>Assigned Trainers</th>
+                        <th>Pendency Status</th>
+                        <th>Count</th>
+                        <th>Action</th>
+                      </tr>
+                    </thead>
+
+                    <tbody>
+                      {loading ? (
                         <tr>
-                          <th>S.No.</th>
-                          <th>FY</th>
-                          <th>Batch Code</th>
-                          <th>Status</th>
-                          <th>Start</th>
-                          <th>End</th>
-                          <th>Level</th>
-                          <th>Type</th>
-                          <th>THEME</th>
-                          <th>Training Plan</th>
-                          <th>Block</th>
-                          <th>District</th>
-                          <th>Assigned Trainers</th>
-                          <th>Pendency Status</th>
-                          <th>Count</th>
-                          <th>Action</th>
+                          <td
+                            colSpan={14}
+                            style={{ textAlign: "center", padding: "20px" }}
+                          >
+                            Loading data...
+                          </td>
                         </tr>
-                      </thead>
-
-                      <tbody>
-                        {loading ? (
-                          <tr>
-                            <td
-                              colSpan={16}
-                              style={{ textAlign: "center", padding: "20px" }}
-                            >
-                              Loading data...
+                      ) : batches.length === 0 ? (
+                        <tr>
+                          <td
+                            colSpan={14}
+                            style={{ textAlign: "center", padding: "20px" }}
+                          >
+                            No batches found
+                          </td>
+                        </tr>
+                      ) : (
+                        batches.map((b, i) => (
+                          <tr key={b.id}>
+                            <td>{(currentPage - 1) * pageSize + i + 1}</td>
+                            <td style={{ fontWeight: "600" }}>
+                              {b.financial_year}
                             </td>
-                          </tr>
-                        ) : visibleBatches.length === 0 ? (
-                          <tr>
-                            <td
-                              colSpan={16}
-                              style={{ textAlign: "center", padding: "20px" }}
-                            >
-                              No batches found
+                            <td style={{ fontWeight: "600", color: "#2563eb" }}>
+                              {b.code}
                             </td>
-                          </tr>
-                        ) : (
-                          paginatedBatches.map((b, i) => (
-                            <tr key={b.id}>
-                              <td>{(currentPage - 1) * rowsPerPage + i + 1}</td>
-                              <td style={{ fontWeight: "600" }}>
-                                {b.financial_year}
-                              </td>
-                              <td
-                                style={{ fontWeight: "600", color: "#2563eb" }}
+                            <td>
+                              <span
+                                className={`status-badge status-${String(b.status).toLowerCase()}`}
                               >
-                                {b.code}
-                              </td>
-                              <td>
-                                <span
-                                  className={`status-badge status-${String(b.status).toLowerCase()}`}
-                                >
-                                  {b.status}
-                                </span>
-                              </td>
-                              <td>{formatDate(b.start_date)}</td>
-                              <td>{formatDate(b.end_date)}</td>
-                              <td>{b.level}</td>
-                              <td>{b.batch_type}</td>
-                              <td>
-                                {compactCell(
-                                  b.training_plan?.theme?.theme_name,
-                                )}
-                              </td>
-                              <td>
-                                {compactCell(b.training_plan?.training_name)}
-                              </td>
-                              <td>{compactCell(b.block?.block_name_en)}</td>
-                              <td>
-                                {compactCell(b.district?.district_name_en)}
-                              </td>
-                              <td>
-                                {Array.isArray(b.master_trainers) &&
-                                b.master_trainers.length > 0
-                                  ? b.master_trainers.map((trainer) => (
-                                      <div
-                                        key={trainer.id}
-                                        style={{ marginBottom: 4 }}
-                                      >
-                                        <strong title={trainer.full_name}>
-                                          {trainer.full_name}
-                                        </strong>
-                                        <br />
-                                        <span
-                                          title={`${trainer.designation} (${trainer.mobile_no})`}
-                                        >
-                                          {trainer.designation} (
-                                          {trainer.mobile_no})
-                                        </span>
-                                      </div>
-                                    ))
-                                  : "-"}
-                              </td>
-                              <td
+                                {b.status}
+                              </span>
+                            </td>
+                            <td>{formatDate(b.start_date)}</td>
+                            <td>{formatDate(b.end_date)}</td>
+                            <td>{b.level}</td>
+                            <td>{b.batch_type}</td>
+                            <td>{b.training_plan.theme.theme_name}</td>
+                            <td>{b.training_plan.training_name}</td>
+                            <td>{b.centre?.partner?.name || "-"}</td>
+                            <td>{b.block?.block_name_en || "-"}</td>
+                            <td>{b.district?.district_name_en || "-"}</td>
+                            <td>
+                              {Array.isArray(b.master_trainers) &&
+                              b.master_trainers.length > 0
+                                ? b.master_trainers.map((trainer) => (
+                                    <div
+                                      key={trainer.id}
+                                      style={{ marginBottom: 4 }}
+                                    >
+                                      <strong>{trainer.full_name}</strong>
+                                      <br />
+                                      <span>
+                                        {trainer.designation} (
+                                        {trainer.mobile_no})
+                                      </span>
+                                    </div>
+                                  ))
+                                : "-"}
+                            </td>
+                            <td
+                              style={{ textAlign: "center", fontWeight: "600" }}
+                            >
+                              {b.pendency_status || "-"}
+                            </td>
+                            <td
+                              style={{ textAlign: "center", fontWeight: "600" }}
+                            >
+                              {b.pax_count || 0}
+                            </td>
+
+                            <td>
+                              <div
                                 style={{
-                                  textAlign: "center",
-                                  fontWeight: "600",
+                                  display: "flex",
+                                  gap: "6px",
+                                  flexWrap: "wrap",
                                 }}
                               >
-                                {compactCell(b.pendency_status)}
-                              </td>
-                              <td
-                                style={{
-                                  textAlign: "center",
-                                  fontWeight: "600",
-                                }}
-                              >
-                                {b.pax_count || 0}
-                              </td>
-
-                              <td>
-                                <div
-                                  style={{
-                                    display: "flex",
-                                    flexDirection: "column",
-                                    alignItems: "stretch",
-                                    gap: "6px",
-                                  }}
+                                <button
+                                  className="btnView"
+                                  onClick={() => handleViewBatch(b.id)}
                                 >
-                                  <button
-                                    className="btnView"
-                                    style={{ width: "100%" }}
-                                    onClick={() => handleViewBatch(b.id)}
-                                  >
-                                    View
-                                  </button>
+                                  View
+                                </button>
 
-                                  {canRescheduleBatch(b) && (
+                                {/* SURGICAL ADDITION: Reschedule Button logic */}
+                                {((role === "dmmu" &&
+                                  String(b.level).toUpperCase() !== "STATE") ||
+                                  (role === "pmu_admin" &&
+                                    ["ONGOING", "SCHEDULED", "PENDING"].includes(
+                                      String(b.status).toUpperCase(),
+                                    )) ||
+                                  (role === "smmu" &&
+                                    String(b.level).toUpperCase() ===
+                                      "STATE")) &&
+                                  ["ONGOING", "SCHEDULED", ].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
                                     <button
                                       className="btnView"
-                                      style={{
-                                        background: "#f59e0b",
-                                        width: "100%",
-                                      }}
+                                      style={{ background: "#f59e0b" }}
                                       onClick={() => {
                                         setRescheduleBatchId(b.id);
                                         setRescheduleModalOpen(true);
@@ -1048,148 +1586,259 @@ export default function TrainingBatchList() {
                                     </button>
                                   )}
 
-                                  {role === "dtp" &&
+                                {role === "dtp" &&
+                                  (String(b.status).toUpperCase() === "DRAFT" ||
                                     (String(b.status).toUpperCase() ===
-                                      "DRAFT" ||
-                                      (String(b.status).toUpperCase() ===
-                                        "REJECTED" &&
-                                        String(b.batch_type).toUpperCase() ===
-                                          "SEPARATE")) && (
-                                      <button
-                                        className="btnView"
-                                        style={{ width: "100%" }}
-                                        onClick={() =>
-                                          navigate("/tms/batch-creator/", {
-                                            state: {
-                                              resume: true,
-                                              batchId: b.id,
-                                            },
-                                          })
-                                        }
-                                      >
-                                        Resume
-                                      </button>
-                                    )}
-                                  {((role === "dmmu" &&
-                                    String(b.level).toUpperCase() !==
-                                      "STATE") ||
-                                    (role === "smmu" &&
-                                      String(b.level).toUpperCase() ===
-                                        "STATE")) &&
-                                    String(b.status).toUpperCase() ===
-                                      "PENDING" && (
-                                      <button
-                                        className="btnView"
-                                        style={{ width: "100%" }}
-                                        onClick={() =>
-                                          navigate(
-                                            `/tms/dmmu/batch-review/${b.id}`,
-                                          )
-                                        }
-                                      >
-                                        Review
-                                      </button>
-                                    )}
-                                  {canDeleteBatch(b) && (
+                                      "REJECTED" &&
+                                      String(b.batch_type).toUpperCase() ===
+                                        "SEPARATE")) && (
+                                    <button
+                                      className="btnView"
+                                      onClick={() =>
+                                        navigate("/tms/batch-creator/", {
+                                          state: {
+                                            resume: true,
+                                            batchId: b.id,
+                                          },
+                                        })
+                                      }
+                                    >
+                                      Resume
+                                    </button>
+                                  )}
+                                {((role === "dmmu" &&
+                                  String(b.level).toUpperCase() !== "STATE") ||
+                                  (role === "smmu" &&
+                                    String(b.level).toUpperCase() ===
+                                      "STATE")) &&
+                                  String(b.status).toUpperCase() ===
+                                    "PENDING" && (
+                                    <button
+                                      className="btnView"
+                                      onClick={() =>
+                                        navigate(
+                                          `/tms/dmmu/batch-review/${b.id}`,
+                                        )
+                                      }
+                                    >
+                                      Review
+                                    </button>
+                                  )}
+                                {role === "dtp" &&
+                                  ["DRAFT", "REJECTED"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
                                     <button
                                       className="btnDelete"
-                                      style={{ width: "100%" }}
                                       onClick={() => handleDeleteBatch(b.id)}
                                     >
                                       Delete
                                     </button>
                                   )}
-                                  {(role === "training_partner" ||
-                                    (role === "dtp" &&
-                                      String(
-                                        b.participant_type,
-                                      ).toUpperCase() !== "STAFF")) &&
-                                    ["COMPLETED", "REVIEW"].includes(
-                                      String(b.status).toUpperCase(),
-                                    ) && (
+                                {role === "pmu_admin" &&
+                                  ["SCHEDULED", "ONGOING"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteBatch(b.id)}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                {role === "training_partner" &&
+                                  ["DRAFT", "REJECTED"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) &&
+                                  String(b.level).toUpperCase() === "STATE" && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteBatch(b.id)}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                {role === "smmu" &&
+                                  ["ONGOING"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteBatch(b.id)}
+                                    >
+                                      Delete
+                                    </button>
+                                  )}
+                                {(role === "training_partner" ||
+                                  (role === "dtp" &&
+                                    String(b.participant_type).toUpperCase() !==
+                                      "STAFF")) &&
+                                  ["COMPLETED", "REVIEW"].includes(
+                                    String(b.status).toUpperCase(),
+                                  ) && (
+                                    <button
+                                      className="btnView"
+                                      onClick={() =>
+                                        navigate(`/tms/tp/tr-closure/${b.id}`)
+                                      }
+                                    >
+                                      Closure
+                                    </button>
+                                  )}
+                                {["bmmu", "dmmu", "smmu"].includes(role) && (
+                                  <>
+                                    {(role === "dmmu" &&
+                                      String(b.level).toUpperCase() !==
+                                        "STATE") ||
+                                    (role === "smmu" &&
+                                      String(b.level).toUpperCase() ===
+                                        "STATE" &&
+                                      String(b.status).toUpperCase() ===
+                                        "REVIEW") ? (
                                       <button
                                         className="btnView"
-                                        style={{ width: "100%" }}
                                         onClick={() =>
-                                          navigate(`/tms/tp/tr-closure/${b.id}`)
+                                          role === "dmmu" || role === "smmu"
+                                            ? navigate(
+                                                `/tms/dmmu/tr-closure/${b.id}`,
+                                              )
+                                            : navigate(
+                                                `/tms/batch-certificate/${b.id}`,
+                                              )
                                         }
                                       >
-                                        Closure
+                                        {role === "dmmu" || role === "smmu"
+                                          ? "Closure"
+                                          : "Certificate"}
+                                      </button>
+                                    ) : null}
+                                    {String(b.status).toUpperCase() ===
+                                      "CLOSED" && (
+                                      <button
+                                        className="btnView"
+                                        onClick={() =>
+                                          navigate(
+                                            `/tms/batch-certificate/${b.id}`,
+                                          )
+                                        }
+                                      >
+                                        Certificate
                                       </button>
                                     )}
-                                  {["bmmu", "dmmu", "smmu"].includes(role) && (
-                                    <>
-                                      {(role === "dmmu" &&
-                                        String(b.level).toUpperCase() !==
-                                          "STATE") ||
-                                      (role === "smmu" &&
-                                        String(b.level).toUpperCase() ===
-                                          "STATE" &&
-                                        String(b.status).toUpperCase() ===
-                                          "REVIEW") ? (
-                                        <button
-                                          className="btnView"
-                                          onClick={() =>
-                                            role === "dmmu" || role === "smmu"
-                                              ? navigate(
-                                                  `/tms/dmmu/tr-closure/${b.id}`,
-                                                )
-                                              : navigate(
-                                                  `/tms/batch-certificate/${b.id}`,
-                                                )
-                                          }
-                                        >
-                                          {role === "dmmu" || role === "smmu"
-                                            ? "Closure"
-                                            : "Certificate"}
-                                        </button>
-                                      ) : null}
-                                      {String(b.status).toUpperCase() ===
-                                        "CLOSED" && (
-                                        <button
-                                          className="btnView"
-                                          onClick={() =>
-                                            navigate(
-                                              `/tms/batch-certificate/${b.id}`,
-                                            )
-                                          }
-                                        >
-                                          Certificate
-                                        </button>
-                                      )}
-                                    </>
-                                  )}
-                                </div>
-                              </td>
-                            </tr>
-                          ))
-                        )}
-                      </tbody>
-                    </table>
+                                  </>
+                                )}
+                              </div>
+                            </td>
+                          </tr>
+                        ))
+                      )}
+                    </tbody>
+                  </table>
+                </div>
+
+                {/* SERVER-SIDE PAGINATION CONTROLS */}
+                <div
+                  style={{
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    marginTop: 16,
+                    padding: "14px 20px",
+                    backgroundColor: "#f8fafc",
+                    borderTop: "1px solid #e2e8f0",
+                    borderRadius: "0 0 10px 10px",
+                    flexWrap: "wrap",
+                    gap: "16px",
+                  }}
+                >
+                  <div
+                    style={{ color: "#475569", fontSize: 14, fontWeight: 500 }}
+                  >
+                    Showing{" "}
+                    <strong>
+                      {(currentPage - 1) * pageSize +
+                        (batches.length > 0 ? 1 : 0)}
+                    </strong>{" "}
+                    to{" "}
+                    <strong>
+                      {Math.min(currentPage * pageSize, totalCount)}
+                    </strong>{" "}
+                    of{" "}
+                    <strong style={{ color: "#0f172a" }}>{totalCount}</strong>{" "}
+                    total batches
                   </div>
 
-                  {/* PAGINATION CONTROLS */}
                   <div
                     style={{
                       display: "flex",
-                      justifyContent: "space-between",
                       alignItems: "center",
-                      gap: 12,
-                      marginTop: 12,
-                      paddingTop: 10,
-                      borderTop: "1px solid #e4ecf5",
+                      gap: "24px",
+                      flexWrap: "wrap",
                     }}
-                    className="batch-pagination"
                   >
-                    <div style={{ color: "#2b4e72", fontSize: 14 }}>
-                      Page {currentPage} of {totalPages || 1}
+                    {/* Page Size Selector */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                      }}
+                    >
+                      <label
+                        style={{
+                          fontSize: "13px",
+                          color: "#64748b",
+                          fontWeight: 600,
+                        }}
+                      >
+                        Rows per page:
+                      </label>
+                      <select
+                        value={pageSize}
+                        onChange={(e) =>
+                          handlePageSizeChange(Number(e.target.value))
+                        }
+                        style={{
+                          padding: "6px 12px",
+                          borderRadius: "6px",
+                          border: "1px solid #cbd5e1",
+                          outline: "none",
+                          cursor: "pointer",
+                          background: "#fff",
+                          color: "#334155",
+                          fontWeight: 600,
+                        }}
+                      >
+                        <option value={10}>10</option>
+                        <option value={20}>20</option>
+                        <option value={50}>50</option>
+                        <option value={100}>100</option>
+                        <option value={500}>500</option>
+                      </select>
                     </div>
 
-                    <div style={{ display: "flex", gap: 6 }}>
+                    {/* Navigation Buttons */}
+                    <div
+                      style={{
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "10px",
+                      }}
+                    >
+                      <span
+                        style={{
+                          fontSize: "13px",
+                          color: "#475569",
+                          fontWeight: 600,
+                          marginRight: "8px",
+                        }}
+                      >
+                        Page {currentPage} of {totalPages}
+                      </span>
                       <button
                         className="btnPage"
                         disabled={currentPage === 1}
-                        onClick={() => setCurrentPage((p) => p - 1)}
+                        onClick={() => fetchBatches(currentPage - 1, pageSize)}
                       >
                         Prev
                       </button>
@@ -1198,7 +1847,7 @@ export default function TrainingBatchList() {
                         disabled={
                           currentPage === totalPages || totalPages === 0
                         }
-                        onClick={() => setCurrentPage((p) => p + 1)}
+                        onClick={() => fetchBatches(currentPage + 1, pageSize)}
                       >
                         Next
                       </button>
@@ -1206,35 +1855,19 @@ export default function TrainingBatchList() {
                   </div>
                 </div>
               </div>
+            </div>
 
-              <BatchRescheduleModal
-                isOpen={rescheduleModalOpen}
-                batchId={rescheduleBatchId}
-                onClose={() => {
-                  setRescheduleModalOpen(false);
-                  setRescheduleBatchId(null);
-                }}
-                onSuccess={() => fetchBatches()}
-              />
+            <BatchRescheduleModal
+              isOpen={rescheduleModalOpen}
+              batchId={rescheduleBatchId}
+              onClose={() => {
+                setRescheduleModalOpen(false);
+                setRescheduleBatchId(null);
+              }}
+              onSuccess={() => fetchBatches()}
+            />
 
-              <style>{`
-              .admin-training-requests { min-height: 100%; background: #f8fafc; }
-              .admin-training-content { padding: 24px; max-width: 1800px; margin: 0 auto; }
-              .admin-page-heading { display: flex; justify-content: space-between; align-items: flex-start; gap: 20px; margin-bottom: 18px; padding: 20px 24px; background: #fff; border: 1px solid #e2e8f0; border-left: 5px solid #1d4ed8; border-radius: 10px; box-shadow: 0 2px 8px rgba(15,23,42,.05); }
-              .admin-page-heading h1 { margin: 4px 0 6px; color: #1e293b; font-size: 24px; }
-              .admin-page-heading p { margin: 0; color: #64748b; font-size: 14px; }
-              .admin-page-eyebrow { color: #1d4ed8 !important; font-size: 12px !important; font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
-              .admin-role-badge { padding: 8px 12px; border-radius: 999px; background: #eff6ff; color: #1d4ed8; font-size: 12px; font-weight: 700; white-space: nowrap; }
-              .admin-training-body { min-width: 0; }
-              @media (max-width: 1024px) {
-                .admin-training-content { padding: 16px; }
-                .admin-page-heading { padding: 16px; }
-              }
-              @media (max-width: 640px) {
-                .admin-page-heading { flex-direction: column; }
-                .admin-page-heading h1 { font-size: 20px; }
-              }
-
+            <style>{`
               /* LAYOUT FIXES */
               .content-area {
                 display: flex;
@@ -1247,106 +1880,6 @@ export default function TrainingBatchList() {
                 flex-direction: column;
                 min-width: 0; /* Critical: Prevents table from stretching off-screen */
                 background-color: #f8fafc;
-              }
-
-              .main-area > main,
-              .main-area > main > div {
-                min-width: 0;
-                max-width: 100%;
-                box-sizing: border-box;
-              }
-
-              .training-filter-card,
-              .training-table-card {
-                width: 100%;
-                max-width: 100%;
-                box-sizing: border-box;
-                border: 2px solid #2f629e !important;
-                box-shadow: 0 5px 14px rgba(30, 64, 100, 0.12),
-                  inset 0 0 0 1px rgba(255, 255, 255, 0.75) !important;
-              }
-
-              .training-filter-card {
-                overflow: hidden;
-              }
-
-              .training-table-card {
-                overflow: hidden;
-              }
-
-              .batch-list-heading{
-                width:100%;
-                max-width:100%;
-                box-sizing:border-box;
-                border:none !important;
-                box-shadow:none !important;
-              }
-
-              .filter-row {
-                box-sizing: border-box;
-                width: 100%;
-                max-width: 100%;
-                padding: 2px 2px 10px;
-                overflow-x: auto !important;
-                overflow-y: hidden;
-                scrollbar-color: #7b8794 #e9eff6;
-                scrollbar-width: auto;
-              }
-
-              .filter-row::-webkit-scrollbar,
-              .training-table-scroll::-webkit-scrollbar {
-                height: 12px;
-              }
-
-              .filter-row::-webkit-scrollbar-track,
-              .training-table-scroll::-webkit-scrollbar-track {
-                background: #e9eff6;
-                border-radius: 8px;
-              }
-
-              .filter-row::-webkit-scrollbar-thumb,
-              .training-table-scroll::-webkit-scrollbar-thumb {
-                background: #7b8794;
-                border: 3px solid #e9eff6;
-                border-radius: 8px;
-              }
-
-              .filter-row .filter-input,
-              .filter-row .aspirational-box {
-                flex: 0 0 auto;
-              }
-
-              .filter-row .filter-input {
-                width: 150px;
-                min-width: 150px;
-                padding: 7px 9px;
-                font-size: 13px;
-                box-sizing: border-box;
-              }
-
-              .filter-row .aspirational-box {
-                padding: 6px 8px !important;
-                font-size: 13px !important;
-              }
-
-              .batch-search-input {
-                display: block;
-                width: min(100%, 360px);
-                margin-top: 14px;
-                padding: 9px 12px;
-                box-sizing: border-box;
-                border: 1px solid #9bb7d5;
-                border-radius: 7px;
-                background: #ffffff;
-                color: #1f2937;
-                font-size: 14px;
-                outline: none;
-                transition: border-color 0.2s ease, box-shadow 0.2s ease;
-              }
-
-              .batch-search-input:focus {
-                border-color: #2f629e;
-                box-shadow: 0 0 0 3px rgba(47, 98, 158, 0.16);
               }
 
               /* BUTTON */
@@ -1384,122 +1917,30 @@ export default function TrainingBatchList() {
               /* TABLE */
               .training-table{
                 width:100%;
-                min-width:1750px;
-                table-layout:fixed;
                 border-collapse:collapse;
-                font-size:12px;
-              }
-
-              .training-table-scroll {
-                width: 100%;
-                max-width: 100%;
-                overflow-x: auto;
-                overflow-y: visible;
-                padding-bottom: 8px;
-                box-sizing: border-box;
+                font-size:14px;
               }
 
               /* HEADER */
               .training-table thead{
                 background:#3d6ba6;
                 color:white;
-                position:sticky;
-                top:0;
-                z-index:1;
               }
 
               .training-table th{
-                padding:9px 6px;
+                padding:10px;
                 text-align:left;
                 font-weight:600;
                 text-align:center;
-                justify-content:center;
-                white-space:normal;
-                vertical-align:middle;
-                line-height:1.20;
+                justify-content:center;  
               }
 
               /* BODY */
               .training-table td{
-                padding:9px 6px;
+                padding:10px;
                 border-bottom:1px solid #e4ecf5;
                 text-align:center;
-                justify-content:center;
-                white-space:normal;
-                overflow-wrap:break-word;
-                word-break:normal;
-                vertical-align:top;
-                line-height:1.3;
-              }
-
-              .batch-cell-text{
-                display:-webkit-box;
-                -webkit-box-orient:vertical;
-                -webkit-line-clamp:3;
-                overflow:hidden;
-                line-height:1.15;
-                max-height:3.45em;
-              }
-
-              .training-table td:nth-child(13) > div{
-                max-height:none;
-                overflow:visible;
-                line-height:1.25;
-              }
-
-              .training-table th:nth-child(13),
-              .training-table td:nth-child(13){
-                width:200px !important;
-                min-width:200px !important;
-              }
-
-              .training-table th:nth-child(16),
-              .training-table td:nth-child(16){
-                width:130px !important;
-                min-width:130px !important;
-              }
-
-              .training-table th:nth-child(1),
-              .training-table td:nth-child(1) { width:60px; }
-              .training-table th:nth-child(2),
-              .training-table td:nth-child(2) { width:82px; }
-              .training-table th:nth-child(3),
-              .training-table td:nth-child(3) { width:135px; }
-              .training-table th:nth-child(4),
-              .training-table td:nth-child(4) { width:110px; }
-              .training-table th:nth-child(5),
-              .training-table td:nth-child(5),
-              .training-table th:nth-child(6),
-              .training-table td:nth-child(6) { width:92px; white-space:nowrap !important; }
-              .training-table th:nth-child(7),
-              .training-table td:nth-child(7) { width:82px; }
-              .training-table th:nth-child(8),
-              .training-table td:nth-child(8) { width:105px; }
-              .training-table th:nth-child(9),
-              .training-table td:nth-child(9) { width:180px; }
-              .training-table th:nth-child(10),
-              .training-table td:nth-child(10) { width:195px; }
-              .training-table th:nth-child(11),
-              .training-table td:nth-child(11),
-              .training-table th:nth-child(12),
-              .training-table td:nth-child(12) { width:105px; }
-              .training-table th:nth-child(13),
-              .training-table td:nth-child(13) { width:200px !important; min-width:200px; white-space:nowrap !important;  }
-              .training-table th:nth-child(14),
-              .training-table td:nth-child(14) { width:130px !important; min-width:130px; }
-              .training-table th:nth-child(15),
-              .training-table td:nth-child(15) { width:70px !important; min-width:70px; white-space:nowrap !important; }
-              .training-table th:nth-child(16),
-              .training-table td:nth-child(16) { width:130px !important; min-width:130px; white-space:nowrap !important; }
-
-              .training-table td:nth-child(13) > div {
-                padding:7px 0;
-                border-bottom:1px solid #dbe7f3;
-              }
-
-              .training-table td:nth-child(13) > div:last-child {
-                padding-bottom:0;
-                border-bottom:0;
+                justify-content:center;  
               }
 
               /* ROW BACKGROUND */
@@ -1557,13 +1998,6 @@ export default function TrainingBatchList() {
               .btnPage:disabled{
                 opacity:0.5;
                 cursor:not-allowed;
-              }
-
-              @media (max-width: 768px){
-                .batch-pagination{
-                  flex-wrap:wrap;
-                  justify-content:center !important;
-                }
               }
 
               /* ACTIVE PAGE */
@@ -1685,154 +2119,39 @@ export default function TrainingBatchList() {
 
               @media (max-width: 1200px){
                 .filter-row{
-                  flex-wrap: nowrap !important;
-                  white-space: nowrap !important;
+                  flex-wrap: wrap !important;
+                  white-space: normal !important;
                 }
               }
 
               @media (max-width: 768px){
                 .filter-input{
                   min-width: 140px;
-                  flex: 0 0 140px;
+                  flex: 1 1 45%; 
                 }
                 .aspirational-box{
-                  flex: 0 0 auto;
+                  flex: 1 1 45%;
                   justify-content: center;
-                }
-                .batch-search-input{
-                  width:100%;
                 }
               }
 
               @media (max-width: 480px){
                 .filter-input{
-                  flex: 0 0 160px;
-                  min-width: 160px;
+                  flex: 1 1 100%;
+                  min-width: unset;
                 }
                 .aspirational-box{
-                  flex: 0 0 auto;
+                  flex: 1 1 100%;
                 }
                 .fetch-btn{
                   width: 100%;
                 }
               }
-
-              /* Keep one paginated page visible without table scrolling. */
-              .training-table-scroll{
-                overflow:hidden;
-                padding-bottom:0;
-              }
-
-              .training-table{
-                width:100%;
-                min-width:0;
-                table-layout:fixed;
-                font-size:10px;
-              }
-
-              .training-table th{
-                padding:6px 3px;
-                white-space:normal;
-                line-height:1.05;
-              }
-
-              .training-table td{
-                padding:6px 3px;
-                vertical-align:middle;
-                line-height:1.1;
-                overflow:hidden;
-                text-overflow:ellipsis;
-                word-break:normal;
-              }
-
-              .training-table th:nth-child(1),
-              .training-table td:nth-child(1){ width:4%; }
-              .training-table th:nth-child(2),
-              .training-table td:nth-child(2){ width:6%; }
-              .training-table th:nth-child(3),
-              .training-table td:nth-child(3){ width:7%; }
-              .training-table th:nth-child(4),
-              .training-table td:nth-child(4){ width:7%; }
-              .training-table th:nth-child(5),
-              .training-table td:nth-child(5),
-              .training-table th:nth-child(6),
-              .training-table td:nth-child(6){ width:6%; white-space:nowrap; }
-              .training-table th:nth-child(7),
-              .training-table td:nth-child(7){ width:5%; }
-              .training-table th:nth-child(8),
-              .training-table td:nth-child(8){ width:6%; }
-              .training-table th:nth-child(9),
-              .training-table td:nth-child(9){ width:5%; }
-              .training-table th:nth-child(10),
-              .training-table td:nth-child(10){ width:7%; }
-              .training-table th:nth-child(11),
-              .training-table td:nth-child(11){ width:6%; }
-              .training-table th:nth-child(12),
-              .training-table td:nth-child(12){ width:5%; }
-              .training-table th:nth-child(13),
-              .training-table td:nth-child(13){
-                width:13%;
-                min-width:130px;
-                text-align:left;
-              }
-              .training-table th:nth-child(14),
-              .training-table td:nth-child(14){
-                width:13%;
-                min-width:145px;
-                text-align:center;
-              }
-              .training-table th:nth-child(15),
-              .training-table td:nth-child(15){ width:4%; white-space:nowrap; }
-              .training-table th:nth-child(16),
-              .training-table td:nth-child(16){ width:8%; white-space:nowrap; }
-
-              .training-table td:nth-child(13) > div{
-                max-height:none;
-                overflow:visible;
-                padding:2px 0;
-                line-height:1.1;
-                overflow-wrap:break-word;
-                word-break:normal;
-              }
-
-              .training-table td:nth-child(13),
-              .training-table td:nth-child(14){
-                overflow-wrap:break-word;
-                word-break:normal;
-                white-space:normal;
-              }
-
-              .training-table td:nth-child(13) > div:nth-child(n+2){
-                display:block;
-              }
-
-              .batch-cell-text{
-                display:block;
-                max-height:none;
-                overflow:visible;
-                text-overflow:clip;
-                white-space:normal;
-                line-height:1.1;
-                overflow-wrap:break-word;
-                word-break:normal;
-              }
-
-              .status-badge{
-                min-width:0;
-                width:100%;
-                padding:4px 2px;
-                font-size:9px;
-              }
-
-              .training-table .btnView{
-                padding:4px 5px;
-                font-size:10px;
-              }
           `}</style>
-            </main>
-          )}
+          </main>
+          
         </div>
-      </main>
+      </div>
     </div>
   );
 }

@@ -1,9 +1,10 @@
 // src\pages\AdminPages\TmsPortal\TmsPortal.jsx
 import React, { useState, useEffect } from "react";
-import api, { TMS_API } from "../../../api/axios";
+import api from "../../../api/axios";
 import KpiCards from "./KpiCards";
 import TmsStyles from "./TmsStyles";
 import { FaChartBar, FaSearch } from "react-icons/fa";
+import TpTmsSummaryExport from "../../TMS/TP/tp_tmsSummaryExport";
 
 const StackedCell = ({ bVal, pVal, className }) => (
   <td className={className}>
@@ -24,6 +25,7 @@ const TmsPortal = () => {
     participant_counts: {},
   });
   const [districtSummaries, setDistrictSummaries] = useState([]);
+  const [reportData, setReportData] = useState(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
 
@@ -32,6 +34,8 @@ const TmsPortal = () => {
 
   const [themes, setThemes] = useState([]);
   const [trainingPlans, setTrainingPlans] = useState([]);
+  const [trainingPlansLoading, setTrainingPlansLoading] = useState(true);
+  const [trainingPlansLoadError, setTrainingPlansLoadError] = useState(false);
   const [selectedTheme, setSelectedTheme] = useState("");
   const [selectedPlan, setSelectedPlan] = useState("");
 
@@ -40,8 +44,9 @@ const TmsPortal = () => {
   useEffect(() => {
     const fetchDropdownData = async () => {
       try {
-        const themeResp = await TMS_API.trainingThemes.list({
-          page_size: 500,
+        const themeResp = await api.get("/tms/training-themes/", {
+          params: { page_size: 500 },
+          headers: { "X-App-Client": "TMS_WEB" },
         });
         setThemes(
           Array.isArray(themeResp?.data)
@@ -50,6 +55,9 @@ const TmsPortal = () => {
         );
       } catch (err) {
         console.error("Error fetching themes:", err);
+        if (err?.response?.status === 401) {
+          setError("Your session has expired or you do not have permission to load training themes.");
+        }
       }
     };
     fetchDropdownData();
@@ -58,12 +66,17 @@ const TmsPortal = () => {
   useEffect(() => {
     let isCurrentRequest = true;
     setTrainingPlans([]);
+    setTrainingPlansLoading(true);
+    setTrainingPlansLoadError(false);
 
     const fetchTrainingPlans = async () => {
       try {
-        const planResp = await TMS_API.trainingPlans.list({
-          page_size: 500,
-          ...(selectedTheme ? { theme: selectedTheme } : {}),
+        const planResp = await api.get("/tms/training-plans/", {
+          params: {
+            page_size: 500,
+            ...(selectedTheme ? { theme: selectedTheme } : {}),
+          },
+          headers: { "X-App-Client": "TMS_WEB" },
         });
         if (!isCurrentRequest) return;
 
@@ -75,6 +88,12 @@ const TmsPortal = () => {
       } catch (err) {
         if (!isCurrentRequest) return;
         console.error("Error fetching training plans:", err);
+        setTrainingPlansLoadError(true);
+        if (err?.response?.status === 401) {
+          setError("Your session has expired or you do not have permission to load training plans.");
+        }
+      } finally {
+        if (isCurrentRequest) setTrainingPlansLoading(false);
       }
     };
 
@@ -89,6 +108,8 @@ const TmsPortal = () => {
       try {
         setLoading(true);
         setError(null);
+        setReportData(null);
+        setDistrictSummaries([]);
 
         const queryParams = { financial_year: selectedYear };
         if (selectedTheme) queryParams.theme = selectedTheme;
@@ -101,6 +122,7 @@ const TmsPortal = () => {
           },
         });
         const data = resp.data;
+        setReportData(data);
 
         if (data.state_wide_summary) {
           setKpiData(data.state_wide_summary);
@@ -111,6 +133,8 @@ const TmsPortal = () => {
         }
       } catch (err) {
         console.error("Error fetching portal summary:", err);
+        setReportData(null);
+        setDistrictSummaries([]);
         const responseError = err?.response?.data;
         setError(
           responseError?.error ||
@@ -135,92 +159,6 @@ const TmsPortal = () => {
       ?.toLowerCase()
       .includes(searchQuery.toLowerCase());
   });
-
-  const handleExport = () => {
-    if (filteredDistricts.length === 0) {
-      alert("No data available to export!");
-      return;
-    }
-
-    const csvCell = (value) => {
-      const text = String(value ?? "");
-      return `"${text.replace(/"/g, '""')}"`;
-    };
-    const headers = [
-      "S. No.",
-      "District Name",
-      "Total Batches Created - Batch Count",
-      "Total Batches Created - Participant Count",
-      "Scheduled Batches - Batch Count",
-      "Scheduled Batches - Participant Count",
-      "Batches Pending At DMM - Batch Count",
-      "Batches Pending At DMM - Participant Count",
-      "Ongoing Batches - Batch Count",
-      "Ongoing Batches - Participant Count",
-      "Completed Batches - Batch Count",
-      "Completed Batches - Participant Count",
-      "Completed Batches for Verification - Batch Count",
-      "Completed Batches for Verification - Participant Count",
-      "Completed Batch Closed - Batch Count",
-      "Completed Batch Closed - Participant Count",
-      "Batches Rejected By DMM - Batch Count",
-      "Batches Rejected By DMM - Participant Count",
-      "Total Batches Completed (5+6+7) - Batch Count",
-      "Total Batches Completed (5+6+7) - Participant Count",
-      "Participants Trained Participants Dropout - Batch Count",
-      "Participants Trained Participants Dropout - Participant Count",
-      "Total Target (Slot 1+2) - Batch Count",
-      "Total Target (Slot 1+2) - Participant Count",
-      "Participants Onboarded - Batch Count",
-      "Participants Onboarded - Participant Count",
-      "Participants Enrolled In Batches - Batch Count",
-      "Participants Enrolled In Batches - Participant Count",
-      "Remaining Participants for Enrollment - Batch Count",
-      "Remaining Participants for Enrollment - Participant Count",
-      "Achievement % - Batch Count",
-      "Achievement % - Participant Count",
-    ];
-    const metricKeys = [
-      "1_total_batches_created",
-      "2_scheduled_batches",
-      "3_batches_pending_at_dmm",
-      "4_ongoing_batches",
-      "5_completed_batches",
-      "6_completed_batches_for_verification",
-      "7_completed_batch_closed",
-      "8_batches_rejected_by_dmm",
-      "9_total_batches_completed",
-      "9a_participants_trained",
-      "9b_participants_dropout",
-      "10_total_target",
-      "11_participants_onboarded",
-      "12_participants_enrolled_in_batches",
-      "13_remaining_participants_for_enrollment",
-      "14_achievement_percentage",
-    ];
-    const rows = filteredDistricts.map((dist, index) => {
-      const batchCounts = dist.summary?.batch_counts || {};
-      const participantCounts = dist.summary?.participant_counts || {};
-      const values = metricKeys.flatMap((key) => [
-        batchCounts[key] ?? 0,
-        participantCounts[key] ?? 0,
-      ]);
-      return [index + 1, dist.district_name, ...values];
-    });
-    const csvContent = [
-      headers.map(csvCell).join(","),
-      ...rows.map((row) => row.map(csvCell).join(",")),
-    ].join("\r\n");
-    const blob = new Blob(["\uFEFF", csvContent], {
-      type: "text/csv;charset=utf-8;",
-    });
-    const link = document.createElement("a");
-    const url = URL.createObjectURL(blob);
-    link.href = url;
-    link.download = `TMS_Summary_Report_${selectedYear}.csv`;
-    link.click();
-    URL.revokeObjectURL(url);
-  };
 
   const tabBtnStyle = (isActive) => ({
     padding: "10px 24px",
@@ -347,21 +285,31 @@ const TmsPortal = () => {
                   ))}
                 </select>
 
-                <button
-                  onClick={handleExport}
-                  style={{
-                    padding: "8px 16px",
-                    backgroundColor: "#10b981",
-                    color: "white",
-                    border: "none",
-                    borderRadius: "5px",
-                    cursor: "pointer",
-                    fontWeight: "600",
-                    whiteSpace: "nowrap",
-                  }}
-                >
-                  Export to Excel
-                </button>
+                <TpTmsSummaryExport
+                  reportData={
+                    reportData
+                      ? { ...reportData, district_summaries: filteredDistricts }
+                      : null
+                  }
+                  financialYear={selectedYear}
+                  role="smmu"
+                  selectedTheme={selectedTheme}
+                  selectedPlan={selectedPlan}
+                  themeName={
+                    themes.find(
+                      (theme) => String(theme.id) === String(selectedTheme),
+                    )?.theme_name || ""
+                  }
+                  trainingPlans={trainingPlans}
+                  trainingPlansLoading={trainingPlansLoading}
+                  trainingPlansLoadError={trainingPlansLoadError}
+                  disabled={
+                    loading ||
+                    !reportData ||
+                    !filteredDistricts.length ||
+                    (selectedTheme && !selectedPlan && trainingPlansLoading)
+                  }
+                />
               </div>
             </div>
 

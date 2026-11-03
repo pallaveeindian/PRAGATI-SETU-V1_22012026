@@ -14,7 +14,7 @@ import LearningMaterial from "./TmsPortal/LearningMaterial/Llm";
 import CenterDetail from "./TmsPortal/CenterDetail";
 import HomeDashboard from "./HomeDashboard";
 import TrainerCheck from "../TMS/EligibilityCheck/TrainerCheck";
-import BeneficiaryCheck from "./TmsPortal/Benificiary Engs";
+import BeneficiaryCheck from "./TmsPortal/BenificiaryEngs";
 import {
   MTDirectoryConductor,
   MTProfileRegistrationsConductor,
@@ -42,7 +42,7 @@ const tabGradients = {
   "Learning Material":
     "linear-gradient(to bottom, rgb(2, 25, 46) 0%, rgb(4, 33, 82) 12%, rgb(6, 44, 110) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(61, 130, 224) 88%, rgb(16, 25, 35) 100%)",
 
-  Default: "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)",
+  Default: "linear-gradient(to bottom, rgb(2, 19, 46) 0%, rgb(4, 33, 82) 12%, rgb(5, 34, 85) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(2, 33, 77) 88%, rgb(52, 113, 188) 100%)",
 };
 
 export default function AdminLayout({
