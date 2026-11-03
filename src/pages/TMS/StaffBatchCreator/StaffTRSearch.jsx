@@ -30,7 +30,7 @@ export default function StaffTRSearch({
           training_type: participantType,
           training_plan_id: basePlanId,
           financial_year: baseFy,
-          page_size: 100,
+          limit: 500,
         };
 
         const resp = await TMS_API.trainingRequestsList.list(params);
