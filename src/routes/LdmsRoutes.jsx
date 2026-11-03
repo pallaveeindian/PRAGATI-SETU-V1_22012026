@@ -1,6 +1,7 @@
 // src/routes/LdmsRoutes.jsx
 import React from "react";
 import { Routes, Route } from "react-router-dom";
+import ProtectedRoute from "./ProtectedRoute";
 
 // LDMS Layout & Pages
 import LdmsLayout from "../pages/LDMS/Layout/LdmsLayout";
@@ -19,21 +20,33 @@ import SupportBucketList from "../pages/LDMS/Support Map/record_support_list";
 import RecordSupportDetail from "../pages/LDMS/Support Map/record_support_detail";
 import DmmuLdmsApprove from "../pages/LDMS/DMMU/dmmu_ldms_approve";
 import LdmsReports from "../pages/LDMS/Reports/ldms_reports";
+import MeetingsList from "../pages/LDMS/Meetings Map/ldms_meetings_list";
+import MeetCreate from "../pages/LDMS/Meetings Map/meet_create.jsx";
+import MeetUpload from "../pages/LDMS/Meetings Map/meet_upload.jsx";
 
 export default function LdmsRoutes() {
   return (
     <Routes>
       <Route path="" element={<LdmsLayout />}>
         {/* BMMU Routes */}
-        <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
-        <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
+        <Route element={<ProtectedRoute allowedRoles="bmmu" />}>
+          <Route path="bmmu/dashboard" element={<BmmuLdmsDashboard />} />
+          <Route path="bmmu/blcc-meetings" element={<BLCCMeetings />} />
+        </Route>
 
         {/* DMMU Routes */}
-        <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
-        <Route path="dmmu/approve-support/:id" element={<DmmuLdmsApprove />} />
+        <Route element={<ProtectedRoute allowedRoles="dmmu" />}>
+          <Route path="dmmu/dashboard" element={<DmmuLdmsDashboard />} />
+          <Route
+            path="dmmu/approve-support/:id"
+            element={<DmmuLdmsApprove />}
+          />
+        </Route>
 
         {/* SMMU Routes */}
-        <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
+        <Route element={<ProtectedRoute allowedRoles="smmu" />}>
+          <Route path="smmu/dashboard" element={<SmmuLdmsDashboard />} />
+        </Route>
 
         {/* Global / Mapping Routes */}
         <Route path="support-capture" element={<SupportCapture />} />
@@ -54,6 +67,7 @@ export default function LdmsRoutes() {
           element={<SupPLDDetail />}
         />
         <Route path="reports" element={<LdmsReports />} />
+        <Route path="meetings-list" element={<MeetingsList />} />
         <Route path="dash-block/:blockId" element={<BlockMap />} />
         <Route path="dash-district/:districtId" element={<DmmuBlockMap />} />
       </Route>

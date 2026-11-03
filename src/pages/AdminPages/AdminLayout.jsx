@@ -13,8 +13,12 @@ import TrainingTarget from "./TmsPortal/TrainingTarget/TrainigTargetList";
 import LearningMaterial from "./TmsPortal/LearningMaterial/Llm";
 import CenterDetail from "./TmsPortal/CenterDetail";
 import HomeDashboard from "./HomeDashboard";
-// Recurring Plan Analytics
-import SPAnalytics from "./TmsPortal/SequencePlans/SPAnalytics";
+import TrainerCheck from "../TMS/EligibilityCheck/TrainerCheck";
+import BeneficiaryCheck from "./TmsPortal/BeneficiaryEngs";
+import {
+  MTDirectoryConductor,
+  MTProfileRegistrationsConductor,
+} from "../TMS/MTManagementV2";
 
 const tabGradients = {
   "Grievances List":
@@ -38,10 +42,8 @@ const tabGradients = {
   "Learning Material":
     "linear-gradient(to bottom, rgb(2, 25, 46) 0%, rgb(4, 33, 82) 12%, rgb(6, 44, 110) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(61, 130, 224) 88%, rgb(16, 25, 35) 100%)",
 
-  "Sequence Plans":
-    "linear-gradient(to bottom, rgb(2, 19, 46) 0%, rgb(6, 44, 110) 30%, rgb(10, 74, 170) 65%, rgb(61, 130, 224) 100%)",
-
-  Default: "linear-gradient(to bottom, #1d4ed8 0%, #e11d48 100%)",
+  Default:
+    "linear-gradient(to bottom, rgb(2, 19, 46) 0%, rgb(4, 33, 82) 12%, rgb(5, 34, 85) 28%, rgb(8, 57, 138) 45%, rgb(10, 74, 170) 60%, rgb(29, 99, 201) 75%, rgb(2, 33, 77) 88%, rgb(52, 113, 188) 100%)",
 };
 
 export default function AdminLayout({
@@ -57,7 +59,9 @@ export default function AdminLayout({
 
     const savedMenu = window.sessionStorage.getItem("admin-active-menu");
 
-    if (savedMenu) return savedMenu;
+    if (savedMenu && !["TMS Portal"].includes(savedMenu)) {
+      return savedMenu;
+    }
     return requestedSection === "training-requests"
       ? "Training Request List"
       : defaultActiveMenu;
@@ -88,6 +92,80 @@ export default function AdminLayout({
           : undefined
       }
     >
+      <style>{`
+        .admin-master-trainer-embed {
+          display: flex;
+          flex: 1;
+          min-width: 0;
+          min-height: 0;
+          overflow: hidden;
+          background: #f1f5f9;
+        }
+        .admin-master-trainer-embed > .app-shell {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          width: 100%;
+          min-width: 0;
+          min-height: 0;
+          height: 100%;
+        }
+        .admin-master-trainer-embed .header,
+        .admin-master-trainer-embed .tms-leftnav,
+        .admin-master-trainer-embed .tms-mobile-burger,
+        .admin-master-trainer-embed .tms-mobile-overlay,
+        .admin-master-trainer-embed .footer {
+          display: none !important;
+        }
+        .admin-master-trainer-embed .content-area {
+          flex: 1;
+          min-width: 0;
+          min-height: 0;
+        }
+        .admin-master-trainer-embed .main-area {
+          flex: 1;
+          min-width: 0;
+        }
+        .admin-master-trainer-embed .nic-main-content {
+          padding: 20px;
+        }
+        .admin-master-trainer-embed .nic-container {
+          max-width: none;
+        }
+        .admin-trainer-check-embed {
+          display: flex;
+          flex: 1;
+          min-width: 0;
+          min-height: 0;
+          overflow: auto;
+          background: #fff;
+        }
+        .admin-trainer-check-embed > .trainer-eligibility {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          width: 100%;
+          min-width: 0;
+          min-height: 0;
+        }
+        .admin-trainer-check-embed .header,
+        .admin-trainer-check-embed .tms-leftnav,
+        .admin-trainer-check-embed .tms-mobile-burger,
+        .admin-trainer-check-embed .tms-mobile-overlay,
+        .admin-trainer-check-embed .footer {
+          display: none !important;
+        }
+        .admin-trainer-check-embed .trainer-eligibility__layout {
+          flex: 1;
+          min-height: 0;
+        }
+        .admin-trainer-check-embed .trainer-eligibility__main {
+          padding: 20px;
+        }
+        .admin-trainer-check-embed .trainer-eligibility__intro {
+          margin-bottom: 18px;
+        }
+      `}</style>
       <AdminHeader
         transparent={isHomeDashboard}
         currentGradient={currentGradient}
@@ -117,7 +195,7 @@ export default function AdminLayout({
             >
               {children}
             </div>
-          ) : activeMenu === "TMS Portal" ? (
+          ) : activeMenu === "TMS Portal Summary" ? (
             <div
               style={{
                 flex: 1,
@@ -183,18 +261,6 @@ export default function AdminLayout({
             >
               <LearningMaterial />
             </div>
-          ) : activeMenu === "Sequence Plans" ||
-            activeMenu === "SPAnalytics" ? (
-            <div
-              style={{
-                flex: 1,
-                minHeight: 0,
-                overflowY: "auto",
-                overflowX: "hidden",
-              }}
-            >
-              <SPAnalytics />
-            </div>
           ) : activeMenu === "Center Management" ? (
             <div
               style={{
@@ -205,6 +271,38 @@ export default function AdminLayout({
               }}
             >
               <CenterDetail />
+            </div>
+          ) : activeMenu === "Trainer Check" ? (
+            <div
+              className="admin-trainer-check-embed"
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                overflowX: "hidden",
+              }}
+            >
+              <TrainerCheck />
+            </div>
+          ) : activeMenu === "Beneficiary Check" ? (
+            <div
+              className="admin-beneficiary-check-embed"
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflowY: "auto",
+                overflowX: "hidden",
+              }}
+            >
+              <BeneficiaryCheck />
+            </div>
+          ) : activeMenu === "Master Trainer Registration Status" ? (
+            <div className="admin-master-trainer-embed">
+              <MTProfileRegistrationsConductor />
+            </div>
+          ) : activeMenu === "All Trainer List" ? (
+            <div className="admin-master-trainer-embed">
+              <MTDirectoryConductor />
             </div>
           ) : activeMenu === "Home Dashboard" ? (
             <div

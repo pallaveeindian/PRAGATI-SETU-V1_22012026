@@ -2,6 +2,15 @@ import React, { useEffect, useState, useContext } from "react";
 import { AuthContext } from "../../../contexts/AuthContext";
 import { LOOKUP_API, LDMS_API } from "../../../api/axios";
 import api from "../../../api/axios";
+import {
+  FaMapMarkedAlt,
+  FaBuilding,
+  FaProjectDiagram,
+  FaBoxOpen,
+  FaUsers,
+  FaFilter,
+  FaTimes,
+} from "react-icons/fa";
 
 /**
  * Report Filters Header
@@ -126,18 +135,19 @@ export default function ReportHeader({ onFetch }) {
       {/* Tabs */}
       <div className="tabs">
         {[
-          "Geography",
-          "Department",
-          "Scheme",
-          "Support Bucket",
-          "Beneficiary",
+          { label: "Geography", icon: <FaMapMarkedAlt /> },
+          { label: "Department", icon: <FaBuilding /> },
+          { label: "Scheme", icon: <FaProjectDiagram /> },
+          { label: "Support Bucket", icon: <FaBoxOpen /> },
+          { label: "Beneficiary", icon: <FaUsers /> },
         ].map((t) => (
           <button
-            key={t}
-            className={activeTab === t ? "active" : ""}
-            onClick={() => setActiveTab(t)}
+            key={t.label}
+            className={activeTab === t.label ? "active" : ""}
+            onClick={() => setActiveTab(t.label)}
           >
-            {t}
+            {t.icon}
+            {t.label}
           </button>
         ))}
       </div>
@@ -330,35 +340,75 @@ export default function ReportHeader({ onFetch }) {
             <option>District PM-FME Cell</option>
             <option>District Industries Centre (DIC)</option>
             <option>Assistant Director (Fisheries)</option>
-            <option>Chief Veterinary Officer (CVO), District Lead Bank Manager (LDM) </option>
+            <option>
+              Chief Veterinary Officer (CVO), District Lead Bank Manager
+              (LDM){" "}
+            </option>
             <option>Chief Veterinary Officer (CVO)</option>
             <option>District Animal Husbandry Officer </option>
             <option>Chief Development Officer (CDO)</option>
-            <option>Chief Development Officer (CDO), Deputy Dairy Development Officer</option>
-            <option>District Programme Coordinator (DPC – MGNREGA), District Magistrate (DM), Chief Development Officer (CDO)</option>
-            <option>District Programme Coordinator (Rural Housing/PMAY-G), Project Director, DRDA / PD, Rural Development Agency, Block Development Officer (BDO)</option>
-            <option>Mission Director, UPSRLM, Chief Development Officer (CDO), District Mission Unit (DMU), Block Mission Management Units (BMMUs)</option>
+            <option>
+              Chief Development Officer (CDO), Deputy Dairy Development Officer
+            </option>
+            <option>
+              District Programme Coordinator (DPC – MGNREGA), District
+              Magistrate (DM), Chief Development Officer (CDO)
+            </option>
+            <option>
+              District Programme Coordinator (Rural Housing/PMAY-G), Project
+              Director, DRDA / PD, Rural Development Agency, Block Development
+              Officer (BDO)
+            </option>
+            <option>
+              Mission Director, UPSRLM, Chief Development Officer (CDO),
+              District Mission Unit (DMU), Block Mission Management Units
+              (BMMUs)
+            </option>
             <option>Nodal Department, District Nodal Officer</option>
-            <option>Chief Development Officer (CDO), Block Development Officer (BDO)</option>
-            <option>Mandi Samiti office/Secretary, Divisional Deputy Director</option>
-            <option>Principal of agriculture college, Divisional Deputy Director</option>
+            <option>
+              Chief Development Officer (CDO), Block Development Officer (BDO)
+            </option>
+            <option>
+              Mandi Samiti office/Secretary, Divisional Deputy Director
+            </option>
+            <option>
+              Principal of agriculture college, Divisional Deputy Director
+            </option>
             <option>Mandi Samiti office/Secretary</option>
-            <option>District Horticulture Officer, District Development Manager (DDM)</option>
+            <option>
+              District Horticulture Officer, District Development Manager (DDM)
+            </option>
             <option>District Development Manager (DDM)</option>
             <option>District Development Manager (DDM), UPSRLM DMMU</option>
-            <option>General Manager / CEO, District Milk Union (cooperative)</option>
+            <option>
+              General Manager / CEO, District Milk Union (cooperative)
+            </option>
             <option>District Cooperative Officer / ARCS</option>
-            <option>Chief Development Officer (CDO), District Agriculture Officer (DAO)</option>
+            <option>
+              Chief Development Officer (CDO), District Agriculture Officer
+              (DAO)
+            </option>
             <option>District Water & Sanitation Mission (DWSM) office</option>
             <option>District Youth Welfare & PRD Office</option>
             <option>District/Regional Youth welfare Officer</option>
-            <option>Mandi Secretary / Senior Agriculture Marketing Inspector</option>
-            <option>District level AGMARK Lab (where available) and Marketing Officer</option>
+            <option>
+              Mandi Secretary / Senior Agriculture Marketing Inspector
+            </option>
+            <option>
+              District level AGMARK Lab (where available) and Marketing Officer
+            </option>
             <option>Export Promotion Bureau (EPB) nodal officer</option>
             <option>Office of Chairman, District Ganga Committee</option>
-            <option>District Panchayat Raj Officer (DPRO), District Nodal Officer RGSA</option>
-            <option>Executive Engineer / District Minor Irrigation Officer (DMI/EE, Minor Irrigation)</option>
-            <option>District Sericulture Office (DSO), Block Development Office (BDO)</option>
+            <option>
+              District Panchayat Raj Officer (DPRO), District Nodal Officer RGSA
+            </option>
+            <option>
+              Executive Engineer / District Minor Irrigation Officer (DMI/EE,
+              Minor Irrigation)
+            </option>
+            <option>
+              District Sericulture Office (DSO), Block Development Office (BDO)
+            </option>
           </select>
         </div>
       )}
@@ -452,7 +502,9 @@ export default function ReportHeader({ onFetch }) {
         {Object.entries(applied).map(([k, v]) => (
           <span key={k} className="pill">
             {v.label}
-            <b onClick={() => remove(k)}>✕</b>
+            <b onClick={() => remove(k)}>
+              <FaTimes />
+            </b>
           </span>
         ))}
       </div>
@@ -466,105 +518,244 @@ export default function ReportHeader({ onFetch }) {
 
       <style>{`
         /* ================= REPORT HEADER ================= */
-        .report-header {
-          display: flex;
-          flex-direction: column;
-          gap: 12px;
+
+        .report-header{
+          display:flex;
+          flex-direction:column;
+          gap:14px;
+          animation:fadeIn .25s ease;
         }
 
         /* ================= TABS ================= */
-        .tabs {
-          display: flex;
-          justify-content: center;
-          gap: 8px;
+
+        .tabs{
+          display:flex;
+          justify-content:center;
+          flex-wrap:wrap;
+          gap:8px;
         }
 
-        .tabs button {
-          padding: 6px 14px;
-          border-radius: 18px;
-          border: 1px solid #c62828;
-          background: #fff;
-          color: #7f1d1d;
-          cursor: pointer;
-          transition: 0.2s;
+        .tabs button{
+          display:flex;
+          align-items:center;
+          gap:6px;
+
+          padding:6px 14px;
+          border-radius:18px;
+          border:1px solid #dc2626;
+
+          background:#fff;
+          color:#7f1d1d;
+
+          font-weight:500;
+          font-size:13px;
+
+          cursor:pointer;
+          transition:all .22s ease;
         }
 
-        .tabs button.active {
-          background: #c62828;
-          color: #fff;
+        .tabs button svg{
+          font-size:13px;
+        }
+
+        .tabs button:hover{
+          background:#fee2e2;
+        }
+
+        .tabs button.active{
+          background:#dc2626;
+          color:#fff;
+          box-shadow:0 3px 10px rgba(220,38,38,.2);
         }
 
         /* ================= FILTERS ================= */
-        .filters {
-          display: flex;
-          flex-wrap: wrap;
-          gap: 10px;
-          animation: fade 0.2s ease;
+
+        .filters{
+          display:grid;
+          grid-template-columns:repeat(auto-fit,minmax(200px,1fr));
+          gap:10px;
+          animation:fade .25s ease;
         }
+
+        /* inputs */
 
         select,
         input,
-        input[type="date"] {
-          min-width: 180px;
-          padding: 6px 10px;
-          border-radius: 6px;
-          border: 1px solid #e5e7eb;
+        input[type="date"]{
+
+          width:100%;
+          min-width:0;
+
+          padding:7px 10px;
+
+          border-radius:8px;
+          border:1px solid #e5e7eb;
+
+          background:#fff;
+          color:#111;
+
+          font-size:13px;
+
+          transition:all .2s ease;
+        }
+
+        select:focus,
+        input:focus{
+          outline:none;
+          border-color:#dc2626;
+          box-shadow:0 0 0 2px rgba(220,38,38,.08);
         }
 
         /* ================= APPLIED FILTER PILLS ================= */
-        .applied {
-          display: flex;
-          gap: 8px;
-          flex-wrap: wrap;
+
+        .applied{
+          display:flex;
+          gap:8px;
+          flex-wrap:wrap;
         }
 
-        .pill {
-          background: #fee2e2;
-          color: #7f1d1d;
-          padding: 4px 10px;
-          border-radius: 14px;
-          display: flex;
-          gap: 6px;
-          align-items: center;
+        .pill{
+          display:flex;
+          align-items:center;
+          gap:6px;
+
+          padding:5px 10px;
+
+          border-radius:16px;
+
+          background:#fee2e2;
+          color:#7f1d1d;
+
+          font-size:12px;
+          font-weight:500;
+
+          animation:pop .18s ease;
         }
 
-        .pill b {
-          cursor: pointer;
-          color: #c62828;
+        .pill b{
+          display:flex;
+          align-items:center;
+          cursor:pointer;
+          color:#dc2626;
+          transition:.15s;
         }
 
-        /* ================= FETCH ROW ================= */
-        .fetch-row {
-          display: flex;
-          justify-content: center;
+        .pill b:hover{
+          transform:scale(1.15);
         }
 
-        .fetch-row button {
-          background: #c62828;
-          color: #fff;
-          padding: 8px 18px;
-          border-radius: 8px;
-          cursor: pointer;
+        /* ================= FETCH BUTTON ================= */
+
+        .fetch-row{
+          display:flex;
+          justify-content:center;
+        }
+
+        .fetch-row button{
+
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:8px;
+
+          background:#dc2626;
+          color:#fff;
+
+          padding:9px 20px;
+
+          border-radius:8px;
+          border:none;
+
+          font-size:14px;
+          font-weight:600;
+
+          cursor:pointer;
+
+          transition:all .22s ease;
+        }
+
+        .fetch-row button:hover{
+          background:#b91c1c;
+          transform:translateY(-1px);
+        }
+
+        .fetch-row button:disabled{
+          opacity:.7;
+          cursor:not-allowed;
         }
 
         /* ================= LOADER ================= */
-        .loader {
-          width: 14px;
-          height: 14px;
-          border: 2px solid #fff;
-          border-top-color: transparent;
-          border-radius: 50%;
-          animation: spin 0.8s linear infinite;
+
+        .loader{
+          width:14px;
+          height:14px;
+
+          border:2px solid #fff;
+          border-top-color:transparent;
+
+          border-radius:50%;
+
+          animation:spin .7s linear infinite;
+        }
+
+        /* ================= RESPONSIVE ================= */
+
+        /* tablet */
+
+        @media (max-width:900px){
+
+          .filters{
+            grid-template-columns:repeat(auto-fit,minmax(170px,1fr));
+          }
+
+        }
+
+        /* mobile */
+
+        @media (max-width:640px){
+
+          .tabs{
+            justify-content:flex-start;
+            overflow-x:auto;
+            flex-wrap:nowrap;
+            padding-bottom:4px;
+          }
+
+          .tabs button{
+            flex-shrink:0;
+            font-size:12px;
+            padding:6px 12px;
+          }
+
+          .filters{
+            grid-template-columns:1fr;
+          }
+
+          .fetch-row button{
+            width:100%;
+          }
+
         }
 
         /* ================= ANIMATIONS ================= */
-        @keyframes spin {
-          to { transform: rotate(360deg); }
+
+        @keyframes spin{
+          to{transform:rotate(360deg);}
         }
 
-        @keyframes fade {
-          from { opacity: 0; transform: translateY(-4px); }
-          to { opacity: 1; transform: translateY(0); }
+        @keyframes fade{
+          from{opacity:0;transform:translateY(-5px)}
+          to{opacity:1;transform:translateY(0)}
+        }
+
+        @keyframes fadeIn{
+          from{opacity:0;transform:translateY(6px)}
+          to{opacity:1;transform:translateY(0)}
+        }
+
+        @keyframes pop{
+          from{transform:scale(.9);opacity:0}
+          to{transform:scale(1);opacity:1}
         }
       `}</style>
     </div>

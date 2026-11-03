@@ -5,14 +5,17 @@ import esmLogo from "../assets/ems_logo.png";
 import epsmsBG from "../assets/LoginBG/epsms_space.png";
 import mapBG from "../assets/LoginBG/crpmap_space.png";
 import ldmsLogo from "../assets/ldms_logo.png";
+import ldmsBG from "../assets/LoginBG/ldms_space.png";
 import prernaLogo from "../assets/prernaHd.png";
 import mdBG from "../assets/LoginBG/md_space.png";
 import BDOLogo from "../assets/BDOLogo.png";
 import pmuBG from "../assets/LoginBG/pmu_space.png";
 import inactiveBG from "../assets/LoginBG/inactive_space.png";
+import mouBG from "../assets/LoginBG/mou_space.png";
+import canteenBG from "../assets/LoginBG/canteen_space.png";
 
 export const MODULES_CONFIG = [
-  // 2026-10-28T19:15:00
+  // 2026-11-02T14:50:00
 
   {
     id: "tms",
@@ -24,7 +27,7 @@ export const MODULES_CONFIG = [
     bg: tmsBG,
     path: "/module-login?module=tms",
     level: "All",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "crp",
@@ -36,7 +39,7 @@ export const MODULES_CONFIG = [
     bg: mapBG,
     path: "/module-login?module=crp",
     level: "District",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "ldms",
@@ -45,10 +48,10 @@ export const MODULES_CONFIG = [
     subtitle: "Lakhpati Didi",
     desc: "Lakhpati Didi Management System is currently under development.",
     color: "#b91c1c",
-    bg: inactiveBG,
-    path: "#",
+    bg: ldmsBG,
+    path: "/module-login?module=ldms",
     level: "All",
-    maintenanceUntil: "permanent", // "permanent" means ALWAYS INACTIVE
+    maintenanceUntil: null, // "permanent" means ALWAYS INACTIVE
   },
   {
     id: "mou",
@@ -57,12 +60,12 @@ export const MODULES_CONFIG = [
     subtitle: "Memorandum of Understanding",
     desc: "Securely manage and monitor enterprise MOUs and related institutional agreements.",
     color: "#9333ea",
-    bg: inactiveBG,
+    bg: mouBG,
     path: "/module-login?module=mou",
     level: "Block",
     // Example of a module under maintenance. Change this date to test the countdown!
     // Format: "YYYY-MM-DDTHH:mm:ss"
-    maintenanceUntil: "permanent",
+    maintenanceUntil: null,
   },
   {
     id: "epsms",
@@ -74,19 +77,19 @@ export const MODULES_CONFIG = [
     bg: epsmsBG,
     path: "/module-login?module=epsms",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "prerna",
     logo: esmLogo,
-    bg: inactiveBG,
+    bg: canteenBG,
     title: "Prerna Canteen Portal",
     subtitle: "Portal for Prerna Canteen Management",
     desc: "Portal for Prerna Canteen Management is currently under development.",
     color: "#ea3333",
     path: "/module-login?module=prerna",
     level: "Block",
-    maintenanceUntil: "permanent",
+    maintenanceUntil: null,
   },
   {
     id: "pmuadmin",
@@ -98,7 +101,7 @@ export const MODULES_CONFIG = [
     bg: pmuBG,
     path: "/module-login?module=pmuadmin",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
   {
     id: "masteradmin",
@@ -110,6 +113,6 @@ export const MODULES_CONFIG = [
     bg: mdBG,
     path: "/module-login?module=admin",
     level: "Block",
-    maintenanceUntil: null,
+    maintenanceUntil: "2026-11-02T14:50:00",
   },
 ];

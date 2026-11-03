@@ -108,8 +108,11 @@ export default function SupportCapture() {
             selectedMemberCodes={
               new Set(
                 selectedBeneficiaries.map(
-                  b => b.member.member_code || b.member.lokos_member_code || b.member.id
-                )
+                  (b) =>
+                    b.member.member_code ||
+                    b.member.lokos_member_code ||
+                    b.member.id,
+                ),
               )
             }
             onSelectionChange={({ type, payload }) => {
@@ -118,7 +121,7 @@ export default function SupportCapture() {
                   m.member_code || m.lokos_member_code || m.id;
 
                 const map = new Map(
-                  prev.map((b) => [getMemberKey(b.member), b])
+                  prev.map((b) => [getMemberKey(b.member), b]),
                 );
 
                 const code = getMemberKey(payload.member);
@@ -141,9 +144,9 @@ export default function SupportCapture() {
                 prev.filter(
                   (b) =>
                     (b.member.member_code ||
-                    b.member.lokos_member_code ||
-                    b.member.id) !== memberCode
-                )
+                      b.member.lokos_member_code ||
+                      b.member.id) !== memberCode,
+                ),
               )
             }
           />

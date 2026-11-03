@@ -44,7 +44,6 @@ export default function CRPDetails({ crpData, onClose, onRefresh }) {
 
   const currentCrpId = crpData?.master_user_id;
 
-  // console.log(crpData);
   // Use JSON stringify to prevent infinite loops if parent passes a new object reference on every render
   const allocatedPanchayatsStr = JSON.stringify(
     crpData?.allocated_panchayats || [],

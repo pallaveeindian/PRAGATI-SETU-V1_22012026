@@ -13,6 +13,7 @@ import MouLogin from "./MouLogin";
 import AdminLogin from "./AdminLogin";
 import EPSMSLogin from "./EPSMSLogin";
 import StateLogin from "./StateLogin";
+import CanteenLogin from "./CanteenLogin";
 
 export default function LoginParent() {
   const { loading } = useContext(AuthContext);
@@ -53,6 +54,10 @@ export default function LoginParent() {
     case "admin":
       content = <StateLogin />;
       theme = "green";
+      break;
+    case "prerna":
+      content = <CanteenLogin />;
+      theme = "red";
       break;
     default:
       content = <TmsLogin />;

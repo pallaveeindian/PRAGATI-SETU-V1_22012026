@@ -5,6 +5,7 @@ import {
   Route,
   useLocation,
   useNavigationType,
+  Navigate,
 } from "react-router-dom";
 import { useAuth } from "./contexts/AuthContext";
 import { LanguageProvider } from "./pages/LanguageContext.jsx";
@@ -53,6 +54,7 @@ import MouLogin from "./pages/LoginComps/MouLogin";
 import AdminLogin from "./pages/LoginComps/AdminLogin";
 import EPSMSLogin from "./pages/LoginComps/EPSMSLogin.jsx";
 import StateLogin from "./pages/LoginComps/StateLogin";
+import CanteenLogin from "./pages/LoginComps/CanteenLogin.jsx";
 // Planning Dept Integration portal
 import PDULogin from "./pages/PlanningDeptUpdate/Pages/PDULogin.jsx";
 
@@ -72,6 +74,7 @@ import SupportRoutes from "./routes/SupportRoutes.jsx";
 import AdminRoutes from "./routes/AdminRoutes.jsx";
 import EPSMSRoutes from "./routes/EPSMSRoutes.jsx";
 import UPPLDRoutes from "./routes/UPPLDRoutes.jsx";
+import CanteenRoutes from "./routes/CanteenRoutes.jsx";
 
 export default function App() {
   const { authReady, isAuthenticated, logout } = useAuth();
@@ -592,9 +595,9 @@ export default function App() {
   return (
     <LanguageProvider>
       {/* SURGICAL ADDITION: Render Popup on Home Page Only */}
-      {showNewsPopup && location.pathname === "/" && (
+      {/* {showNewsPopup && location.pathname === "/" && (
         <NewsPopup onClose={() => setShowNewsPopup(false)} />
-      )}
+      )} */}
 
       <Routes>
         {/* ----- Public Routes ----- */}
@@ -631,6 +634,9 @@ export default function App() {
         {/* Grievance Portal Routes */}
         <Route path="/register-grievance" element={<RegisterGrievance />} />
 
+        {/* Login Route-Fix */}
+        <Route path="/login" element={<Navigate to="/" replace />} />
+
         {/* ----- Login Routes ----- */}
         <Route path="/upsrlm-planning/login" element={<PDULogin />} />
         <Route path="/module-login" element={<LoginParent />} />
@@ -650,6 +656,12 @@ export default function App() {
         )}
         {isModuleActive("epsms") && (
           <Route path="/module-login?module=epsms" element={<EPSMSLogin />} />
+        )}
+        {isModuleActive("prerna") && (
+          <Route
+            path="/module-login?module=prerna"
+            element={<CanteenLogin />}
+          />
         )}
         {isModuleActive("masteradmin") && (
           <Route path="/module-login?module=admin" element={<StateLogin />} />
@@ -691,6 +703,9 @@ export default function App() {
           )}
           {isModuleActive("masteradmin") && (
             <Route path="/master/*" element={<MasterRoutes />} />
+          )}
+          {isModuleActive("prerna") && (
+            <Route path="/canteen/*" element={<CanteenRoutes />} />
           )}
           <Route path="/error" element={<ErrorPage />} />
         </Route>

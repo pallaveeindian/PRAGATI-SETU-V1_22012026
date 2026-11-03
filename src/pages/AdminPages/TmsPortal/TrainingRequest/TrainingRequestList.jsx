@@ -1,27 +1,29 @@
-// src/pages/AdminPages/TmsPortal/TrainingRequest/TrainingRequestList.jsx
+// src/pages/TMS/TRs/training_req_list.jsx
 import React, { useContext, useEffect, useMemo, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 
 import { AuthContext } from "../../../../contexts/AuthContext";
-import { TMS_API, LOOKUP_API } from "../../../../api/axios";
+import api, { TMS_API, LOOKUP_API } from "../../../../api/axios";
 import { getCanonicalRole } from "../../../../utils/roleUtils";
 import TrainingRequestFilter from "./TrainingRequestFiliter";
-import { FaFileSignature } from "react-icons/fa";
+import { ROLE_WELCOME_MESSAGES } from "../../../../utils/roleUtils";
+import TRListExport from "../../../TMS/TRs/TRListExport";
+import TRConvert from "../../../TMS/TRs/TRConvert";
 
 const CACHE_KEY = "tms_training_requests_cache_v1";
+const USER_MAP_KEY = "tms_user_map_v1";
+const PARTNER_MAP_KEY = "tms_partner_map_v1";
+const PLAN_MAP_KEY = "tms_plan_map_v1";
 const TP_SELF_PARTNER_KEY = "tms_self_partner_id_v1";
 
 /* ---------------- cache helpers ---------------- */
-
 function saveCache(payload, meta = {}) {
   try {
     localStorage.setItem(
       CACHE_KEY,
       JSON.stringify({ ts: Date.now(), payload, meta }),
     );
-  } catch {
-    return null;
-  }
+  } catch {}
 }
 
 function loadCache() {
@@ -33,28 +35,28 @@ function loadCache() {
   }
 }
 
-async function fetchTrainingRequestsOnce(params = {}) {
-  const response = await TMS_API.trainingRequestsList.list({
-    ...params,
-    limit: 5000,
-  });
-  const responseData = response?.data;
-  return Array.isArray(responseData)
-    ? responseData
-    : responseData?.results || [];
+function loadMap(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key)) || {};
+  } catch {
+    return {};
+  }
+}
+
+function saveMap(key, map) {
+  try {
+    localStorage.setItem(key, JSON.stringify(map || {}));
+  } catch {}
 }
 
 /* ---------------- partner resolver (SAFE & CACHED) ---------------- */
-
 async function resolveTrainingPartnerIdForUser(userId) {
   if (!userId) return null;
 
   try {
     const cached = localStorage.getItem(TP_SELF_PARTNER_KEY);
     if (cached) return Number(cached);
-  } catch {
-    return null;
-  }
+  } catch {}
 
   try {
     const resp = await TMS_API.trainingPartners.list({
@@ -68,13 +70,11 @@ async function resolveTrainingPartnerIdForUser(userId) {
     if (partnerId) {
       try {
         localStorage.setItem(TP_SELF_PARTNER_KEY, String(partnerId));
-      } catch {
-        // Ignore storage failures; the resolved partner remains usable.
-      }
+      } catch {}
     }
 
     return partnerId;
-  } catch {
+  } catch (e) {
     console.warn("Partner resolution failed (will retry on refresh)");
     return null;
   }
@@ -85,34 +85,125 @@ async function resolveTrainingPartnerIdForUser(userId) {
 export default function TrainingRequestList() {
   const { user } = useContext(AuthContext) || {};
 
+  const roleKey = getCanonicalRole(user);
+  const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
+
   const role = getCanonicalRole(user || {});
   const navigate = useNavigate();
+  const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [requests, setRequests] = useState(() => loadCache()?.payload || []);
-  // PAGINATION CHANGE START
+  const [requests, setRequests] = useState([]);
+  const [totalCount, setTotalCount] = useState(0);
+  const [refreshToken, setRefreshToken] = useState(0);
+
   const [currentPage, setCurrentPage] = useState(1);
+  const [jumpPage, setJumpPage] = useState("");
+  const [requestIdSearch, setRequestIdSearch] = useState("");
+  const [themes, setThemes] = useState([]);
   const rowsPerPage = 10;
-  // PAGINATION CHANGE END
-  const [filters] = useState({
+
+  const [filters, setFilters] = useState({
     status: "",
     level: "",
     training_type: "",
+    financial_year: "2026-27", // Preselected Default
   });
-  const [requestIdSearch, setRequestIdSearch] = useState("");
 
-  const fetchKeyRef = useRef("");
+  const [userMap, setUserMap] = useState(() => loadMap(USER_MAP_KEY));
+  const [partnerMap, setPartnerMap] = useState(() => loadMap(PARTNER_MAP_KEY));
+  const [planMap, setPlanMap] = useState(() => loadMap(PLAN_MAP_KEY));
+  const [convertTrId, setConvertTrId] = useState(null);
+  const didRunRef = useRef(false);
+
+  const applyRequestIdSearch = (value = requestIdSearch) => {
+    const requestId = value.trim();
+    const appliedFilters = { ...filters };
+    if (requestId) {
+      appliedFilters.id = requestId;
+    } else {
+      delete appliedFilters.id;
+    }
+
+    setFilters(appliedFilters);
+    setCurrentPage(1);
+    fetchRequestsWithFilters(appliedFilters, 1);
+  };
+
+  // SURGICAL ADDITION: Multi-select state & handlers
+  const [selectedTrs, setSelectedTrs] = useState([]);
+
+  const handleSelectAll = (e) => {
+    if (e.target.checked) {
+      setSelectedTrs(requests.map((r) => r.id));
+    } else {
+      setSelectedTrs([]);
+    }
+  };
+
+  const handleSelectOne = (e, id) => {
+    if (e.target.checked) {
+      setSelectedTrs((prev) => [...prev, id]);
+    } else {
+      setSelectedTrs((prev) => prev.filter((trId) => trId !== id));
+    }
+  };
+
+  const handleMarkBacklog = async () => {
+    if (
+      !window.confirm(
+        `Are you sure you want to mark ${selectedTrs.length} request(s) as Backlog?`,
+      )
+    )
+      return;
+    setLoading(true);
+    try {
+      // Patch is_old=True for all selected TRs concurrently
+      await Promise.all(
+        selectedTrs.map((id) =>
+          api.patch(`/tms/training-requests/${id}/`, { is_old: true }),
+        ),
+      );
+      alert("Successfully marked as Backlog Batches.");
+      setSelectedTrs([]);
+      setRefreshToken((t) => t + 1); // Refresh the list automatically
+    } catch (error) {
+      console.error(error);
+      alert("Failed to mark requests as Backlog.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Helper to verify if all selected items are NOT STATE level
+  const selectedTrObjects = requests.filter((r) => selectedTrs.includes(r.id));
+  const isSelectionValidForBacklog =
+    selectedTrs.length > 0 &&
+    selectedTrObjects.every((r) => {
+      const isNonState = String(r.level).toUpperCase() !== "STATE";
+      const isBatching = String(r.status).toUpperCase() === "BATCHING";
+
+      // Roles 1, 2, 3 → Only NON-backlog requests
+      if ([1, 2, 3].includes(Number(user?.role_id))) {
+        return isNonState && r.is_old === false && isBatching;
+      }
+
+      // Role 13 → Only backlog requests
+      if (Number(user?.role_id) === 13) {
+        return isNonState && r.is_old === true && isBatching;
+      }
+
+      // Other roles
+      return false;
+    });
 
   /* ---------------- geoscope ---------------- */
-
   async function ensureUserGeoscope() {
     try {
       const cached = JSON.parse(
         localStorage.getItem("ps_user_geoscope") || "null",
       );
       if (cached) return cached;
-    } catch {
-      // Use the API fallback when cached geoscope data is invalid.
-    }
+    } catch {}
 
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(user?.id);
@@ -120,9 +211,7 @@ export default function TrainingRequestList() {
         localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
         return resp.data;
       }
-    } catch {
-      // Return no geoscope when the lookup is unavailable.
-    }
+    } catch {}
     return null;
   }
 
@@ -135,77 +224,93 @@ export default function TrainingRequestList() {
         const partnerId = resp.data.partner_id;
         return partnerId;
       }
-    } catch {
-      // Return no parent partner when the lookup is unavailable.
-    }
+    } catch {}
     return null;
   }
 
-  /* ---------------- main fetch ---------------- */
-
-  async function fetchRequests() {
-    if (!user?.id) return;
-
-    setLoading(true);
+  /* ---------------- lookup maps ---------------- */
+  async function fetchAndStoreLookupMaps(items = []) {
     try {
-      const params = { page_size: 5000 };
-      const geoscope = await ensureUserGeoscope();
+      const userIds = new Set();
+      const partnerIds = new Set();
+      const planIds = new Set();
 
-      if (role === "bmmu" && geoscope?.blocks?.[0])
-        params.block_id = geoscope.blocks[0];
+      items.forEach((r) => {
+        if (r.created_by) userIds.add(r.created_by);
+        if (r.partner) partnerIds.add(r.partner);
+        if (r.training_plan) planIds.add(r.training_plan);
+      });
 
-      if (role === "dmmu" && geoscope?.districts?.[0])
-        params.district_id = geoscope.districts[0];
+      const missingUsers = [...userIds].filter((i) => !userMap[i]);
+      const missingPartners = [...partnerIds].filter((i) => !partnerMap[i]);
+      const missingPlans = [...planIds].filter((i) => !planMap[i]);
 
-      if (role === "training_partner") {
-        const partnerId = await resolveTrainingPartnerIdForUser(user.id);
-        if (!partnerId) {
-          setRequests([]);
-          setLoading(false);
-          return;
-        }
-        params.partner_id = partnerId;
-      }
+      const [users, partners, plans] = await Promise.all([
+        Promise.all(
+          missingUsers.map(async (id) => {
+            const r = await LOOKUP_API.users.list({
+              search: id,
+              fields: "username",
+            });
+            return { id, v: r?.data?.results?.[0]?.username };
+          }),
+        ),
+        Promise.all(
+          missingPartners.map(async (id) => {
+            const r = await TMS_API.trainingPartners.list({
+              id,
+              fields: "name",
+            });
+            return { id, v: r?.data?.results?.[0]?.name };
+          }),
+        ),
+        Promise.all(
+          missingPlans.map(async (id) => {
+            const r = await TMS_API.trainingPlans.list({
+              id,
+              fields: "training_name",
+            });
+            return {
+              id,
+              v: r?.data?.results?.[0]?.training_name,
+            };
+          }),
+        ),
+      ]);
 
-      if (role === "dtp" && geoscope?.districts?.[0]) {
-        const partnerId = await resolvePartnerId(user.id);
-        if (!partnerId) {
-          setRequests([]);
-          setLoading(false);
-          return;
-        }
-        params.district_id = geoscope.districts[0];
-        params.partner_id = partnerId;
-      }
-      const items = await fetchTrainingRequestsOnce(params);
+      const um = { ...userMap };
+      users.forEach((x) => (um[x.id] = x.v));
 
-      setRequests(items);
-      saveCache(items, { userId: user.id, role });
-    } catch (e) {
-      console.error("fetch training requests failed", e);
-      setRequests([]);
-    } finally {
-      setLoading(false);
-    }
+      const pm = { ...partnerMap };
+      partners.forEach((x) => (pm[x.id] = x.v));
+
+      const plm = { ...planMap };
+      plans.forEach((x) => (plm[x.id] = x.v));
+
+      setUserMap(um);
+      setPartnerMap(pm);
+      setPlanMap(plm);
+
+      saveMap(USER_MAP_KEY, um);
+      saveMap(PARTNER_MAP_KEY, pm);
+      saveMap(PLAN_MAP_KEY, plm);
+    } catch {}
   }
 
-  useEffect(() => {
-    const fetchKey = `${user?.id || ""}:${role}`;
-    if (role !== "smmu" && user?.id && fetchKeyRef.current !== fetchKey) {
-      fetchKeyRef.current = fetchKey;
-      fetchRequests();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [role, user?.id]);
-
-  /* training req list */
-  async function fetchRequestsWithFilters(appliedFilters = {}) {
+  /* ---------------- main fetch ---------------- */
+  async function fetchRequestsWithFilters(
+    appliedFilters = {},
+    overridePage = null,
+  ) {
     if (!user?.id) return;
+
+    const targetPage = overridePage !== null ? overridePage : currentPage;
 
     setLoading(true);
     try {
       let params = {
-        page_size: 5000,
+        limit: rowsPerPage,
+        offset: (targetPage - 1) * rowsPerPage,
         ...Object.fromEntries(
           Object.entries(appliedFilters).filter(
             ([, v]) => v !== "" && v !== false,
@@ -215,6 +320,16 @@ export default function TrainingRequestList() {
 
       const geoscope = await ensureUserGeoscope();
 
+      if (role === "smmu") {
+        const myTheme = themes.find(
+          (t) => Number(t.expert) === Number(user?.id),
+        );
+
+        if (myTheme) {
+          params.theme_id = myTheme.id;
+        }
+      }
+
       if (role === "bmmu" && geoscope?.blocks?.[0])
         params.block_id = geoscope.blocks[0];
 
@@ -241,10 +356,13 @@ export default function TrainingRequestList() {
         params.partner_id = partnerId;
       }
 
-      // ✅ theme_id now passes straight through
-      const items = await fetchTrainingRequestsOnce(params);
+      const resp = await TMS_API.trainingRequestsList.list(params);
+      const items = resp?.data?.results || [];
 
+      setTotalCount(resp?.data?.count || 0);
       setRequests(items);
+      setSelectedTrs([]);
+      await fetchAndStoreLookupMaps(items);
     } catch (e) {
       console.error("Filtered fetch failed", e);
       setRequests([]);
@@ -253,173 +371,192 @@ export default function TrainingRequestList() {
     }
   }
 
-  /* ---------------- filtered view ---------------- */
+  /* ---------------- fetch all for export ---------------- */
+  async function fetchAllForExport() {
+    if (!user?.id) return [];
+    try {
+      let params = {
+        limit: 50000, // MAX LIMIT
+        offset: 0,
+        ...Object.fromEntries(
+          Object.entries(filters).filter(([, v]) => v !== "" && v !== false),
+        ),
+      };
 
-  // const filtered = useMemo(() => {
-  //   return requests.filter((r) => {
-  //     if (filters.status && r.status !== filters.status) return false;
-  //     if (filters.level && r.level !== filters.level) return false;
-  //     if (filters.training_type && r.training_type !== filters.training_type)
-  //       return false;
-  //     return true;
-  //   });
-  // }, [requests, filters]);
+      const geoscope = await ensureUserGeoscope();
 
-  const filtered = useMemo(() => {
-    const result = requests.filter((r) => {
-      if (
-        requestIdSearch.trim() &&
-        !String(r.id || "")
-          .toLowerCase()
-          .includes(requestIdSearch.trim().toLowerCase())
+      if (role === "smmu") {
+        const myTheme = themes.find(
+          (t) => Number(t.expert) === Number(user?.id),
+        );
+        if (myTheme) params.theme_id = myTheme.id;
+      }
+
+      if (role === "bmmu" && geoscope?.blocks?.[0])
+        params.block_id = geoscope.blocks[0];
+
+      if (role === "dmmu" && geoscope?.districts?.[0])
+        params.district_id = geoscope.districts[0];
+      if (role === "pmu_admin" && geoscope?.districts?.[0])
+        params.district_id = geoscope.districts[0];
+
+      if (role === "training_partner") {
+        const partnerId = await resolveTrainingPartnerIdForUser(user.id);
+        if (!partnerId) return [];
+        params.partner_id = partnerId;
+      }
+      if (role === "dtp" && geoscope?.districts?.[0]) {
+        const partnerId = await resolvePartnerId(user.id);
+        if (!partnerId) return [];
+        params.district_id = geoscope.districts[0];
+        params.partner_id = partnerId;
+      }
+
+      const resp = await TMS_API.trainingRequestsList.list(params);
+      return resp?.data?.results || [];
+    } catch (e) {
+      console.error("Export fetch failed", e);
+      return [];
+    }
+  }
+
+  // Trigger API call when page or refresh token changes
+  useEffect(() => {
+    fetchRequestsWithFilters(filters);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshToken, currentPage]);
+
+  /* ---------------- pagination helper ---------------- */
+  const totalPages = Math.max(1, Math.ceil(totalCount / rowsPerPage));
+
+  const getPageNumbers = () => {
+    const pages = [];
+    if (totalPages <= 9) {
+      for (let i = 1; i <= totalPages; i++) pages.push(i);
+    } else {
+      if (currentPage <= 7) {
+        pages.push(1, 2, 3, 4, 5, 6, 7, "...", totalPages);
+      } else if (currentPage >= totalPages - 3) {
+        pages.push(
+          1,
+          2,
+          "...",
+          totalPages - 4,
+          totalPages - 3,
+          totalPages - 2,
+          totalPages - 1,
+          totalPages,
+        );
+      } else {
+        pages.push(
+          1,
+          2,
+          "...",
+          currentPage - 1,
+          currentPage,
+          currentPage + 1,
+          "...",
+          totalPages,
+        );
+      }
+    }
+    return pages;
+  };
+
+  /* ---------------- TR Deletion Handler Actions ---------------- */
+  const handleDeleteRequest = async (requestId) => {
+    if (
+      !window.confirm(
+        `Are you sure you want to delete Training Request #${requestId}?`,
       )
-        return false;
-      if (filters.status && r.status !== filters.status) return false;
-      if (filters.level && r.level !== filters.level) return false;
-      if (filters.training_type && r.training_type !== filters.training_type)
-        return false;
-      return true;
-    });
+    )
+      return;
+    try {
+      await TMS_API.deleteTrainingRequest(requestId);
+      alert("Training Request deleted successfully.");
+      setRefreshToken((t) => t + 1);
+    } catch (error) {
+      console.error("Deletion failed:", error);
+      alert(
+        error?.response?.data?.detail ||
+          "Failed to delete the training request.",
+      );
+    }
+  };
 
-    return result;
-  }, [requests, filters, requestIdSearch]);
+  /* ---------------- render helpers ---------------- */
+  useEffect(() => {
+    async function loadThemes() {
+      try {
+        const tRes = await TMS_API.trainingThemes.list({
+          page_size: 100,
+        });
 
-  // PAGINATION CHANGE START
+        const allThemes = tRes?.data?.results || [];
 
-  const totalPages = Math.ceil(filtered.length / rowsPerPage);
+        if (role === "smmu") {
+          const myTheme = allThemes.find(
+            (t) => Number(t.expert) === Number(user?.id),
+          );
 
-  const paginationItems = useMemo(() => {
-    const visiblePages = new Set();
-    for (let page = 1; page <= totalPages; page += 1) {
-      if (
-        totalPages <= 7 ||
-        page === 1 ||
-        page === totalPages ||
-        Math.abs(page - currentPage) <= 1
-      ) {
-        visiblePages.add(page);
+          if (myTheme) {
+            setThemes([myTheme]);
+            setFilters((prev) => ({ ...prev, theme_id: myTheme.id }));
+            fetchRequestsWithFilters({ ...filters, theme_id: myTheme.id });
+          } else {
+            setThemes([]);
+          }
+        } else {
+          setThemes(allThemes);
+        }
+      } catch (e) {
+        console.error("Theme load failed", e);
       }
     }
 
-    const items = [];
-    let previousPage = 0;
-    visiblePages.forEach((page) => {
-      if (page - previousPage > 1) items.push(`ellipsis-${page}`);
-      items.push(page);
-      previousPage = page;
-    });
-    return items;
-  }, [currentPage, totalPages]);
-
-  const paginatedData = useMemo(() => {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
-    return filtered.slice(start, end);
-  }, [filtered, currentPage]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [filtered]);
-
-  /* ---------------- render helpers ---------------- */
-
-  const handleExportExcel = () => {
-    if (!filtered.length) {
-      alert("No training requests available to export.");
-      return;
+    if (user?.id) {
+      loadThemes();
     }
-
-    const escapeCell = (value) =>
-      String(value ?? "")
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;")
-        .replace(/"/g, "&quot;");
-    const headers = [
-      "ID",
-      "Theme",
-      "Plan",
-      "Level",
-      "Status",
-      "Partner",
-      "District",
-      "Block",
-      "Participant Count",
-      "Financial Year",
-    ];
-    const rows = filtered.map((r) => [
-      r.id,
-      r.theme_name,
-      r.training_plan_name,
-      r.level,
-      r.status,
-      r.partner_name,
-      r.district_name,
-      r.block_name,
-      r.participant_count,
-      r.financial_year,
-    ]);
-    const table = [
-      "<table><thead><tr>",
-      headers.map((header) => `<th>${escapeCell(header)}</th>`).join(""),
-      "</tr></thead><tbody>",
-      rows
-        .map(
-          (row) =>
-            `<tr>${row
-              .map((cell) => `<td>${escapeCell(cell)}</td>`)
-              .join("")}</tr>`,
-        )
-        .join(""),
-      "</tbody></table>",
-    ].join("");
-    const blob = new Blob(
-      [`<html><head><meta charset="UTF-8"></head><body>${table}</body></html>`],
-      { type: "application/vnd.ms-excel;charset=utf-8;" },
-    );
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "Training_Requests.xls";
-    link.click();
-    URL.revokeObjectURL(link.href);
-  };
+  }, [user?.id, role]);
 
   /* ---------------- UI ---------------- */
-
   return (
     <div className="app-shell">
       <div className="content-area">
         <div className="main-area">
-          {/* <TopNav
-          left={
-            <div className="app-title">Pragati Setu — Training Requests</div>
-          }
-        /> */}
-
           <main
             style={{
               padding: 18,
               minHeight: "100vh",
             }}
           >
-            {/* <div className="dashboard-header">
-            <h2 className="dashboard-title">{roleMessage}</h2>
-          </div> */}
-
             <div
               style={{
-                width: "100%",
-                maxWidth: "none",
-                margin: "0 auto",
+                width: "100%", // Horizontal stretch
+                margin: "10px 0",
               }}
-              className="training-request-page"
             >
               {/* FILTER */}
               <div style={{ marginBottom: 14 }}>
                 <TrainingRequestFilter
                   user={user}
+                  themes={themes}
                   lockedTheme={role === "smmu"}
-                  onApply={fetchRequestsWithFilters}
+                  onApply={(newFilters) => {
+                    const mergedFilters = {
+                      ...newFilters,
+                      ...(requestIdSearch.trim()
+                        ? { id: requestIdSearch.trim() }
+                        : {}),
+                      financial_year:
+                        newFilters.financial_year ||
+                        filters.financial_year ||
+                        "2026-27",
+                    };
+                    setFilters(mergedFilters);
+                    setCurrentPage(1);
+                    fetchRequestsWithFilters(mergedFilters, 1);
+                  }}
                 />
               </div>
 
@@ -428,22 +565,13 @@ export default function TrainingRequestList() {
                 style={{
                   display: "flex",
                   alignItems: "center",
-                  flexWrap: "wrap",
-                  gap: 10,
                   marginBottom: 12,
                   borderBottom: "2px solid #a7c6ed",
                   paddingBottom: 8,
                 }}
               >
-                <h2
-                  style={{
-                    margin: 0,
-                    color: "#2b4e72",
-                    fontSize: 20,
-                    fontWeight: 900,
-                  }}
-                >
-                  <FaFileSignature /> Training Requests
+                <h2 style={{ margin: 0, color: "#2b4e72" }}>
+                  Training Requests
                 </h2>
 
                 <div
@@ -451,42 +579,92 @@ export default function TrainingRequestList() {
                     marginLeft: "auto",
                     display: "flex",
                     alignItems: "center",
-                    gap: 8,
+                    justifyContent: "flex-end",
                     flexWrap: "wrap",
+                    gap: "8px",
                   }}
                 >
-                  <label
+                  {/* SURGICAL ADDITION: Backlog Action Buttons */}
+                  {/* {isSelectionValidForBacklog &&
+                    [1, 2, 3].includes(Number(user?.role_id)) && (
+                      <button
+                        className="Backlogbtn"
+                        style={{ background: "#f59e0b" }}
+                        onClick={handleMarkBacklog}
+                      >
+                        Mark for Backlog Batches
+                      </button>
+                    )} */}
+
+                  {/* {isSelectionValidForBacklog &&
+                    Number(user?.role_id) === 13 && (
+                      <button
+                        className="Backlogbtn"
+                        onClick={() => navigate("/tms/backlog-batch-creator/")}
+                      >
+                        Create Backlog batch
+                      </button>
+                    )} */}
+
+                  {/* EXPORT BUTTON */}
+
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      applyRequestIdSearch();
+                    }}
                     style={{
                       display: "flex",
                       alignItems: "center",
-                      gap: 8,
-                      color: "#2b4e72",
-                      fontSize: 14,
-                      fontWeight: 600,
+                      gap: 6,
                     }}
+                    role="search"
+                    aria-label="Search training requests by ID"
                   >
-                    Search by ID
                     <input
                       type="search"
                       value={requestIdSearch}
                       onChange={(event) =>
                         setRequestIdSearch(event.target.value)
                       }
-                      placeholder="Enter Training Request ID No."
-                      aria-label="Search training request by ID"
+                      placeholder="Search by request ID"
+                      aria-label="Training request ID"
                       style={{
                         width: 190,
-                        minHeight: 36,
+                        maxWidth: "100%",
                         padding: "8px 10px",
-                        border: "1px solid #9db9d8",
+                        border: "1px solid #a7c6ed",
                         borderRadius: 6,
-                        color: "#1e3a5f",
+                        color: "#2b4e72",
                         outline: "none",
                       }}
                     />
-                  </label>
-                  <button className="btnPrimary" onClick={handleExportExcel}>
-                    Export to Excel
+                    <button className="btnPrimary" type="submit">
+                      Search
+                    </button>
+                    {requestIdSearch && (
+                      <button
+                        className="btnPage"
+                        type="button"
+                        onClick={() => {
+                          setRequestIdSearch("");
+                          applyRequestIdSearch("");
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </form>
+                  <TRListExport fetchData={fetchAllForExport} />
+                  <button
+                    className="btnPrimary"
+                    onClick={() => {
+                      localStorage.removeItem(CACHE_KEY);
+                      localStorage.removeItem(TP_SELF_PARTNER_KEY);
+                      setRefreshToken((t) => t + 1);
+                    }}
+                  >
+                    Refresh
                   </button>
                 </div>
               </div>
@@ -495,25 +673,33 @@ export default function TrainingRequestList() {
               <div
                 style={{
                   background: "#fff",
-                  padding: 12,
+                  padding: 14,
                   borderRadius: 10,
                   border: "2px solid #3d6ba6",
                   boxShadow: "0 4px 10px rgba(0,0,0,0.05)",
                 }}
-                className="admin-training-table-card"
               >
                 <div
-                  className="training-table-scroll"
                   style={{
-                    height: "auto",
-                    minHeight: 0,
-                    overflow: "visible",
+                    maxHeight: "100%",
+                    overflow: "auto",
                   }}
                 >
                   <table className="training-table">
                     <thead>
                       <tr>
-                        <th>ID</th>
+                        <th style={{ width: "40px" }}>
+                          <input
+                            type="checkbox"
+                            checked={
+                              requests.length > 0 &&
+                              selectedTrs.length === requests.length
+                            }
+                            onChange={handleSelectAll}
+                            style={{ cursor: "pointer" }}
+                          />
+                        </th>
+                        <th>S.No.</th>
                         <th>Theme</th>
                         <th>Plan</th>
                         <th>Level</th>
@@ -521,36 +707,76 @@ export default function TrainingRequestList() {
                         <th>Partner</th>
                         <th>District</th>
                         <th>Block</th>
-                        <th>Participant Count</th>
+                        <th>Onboarded Participant(s)</th>
+                        <th>Enrolled Participant(s)</th>
                         <th>Financial Year</th>
+                        <th>ID</th>
                         <th>Actions</th>
-                        <th />
                       </tr>
                     </thead>
 
                     <tbody>
                       {loading ? (
                         <tr>
-                          <td colSpan={10}>Loading…</td>
+                          <td colSpan={12}>Loading…</td>
                         </tr>
-                      ) : filtered.length === 0 ? (
+                      ) : requests.length === 0 ? (
                         <tr>
-                          <td colSpan={10}>No training requests</td>
+                          <td colSpan={12}>No training requests</td>
                         </tr>
                       ) : (
-                        // filtered.map((r) => (
-                        paginatedData.map((r) => (
-                          <tr key={r.id}>
-                            <td>{r.id}</td>
+                        requests.map((r, index) => (
+                          <tr
+                            key={r.id}
+                            className={
+                              r.is_old === true ? "backlog-training-row" : ""
+                            }
+                          >
+                            <td>
+                              <input
+                                type="checkbox"
+                                checked={selectedTrs.includes(r.id)}
+                                onChange={(e) => handleSelectOne(e, r.id)}
+                                style={{ cursor: "pointer" }}
+                              />
+                            </td>
+                            <td>
+                              {(currentPage - 1) * rowsPerPage + index + 1}
+                            </td>
                             <td>{r.theme_name}</td>
                             <td>{r.training_plan_name}</td>
                             <td>{r.level}</td>
-                            <td>{r.status}</td>
+                            <td>
+                              <div
+                                style={{
+                                  display: "flex",
+                                  flexDirection: "column",
+                                  alignItems: "center",
+                                  gap: "5px",
+                                }}
+                              >
+                                <span
+                                  className={`status-badge status-${String(r.status).toLowerCase()}`}
+                                >
+                                  {r.status}
+                                </span>
+
+                                {r.is_old === true && (
+                                  <span className="backlog-badge">
+                                    ★ Backlog
+                                  </span>
+                                )}
+                              </div>
+                            </td>
                             <td>{r.partner_name}</td>
                             <td>{r.district_name}</td>
                             <td>{r.block_name}</td>
                             <td>{r.participant_count}</td>
+                            <td>{r.enrolled_count}</td>
                             <td>{r.financial_year}</td>
+                            <td>
+                              <strong>{r.id}</strong>
+                            </td>
                             <td>
                               <div style={{ display: "flex", gap: "6px" }}>
                                 <button
@@ -563,6 +789,27 @@ export default function TrainingRequestList() {
                                 >
                                   View
                                 </button>
+                                {r.financial_year === "2025-26" &&
+                                  (role === "dmmu" || role === "smmu") &&
+                                  r.status === "BATCHING" && (
+                                    <button
+                                      className="btnConvert"
+                                      onClick={() => setConvertTrId(r.id)}
+                                    >
+                                      Convert
+                                    </button>
+                                  )}
+                                {/* {((role === "dmmu" && r.level !== "STATE") ||
+                                  role === "smmu") &&
+                                  r.status === "BATCHING" && (
+                                    <button
+                                      className="btnDelete"
+                                      onClick={() => handleDeleteRequest(r.id)}
+                                      style={{ flex: 1 }}
+                                    >
+                                      Delete
+                                    </button>
+                                  )} */}
                               </div>
                             </td>
                           </tr>
@@ -570,20 +817,49 @@ export default function TrainingRequestList() {
                       )}
                     </tbody>
                   </table>
-                  {/* ========================= */}
-                  {/* 🔽 ADDED: MOBILE CARD VIEW */}
-                  {/* ========================= */}
 
+                  {/* ========================= */}
+                  {/* MOBILE CARD VIEW          */}
+                  {/* ========================= */}
                   <div className="mobile-card-list">
                     {loading ? (
                       <div className="mobile-card">Loading…</div>
-                    ) : filtered.length === 0 ? (
+                    ) : requests.length === 0 ? (
                       <div className="mobile-card">No training requests</div>
                     ) : (
-                      paginatedData.map((r) => (
-                        <div key={r.id} className="mobile-card">
+                      requests.map((r, index) => (
+                        <div
+                          key={r.id}
+                          className={`mobile-card ${
+                            r.is_old === true ? "backlog-mobile-card" : ""
+                          }`}
+                        >
+                          {r.is_old === true && (
+                            <div className="backlog-mobile-header">
+                              <span className="backlog-badge">★ Backlog</span>
+                            </div>
+                          )}
+                          <div
+                            style={{
+                              marginBottom: "8px",
+                              paddingBottom: "8px",
+                              borderBottom: "1px solid #e4ecf5",
+                              display: "flex",
+                              alignItems: "center",
+                              gap: "8px",
+                            }}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={selectedTrs.includes(r.id)}
+                              onChange={(e) => handleSelectOne(e, r.id)}
+                              style={{ transform: "scale(1.2)" }}
+                            />
+                            <strong>Select Request</strong>
+                          </div>
                           <div>
-                            <strong>ID:</strong> {r.id}
+                            <strong>S.No:</strong>{" "}
+                            {(currentPage - 1) * rowsPerPage + index + 1}
                           </div>
                           <div>
                             <strong>Theme:</strong> {r.theme_name}
@@ -610,6 +886,9 @@ export default function TrainingRequestList() {
                           <div>
                             <strong>Financial Year:</strong> {r.financial_year}
                           </div>
+                          <div>
+                            <strong>ID:</strong> {r.id}
+                          </div>
                           <div
                             style={{
                               display: "flex",
@@ -628,78 +907,208 @@ export default function TrainingRequestList() {
                             >
                               View
                             </button>
+                            {r.financial_year === "2025-26" &&
+                              r.status === "BATCHING" && (
+                                <button
+                                  className="btnConvert"
+                                  onClick={() => setConvertTrId(r.id)}
+                                  style={{ flex: 1, marginTop: 0 }}
+                                >
+                                  Convert
+                                </button>
+                              )}
+                            {/* {((role === "dmmu" && r.level !== "STATE") ||
+                              role === "smmu") &&
+                              r.status === "BATCHING" && (
+                                <button
+                                  className="btnDelete"
+                                  onClick={() => handleDeleteRequest(r.id)}
+                                  style={{ flex: 1 }}
+                                >
+                                  Delete
+                                </button>
+                              )} */}
                           </div>
                         </div>
                       ))
                     )}
                   </div>
-                </div>
-                {/* PAGINATION CONTROLS */}
-                <div
-                  className="training-pagination"
-                  style={{
-                    display: "flex",
-                    justifyContent: "space-between",
-                    alignItems: "center",
-                    gap: 12,
-                    paddingTop: 12,
-                    minHeight: 42,
-                  }}
-                >
+
+                  {/* PAGINATION CONTROLS */}
                   <div
-                    className="training-pagination__label"
-                    style={{ color: "#2b4e72", fontSize: 14 }}
+                    style={{
+                      display: "flex",
+                      justifyContent: "space-between",
+                      alignItems: "center",
+                      marginTop: 16,
+                      flexWrap: "wrap",
+                      gap: 12,
+                    }}
                   >
-                    Page {currentPage} of {totalPages || 1}
-                  </div>
+                    <div style={{ color: "#2b4e72", fontSize: 14 }}>
+                      Page <strong>{currentPage}</strong> of{" "}
+                      <strong>{totalPages || 1}</strong>
+                      <span
+                        style={{
+                          marginLeft: 8,
+                          color: "#6c757d",
+                          fontSize: 12,
+                        }}
+                      >
+                        (Total Records: {totalCount})
+                      </span>
+                    </div>
 
-                  <div className="training-pagination__buttons">
-                    <button
-                      className="btnPage"
-                      disabled={currentPage === 1}
-                      onClick={() => setCurrentPage((p) => p - 1)}
+                    <div
+                      style={{
+                        display: "flex",
+                        gap: 6,
+                        alignItems: "center",
+                        flexWrap: "wrap",
+                      }}
                     >
-                      Prev
-                    </button>
+                      <button
+                        className="btnPage"
+                        disabled={currentPage === 1}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.max(1, p - 1))
+                        }
+                      >
+                        Prev
+                      </button>
 
-                    {paginationItems.map((item) =>
-                      typeof item === "number" ? (
+                      {getPageNumbers().map((num, i) => (
                         <button
-                          key={item}
-                          className={`btnPage ${currentPage === item ? "activePage" : ""}`}
-                          aria-current={
-                            currentPage === item ? "page" : undefined
+                          key={i}
+                          className={`btnPage ${
+                            currentPage === num ? "activePage" : ""
+                          }`}
+                          onClick={() =>
+                            typeof num === "number" && setCurrentPage(num)
                           }
-                          onClick={() => setCurrentPage(item)}
+                          disabled={num === "..."}
+                          style={{
+                            cursor: num === "..." ? "default" : "pointer",
+                            minWidth: 32,
+                          }}
                         >
-                          {item}
+                          {num}
                         </button>
-                      ) : (
-                        <span
-                          key={item}
-                          className="training-pagination__ellipsis"
-                          aria-hidden="true"
-                        >
-                          …
-                        </span>
-                      ),
-                    )}
+                      ))}
 
-                    <button
-                      className="btnPage"
-                      disabled={currentPage === totalPages}
-                      onClick={() => setCurrentPage((p) => p + 1)}
-                    >
-                      Next
-                    </button>
+                      <button
+                        className="btnPage"
+                        disabled={currentPage >= totalPages}
+                        onClick={() =>
+                          setCurrentPage((p) => Math.min(totalPages, p + 1))
+                        }
+                      >
+                        Next
+                      </button>
+
+                      {/* SURGICAL ADDITION: Jump to Page Search */}
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 4,
+                          marginLeft: 12,
+                        }}
+                      >
+                        <input
+                          type="number"
+                          value={jumpPage}
+                          onChange={(e) => setJumpPage(e.target.value)}
+                          placeholder="Go to"
+                          style={{
+                            width: 65,
+                            padding: "6px 8px",
+                            borderRadius: 6,
+                            border: "1px solid #a7c6ed",
+                            outline: "none",
+                            fontSize: 13,
+                          }}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter") {
+                              const p = parseInt(jumpPage, 10);
+                              if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                                setCurrentPage(p);
+                                setJumpPage("");
+                              }
+                            }
+                          }}
+                        />
+                        <button
+                          className="btnPrimary"
+                          style={{ padding: "6px 12px" }}
+                          onClick={() => {
+                            const p = parseInt(jumpPage, 10);
+                            if (!isNaN(p) && p >= 1 && p <= totalPages) {
+                              setCurrentPage(p);
+                              setJumpPage("");
+                            }
+                          }}
+                        >
+                          Go
+                        </button>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
-
-            {/* CSS */}
-            <style>{`
-
+          </main>
+        </div>
+      </div>
+      {/* SURGICAL ADDITION: TR Convert Modal */}
+      {convertTrId && (
+        <div
+          style={{
+            position: "fixed",
+            inset: 0,
+            background: "rgba(15, 23, 42, 0.6)",
+            backdropFilter: "blur(2px)",
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            zIndex: 9999,
+            padding: "20px",
+          }}
+          onClick={() => {
+            setConvertTrId(null);
+            setRefreshToken((t) => t + 1); // Refresh the list automatically when closing
+          }}
+        >
+          <div
+            style={{ width: "100%", maxWidth: "800px", position: "relative" }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            <button
+              onClick={() => {
+                setConvertTrId(null);
+                setRefreshToken((t) => t + 1);
+              }}
+              style={{
+                position: "absolute",
+                top: "16px",
+                right: "20px",
+                background: "transparent",
+                border: "none",
+                fontSize: "20px",
+                cursor: "pointer",
+                color: "#1e3a8a",
+                zIndex: 10,
+              }}
+              title="Close"
+            >
+              ✖
+            </button>
+            <TRConvert trId={convertTrId} />
+          </div>
+        </div>
+      )}
+      {/* CSS */}
+      <style>{`
 /* BUTTON */
 .btnPrimary{
   background:#3d6ba6;
@@ -732,13 +1141,27 @@ export default function TrainingRequestList() {
   box-shadow: 0 10px 18px rgba(0,0,0,0.15);
 }
 
+/* SURGICAL ADDITION: Convert Button Styles */
+.btnConvert {
+  background: #10b981;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  padding: 5px 12px;
+  cursor: pointer;
+  transition: all .25s ease;
+}
+.btnConvert:hover {
+  background: #059669;
+  transform: translateY(-4px);
+  box-shadow: 0 8px 14px rgba(16, 185, 129, 0.15);
+}
+
 /* TABLE */
 .training-table{
   width:100%;
-  height:auto;
   border-collapse:collapse;
-  table-layout:fixed;
-  font-size:13px;
+  font-size:14px;
 }
 
 /* HEADER */
@@ -748,50 +1171,20 @@ export default function TrainingRequestList() {
 }
 
 .training-table th{
-  padding:9px 7px;
+  padding:10px;
   text-align:left;
   font-weight:600;
   text-align:center;
-  justify-content:center;
-  white-space:normal;
-  line-height:1.2;
+  justify-content:center;  
 }
 
 /* BODY */
 .training-table td{
-  padding:8px 7px;
+  padding:10px;
   border-bottom:1px solid #e4ecf5;
   text-align:center;
-  justify-content:center;
-  vertical-align:middle;
-  line-height:1.2;
-  overflow-wrap:anywhere;
+  justify-content:center;  
 }
-
-.training-table th:nth-child(1),
-.training-table td:nth-child(1){ width:5%; }
-.training-table th:nth-child(2),
-.training-table td:nth-child(2){ width:10%; }
-.training-table th:nth-child(3),
-.training-table td:nth-child(3){ width:14%; }
-.training-table th:nth-child(4),
-.training-table td:nth-child(4){ width:8%; }
-.training-table th:nth-child(5),
-.training-table td:nth-child(5){ width:10%; }
-.training-table th:nth-child(6),
-.training-table td:nth-child(6){ width:19%; }
-.training-table th:nth-child(7),
-.training-table td:nth-child(7){ width:10%; }
-.training-table th:nth-child(8),
-.training-table td:nth-child(8){ width:10%; }
-.training-table th:nth-child(9),
-.training-table td:nth-child(9){ width:7%; }
-.training-table th:nth-child(10),
-.training-table td:nth-child(10){ width:9%; }
-.training-table th:nth-child(11),
-.training-table td:nth-child(11){ width:8%; }
-.training-table th:nth-child(12),
-.training-table td:nth-child(12){ display:none; }
 
 /* ROW BACKGROUND */
 .training-table tbody tr{
@@ -803,43 +1196,37 @@ export default function TrainingRequestList() {
   background:#edf4fb;
 }
 
+.status-badge{
+  display:inline-block;
+  padding:6px 12px;
+  border-radius:999px;
+  font-size:12px;
+  font-weight:700;
+  letter-spacing:.3px;
+  text-transform:uppercase;
+  min-width:100px;
+  text-align:center;
+  border:1px solid transparent;
+}
+
+/* BATCHING - Reddish Orange */
+.status-batching{
+  background:#ffedd5;
+  color:#c2410c;
+  border-color:#fb923c;
+}
+
+/* COMPLETED - Green */
+.status-completed{
+  background:#dcfce7;
+  color:#166534;
+  border-color:#86efac;
+}
+
 /* HOVER */
 .training-table tbody tr:hover{
-  background:#dbeafe;
+  background:#a7c6ed;
   transition:background .2s;
-}
-
-.training-table td:nth-child(6){
-  font-size:12px;
-}
-
-.admin-training-table-card{
-  width:100%;
-}
-
-.training-pagination{
-  border-top:1px solid #e4ecf5;
-  color:#2b4e72;
-  min-width:0;
-}
-
-.training-pagination__label{
-  flex:0 0 auto;
-  white-space:nowrap;
-}
-
-.training-pagination__buttons{
-  display:flex;
-  align-items:center;
-  justify-content:flex-end;
-  gap:6px;
-  flex-wrap:wrap;
-  min-width:0;
-}
-
-.training-pagination__ellipsis{
-  padding:0 2px;
-  color:#64748b;
 }
 
 /* LOADING / EMPTY */
@@ -874,7 +1261,7 @@ export default function TrainingRequestList() {
   transition:all .2s ease;
 }
 
-.btnPage:hover{
+.btnPage:hover:not(:disabled){
   background:#a7c6ed;
 }
 
@@ -885,8 +1272,8 @@ export default function TrainingRequestList() {
 
 /* ACTIVE PAGE */
 .activePage{
-  background:#3d6ba6;
-  color:#fff;
+  background:#3d6ba6 !important;
+  color:#fff !important;
 }
 
 /* HEADER */
@@ -922,28 +1309,9 @@ export default function TrainingRequestList() {
 
 @media (max-width: 768px){
 
-  .training-request-page{
-    padding:0 !important;
-  }
-
-  .training-table-scroll{
-    height:auto !important;
-    min-height:0 !important;
-    overflow:visible !important;
-  }
-
-  .training-pagination{
-    flex-wrap:wrap;
-    justify-content:center !important;
-  }
-
-  .training-pagination__buttons{
-    justify-content:center;
-  }
-
   /* 🔥 FORCE HIDE TABLE COMPLETELY */
   .training-table{
-    display:none !important; /* 🔽 IMPORTANT FIX */
+    display:none !important; 
   }
 
   /* SHOW CARD VIEW */
@@ -980,15 +1348,110 @@ export default function TrainingRequestList() {
 
   /* header adjust */
   .dashboard-title{
-    margin-left:10px; /* 🔽 ADDED */
-    font-size:18px;   /* 🔽 ADDED */
+    margin-left:10px; 
+    font-size:18px;   
   }
 }
 
+/* =========================================
+   BACKLOG TRAINING REQUEST HIGHLIGHT
+========================================= */
+
+/* Desktop table row */
+.training-table tbody tr.backlog-training-row {
+  background: #fffbeb !important;
+  box-shadow: inset 0 0 0 2px #d4a017;
+}
+
+/* Gold border for every cell */
+.training-table tbody tr.backlog-training-row td {
+  border-top: 2px solid #d4a017;
+  border-bottom: 2px solid #d4a017;
+}
+
+/* Left gold edge */
+.training-table tbody tr.backlog-training-row td:first-child {
+  border-left: 2px solid #d4a017;
+  border-radius: 8px 0 0 8px;
+}
+
+/* Right gold edge */
+.training-table tbody tr.backlog-training-row td:last-child {
+  border-right: 2px solid #d4a017;
+  border-radius: 0 8px 8px 0;
+}
+
+/* Keep backlog identity visible on hover */
+.training-table tbody tr.backlog-training-row:hover {
+  background: #fef3c7 !important;
+}
+
+/* Backlog Gold Badge */
+.backlog-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+
+  padding: 4px 10px;
+
+  background: linear-gradient(
+    135deg,
+    #fff7cc,
+    #facc15,
+    #d4a017
+  );
+
+  color: #713f12;
+  border: 1px solid #b8860b;
+  border-radius: 999px;
+
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+
+  box-shadow: 0 2px 5px rgba(180, 130, 0, 0.2);
+}
+
+/* Mobile backlog card */
+.backlog-mobile-card {
+  background: #fffbeb !important;
+  border: 2px solid #d4a017 !important;
+
+  box-shadow:
+    0 4px 10px rgba(0, 0, 0, 0.05),
+    inset 0 0 0 1px rgba(212, 160, 23, 0.2);
+}
+
+/* Mobile badge positioning */
+.backlog-mobile-header {
+  display: flex;
+  justify-content: flex-end;
+  margin-bottom: 8px;
+}
+
+.Backlogbtn {
+background-color: #16a34a;
+color: #ffffff;
+border: 1px solid #15803d;
+padding: 8px 16px;
+border-radius: 6px;
+font-size: 13px;
+font-weight: 600;
+cursor: pointer;
+display: inline-flex;
+align-items: center;
+transition: all 0.2s;
+height: 32px;
+}
+
+.Backlogbtn:hover:not(:disabled) {
+background-color: #15803d;
+box-shadow: 0 4px 6px rgba(22, 163, 74, 0.2);
+transform: translateY(-1px);
+}
 `}</style>
-          </main>
-        </div>
-      </div>
     </div>
   );
 }

@@ -16,6 +16,7 @@ import {
   Bar,
   LabelList,
 } from "recharts";
+import { FaChartBar, FaTable, FaBuilding } from "react-icons/fa";
 
 export default function SupportBenefitExt() {
   /* ---------------------------
@@ -150,7 +151,7 @@ export default function SupportBenefitExt() {
               ))}
             </Pie>
             <Tooltip formatter={(v) => `${v}%`} />
-            <Legend align="right" />
+            <Legend layout="horizontal" verticalAlign="bottom" />
           </PieChart>
         </ResponsiveContainer>
       </div>
@@ -187,16 +188,22 @@ export default function SupportBenefitExt() {
         {/* -------- BAR -------- */}
         <div className="ldms-chart-card">
           <div className="chart-header">
-            <h4>Support Type Distribution (%)</h4>
+            <h4>
+              <FaChartBar className="ldms-icon-red" />
+              Support Type Distribution (%)
+            </h4>
 
-            <select
-              value={department}
-              onChange={(e) => setDepartment(e.target.value)}
-            >
-              {DEPARTMENTS.map((d) => (
-                <option key={d}>{d}</option>
-              ))}
-            </select>
+            <div className="ldms-select-wrap">
+              <FaBuilding className="ldms-icon-black" />
+              <select
+                value={department}
+                onChange={(e) => setDepartment(e.target.value)}
+              >
+                {DEPARTMENTS.map((d) => (
+                  <option key={d}>{d}</option>
+                ))}
+              </select>
+            </div>
           </div>
 
           <ResponsiveContainer width="100%" height={280}>
@@ -218,7 +225,10 @@ export default function SupportBenefitExt() {
 
         {/* -------- TABLE -------- */}
         <div className="ldms-chart-card">
-          <h4>Support Benefit Details</h4>
+          <h4>
+            <FaTable className="ldms-icon-green" />
+            Support Benefit Details
+          </h4>
 
           <div className="table-wrap">
             <table>
@@ -258,49 +268,116 @@ export default function SupportBenefitExt() {
         .ldms-support-analytics {
           display: flex;
           flex-direction: column;
-          gap: 24px;
+          gap: 22px;
+          width: 100%;
+          overflow: hidden;
         }
+
+        /* ---------- GRID LAYOUT ---------- */
 
         .ldms-bottom-grid {
           display: grid;
-          grid-template-columns: 1fr 1fr;
-          gap: 16px;
+          grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+          gap: 18px;
+          width: 100%;
         }
+
+        /* ---------- CARD DESIGN ---------- */
 
         .ldms-chart-card {
           background: #ffffff;
-          border: 1px solid #f1c0c0;
+          border: 1px solid #f3c1c1;
           border-radius: 12px;
-          padding: 14px 16px;
+          padding: 16px 18px;
+
+          box-shadow: 0 4px 10px rgba(0,0,0,0.05);
+
+          display: flex;
+          flex-direction: column;
+          justify-content: space-between;
+
+          overflow: hidden;
         }
 
+        /* ---------- HEADERS ---------- */
+
         .ldms-chart-card h4 {
-          margin: 0 0 10px 0;
+          display: flex;
+          align-items: center;
+          gap: 8px;
+
+          margin: 0 0 12px 0;
           font-size: 14px;
           font-weight: 700;
           color: #c62828;
         }
 
+        /* ---------- ICON COLORS ---------- */
+
+        .ldms-icon-red {
+          color: #c62828;
+        }
+
+        .ldms-icon-green {
+          color: #2e7d32;
+        }
+
+        .ldms-icon-black {
+          color: #333;
+        }
+
+        /* ---------- HEADER ROW ---------- */
+
         .chart-header {
           display: flex;
           justify-content: space-between;
           align-items: center;
-          margin-bottom: 10px;
+          gap: 10px;
+        }
+
+        /* ---------- SELECT ---------- */
+
+        .ldms-select-wrap {
+          display: flex;
+          align-items: center;
+          gap: 6px;
         }
 
         select {
-          padding: 4px 8px;
+          padding: 5px 10px;
           font-size: 12px;
           border-radius: 6px;
-          border: 1px solid #f1c0c0;
+          border: 1px solid #e5a5a5;
           color: #8b1d1d;
           background: #ffffff;
+          cursor: pointer;
         }
+
+        select:focus {
+          outline: none;
+          border-color: #c62828;
+        }
+
+        /* ---------- TABLE ---------- */
 
         .table-wrap {
           max-height: 420px;
           overflow-y: auto;
+          border-radius: 6px;
         }
+
+        /* scrollbar */
+
+        .table-wrap::-webkit-scrollbar {
+          width: 6px;
+        }
+
+        .table-wrap::-webkit-scrollbar-thumb {
+          background: #c62828;
+          border-radius: 10px;
+        }
+
+        /* ---------- TABLE STYLE ---------- */
 
         table {
           width: 100%;
@@ -308,18 +385,28 @@ export default function SupportBenefitExt() {
           font-size: 12px;
         }
 
-        /* 🔴 FIXED HEADER OVERRIDE */
-        .table-wrap thead th {
+        thead th {
+          position: sticky;
+          top: 0;
+
           background: #c62828;
-          color: #ffffff;
+          color: white;
+
           padding: 10px 8px;
           font-weight: 700;
+          text-align: left;
+        }
+
+        tbody tr:hover {
+          background: #fff5f5;
         }
 
         td {
           padding: 8px;
           border-bottom: 1px solid #e5e7eb;
         }
+
+        /* ---------- TOTAL ROW ---------- */
 
         tfoot {
           position: sticky;
@@ -328,10 +415,53 @@ export default function SupportBenefitExt() {
           font-weight: 700;
         }
 
-        @media (max-width: 1024px) {
+        tfoot td {
+          padding: 10px 8px;
+          border-top: 2px solid #c62828;
+        }
+
+        /* ---------- CHART CONTAINERS ---------- */
+
+        .recharts-responsive-container {
+          min-height: 260px;
+        }        
+
+        /* ---------- TABLE RESPONSIVE ---------- */
+
+        @media (max-width: 900px) {
+
           .ldms-bottom-grid {
             grid-template-columns: 1fr;
           }
+
+          .ldms-chart-card {
+            padding: 14px;
+          }
+
+          table {
+            font-size: 11px;
+          }
+
+        }
+
+        /* ---------- MOBILE ---------- */
+
+        @media (max-width: 600px) {
+
+          .chart-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 8px;
+          }
+
+          .ldms-chart-card h4 {
+            font-size: 13px;
+          }
+
+          select {
+            font-size: 11px;
+          }
+
         }
       `}</style>
     </div>

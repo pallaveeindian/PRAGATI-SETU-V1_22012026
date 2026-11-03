@@ -70,26 +70,55 @@ export default function DemandAnalytics() {
       <div className="ldms-chart-card">
         <h4>PLD Enrollment Status (%)</h4>
 
-        <ResponsiveContainer width="100%" height={300}>
-          <PieChart>
-            <Pie
-              data={pieData}
-              dataKey="value"
-              nameKey="name"
-              cx="45%"
-              cy="50%"
-              outerRadius={100}
-              label={({ value }) => `${value}%`}
-            >
-              {pieData.map((_, index) => (
-                <Cell key={index} fill={PIE_COLORS[index]} />
-              ))}
-            </Pie>
+        <div className="pie-layout">
+          {/* ===== LEFT : PIE ===== */}
+          <div className="pie-left">
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={pieData}
+                  dataKey="value"
+                  nameKey="name"
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  label={({ value }) => `${value}%`}
+                >
+                  {pieData.map((_, index) => (
+                    <Cell key={index} fill={PIE_COLORS[index]} />
+                  ))}
+                </Pie>
+                <Tooltip formatter={(v) => `${v}%`} />
+              </PieChart>
+            </ResponsiveContainer>
+          </div>
 
-            <Tooltip formatter={(v) => `${v}%`} />
-            <Legend align="right" />
-          </PieChart>
-        </ResponsiveContainer>
+          {/* ===== RIGHT : CUSTOM LEGEND TABLE ===== */}
+          <div className="pie-right">
+            <table className="legend-table">
+              <thead>
+                <tr>
+                  <th>Enrollment Type</th>
+                  <th style={{ textAlign: "center" }}>%</th>
+                </tr>
+              </thead>
+              <tbody>
+                {pieData.map((item, i) => (
+                  <tr key={item.name}>
+                    <td>
+                      <span
+                        className="legend-dot"
+                        style={{ background: PIE_COLORS[i] }}
+                      />
+                      {item.name}
+                    </td>
+                    <td>{item.value}%</td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
       </div>
 
       {/* ================= BAR SECTION ================= */}
@@ -223,11 +252,93 @@ export default function DemandAnalytics() {
           cursor: pointer;
         }
 
+        /* ===== PIE LAYOUT ===== */
+        .pie-layout {
+          display: grid;
+          grid-template-columns: 1fr 1fr;
+          gap: 30px;
+          align-items: center;
+        }
+
+        .pie-left {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        .pie-right {
+          display: flex;
+          justify-content: center;
+          align-items: center;
+        }
+
+        /* ===== LEGEND TABLE ===== */
+        .legend-table {
+          width: 100%;
+          border-collapse: collapse;
+          font-size: 14px;
+          border: 1px solid #f1d0d0;
+          border-radius: 10px;
+          overflow: hidden;
+        }
+
+        .legend-table thead th {
+          background: #c62828;
+          color: #ffffff;
+          padding: 12px;
+          font-weight: 700;
+        }
+
+        .legend-table td {
+          padding: 10px 12px;
+          border-bottom: 1px solid #f3e1e1;
+          text-align: center;
+          font-weight: 500;
+        }
+
+        .legend-table tbody tr:hover {
+          background: #fff5f5;
+        }
+
+        .legend-dot {
+          display: inline-block;
+          width: 12px;
+          height: 12px;
+          border-radius: 50%;
+          margin-right: 8px;
+        }
+
+        .legend-table td:first-child {
+          text-align: left;
+          font-weight: 600;
+          color: #111;
+        }
+
         @media (max-width: 1024px) {
           .ldms-bar-grid {
             grid-template-columns: 1fr;
           }
+
+          .pie-layout {
+            grid-template-columns: 1fr;
+            gap: 20px;
+          }         
+
         }
+
+        @media (max-width: 480px) {
+          .legend-table {
+            font-size: 12px;
+          }
+
+          .legend-table thead th {
+            padding: 8px;
+          }
+
+          .legend-table td {
+            padding: 8px;
+          }
+        }          
       `}</style>
     </div>
   );

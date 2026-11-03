@@ -13,10 +13,10 @@ import { AUTH_API } from "../../api/axios";
 import ldmsLogo from "../../assets/ldms_logo.png";
 
 const ROLE_LDMS_ROUTE = {
-  bmmu: "/future-updates",
-  dmmu: "/future-updates",
-  smmu: "/future-updates",
-  default: "/future-updates",
+  bmmu: "/ldms/bmmu/dashboard",
+  dmmu: "/ldms/dmmu/dashboard",
+  smmu: "/ldms/smmu/dashboard",
+  default: "/",
 };
 
 const ROLE_ID_TO_KEY = {
@@ -157,18 +157,6 @@ export default function LdmsLogin() {
             }}
           />{" "}
           Admin
-        </label>
-        <label>
-          <input
-            type="radio"
-            value="General"
-            {...register("userType")}
-            onChange={() => {
-              setValue("userType", "General");
-              setValue("role", "");
-            }}
-          />{" "}
-          General
         </label>
       </div>
 

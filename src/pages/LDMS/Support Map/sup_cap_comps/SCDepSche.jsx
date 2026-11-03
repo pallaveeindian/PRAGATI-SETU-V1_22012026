@@ -34,8 +34,7 @@ export default function SCDepSche({
 
   /* ---------------- Toggle Member ---------------- */
   function handleToggleMember(member, checked) {
-    const code =
-      member?.member_code || member?.lokos_member_code || member?.id;
+    const code = member?.member_code || member?.lokos_member_code || member?.id;
     if (!code) return;
 
     onSelectionChange?.({

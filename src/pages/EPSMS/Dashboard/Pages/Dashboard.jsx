@@ -348,7 +348,6 @@ const Dashboard = ({ onLogout }) => {
 
       try {
         const listResponse = await EPSAKHI_API.mappedCrpList();
-        console.log('Fetched mapped CRP list:', listResponse);
         const payload = listResponse?.data ?? listResponse ?? {};
         const normalizedRows = normalizeRows(payload);
 

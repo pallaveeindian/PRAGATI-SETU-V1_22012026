@@ -65,23 +65,8 @@ export default function RegisterGrievance() {
       payload.append("screenshots", file);
     });
 
-    // ===== Debug Logs =====
-    console.log("Form State:", form);
-    console.log("Selected Files:", files);
-
-    console.log("FormData Payload:");
-    for (let [key, value] of payload.entries()) {
-      console.log(
-        key,
-        value instanceof File ? `${value.name} (${value.size} bytes)` : value,
-      );
-    }
-
     try {
       const res = await SUPPORT_API.createTicket(payload);
-
-      console.log("API Success:", res);
-      console.log("Response Data:", res.data);
 
       setTicket(res.data.ticket_code);
 
@@ -134,16 +119,12 @@ export default function RegisterGrievance() {
         page_size: 500,
       });
 
-      console.log("District Response", res.data);
-
       // setDistricts(res.data.results || res.data);
       const districtData = Array.isArray(res.data.results)
         ? res.data.results
         : Array.isArray(res.data)
           ? res.data
           : [];
-
-      console.log("District Data:", districtData);
 
       setDistricts(districtData);
     } catch (err) {
@@ -168,9 +149,6 @@ export default function RegisterGrievance() {
       const response = await LOOKUP_API.FULLblocksByDistrict(districtId, {
         page_size: 5000,
       });
-
-      console.log("Blocks API Response:", response.data);
-
       const blockData = response?.data?.results || response?.data || [];
 
       setBlocks(blockData);

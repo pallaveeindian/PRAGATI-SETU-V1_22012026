@@ -210,7 +210,7 @@ export default function BmmuTmsDashboard() {
             ts: Date.now(),
             kpis: newKpis,
             blockId: bId,
-          })
+          }),
         );
       }
     } catch (e) {
