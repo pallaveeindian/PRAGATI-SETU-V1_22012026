@@ -374,6 +374,7 @@ export default function ShgMemberListTable({
               <thead style={{ background: "#3d6ba6", color: "#fff" }}>
                 <tr>
                   <th style={{ width: 40, padding: 10 }}> </th>
+                  <th style={{ padding: 10 }}>Sno.</th>
                   <th style={{ padding: 10 }}>Member Name</th>
                   <th style={{ padding: 10 }}>Member Code</th>
                   <th style={{ padding: 10 }}>Age</th>
@@ -391,7 +392,7 @@ export default function ShgMemberListTable({
               </thead>
 
               <tbody>
-                {rows.map((m) => {
+                {rows.map((m, idx) => {
                   const code = m.member_code || m.lokos_member_code || m.id;
 
                   const isSelected = isMemberSelected(m);
@@ -428,7 +429,9 @@ export default function ShgMemberListTable({
                           style={{ transform: "scale(1.5)", cursor: "pointer" }}
                         />
                       </td>
-
+                      <td style={{ padding: 10 }}>
+                        {(meta.page - 1) * meta.page_size + idx + 1}
+                      </td>
                       <td style={{ padding: 8 }}>{m.member_name || "-"}</td>
                       <td style={{ padding: 8 }}>{code || "-"}</td>
                       <td style={{ padding: 8 }}>{age || "-"}</td>

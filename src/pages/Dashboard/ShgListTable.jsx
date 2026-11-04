@@ -346,6 +346,7 @@ export default function ShgListTable({
                 }}
               >
                 <tr>
+                  <th style={{ padding: 10, textAlign: "left" }}>Sno.</th>
                   <th style={{ padding: 10, textAlign: "left" }}>SHG Name</th>
                   <th style={{ padding: 10, textAlign: "left" }}>SHG Code</th>
                   <th style={{ padding: 10, textAlign: "left" }}>SHG Type</th>
@@ -376,6 +377,9 @@ export default function ShgListTable({
                         borderBottom: "1px solid #e4ecf5",
                       }}
                     >
+                      <td style={{ padding: 10 }}>
+                        {(meta.page - 1) * meta.page_size + idx + 1}
+                      </td>
                       <td style={{ padding: 10 }}>
                         {shg.shg_name || shg.name || "-"}
                       </td>

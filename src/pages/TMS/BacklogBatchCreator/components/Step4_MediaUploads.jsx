@@ -56,8 +56,8 @@ export default function Step4_MediaUploads({
     const selectedFile = e.target.files?.[0];
     if (selectedFile) {
       // Optional: Basic validation (size < 10MB)
-      if (selectedFile.size > 10 * 1024 * 1024) {
-        setError("File size must be under 10MB");
+      if (selectedFile.size > 2 * 1024 * 1024) {
+        setError("File size must not exceed 2MB");
         setFile(null);
         e.target.value = null; // Clear input
       } else {
@@ -68,6 +68,10 @@ export default function Step4_MediaUploads({
   };
 
   const handleAddMedia = () => {
+    if (mediaUploads.length >= 3) {
+      setError("Maximum 3 media files are allowed per batch.");
+      return;
+    }
     if (!selectedDate || !category || !file) {
       setError("Please select a date, category, and attach a file.");
       return;
@@ -217,14 +221,15 @@ export default function Step4_MediaUploads({
         >
           <button
             onClick={handleAddMedia}
+            disabled={mediaUploads.length >= 3}
             style={{
-              background: "#10b981",
+              background: mediaUploads.length >= 3 ? "#94a3b8" : "#10b981",
               color: "#fff",
               border: "none",
               padding: "10px 24px",
               borderRadius: "8px",
               fontWeight: "700",
-              cursor: "pointer",
+              cursor: mediaUploads.length >= 3 ? "not-allowed" : "pointer",
               boxShadow: "0 4px 6px rgba(16, 185, 129, 0.2)",
             }}
           >

@@ -80,16 +80,16 @@ const MENU = {
       ],
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         {
-          label: "Beneficiary Engagement",
+          label: "Beneficiary",
           to: "/tms/engagement-check/beneficiary",
           icon: FaAddressBook,
         },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
@@ -126,16 +126,16 @@ const MENU = {
       ],
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         {
-          label: "Beneficiary Engagement",
+          label: "Beneficiary",
           to: "/tms/engagement-check/beneficiary",
           icon: FaAddressBook,
         },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
@@ -229,7 +229,7 @@ const MENU = {
       ],
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         // {
@@ -238,7 +238,7 @@ const MENU = {
         //   icon: FaAddressBook,
         // },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
@@ -394,7 +394,7 @@ const MENU = {
       icon: FaBuilding,
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         // {
@@ -403,7 +403,7 @@ const MENU = {
         //   icon: FaAddressBook,
         // },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
@@ -433,11 +433,11 @@ const MENU = {
           to: "/tms/batches-list/",
           icon: FaAddressBook,
         },
-        // {
-        //   label: "Backlog Batch Creator",
-        //   to: "/tms/backlog-batch-creator/",
-        //   icon: FaBackward,
-        // },
+        {
+          label: "Backlog Batch Creator",
+          to: "/tms/backlog-batch-creator/",
+          icon: FaBackward,
+        },
       ],
     },
     {
