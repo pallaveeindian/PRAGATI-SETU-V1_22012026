@@ -63,15 +63,45 @@ export default function TpTmsSummary() {
 
   // DMMU Geoscope Lock Initializer
   useEffect(() => {
-    if (role === "dmmu") {
-      const geo = getGeoscope() || {};
-      const dmmuDistrictId = geo.district_id || safeFirst(geo.districts);
-      if (dmmuDistrictId) {
-        setSelectedDistrict(String(dmmuDistrictId));
+    const fetchUserGeoscope = async () => {
+      if (role !== "dmmu" && role !== "bmmu" && role !== "dtp") return;
+
+      try {
+        let geo = {};
+
+        if (user?.id) {
+          const response = await LOOKUP_API.userGeoscopeByUserId(user.id);
+          geo = response?.data || {};
+        }
+
+        // Fallback to locally stored geoscope
+        if (!geo?.district_id && !geo?.districts) {
+          geo = getGeoscope() || {};
+        }
+        const dmmuDistrictId = geo?.district_id || safeFirst(geo?.districts);
+
+        if (dmmuDistrictId) {
+          setSelectedDistrict(String(dmmuDistrictId));
+        }
+
+        setBlockWise(true);
+      } catch (error) {
+        console.error("Error fetching user geoscope:", error);
+
+        // Fallback to locally stored geoscope
+        const geo = getGeoscope() || {};
+        const dmmuDistrictId = geo?.district_id || safeFirst(geo?.districts);
+
+        if (dmmuDistrictId) {
+          setSelectedDistrict(String(dmmuDistrictId));
+        }
+
+        setBlockWise(true);
       }
-      setBlockWise(true);
-    }
-  }, [role]);
+    };
+
+    fetchUserGeoscope();
+  }, [role, user?.id]);
 
   // 1. Fetch Themes, Plans, and Districts on Mount
   useEffect(() => {
@@ -134,6 +164,8 @@ export default function TpTmsSummary() {
     if (role === "smmu" && trainingPlansLoading) return;
     // Do not send an unscoped request while the DMMU district is initializing.
     if (role === "dmmu" && !selectedDistrict) return;
+    if (role === "bmmu" && !selectedDistrict) return;
+    if (role === "dtp" && !selectedDistrict) return;
 
     const params = {
       financial_year: financialYear,
@@ -291,7 +323,9 @@ export default function TpTmsSummary() {
                 <div className="filter-group">
                   <select
                     value={selectedDistrict}
-                    disabled={role === "dmmu"}
+                    disabled={
+                      role === "dmmu" || role === "bmmu" || role === "dtp"
+                    }
                     onChange={(e) => {
                       const val = e.target.value;
                       setSelectedDistrict(val);
@@ -300,11 +334,19 @@ export default function TpTmsSummary() {
                       }
                     }}
                     style={{
-                      background: role === "dmmu" ? "#f1f5f9" : "#f8fafc",
-                      cursor: role === "dmmu" ? "not-allowed" : "pointer",
+                      background:
+                        role === "dmmu" || role === "bmmu" || role === "dtp"
+                          ? "#f1f5f9"
+                          : "#f8fafc",
+                      cursor:
+                        role === "dmmu" || role === "bmmu" || role === "dtp"
+                          ? "not-allowed"
+                          : "pointer",
                     }}
                   >
-                    {role !== "dmmu" && <option value="">All Districts</option>}
+                    {role !== "dmmu" && role !== "bmmu" && role !== "dtp" && (
+                      <option value="">All Districts</option>
+                    )}
                     {districtsList.map((d) => (
                       <option key={d.district_id} value={d.district_id}>
                         {d.district_name_en}
@@ -617,15 +659,20 @@ export default function TpTmsSummary() {
                           >
                             Participants Dropout
                           </th>
-                          <th className="highlight-col-alt">
-                            Total Target (Slot 1+2)
-                          </th>
-                          <th>Participants Onboarded</th>
-                          <th>Participants Enrolled In Batches</th>
-                          <th>Remaining Participants for Enrollment</th>
-                          <th className="highlight-col-success">
-                            Achievement %
-                          </th>
+
+                          {!isBlockView && (
+                            <>
+                              <th className="highlight-col-alt">
+                                Total Target (Slot 1+2)
+                              </th>
+                              <th>Participants Onboarded</th>
+                              <th>Participants Enrolled In Batches</th>
+                              <th>Remaining Participants for Enrollment</th>
+                              <th className="highlight-col-success">
+                                Achievement %
+                              </th>
+                            </>
+                          )}
                         </tr>
                         <tr className="col-numbers-row">
                           <th></th>
@@ -641,11 +688,15 @@ export default function TpTmsSummary() {
                           <th>9</th>
                           <th>9A</th>
                           <th>9B</th>
-                          <th>10</th>
-                          <th>11</th>
-                          <th>12</th>
-                          <th>13</th>
-                          <th>14</th>
+                          {!isBlockView && (
+                            <>
+                              <th>10</th>
+                              <th>11</th>
+                              <th>12</th>
+                              <th>13</th>
+                              <th>14</th>
+                            </>
+                          )}
                         </tr>
                       </thead>
                       <tbody>
@@ -734,41 +785,45 @@ export default function TpTmsSummary() {
                                   bVal={b["9b_participants_dropout"]}
                                   className="text-warning"
                                 />
-                                <StackedCell
-                                  bVal={b["10_total_target"]}
-                                  pVal={p["10_total_target"]}
-                                  className="highlight-cell-alt"
-                                />
-                                <StackedCell
-                                  bVal={b["11_participants_onboarded"]}
-                                  pVal={p["11_participants_onboarded"]}
-                                />
-                                <StackedCell
-                                  bVal={
-                                    b["12_participants_enrolled_in_batches"]
-                                  }
-                                  pVal={
-                                    p["12_participants_enrolled_in_batches"]
-                                  }
-                                />
-                                <StackedCell
-                                  bVal={
-                                    b[
-                                      "13_remaining_participants_for_enrollment"
-                                    ]
-                                  }
-                                  pVal={
-                                    p[
-                                      "13_remaining_participants_for_enrollment"
-                                    ]
-                                  }
-                                  className="text-warning"
-                                />
-                                <StackedCell
-                                  bVal={b["14_achievement_percentage"]}
-                                  pVal={p["14_achievement_percentage"]}
-                                  className="highlight-cell-success"
-                                />
+                                {!isBlockView && (
+                                  <>
+                                    <StackedCell
+                                      bVal={b["10_total_target"]}
+                                      pVal={p["10_total_target"]}
+                                      className="highlight-cell-alt"
+                                    />
+                                    <StackedCell
+                                      bVal={b["11_participants_onboarded"]}
+                                      pVal={p["11_participants_onboarded"]}
+                                    />
+                                    <StackedCell
+                                      bVal={
+                                        b["12_participants_enrolled_in_batches"]
+                                      }
+                                      pVal={
+                                        p["12_participants_enrolled_in_batches"]
+                                      }
+                                    />
+                                    <StackedCell
+                                      bVal={
+                                        b[
+                                          "13_remaining_participants_for_enrollment"
+                                        ]
+                                      }
+                                      pVal={
+                                        p[
+                                          "13_remaining_participants_for_enrollment"
+                                        ]
+                                      }
+                                      className="text-warning"
+                                    />
+                                    <StackedCell
+                                      bVal={b["14_achievement_percentage"]}
+                                      pVal={p["14_achievement_percentage"]}
+                                      className="highlight-cell-success"
+                                    />
+                                  </>
+                                )}
                               </tr>
                             );
                           })

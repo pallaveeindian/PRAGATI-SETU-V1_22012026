@@ -1,6 +1,7 @@
 // src/pages/Dashboard/ShgMemberListTable.jsx
 import React, { useEffect, useState, useMemo } from "react";
 import { EPSAKHI_API } from "../../api/axios";
+import LokOSFetcher from "../TMS/LokOSFetcher";
 
 // Cache for SHG member lists per (shgCode + filters)
 const shgMembersCache = new Map();
@@ -54,6 +55,8 @@ export default function ShgMemberListTable({
   const [ordering, setOrdering] = useState("");
   const [onlyPld, setOnlyPld] = useState(false); // working PLD filter
   const [reloadToken, setReloadToken] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
 
   // internal selected set (if parent doesn't control selection)
   const [internalSelected, setInternalSelected] = useState(() => new Set());
@@ -433,7 +436,19 @@ export default function ShgMemberListTable({
                         {(meta.page - 1) * meta.page_size + idx + 1}
                       </td>
                       <td style={{ padding: 8 }}>{m.member_name || "-"}</td>
-                      <td style={{ padding: 8 }}>{code || "-"}</td>
+                      <td
+                        className="member-code-cell"
+                        style={{
+                          padding: 8,
+                          background: isSelected ? "#a7c6ed" : "",
+                        }}
+                        onClick={() => {
+                          setSelectedRow(m);
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        {code || "-"}
+                      </td>
                       <td style={{ padding: 8 }}>{age || "-"}</td>
                       <td style={{ padding: 8 }}>{m.gender || "-"}</td>
                       <td style={{ padding: 8 }}>{m.marital_status || "-"}</td>
@@ -522,74 +537,118 @@ export default function ShgMemberListTable({
         </>
       )}
       <style>{`.table-wrapper{
-  border-radius:8px;
-  overflow:hidden;
-}
+          border-radius:8px;
+          overflow:hidden;
+        }
 
-/* Table base */
-.table{
-  width:100%;
-  border-collapse:collapse;
-  background:#e4ecf5;
-  font-size:14px;
-}
+        /* Table base */
+        .table{
+          width:100%;
+          border-collapse:collapse;
+          background:#e4ecf5;
+          font-size:14px;
+        }
 
-/* Header */
-.table thead{
-  background:#3d6ba6;
-  color:#fff;
-}
+        /* Header */
+        .table thead{
+          background:#3d6ba6;
+          color:#fff;
+        }
 
-.table th{
-  padding:10px;
-  text-align:left;
-  font-weight:600;
-}
+        .table th{
+          padding:10px;
+          text-align:left;
+          font-weight:600;
+        }
 
-/* Body rows */
-.table tbody tr{
-  background:#f8fbff;
-  border-bottom:1px solid #d3e2f3;
-}
+        /* Body rows */
+        .table tbody tr{
+          background:#f8fbff;
+          border-bottom:1px solid #d3e2f3;
+        }
 
-/* Alternate row color */
-.table tbody tr:nth-child(even){
-  background:#edf4fb;
-}
+        .member-code-cell {
+          position: relative;
+          transition: all 0.2s ease;
+          cursor: pointer;
+        }
 
-/* Hover effect */
-.table tbody tr:hover{
-  background:#a7c6ed;
-  transition:background 0.2s ease;
-}
+        .member-code-cell:hover {
+          outline: 2px solid #2878d0;
+          outline-offset: -2px;
+          background: #edf5ff !important;
+        }
 
-/* Selected row */
-.row-selected{
-  background:#a7c6ed !important;
-}
+        /* Tooltip Badge */
+        .member-code-cell::after {
+          content: "Click to view LokOS Profile";
+          position: absolute;
+          top: -28px;
+          left: 50%;
+          transform: translate(-50%, -3px);
+          background: #2878d0;
+          color: white;
+          font-size: 10px;
+          font-weight: 600;
+          padding: 4px 9px;
+          border-radius: 12px;
+          white-space: nowrap;
+          opacity: 0;
+          transition: all 0.2s ease;
+          pointer-events: none;
+          z-index: 10;
+        }
 
-/* Table cells */
-.table td{
-  padding:10px;
-  color:#1f2937;
-}
-.btnPrimaryHover:hover {
-  transform: translateY(-6px);
-  box-shadow: 0 10px 18px rgba(0,0,0,0.15);
-}
-.search-input{
-  border: 1px solid #3d6ba6;
-  border-radius: 6px;
-  padding: 6px 10px;
-  outline: none;
-  transition: all 0.2s ease;
-}
-  /* Focus effect */
-.search-input:focus{
-  border-color: #2563eb;
-  box-shadow: 0 0 0 2px rgba(61,107,166,0.25);
-}
-`}</style>
+        .member-code-cell:hover::after {
+          opacity: 1;
+          transform: translate(-50%, 0);
+        }
+
+        /* Alternate row color */
+        .table tbody tr:nth-child(even){
+          background:#edf4fb;
+        }
+
+        /* Hover effect */
+        .table tbody tr:hover{
+          background:#a7c6ed;
+          transition:background 0.2s ease;
+        }
+
+        /* Selected row */
+        .row-selected{
+          background:#a7c6ed !important;
+        }
+
+        /* Table cells */
+        .table td{
+          padding:10px;
+          color:#1f2937;
+        }
+        .btnPrimaryHover:hover {
+          transform: translateY(-6px);
+          box-shadow: 0 10px 18px rgba(0,0,0,0.15);
+        }
+        .search-input{
+          border: 1px solid #3d6ba6;
+          border-radius: 6px;
+          padding: 6px 10px;
+          outline: none;
+          transition: all 0.2s ease;
+        }
+          /* Focus effect */
+        .search-input:focus{
+          border-color: #2563eb;
+          box-shadow: 0 0 0 2px rgba(61,107,166,0.25);
+        }
+      `}</style>
+      <LokOSFetcher
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        lokos_shg_code={shgKey}
+        lokos_member_code={selectedRow?.lokos_member_code}
+        fallbackData={selectedRow}
+      />
     </div>
   );
 }

@@ -38,6 +38,11 @@ const MENU = {
   bmmu: [
     { label: "Dashboard", to: "/tms/bmmu/dashboard", icon: FaTachometerAlt },
     {
+      label: "TMS portal Summary",
+      to: "/tms/bmmu/tms-portal-summary",
+      icon: FaClipboardCheck,
+    },
+    {
       label: "Master Trainer DB",
       icon: FaBuilding,
       children: [
@@ -95,7 +100,6 @@ const MENU = {
         },
       ],
     },
-    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
     {
       label: "Grievances",
       to: "/admin/grievances",
@@ -105,7 +109,7 @@ const MENU = {
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
     {
-      label: "Performance Report",
+      label: "TMS portal Summary",
       to: "/tms/dmmu/tms-portal-summary",
       icon: FaClipboardCheck,
     },
@@ -283,7 +287,7 @@ const MENU = {
     },
     // { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
     {
-      label: "Reports",
+      label: "TMS portal Summary",
       to: "/tms/smmu/tms-portal-summary",
       icon: FaClipboardCheck,
     },
