@@ -6,6 +6,7 @@ import LeftNav from "../../layout/tms_LeftNav";
 
 import api, { TMS_API, LOOKUP_API } from "../../../../api/axios";
 import { useAuth } from "../../../../contexts/AuthContext";
+import { getCanonicalRole } from "../../../../utils/roleUtils";
 import {
   FaIdCard,
   FaSearch,
@@ -116,7 +117,10 @@ function getApiErrorMessage(err, fallback) {
 export default function HrManagement() {
   const { user } = useAuth();
   const userName = user?.username || "";
-  const hasHrAccess = userName === "SMM_HR";
+  const hasHrAccess =
+    userName === "SMM_HR" ||
+    userName === "pmu_admin" ||
+    getCanonicalRole(user) === "pmu_admin";
 
   useEffect(() => {
     window.scrollTo(0, 0);

@@ -116,9 +116,14 @@ export default function TmsRoutes() {
           path="smmu/master-trainers/approvals"
           element={<MTPendingApprovalsConductor />}
         />
-        {/* HRM */}
-        <Route path="smmu/hrm" element={<HrManagement />} />
         <Route path="smmu/tms-portal-summary" element={<TpTmsSummary />} />
+      </Route>
+
+      {/* HR Management is available to SMMU and PMU Admin users. */}
+      <Route
+        element={<ProtectedRoute allowedRoles={["smmu", "pmu_admin"]} />}
+      >
+        <Route path="smmu/hrm" element={<HrManagement />} />
       </Route>
 
       {/* MT APPROVAL */}
