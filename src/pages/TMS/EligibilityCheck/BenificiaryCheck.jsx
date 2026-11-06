@@ -24,6 +24,8 @@ import {
 // In-memory cache for Beneficiary list table
 const beneficiaryListCache = new Map();
 
+const ITEMS_PER_PAGE = 15;
+
 function formatDetailValue(value) {
   if (value === null || value === undefined || value === "") return "—";
   if (Array.isArray(value)) {
@@ -126,10 +128,15 @@ export default function BeneficiaryCheck() {
   const [shgs, setShgs] = useState([]);
   const [rows, setRows] = useState([]); // Members
 
-  const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0 });
+  const [meta, setMeta] = useState({ page: 1, page_size: 15, total: 0 });
   const [loadingTable, setLoadingTable] = useState(true);
   const [tableError, setTableError] = useState("");
   const [searchKeyword, setSearchKeyword] = useState("");
+  const [currentPage, setCurrentPage] = useState(1);
+
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [viewLevel, searchKeyword]);
 
   // Resolve the signed-in user's district before loading the directory.
   useEffect(() => {
@@ -289,17 +296,22 @@ export default function BeneficiaryCheck() {
               ? payload.results
               : [];
 
-        const totalFromMeta =
-          typeof payload.meta?.total === "number"
-            ? payload.meta.total
-            : undefined;
-        const totalFromCount =
-          typeof payload.count === "number" ? payload.count : data.length;
+        const totalFromMeta = payload.meta?.total;
+        const totalFromCount = payload.count;
 
         const newMeta = {
-          page: payload.meta?.page ?? page,
-          page_size: payload.meta?.page_size ?? pageSize,
-          total: totalFromMeta ?? totalFromCount,
+          page: Number(payload.meta?.page) || page,
+          page_size: Number(payload.meta?.page_size) || pageSize,
+          total:
+            totalFromMeta !== null &&
+            totalFromMeta !== undefined &&
+            Number.isFinite(Number(totalFromMeta))
+              ? Number(totalFromMeta)
+              : totalFromCount !== null &&
+                  totalFromCount !== undefined &&
+                  Number.isFinite(Number(totalFromCount))
+                ? Number(totalFromCount)
+              : data.length,
         };
 
         setRows(data);
@@ -416,11 +428,6 @@ export default function BeneficiaryCheck() {
   // ==========================================
   // RENDER HELPERS
   // ==========================================
-  const totalPages =
-    meta.page_size > 0
-      ? Math.max(1, Math.ceil((meta.total || 0) / meta.page_size))
-      : 1;
-
   // Search filter applied locally based on current view level
   const getFilteredData = () => {
     const keyword = searchKeyword.toLowerCase();
@@ -450,6 +457,31 @@ export default function BeneficiaryCheck() {
   };
 
   const currentData = getFilteredData();
+  const totalPages =
+    viewLevel === "MEMBERS"
+      ? Math.max(
+          1,
+          Math.ceil((meta.total || 0) / (meta.page_size || ITEMS_PER_PAGE)),
+        )
+      : Math.max(1, Math.ceil(currentData.length / ITEMS_PER_PAGE));
+  const displayedData =
+    viewLevel === "MEMBERS"
+      ? currentData
+      : currentData.slice(
+          (currentPage - 1) * ITEMS_PER_PAGE,
+          currentPage * ITEMS_PER_PAGE,
+        );
+  const displayedPage = viewLevel === "MEMBERS" ? meta.page : currentPage;
+
+  const handlePageChange = (page) => {
+    if (page < 1 || page > totalPages || loadingTable) return;
+
+    if (viewLevel === "MEMBERS") {
+      loadMembersData(activeShg, page);
+    } else {
+      setCurrentPage(page);
+    }
+  };
 
   return (
     <div className="app-container beneficiary-eligibility">
@@ -533,7 +565,7 @@ export default function BeneficiaryCheck() {
                     <input
                       type="tel"
                       name="mobile_no"
-                      placeholder="e.g. 9876543210"
+                      placeholder="Enter mobile number"
                       value={formData.mobile_no}
                       onChange={handleCheckChange}
                     />
@@ -820,11 +852,13 @@ export default function BeneficiaryCheck() {
 
                         {/* BODY: Dynamic based on viewLevel */}
                         <tbody>
-                          {currentData.map((row, index) => {
+                          {displayedData.map((row, index) => {
                             const srNo =
                               viewLevel === "MEMBERS"
                                 ? (meta.page - 1) * meta.page_size + index + 1
-                                : index + 1;
+                                : (currentPage - 1) * ITEMS_PER_PAGE +
+                                  index +
+                                  1;
 
                             if (viewLevel === "BLOCKS") {
                               const blockId =
@@ -912,7 +946,7 @@ export default function BeneficiaryCheck() {
                             return null;
                           })}
 
-                          {currentData.length === 0 && !loadingTable && (
+                          {displayedData.length === 0 && !loadingTable && (
                             <tr>
                               <td
                                 colSpan="6"
@@ -926,27 +960,24 @@ export default function BeneficiaryCheck() {
                       </table>
                     </div>
 
-                    {/* Pagination only shown for Members (since API supports it) */}
-                    {viewLevel === "MEMBERS" && totalPages > 1 && (
+                    {totalPages > 1 && (
                       <div className="tms-pagination">
                         <button
                           className="beneficiary-eligibility__reset"
-                          disabled={meta.page <= 1}
-                          onClick={() =>
-                            loadMembersData(activeShg, meta.page - 1)
-                          }
+                          disabled={displayedPage <= 1 || loadingTable}
+                          onClick={() => handlePageChange(displayedPage - 1)}
                         >
                           Prev
                         </button>
                         <span className="pagination-info">
-                          Page <strong>{meta.page}</strong> of {totalPages}
+                          Page <strong>{displayedPage}</strong> of {totalPages}
                         </span>
                         <button
                           className="beneficiary-eligibility__reset"
-                          disabled={meta.page >= totalPages}
-                          onClick={() =>
-                            loadMembersData(activeShg, meta.page + 1)
+                          disabled={
+                            displayedPage >= totalPages || loadingTable
                           }
+                          onClick={() => handlePageChange(displayedPage + 1)}
                         >
                           Next
                         </button>
