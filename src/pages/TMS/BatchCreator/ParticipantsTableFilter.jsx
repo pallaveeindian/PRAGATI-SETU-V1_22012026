@@ -19,6 +19,7 @@ const ParticipantTableFilters = ({
   const [blocks, setBlocks] = useState([]);
   const [panchayats, setPanchayats] = useState([]);
   const [villages, setVillages] = useState([]);
+  const [isHovered, setIsHovered] = useState(false);
 
   // Custom Dropdown states for Panchayat
   const [isPanchayatOpen, setIsPanchayatOpen] = useState(false);
@@ -275,15 +276,26 @@ const ParticipantTableFilters = ({
     background: "#fff",
   };
   const buttonStyle = {
-    background: "#2563eb",
+    background: "linear-gradient(135deg, #2563eb, #3a8eed)",
     color: "#fff",
     border: "none",
-    borderRadius: "8px",
-    padding: "10px 24px",
-    fontSize: "14px",
-    fontWeight: "600",
+    borderRadius: "12px",
+    padding: "12px 32px",
+    fontSize: "15px",
+    fontWeight: "700",
     cursor: "pointer",
-    transition: "background 0.2s",
+    transition: "all 0.3s ease",
+    boxShadow: "0 4px 15px rgba(37, 99, 235, 0.35)",
+    display: "block",
+    margin: "20px auto",
+    textAlign: "center",
+    transform: "scale(1)",
+  };
+
+  // Add hover animation
+  const buttonHoverStyle = {
+    transform: "translateY(-4px) scale(1.05)",
+    boxShadow: "0 8px 25px rgba(58, 115, 237, 0.45)",
   };
 
   const isCombined = filters.batchType === "Combined";
@@ -402,8 +414,6 @@ const ParticipantTableFilters = ({
           `}</style>
         </div>
       )}
-      {/* ============================================== */}
-
       {/* ============================================== */}
       {/* SECTION 1: BATCH STRUCTURAL SELECTABLES        */}
       {/* ============================================== */}
@@ -609,25 +619,60 @@ const ParticipantTableFilters = ({
       <div
         style={{
           display: "flex",
-          justifyContent: "flex-end",
+          justifyContent: "center",
           marginTop: "20px",
           borderTop: "1px solid #f3f4f6",
           paddingTop: "15px",
+          alignItems: "center",
+          width: "100%",
         }}
       >
         <button
           type="button"
           style={{
             ...buttonStyle,
+            ...(isHovered && !isLoading ? buttonHoverStyle : {}),
             opacity: isLoading ? 0.7 : 1,
             cursor: isLoading ? "not-allowed" : "pointer",
           }}
+          onMouseEnter={() => setIsHovered(true)}
+          onMouseLeave={() => setIsHovered(false)}
           onClick={onFetch}
           disabled={isLoading}
         >
           {isLoading ? "Fetching..." : "Fetch Trainees"}
         </button>
       </div>
+      {filters.participantType === "Beneficiary" && (
+        <>
+          <h3
+            style={{
+              fontSize: 18,
+              color: "#000000",
+              marginBottom: 12,
+              textAlign: "center",
+            }}
+          >
+            <span>Member Code पर क्लिक करें,</span>
+            <span>
+              ताकि लोकॉस प्रोफ़ाइल देख सकें।
+              <span
+                style={{
+                  fontSize: 18,
+                  fontWeight: 1000,
+                  color: "#8a0000",
+                  marginBottom: 12,
+                  textAlign: "center",
+                }}
+              >
+                {" "}
+                इसमें पिता/पति का नाम, माता का नाम, संबंधी का नाम, फ़ोन नंबर आदि
+                की जानकारी देख सकते हैं।
+              </span>
+            </span>
+          </h3>
+        </>
+      )}
     </div>
   );
 };

@@ -1,15 +1,17 @@
-// src/pages/TMS/DMMU/dmmu_batch_review.jsx
+//src\pages\TMS\DMMU\dmmu_batch_review.jsx
 import React, { useContext, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 import Header from "../layout/header";
 import Footer from "../layout/footer";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
+import LateralEntryAcknowledgementModal from "./LateralEntryAcknowledgementModal";
 import api, { TMS_API } from "../../../api/axios";
 
 /* ---------------- simple modal ---------------- */
 function Modal({ open, title, onClose, children, width = 600 }) {
   if (!open) return null;
+
   return (
     <div
       role="dialog"
@@ -48,6 +50,7 @@ function Modal({ open, title, onClose, children, width = 600 }) {
           <h3 style={{ margin: 0, fontSize: "18px", color: "#0f172a" }}>
             {title}
           </h3>
+
           <button
             style={{
               marginLeft: "auto",
@@ -62,6 +65,7 @@ function Modal({ open, title, onClose, children, width = 600 }) {
             &times;
           </button>
         </div>
+
         <div>{children}</div>
       </div>
     </div>
@@ -71,6 +75,7 @@ function Modal({ open, title, onClose, children, width = 600 }) {
 /* ---------------- helpers ---------------- */
 function fmtDate(iso) {
   if (!iso) return "-";
+
   try {
     return new Date(iso).toLocaleDateString("en-IN", {
       day: "2-digit",
@@ -94,6 +99,10 @@ export default function DmmuBatchReview() {
   const [batch, setBatch] = useState(null);
   const [loadingBatch, setLoadingBatch] = useState(false);
 
+  // Lateral Entry Acknowledgement State
+  const [lateralBatchDetail, setLateralBatchDetail] = useState(null);
+  const [lateralModalOpen, setLateralModalOpen] = useState(false);
+
   // Master Trainer State
   const [mtList, setMtList] = useState([]);
   const [mtTotal, setMtTotal] = useState(0);
@@ -101,45 +110,113 @@ export default function DmmuBatchReview() {
   const [mtPageSize] = useState(10);
   const [mtLoading, setMtLoading] = useState(false);
   const [mtSearch, setMtSearch] = useState("");
-  const [mtSelections, setMtSelections] = useState([]); // Array of selected MT objects
+  const [mtSelections, setMtSelections] = useState([]);
   const [mtCheckingId, setMtCheckingId] = useState(null);
 
   const [mtThemeFilter, setMtThemeFilter] = useState("");
   const [mtDesignationFilter, setMtDesignationFilter] = useState("");
   const [availableThemes, setAvailableThemes] = useState([]);
 
-  useEffect(() => {
-    const fetchThemes = async () => {
-      try {
-        const response = await TMS_API.trainingThemes.list({ page_size: 100 });
-        setAvailableThemes(response?.data?.results || []);
-      } catch (err) {
-        console.error("Failed to fetch themes:", err);
-      }
-    };
-    fetchThemes();
-  }, []);
-
   // Actions State
   const [isSaving, setIsSaving] = useState(false);
   const [revertModalOpen, setRevertModalOpen] = useState(false);
   const [revertReason, setRevertReason] = useState("");
 
-  /* ---------------- fetch batch detail ---------------- */
+  /* ---------------- fetch training themes ---------------- */
+  useEffect(() => {
+    const fetchThemes = async () => {
+      try {
+        const response = await TMS_API.trainingThemes.list({
+          page_size: 100,
+        });
+
+        setAvailableThemes(response?.data?.results || []);
+      } catch (err) {
+        console.error("Failed to fetch themes:", err);
+      }
+    };
+
+    fetchThemes();
+  }, []);
+
+  /* ---------------- fetch batch and lateral entry details ---------------- */
   useEffect(() => {
     if (!batchId) return;
+
     const loadBatch = async () => {
       setLoadingBatch(true);
+      setBatch(null);
+      setLateralBatchDetail(null);
+      setLateralModalOpen(false);
+
       try {
+        // 1. Fetch comprehensive batch details
         const response = await TMS_API.batchDetailV2(batchId);
-        setBatch(response?.data || null);
+        const data = response?.data || null;
+
+        setBatch(data);
+        setLateralBatchDetail(data);
+
+        console.log("Comprehensive Batch Details:", data);
+
+        // 2. Check whether lateral-entry acknowledgement already exists
+        let acknowledgementAlreadyExists = false;
+
+        if (data?.includes_lateral_entries === true) {
+          try {
+            const historyResponse = await api.get("/tms/list-batch-history/", {
+              params: {
+                batch_id: batchId,
+              },
+            });
+
+            const historyData = historyResponse?.data;
+
+            // Supports both paginated and non-paginated API responses
+            const historyRecords = Array.isArray(historyData)
+              ? historyData
+              : Array.isArray(historyData?.results)
+                ? historyData.results
+                : [];
+
+            console.log("Batch History Response:", historyData);
+
+            // Check whether acknowledgement has already been recorded
+            acknowledgementAlreadyExists = historyRecords.some((history) =>
+              String(history?.remarks || "").includes(
+                "Acknowledge and approved by",
+              ),
+            );
+          } catch (historyError) {
+            console.error("Failed to fetch batch history:", historyError);
+
+            // Do not silently skip acknowledgement verification
+            throw historyError;
+          }
+        }
+
+        // 3. Show modal only when lateral entries exist
+        //    AND acknowledgement has not already been recorded
+        const shouldShowLateralModal =
+          data?.includes_lateral_entries === true &&
+          !acknowledgementAlreadyExists;
+
+        setLateralModalOpen(shouldShowLateralModal);
+
+        console.log("Lateral Entry Acknowledgement Check:", {
+          batchId,
+          includes_lateral_entries: data?.includes_lateral_entries,
+          acknowledgementAlreadyExists,
+          shouldShowLateralModal,
+        });
       } catch (err) {
-        console.error("Failed to load batch:", err);
+        console.error("Failed to load batch details:", err);
         alert("Failed to load batch details.");
       } finally {
         setLoadingBatch(false);
       }
     };
+
     loadBatch();
   }, [batchId]);
 
@@ -147,6 +224,7 @@ export default function DmmuBatchReview() {
   useEffect(() => {
     const fetchMTs = async () => {
       setMtLoading(true);
+
       try {
         const params = {
           page: mtPage,
@@ -160,11 +238,13 @@ export default function DmmuBatchReview() {
         if (mtThemeFilter) {
           params.theme = mtThemeFilter;
         }
+
         if (mtDesignationFilter) {
           params.designation = mtDesignationFilter;
         }
 
         const response = await TMS_API.masterTrainers.list(params);
+
         setMtList(response?.data?.results || []);
         setMtTotal(response?.data?.count || 0);
       } catch (err) {
@@ -200,20 +280,26 @@ export default function DmmuBatchReview() {
 
     // Check Availability
     setMtCheckingId(trainer.id);
+
     try {
-      // SURGICAL FIX: Build precise query params for both start and end dates
       const queryParams = new URLSearchParams();
-      if (batch?.start_date) queryParams.append("start_date", batch.start_date);
-      if (batch?.end_date) queryParams.append("end_date", batch.end_date);
+
+      if (batch?.start_date) {
+        queryParams.append("start_date", batch.start_date);
+      }
+
+      if (batch?.end_date) {
+        queryParams.append("end_date", batch.end_date);
+      }
 
       const queryString = queryParams.toString()
         ? `?${queryParams.toString()}`
         : "";
 
-      // Call the strict overlap-checking API
       const response = await api.get(
         `/tms/mt/${trainer.id}/availability/${queryString}`,
       );
+
       const {
         is_available,
         busy_reason,
@@ -228,7 +314,6 @@ export default function DmmuBatchReview() {
       if (!is_available) {
         let alertMessage = `Master Trainer ${trainer.full_name} is UNAVAILABLE:\n\n${busy_reason}`;
 
-        // Append TR details if they are busy in the BATCHING phase
         if (busy_type === "TRAINING_REQUEST") {
           alertMessage += `\n\nTraining Request Details:`;
           alertMessage += `\n• ID: ${training_request_id || "N/A"}`;
@@ -251,6 +336,26 @@ export default function DmmuBatchReview() {
 
   /* ---------------- approve flow ---------------- */
   const handleApprove = async () => {
+    if (loadingBatch) {
+      alert("Please wait while batch details are loading.");
+      return;
+    }
+
+    if (!batch) {
+      alert("Batch details are not available. Please reload the page.");
+      return;
+    }
+
+    if (batch.includes_lateral_entries === true && lateralModalOpen) {
+      alert("Please acknowledge the lateral entry participants first.");
+      return;
+    }
+
+    if (batch.includes_lateral_entries === true && !lateralBatchDetail) {
+      alert("Lateral entry details are not available. Please reload the page.");
+      return;
+    }
+
     if (mtSelections.length === 0) {
       alert(
         "You must assign at least one Master Trainer to this batch before approving.",
@@ -259,6 +364,7 @@ export default function DmmuBatchReview() {
     }
 
     setIsSaving(true);
+
     try {
       // 1. Create mapping records for all selected MTs
       for (const mt of mtSelections) {
@@ -271,7 +377,7 @@ export default function DmmuBatchReview() {
         });
       }
 
-      // 2. Update Batch status to SCHEDULED using the requested Update API
+      // 2. Update Batch status to SCHEDULED
       await api.patch(`/tms/batch/${batchId}/approve-reject/`, {
         status: "SCHEDULED",
       });
@@ -294,14 +400,15 @@ export default function DmmuBatchReview() {
     }
 
     setIsSaving(true);
+
     try {
-      // Update the status and rejection_reason using the requested Update API
       await api.patch(`/tms/batch/${batchId}/approve-reject/`, {
         status: "REJECTED",
         rejection_reason: revertReason.trim(),
       });
 
       alert("Batch has been REJECTED and returned to the creator.");
+
       setRevertModalOpen(false);
       navigate("/tms/batches-list/");
     } catch (err) {
@@ -311,15 +418,17 @@ export default function DmmuBatchReview() {
       setIsSaving(false);
     }
   };
+
   const paxCount =
     (batch?.beneficiary?.length || 0) +
     (batch?.trainer?.length || 0) +
     (batch?.staff?.length || 0);
 
-  const handleViewBatch = async (batchId) => {
+  const handleViewBatch = async (selectedBatchId) => {
     try {
-      const response = await TMS_API.batchDetailV2(batchId);
-      navigate(`/tms/batch-detail/${batchId}`, {
+      const response = await TMS_API.batchDetailV2(selectedBatchId);
+
+      navigate(`/tms/batch-detail/${selectedBatchId}`, {
         state: { batchData: response.data },
       });
     } catch (err) {
@@ -334,6 +443,7 @@ export default function DmmuBatchReview() {
   return (
     <div className="app-shell">
       <Header />
+
       <div className="content-area">
         <LeftNav
           collapsed={navCollapsed}
@@ -358,14 +468,27 @@ export default function DmmuBatchReview() {
               }}
             >
               <div>
-                <h2 style={{ margin: 0, color: "#0f172a", fontSize: "22px" }}>
+                <h2
+                  style={{
+                    margin: 0,
+                    color: "#0f172a",
+                    fontSize: "22px",
+                  }}
+                >
                   Batch Review & Scheduling
                 </h2>
-                <span style={{ color: "#64748b", fontSize: "14px" }}>
+
+                <span
+                  style={{
+                    color: "#64748b",
+                    fontSize: "14px",
+                  }}
+                >
                   Verify batch details and strictly assign Master Trainers
                   before approval.
                 </span>
               </div>
+
               <button className="btn btn-outline" onClick={() => navigate(-1)}>
                 &larr; Back to List
               </button>
@@ -379,9 +502,7 @@ export default function DmmuBatchReview() {
                 height: "calc(100vh - 180px)",
               }}
             >
-              {/* ========================================================= */}
-              {/* LEFT PANEL: BATCH DETAILS (Scrollable Frame)              */}
-              {/* ========================================================= */}
+              {/* LEFT PANEL: BATCH DETAILS */}
               <div
                 style={{
                   flex: "0 0 35%",
@@ -422,7 +543,13 @@ export default function DmmuBatchReview() {
                   </button>
                 </div>
 
-                <div style={{ padding: "20px", overflowY: "auto", flex: 1 }}>
+                <div
+                  style={{
+                    padding: "20px",
+                    overflowY: "auto",
+                    flex: 1,
+                  }}
+                >
                   {loadingBatch ? (
                     <div
                       style={{
@@ -486,6 +613,7 @@ export default function DmmuBatchReview() {
                         <label>Training Plan</label>
                         <div>{batch.training_plan?.training_name || "N/A"}</div>
                       </div>
+
                       <div className="detail-row">
                         <label>Type of Training</label>
                         <div>
@@ -511,6 +639,7 @@ export default function DmmuBatchReview() {
                           <label>Start Date</label>
                           <div>{fmtDate(batch.start_date)}</div>
                         </div>
+
                         <div className="detail-row">
                           <label>End Date</label>
                           <div>{fmtDate(batch.end_date)}</div>
@@ -528,6 +657,7 @@ export default function DmmuBatchReview() {
                           <label>Participant Type</label>
                           <div>{batch.participant_type}</div>
                         </div>
+
                         <div className="detail-row">
                           <label>BATCH Type</label>
                           <div>{batch.batch_type} BATCH</div>
@@ -573,8 +703,15 @@ export default function DmmuBatchReview() {
                         <label>Centre / Venue</label>
                         <div>
                           <strong>{batch.centre?.venue_name || "N/A"}</strong>
+
                           <br />
-                          <span style={{ fontSize: "13px", color: "#64748b" }}>
+
+                          <span
+                            style={{
+                              fontSize: "13px",
+                              color: "#64748b",
+                            }}
+                          >
                             {batch.centre?.venue_address ||
                               "No address provided"}
                           </span>
@@ -585,9 +722,7 @@ export default function DmmuBatchReview() {
                 </div>
               </div>
 
-              {/* ========================================================= */}
-              {/* RIGHT PANEL: MASTER TRAINER LIST & ACTIONS                */}
-              {/* ========================================================= */}
+              {/* RIGHT PANEL: MASTER TRAINER LIST & ACTIONS */}
               <div
                 style={{
                   flex: 1,
@@ -611,11 +746,21 @@ export default function DmmuBatchReview() {
                 >
                   <div>
                     <h3
-                      style={{ margin: 0, fontSize: "16px", color: "#1e293b" }}
+                      style={{
+                        margin: 0,
+                        fontSize: "16px",
+                        color: "#1e293b",
+                      }}
                     >
                       Assign Master Trainers
                     </h3>
-                    <span style={{ fontSize: "13px", color: "#64748b" }}>
+
+                    <span
+                      style={{
+                        fontSize: "13px",
+                        color: "#64748b",
+                      }}
+                    >
                       {mtSelections.length} Trainer(s) Selected
                     </span>
                   </div>
@@ -628,6 +773,7 @@ export default function DmmuBatchReview() {
                       style={{ minWidth: "140px" }}
                     >
                       <option value="">All Themes</option>
+
                       {availableThemes.map((t) => (
                         <option key={t.id} value={t.id}>
                           {t.theme_name}
@@ -661,11 +807,18 @@ export default function DmmuBatchReview() {
 
                 {/* MT Table Area */}
                 <div
-                  style={{ flex: 1, overflowY: "auto", position: "relative" }}
+                  style={{
+                    flex: 1,
+                    overflowY: "auto",
+                    position: "relative",
+                  }}
                 >
                   <table
                     className="table"
-                    style={{ width: "100%", borderCollapse: "collapse" }}
+                    style={{
+                      width: "100%",
+                      borderCollapse: "collapse",
+                    }}
                   >
                     <thead
                       style={{
@@ -687,11 +840,12 @@ export default function DmmuBatchReview() {
                         <th>Block</th>
                       </tr>
                     </thead>
+
                     <tbody>
                       {mtLoading ? (
                         <tr>
                           <td
-                            colSpan="5"
+                            colSpan="7"
                             style={{
                               textAlign: "center",
                               padding: "40px",
@@ -704,7 +858,7 @@ export default function DmmuBatchReview() {
                       ) : filteredMtList.length === 0 ? (
                         <tr>
                           <td
-                            colSpan="5"
+                            colSpan="7"
                             style={{
                               textAlign: "center",
                               padding: "40px",
@@ -719,6 +873,7 @@ export default function DmmuBatchReview() {
                           const isSelected = mtSelections.some(
                             (t) => t.id === mt.id,
                           );
+
                           const isChecking = mtCheckingId === mt.id;
 
                           return (
@@ -755,15 +910,22 @@ export default function DmmuBatchReview() {
                                   />
                                 )}
                               </td>
+
                               <td style={{ color: "#64748b" }}>
                                 {(mtPage - 1) * mtPageSize + index + 1}
                               </td>
+
                               <td
-                                style={{ fontWeight: "600", color: "#0f172a" }}
+                                style={{
+                                  fontWeight: "600",
+                                  color: "#0f172a",
+                                }}
                               >
                                 {mt.full_name || "-"}
                               </td>
+
                               <td>{mt.mobile_no || "-"}</td>
+
                               <td>
                                 <span
                                   style={{
@@ -778,6 +940,7 @@ export default function DmmuBatchReview() {
                                   {mt.theme_name || "N/A"}
                                 </span>
                               </td>
+
                               <td>{mt.district_name_en || "-"}</td>
                               <td>{mt.block_name_en || "-"}</td>
                             </tr>
@@ -799,9 +962,15 @@ export default function DmmuBatchReview() {
                     background: "#f8fafc",
                   }}
                 >
-                  <span style={{ fontSize: "13px", color: "#64748b" }}>
+                  <span
+                    style={{
+                      fontSize: "13px",
+                      color: "#64748b",
+                    }}
+                  >
                     Showing page {mtPage} of {mtTotalPages}
                   </span>
+
                   <div style={{ display: "flex", gap: "8px" }}>
                     <button
                       className="btn btn-outline"
@@ -810,6 +979,7 @@ export default function DmmuBatchReview() {
                     >
                       Prev
                     </button>
+
                     <button
                       className="btn btn-outline"
                       disabled={mtPage >= mtTotalPages || mtLoading}
@@ -851,11 +1021,22 @@ export default function DmmuBatchReview() {
                     >
                       {isSaving ? "Processing..." : "Reject Batch"}
                     </button>
+
                     <button
                       className="btn btn-primary"
                       onClick={handleApprove}
-                      disabled={isSaving || mtSelections.length === 0}
-                      style={{ opacity: mtSelections.length === 0 ? 0.6 : 1 }}
+                      disabled={
+                        isSaving ||
+                        loadingBatch ||
+                        mtSelections.length === 0 ||
+                        lateralModalOpen
+                      }
+                      style={{
+                        opacity:
+                          mtSelections.length === 0 || lateralModalOpen
+                            ? 0.6
+                            : 1,
+                      }}
                     >
                       {isSaving ? "Processing..." : "Approve & Schedule"}
                     </button>
@@ -864,9 +1045,20 @@ export default function DmmuBatchReview() {
               </div>
             </div>
           </main>
+
           <Footer />
         </div>
       </div>
+
+      {/* LATERAL ENTRY ACKNOWLEDGEMENT MODAL */}
+      <LateralEntryAcknowledgementModal
+        open={lateralModalOpen}
+        batchId={batchId}
+        batchDetail={lateralBatchDetail}
+        batchStatus={lateralBatchDetail?.status}
+        createdBy={user?.id}
+        onAcknowledged={() => setLateralModalOpen(false)}
+      />
 
       {/* REVERT / REJECTION MODAL */}
       <Modal
@@ -877,11 +1069,16 @@ export default function DmmuBatchReview() {
         title="Reject Batch Application"
       >
         <div
-          style={{ fontSize: "14px", color: "#475569", marginBottom: "16px" }}
+          style={{
+            fontSize: "14px",
+            color: "#475569",
+            marginBottom: "16px",
+          }}
         >
           Please provide a reason for rejecting this batch. This will mark the
           batch as <strong>REJECTED</strong> and notify the Training Partner.
         </div>
+
         <textarea
           className="input"
           rows={5}
@@ -889,10 +1086,19 @@ export default function DmmuBatchReview() {
           value={revertReason}
           onChange={(e) => setRevertReason(e.target.value)}
           disabled={isSaving}
-          style={{ width: "100%", marginBottom: "20px", resize: "none" }}
+          style={{
+            width: "100%",
+            marginBottom: "20px",
+            resize: "none",
+          }}
         />
+
         <div
-          style={{ display: "flex", justifyContent: "flex-end", gap: "12px" }}
+          style={{
+            display: "flex",
+            justifyContent: "flex-end",
+            gap: "12px",
+          }}
         >
           <button
             className="btn btn-outline"
@@ -901,6 +1107,7 @@ export default function DmmuBatchReview() {
           >
             Cancel
           </button>
+
           <button
             className="btn btn-danger"
             onClick={handleConfirmRevert}
@@ -914,11 +1121,15 @@ export default function DmmuBatchReview() {
       <style>{`
         /* LAYOUT & UTILS */
         .content-area {
-              display: flex;
-              flex: 1;
-              width: 100%;
-            }
-        .content-area > *:first-child { flex-shrink: 0; }
+          display: flex;
+          flex: 1;
+          width: 100%;
+        }
+
+        .content-area > *:first-child {
+          flex-shrink: 0;
+        }
+
         .main-wrapper {
           flex: 1;
           display: flex;
@@ -927,6 +1138,7 @@ export default function DmmuBatchReview() {
           min-width: 0;
           background-color: #f8fafc;
         }
+
         .input {
           padding: 10px 14px;
           border-radius: 8px;
@@ -936,31 +1148,116 @@ export default function DmmuBatchReview() {
           color: #0f172a;
           transition: all 0.2s;
         }
-        .input:focus { outline: none; border-color: #3b82f6; background: #fff; box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1); }
-        
+
+        .input:focus {
+          outline: none;
+          border-color: #3b82f6;
+          background: #fff;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1);
+        }
+
         /* BATCH DETAIL CARD ROWS */
-        .detail-row { display: flex; flex-direction: column; gap: 4px; }
-        .detail-row label { font-size: 12px; font-weight: 600; color: #64748b; text-transform: uppercase; letter-spacing: 0.5px; }
-        .detail-row div { font-size: 14px; color: #1e293b; font-weight: 500; }
+        .detail-row {
+          display: flex;
+          flex-direction: column;
+          gap: 4px;
+        }
+
+        .detail-row label {
+          font-size: 12px;
+          font-weight: 600;
+          color: #64748b;
+          text-transform: uppercase;
+          letter-spacing: 0.5px;
+        }
+
+        .detail-row div {
+          font-size: 14px;
+          color: #1e293b;
+          font-weight: 500;
+        }
 
         /* BUTTONS */
-        .btn { padding: 10px 20px; border-radius: 8px; cursor: pointer; border: none; font-weight: 600; font-size: 14px; transition: all 0.2s; }
-        .btn-primary { background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%); color: #fff; box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2); }
-        .btn-primary:hover:not(:disabled) { transform: translateY(-1px); box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3); }
-        .btn-primary:disabled { background: #94a3b8; cursor: not-allowed; box-shadow: none; }
-        
-        .btn-danger { background: #ef4444; color: #fff; box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2); }
-        .btn-danger:hover:not(:disabled) { background: #dc2626; transform: translateY(-1px); }
-        .btn-danger:disabled { background: #fca5a5; cursor: not-allowed; }
-        
-        .btn-outline { background: #ffffff; color: #475569; border: 1px solid #cbd5e1; }
-        .btn-outline:hover:not(:disabled) { background: #f1f5f9; color: #0f172a; }
+        .btn {
+          padding: 10px 20px;
+          border-radius: 8px;
+          cursor: pointer;
+          border: none;
+          font-weight: 600;
+          font-size: 14px;
+          transition: all 0.2s;
+        }
+
+        .btn-primary {
+          background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(37, 99, 235, 0.2);
+        }
+
+        .btn-primary:hover:not(:disabled) {
+          transform: translateY(-1px);
+          box-shadow: 0 6px 16px rgba(37, 99, 235, 0.3);
+        }
+
+        .btn-primary:disabled {
+          background: #94a3b8;
+          cursor: not-allowed;
+          box-shadow: none;
+        }
+
+        .btn-danger {
+          background: #ef4444;
+          color: #fff;
+          box-shadow: 0 4px 12px rgba(239, 68, 68, 0.2);
+        }
+
+        .btn-danger:hover:not(:disabled) {
+          background: #dc2626;
+          transform: translateY(-1px);
+        }
+
+        .btn-danger:disabled {
+          background: #fca5a5;
+          cursor: not-allowed;
+        }
+
+        .btn-outline {
+          background: #ffffff;
+          color: #475569;
+          border: 1px solid #cbd5e1;
+        }
+
+        .btn-outline:hover:not(:disabled) {
+          background: #f1f5f9;
+          color: #0f172a;
+        }
 
         /* TABLE */
-        .table th { padding: 14px 16px; text-align: left; font-size: 13px; color: #475569; border-bottom: 2px solid #e2e8f0; text-transform: uppercase; font-weight: 700; letter-spacing: 0.5px; }
-        .table td { padding: 14px 16px; border-bottom: 1px solid #f1f5f9; font-size: 14px; color: #334155; }
-        .table tbody tr { transition: background 0.2s; }
-        .table tbody tr:hover { background: #f8fafc; }
+        .table th {
+          padding: 14px 16px;
+          text-align: left;
+          font-size: 13px;
+          color: #475569;
+          border-bottom: 2px solid #e2e8f0;
+          text-transform: uppercase;
+          font-weight: 700;
+          letter-spacing: 0.5px;
+        }
+
+        .table td {
+          padding: 14px 16px;
+          border-bottom: 1px solid #f1f5f9;
+          font-size: 14px;
+          color: #334155;
+        }
+
+        .table tbody tr {
+          transition: background 0.2s;
+        }
+
+        .table tbody tr:hover {
+          background: #f8fafc;
+        }
       `}</style>
     </div>
   );

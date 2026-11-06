@@ -24,6 +24,11 @@ export default function Step1PlanSelection({
   const [smmuPlans, setSmmuPlans] = useState([]);
   const [smmuLoading, setSmmuLoading] = useState(false);
 
+  const [themePlans, setThemePlans] = useState([]);
+  const [plansLoading, setPlansLoading] = useState(false);
+  const [selectedThemeId, setSelectedThemeId] = useState("");
+  const [autoPartnerName, setAutoPartnerName] = useState("");
+
   // SURGICAL ADDITION: Fetch plans dynamically strictly for the SMMU's assigned theme
   useEffect(() => {
     if (isSMMU && form.financial_year) {
@@ -31,22 +36,44 @@ export default function Step1PlanSelection({
         (t) => Number(t.expert) === Number(user?.id),
       );
       if (myTheme) {
-        setSmmuLoading(true);
-        TMS_API.trainingPlans
-          .list({ theme: myTheme.id, limit: 500 })
-          .then((res) => {
-            const data = res?.data?.results || res?.data || [];
-            setSmmuPlans(data);
-          })
-          .catch((err) => console.error("Failed to load SMMU plans", err))
-          .finally(() => setSmmuLoading(false));
+        setSelectedThemeId(String(myTheme.id));
+      } else {
+        setSelectedThemeId("");
       }
-    } else {
-      setSmmuPlans([]);
     }
   }, [isSMMU, form.financial_year, preloadThemes, user?.id]);
 
-  const displayPlans = isSMMU ? smmuPlans : plans;
+  useEffect(() => {
+    if (!selectedThemeId) {
+      setThemePlans([]);
+      setPlansLoading(false);
+      return undefined;
+    }
+
+    let active = true;
+    setThemePlans([]);
+    setPlansLoading(true);
+
+    TMS_API.trainingPlans
+      .list({ theme: selectedThemeId, limit: 500 })
+      .then((res) => {
+        const data = res?.data?.results || res?.data?.data || res?.data || [];
+        if (active) setThemePlans(Array.isArray(data) ? data : []);
+      })
+      .catch((error) => {
+        console.error("Failed to load plans for selected theme", error);
+        if (active) setThemePlans([]);
+      })
+      .finally(() => {
+        if (active) setPlansLoading(false);
+      });
+
+    return () => {
+      active = false;
+    };
+  }, [selectedThemeId]);
+
+  const displayPlans = themePlans;
 
   const selectedPlanTitle =
     selectedPlan &&
@@ -60,7 +87,8 @@ export default function Step1PlanSelection({
     setSelectedPlan(plan);
     setSelectedTheme(null);
     setAutoPartnerAssigned(false);
-    setForm((f) => ({ ...f, partner: "" })); // reset partner
+    setAutoPartnerName("");
+    setForm((f) => ({ ...f, partner: "" }));
 
     if (!plan) return;
 
@@ -115,12 +143,17 @@ export default function Step1PlanSelection({
         if (Array.isArray(data) && data.length > 0 && data[0].id) {
           setForm((f) => ({ ...f, partner: String(data[0].id) }));
           setAutoPartnerAssigned(true);
+          setAutoPartnerName(
+            data[0].partner_name || data[0].name || data[0].agency_name || "",
+          );
         } else {
           setAutoPartnerAssigned(false);
+          setAutoPartnerName("");
         }
       } catch (e) {
         console.warn("failed to auto-assign training partner", e);
         setAutoPartnerAssigned(false);
+        setAutoPartnerName("");
       }
     }
   }
@@ -171,6 +204,7 @@ export default function Step1PlanSelection({
             }));
             setSelectedPlan(null); // Reset plan if year changes
             setAutoPartnerAssigned(false);
+            setAutoPartnerName("");
           }}
           style={{
             width: "100%",
@@ -189,27 +223,57 @@ export default function Step1PlanSelection({
         </select>
       </div>
 
-      <div style={{ marginBottom: 12, opacity: form.financial_year ? 1 : 0.5 }}>
-        <label
+      {/* Training Theme Dropdown */}
+      <div style={{ marginBottom: 16, opacity: form.financial_year ? 1 : 0.5 }}>
+        <label style={{ display: "block", fontWeight: 700, marginBottom: 6 }}>
+          Select Training Theme <span style={{ color: "red" }}>*</span>
+        </label>
+        <select
+          disabled={!form.financial_year || isSMMU} // SMMU theme is auto-locked
+          value={selectedThemeId}
+          onChange={(e) => {
+            setSelectedThemeId(e.target.value);
+            setSelectedPlan(null);
+            setSelectedTheme(null);
+            setForm((f) => ({ ...f, partner: "" }));
+            setAutoPartnerAssigned(false);
+            setAutoPartnerName("");
+          }}
           style={{
-            display: "block",
-            fontWeight: 700,
-            marginBottom: 6,
+            width: "100%",
+            padding: "10px",
+            borderRadius: "6px",
+            border: "2px solid #3d6ba6",
+            outline: "none",
+            fontSize: "14px",
+            background: isSMMU ? "#f3f4f6" : "#fff",
           }}
         >
+          <option value="">-- select training theme --</option>
+          {(preloadThemes || []).map((t) => (
+            <option key={t.id} value={t.id}>
+              {t.theme_name || t.name}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Training Plan Dropdown (Disabled until Theme is selected) */}
+      <div style={{ marginBottom: 12, opacity: selectedThemeId ? 1 : 0.5 }}>
+        <label style={{ display: "block", fontWeight: 700, marginBottom: 6 }}>
           {isSMMU
             ? "Training Plan (Locked to your Theme)"
-            : "Training Plan (allowed for your role)"}
+            : "Training Plan (for selected theme)"}
         </label>
 
         <select
-          disabled={!form.financial_year || smmuLoading}
+          disabled={!selectedThemeId || plansLoading}
           value={selectedPlan?.id || ""}
           onChange={(e) => {
             const id = e.target.value;
             const pl = displayPlans.find((p) => String(p.id) === String(id));
             handlePlanSelect(pl || null);
-            if (isSMMU) setDistrictId(null); // Reset district when plan changes for SMMU
+            if (isSMMU) setDistrictId(null);
           }}
           style={{
             width: "100%",
@@ -224,7 +288,11 @@ export default function Step1PlanSelection({
           }}
         >
           <option value="">
-            {smmuLoading ? "Loading plans..." : "-- select training plan --"}
+            {plansLoading
+              ? "Loading plans..."
+              : selectedThemeId && displayPlans.length === 0
+                ? "No training plans available for this theme"
+                : "-- select training plan --"}
           </option>
           {displayPlans.map((p) => {
             const title =
@@ -243,7 +311,7 @@ export default function Step1PlanSelection({
         </select>
       </div>
 
-      {/* SURGICAL ADDITION: Mandatory District Dropdown for SMMU */}
+      {/* Mandatory District Dropdown for SMMU */}
       {isSMMU && selectedPlan && (
         <div style={{ marginBottom: 12 }}>
           <label style={{ display: "block", fontWeight: 700, marginBottom: 6 }}>
@@ -255,6 +323,7 @@ export default function Step1PlanSelection({
               const newDist = e.target.value ? Number(e.target.value) : null;
               setDistrictId(newDist);
               setAutoPartnerAssigned(false);
+              setAutoPartnerName("");
               setForm((f) => ({ ...f, partner: "" }));
 
               if (newDist && selectedPlan) {
@@ -268,9 +337,18 @@ export default function Step1PlanSelection({
                     if (Array.isArray(data) && data.length > 0 && data[0].id) {
                       setForm((f) => ({ ...f, partner: String(data[0].id) }));
                       setAutoPartnerAssigned(true);
+                      setAutoPartnerName(
+                        data[0].partner_name ||
+                          data[0].name ||
+                          data[0].agency_name ||
+                          "",
+                      );
                     }
                   })
-                  .catch(() => setAutoPartnerAssigned(false));
+                  .catch(() => {
+                    setAutoPartnerAssigned(false);
+                    setAutoPartnerName("");
+                  });
               }
             }}
             style={{
@@ -301,6 +379,7 @@ export default function Step1PlanSelection({
             padding: 12,
             border: "1px solid #eef2f6",
             borderRadius: 6,
+            background: "#f8fafd",
           }}
         >
           <h3 style={{ margin: "6px 0" }}>{selectedPlanTitle}</h3>
@@ -312,6 +391,7 @@ export default function Step1PlanSelection({
               display: "flex",
               gap: 12,
               flexWrap: "wrap",
+              marginBottom: 8,
             }}
           >
             <div>
@@ -328,9 +408,41 @@ export default function Step1PlanSelection({
               {selectedPlan.theme_name || selectedPlan.theme || "—"}
             </div>
           </div>
+
+          {/* Partner Assignment Display */}
+          {form.partner && autoPartnerName ? (
+            <div
+              style={{
+                marginTop: 10,
+                paddingTop: 10,
+                borderTop: "1px dashed #c4d6ec",
+                color: "#0c5460",
+                fontWeight: 600,
+              }}
+            >
+              ✓ Assigned Training Partner:{" "}
+              <span style={{ color: "#111827" }}>{autoPartnerName}</span>
+            </div>
+          ) : (
+            /* Show warning if no partner is assigned (waits for District selection if SMMU) */
+            (!isSMMU || districtId) && (
+              <div
+                style={{
+                  marginTop: 10,
+                  paddingTop: 10,
+                  borderTop: "1px dashed #f5c2c7",
+                  color: "#d9534f",
+                  fontWeight: 600,
+                }}
+              >
+                ⚠ No Training Partner has been assigned a target for this
+                training plan.
+              </div>
+            )
+          )}
         </div>
       ) : (
-        <div className="muted">
+        <div className="muted" style={{ marginTop: 12 }}>
           Select a training plan to preview details and choose participants.
         </div>
       )}
@@ -340,7 +452,7 @@ export default function Step1PlanSelection({
           className="btnPrimaryHover"
           style={btnPrimary}
           onClick={goToNext}
-          disabled={!selectedPlan || (isSMMU && !districtId)}
+          disabled={!selectedPlan || (isSMMU && !districtId) || !form.partner}
         >
           Next
         </button>

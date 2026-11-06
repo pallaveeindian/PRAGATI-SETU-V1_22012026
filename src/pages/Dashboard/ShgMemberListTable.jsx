@@ -321,6 +321,33 @@ export default function ShgMemberListTable({
           Only working PLD status
         </label>
 
+        <h3
+          style={{
+            fontSize: 18,
+            color: "#000000",
+            marginBottom: 12,
+            textAlign: "center",
+          }}
+        >
+          <span>Member Code पर क्लिक करें,</span>
+          <span>
+            ताकि लोकॉस प्रोफ़ाइल देख सकें।
+            <span
+              style={{
+                fontSize: 18,
+                fontWeight: 1000,
+                color: "#8a0000",
+                marginBottom: 12,
+                textAlign: "center",
+              }}
+            >
+              {" "}
+              इसमें पिता/पति का नाम, माता का नाम, संबंधी का नाम, फ़ोन नंबर आदि
+              की जानकारी देख सकते हैं।
+            </span>
+          </span>
+        </h3>
+
         <button
           className="btnPrimaryHover"
           onClick={() => load(1, { force: true })}
@@ -441,6 +468,7 @@ export default function ShgMemberListTable({
                         style={{
                           padding: 8,
                           background: isSelected ? "#a7c6ed" : "",
+                          color: "#5617d3",
                         }}
                         onClick={() => {
                           setSelectedRow(m);

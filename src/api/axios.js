@@ -604,6 +604,11 @@ export const TMS_API = {
   tpcpCentreDetails: makeCrud("/tms/tpcp_to_centre/details/"),
   trainingPlans: makeCrud("/tms/training-plans/"),
 
+  // Batch Register History
+  batchRegisterHistory: makeCrud("/tms/register-batch-history/"),
+  //Batch Register List
+  batchListHistory: makeCrud("/tms/list-batch-history"),
+
   // NEW: ONE SHOT ATTENDANCE
   batchAttendanceOneShot: (data) =>
     api.post("/tms/tms-attendance/oneshot/", data),

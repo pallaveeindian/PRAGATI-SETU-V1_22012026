@@ -659,15 +659,18 @@ export default function TpTmsSummary() {
                           >
                             Participants Dropout
                           </th>
-
                           {!isBlockView && (
                             <>
                               <th className="highlight-col-alt">
                                 Total Target (Slot 1+2)
                               </th>
-                              <th>Participants Onboarded</th>
-                              <th>Participants Enrolled In Batches</th>
-                              <th>Remaining Participants for Enrollment</th>
+                            </>
+                          )}
+                          <th>Participants Onboarded</th>
+                          <th>Participants Enrolled In Batches</th>
+                          <th>Remaining Participants for Enrollment</th>
+                          {!isBlockView && (
+                            <>
                               <th className="highlight-col-success">
                                 Achievement %
                               </th>
@@ -691,9 +694,13 @@ export default function TpTmsSummary() {
                           {!isBlockView && (
                             <>
                               <th>10</th>
-                              <th>11</th>
-                              <th>12</th>
-                              <th>13</th>
+                            </>
+                          )}
+                          <th>11</th>
+                          <th>12</th>
+                          <th>13</th>
+                          {!isBlockView && (
+                            <>
                               <th>14</th>
                             </>
                           )}
@@ -792,31 +799,35 @@ export default function TpTmsSummary() {
                                       pVal={p["10_total_target"]}
                                       className="highlight-cell-alt"
                                     />
-                                    <StackedCell
-                                      bVal={b["11_participants_onboarded"]}
-                                      pVal={p["11_participants_onboarded"]}
-                                    />
-                                    <StackedCell
-                                      bVal={
-                                        b["12_participants_enrolled_in_batches"]
-                                      }
-                                      pVal={
-                                        p["12_participants_enrolled_in_batches"]
-                                      }
-                                    />
-                                    <StackedCell
-                                      bVal={
-                                        b[
-                                          "13_remaining_participants_for_enrollment"
-                                        ]
-                                      }
-                                      pVal={
-                                        p[
-                                          "13_remaining_participants_for_enrollment"
-                                        ]
-                                      }
-                                      className="text-warning"
-                                    />
+                                  </>
+                                )}
+                                <StackedCell
+                                  bVal={b["11_participants_onboarded"]}
+                                  pVal={p["11_participants_onboarded"]}
+                                />
+                                <StackedCell
+                                  bVal={
+                                    b["12_participants_enrolled_in_batches"]
+                                  }
+                                  pVal={
+                                    p["12_participants_enrolled_in_batches"]
+                                  }
+                                />
+                                <StackedCell
+                                  bVal={
+                                    b[
+                                      "13_remaining_participants_for_enrollment"
+                                    ]
+                                  }
+                                  pVal={
+                                    p[
+                                      "13_remaining_participants_for_enrollment"
+                                    ]
+                                  }
+                                  className="text-warning"
+                                />
+                                {!isBlockView && (
+                                  <>
                                     <StackedCell
                                       bVal={b["14_achievement_percentage"]}
                                       pVal={p["14_achievement_percentage"]}
