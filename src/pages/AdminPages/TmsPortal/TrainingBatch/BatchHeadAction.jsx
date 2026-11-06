@@ -1,23 +1,90 @@
-// src/pages/TMS/TRs/BatchDetailComponents/BatchHeaderActions.jsx
-import React from "react";
+import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faStopwatch } from "@fortawesome/free-solid-svg-icons";
 import BatchExport from "../../../TMS/TRs/BatchDetailComponents/BatchExport";
 import BatchExportPDF from "../../../TMS/TRs/BatchDetailComponents/BatchExportPDF";
+import { TMS_API } from "../../../../api/axios";
 
-export default function BatchHeadAction({
+export default function BatchHeaderActions({
   batchId,
   batchCode,
   batchStatus,
+  status,
   loadingClosureInfo,
   closureRequest,
   onRefresh,
-  onHistory,
   onBack,
   batchData,
 }) {
   const navigate = useNavigate();
+  const currentBatchStatus = String(
+    batchStatus ?? status ?? batchData?.status ?? "",
+  )
+    .trim()
+    .toUpperCase();
+
+  // --- SURGICAL ADDITION: Recalculate State & Anti-Spam Timer ---
+  const [isRecalculating, setIsRecalculating] = useState(false);
+  const [cooldown, setCooldown] = useState(0);
+
+  // Initialize Cooldown from LocalStorage on mount
+  useEffect(() => {
+    if (!batchId) return;
+    const lastClicked = localStorage.getItem(`recalc_cooldown_${batchId}`);
+    if (lastClicked) {
+      const elapsed = Date.now() - parseInt(lastClicked, 10);
+      const fiveMinutes = 5 * 60 * 1000;
+      if (elapsed < fiveMinutes) {
+        setCooldown(Math.ceil((fiveMinutes - elapsed) / 1000));
+      }
+    }
+  }, [batchId]);
+
+  // Tick the cooldown timer down every second
+  useEffect(() => {
+    let timer;
+    if (cooldown > 0) {
+      timer = setInterval(() => setCooldown((c) => c - 1), 1000);
+    } else if (cooldown === 0) {
+      localStorage.removeItem(`recalc_cooldown_${batchId}`);
+    }
+    return () => clearInterval(timer);
+  }, [cooldown, batchId]);
+
+  const formatCooldown = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, "0")}`;
+  };
+
+  const handleRecalculate = async () => {
+    if (cooldown > 0 || isRecalculating) return;
+
+    setIsRecalculating(true);
+    try {
+      await TMS_API.recalculateAttendance(batchId);
+
+      // Set the 5 minute (300 seconds) cooldown
+      localStorage.setItem(`recalc_cooldown_${batchId}`, Date.now().toString());
+      setCooldown(300);
+
+      alert(
+        "Attendance recalculated successfully based on strict matrix rules.",
+      );
+      if (onRefresh) onRefresh(); // Refresh the parent view to show new data
+    } catch (error) {
+      console.error("Recalculation failed:", error);
+      alert(
+        error?.response?.data?.message ||
+          error?.response?.data?.detail ||
+          "Failed to recalculate attendance.",
+      );
+    } finally {
+      setIsRecalculating(false);
+    }
+  };
+  // -----------------------------------------------------------------
 
   return (
     <>
@@ -31,7 +98,7 @@ export default function BatchHeadAction({
             </div>
           )}
           <div className="batch-header-actions">
-            {batchStatus === "CLOSED" && (
+            {currentBatchStatus === "CLOSED" && (
               <button
                 className="btn-success"
                 onClick={() => navigate(`/tms/download-certificate/${batchId}`)}
@@ -48,16 +115,31 @@ export default function BatchHeadAction({
               </>
             )}
 
+            {/* SURGICAL ADDITION: Recalculate Attendance Button */}
+            {["COMPLETED"].includes(currentBatchStatus) && (
+              <button
+                className="btn-warning"
+                onClick={handleRecalculate}
+                disabled={isRecalculating || cooldown > 0}
+              >
+                {isRecalculating ? (
+                  <>
+                    <span className="btn-spinner"></span> Recalculating...
+                  </>
+                ) : cooldown > 0 ? (
+                  `⏳ Wait ${formatCooldown(cooldown)}`
+                ) : (
+                  "📊 Recalculate Attendance"
+                )}
+              </button>
+            )}
+
             <button className="btn-primary" onClick={onRefresh}>
               🔄 Refresh
             </button>
             <button
               className="btn-primary"
-              onClick={() =>
-                onHistory
-                  ? onHistory()
-                  : navigate(`/tms/batches/${batchId}/history`)
-              }
+              onClick={() => navigate(`/tms/batches/${batchId}/history`)}
             >
               <FontAwesomeIcon
                 icon={faStopwatch}
@@ -67,7 +149,7 @@ export default function BatchHeadAction({
             </button>
             <button
               className="btn-secondary"
-              onClick={onBack || (() => navigate(-1))}
+              onClick={onBack || (() => navigate("/tms/batches-list/"))}
             >
               ← Back
             </button>
@@ -157,7 +239,7 @@ export default function BatchHeadAction({
     display:flex;
     justify-content:center;
     align-items:center;
-  gap:12px;
+    gap:18px;
 
     flex-wrap:wrap;
 }
@@ -168,11 +250,9 @@ export default function BatchHeadAction({
 
 .batch-header-actions button{
 
-  flex:1 1 180px;
-  min-width:0;
-  box-sizing:border-box;
+    min-width:210px;
 
-  padding:13px 16px;
+    padding:13px 24px;
 
     border-radius:10px;
 
@@ -184,11 +264,14 @@ export default function BatchHeadAction({
 
     font-weight:600;
 
-    white-space:nowrap;
-
     transition:all .25s ease;
 
     box-shadow:0 5px 14px rgba(0,0,0,.08);
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 8px;
 }
 
 .btn-primary{
@@ -222,6 +305,39 @@ export default function BatchHeadAction({
     background:#15803d;
     transform:translateY(-2px);
     box-shadow:0 8px 18px rgba(22,163,74,.25);
+}
+
+/* SURGICAL ADDITION: Warning Button Styles for Recalculate */
+.btn-warning{
+    background:#f59e0b;
+    color:white;
+}
+
+.btn-warning:hover:not(:disabled){
+    background:#d97706;
+    transform:translateY(-2px);
+    box-shadow:0 8px 18px rgba(245,158,11,.25);
+}
+
+.btn-warning:disabled{
+    background:#fcd34d;
+    cursor:not-allowed;
+    box-shadow:none;
+    transform:none;
+}
+
+.btn-spinner {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255,255,255,0.4);
+    border-top-color: #fff;
+    border-radius: 50%;
+    animation: btn-spin 0.8s linear infinite;
+}
+
+@keyframes btn-spin {
+    to { transform: rotate(360deg); }
 }
 
 /* ======================================================
@@ -325,7 +441,7 @@ export default function BatchHeadAction({
 
 .batch-header-actions button{
     width:100%;
-  flex-basis:auto;
+    min-width:unset;
 }
 
 .closure-banner{
@@ -342,4 +458,3 @@ export default function BatchHeadAction({
     </>
   );
 }
-
