@@ -576,16 +576,6 @@ export default function TrainingRequestList() {
                       </button>
                     )}
 
-                  {isSelectionValidForBacklog &&
-                    Number(user?.role_id) === 13 && (
-                      <button
-                        className="Backlogbtn"
-                        onClick={() => navigate("/tms/backlog-batch-creator/")}
-                      >
-                        Create Backlog batch
-                      </button>
-                    )}
-
                   {/* EXPORT BUTTON */}
                   <TRListExport fetchData={fetchAllForExport} />
 

@@ -99,8 +99,12 @@ export function PreviewConfirmModal({
               ⚠️ Ineligible Participants Found
             </h4>
             <div style={{ fontSize: 13, color: "#991b1b", marginBottom: 12 }}>
-              The following participants are currently engaged in another
-              ongoing/scheduled training and cannot be added.
+              The following participants are currently{" "}
+              <strong>
+                {" "}
+                engaged in another Training Request with status BATCHING
+              </strong>{" "}
+              and cannot be added.
             </div>
             <div
               style={{

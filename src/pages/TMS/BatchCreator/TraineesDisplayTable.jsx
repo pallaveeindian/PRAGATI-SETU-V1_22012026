@@ -2,6 +2,7 @@
 import React, { useMemo, useState, useEffect, useCallback } from "react";
 import ParticipantTableFilters from "./ParticipantsTableFilter"; // Restored original import name
 import { TMS_API } from "../../../api/axios";
+import LokOSFetcher from "../LokOSFetcher";
 
 const ParticipantTable = ({
   filters = {},
@@ -16,6 +17,9 @@ const ParticipantTable = ({
   const [traineesData, setTraineesData] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedRows, setSelectedRows] = useState([]);
+  const [selectedRow, setSelectedRow] = useState([]);
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   // API Call Engine: ट्रिगर होने पर ही कॉल होगा
   const fetchTraineesFromAPI = useCallback(async () => {
@@ -446,8 +450,22 @@ const ParticipantTable = ({
                               row.participant_name ||
                               "-"}
                           </td>
-                          <td style={tdStyle}>
-                            {row.lokos_member_code || "-"}
+                          <td
+                            className="clickable-cell"
+                            style={tdStyle}
+                            onClick={() => {
+                              setSelectedRow(row);
+                              setIsModalOpen(true);
+                            }}
+                          >
+                            <span className="profile-badge">
+                              <i className="fas fa-external-link-alt"></i>
+                              View LokOS Profile
+                            </span>
+
+                            <span className="member-code">
+                              {row.lokos_member_code || "-"}
+                            </span>
                           </td>
                           <td style={tdStyle}>{row.lokos_shg_code || "-"}</td>
                           <td style={tdStyle}>
@@ -516,7 +534,70 @@ const ParticipantTable = ({
           </table>
         )}
       </div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+      <style>{`
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .clickable-cell {
+          cursor: pointer !important;
+          position: relative;
+        }
+
+        .clickable-cell:hover {
+          background-color: #f8faff !important;
+        }
+
+        .member-code {
+          font-weight: 600;
+          color: #2563eb;
+        }
+
+        /* Floating badge above the cell */
+        .profile-badge {
+          position: absolute;
+          bottom: calc(100% + 8px);
+          left: 50%;
+          transform: translate(-50%, 5px);
+
+          white-space: nowrap;
+          padding: 6px 12px;
+          font-size: 11px;
+          font-weight: 600;
+          color: #fff;
+          background: #2563eb;
+          border-radius: 6px;
+
+          opacity: 0;
+          visibility: hidden;
+          pointer-events: none;
+          transition: all 0.2s ease;
+
+          z-index: 9999;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+        }
+
+        /* Small arrow below badge */
+        .profile-badge::after {
+          content: "";
+          position: absolute;
+          top: 100%;
+          left: 50%;
+          transform: translateX(-50%);
+          border: 6px solid transparent;
+          border-top-color: #2563eb;
+        }
+
+        .clickable-cell:hover .profile-badge {
+          opacity: 1;
+          visibility: visible;
+          transform: translate(-50%, 0);
+        }
+      `}</style>
+      <LokOSFetcher
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        lokos_shg_code={selectedRow?.lokos_shg_code}
+        lokos_member_code={selectedRow?.lokos_member_code}
+        fallbackData={selectedRow}
+      />
     </div>
   );
 };
@@ -537,6 +618,9 @@ const tdStyle = {
   padding: "12px",
   borderBottom: "1px solid #f1f1f1",
   fontSize: "13px",
+  cursor: "pointer",
+  position: "relative",
+  transition: "all 0.25s ease",
 };
 
 export default ParticipantTable;

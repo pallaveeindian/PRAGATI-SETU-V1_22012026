@@ -142,6 +142,7 @@ export default function TmsRoutes() {
         />
         {/* MT Management V2 (DMMU is geoscope locked by the component automatically) */}
         <Route path="dmmu/master-trainers" element={<MTDirectoryConductor />} />
+        <Route path="dmmu/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
 
       {/* BMMU Routes */}
@@ -154,6 +155,7 @@ export default function TmsRoutes() {
         <Route path="bmmu/tp-TvA" element={<BmmuTargetAchievement />} />
         {/* MT Management V2 (DMMU is geoscope locked by the component automatically) */}
         <Route path="bmmu/master-trainers" element={<MTDirectoryConductor />} />
+        <Route path="bmmu/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
 
       {/* Training Partner Routes */}
@@ -187,7 +189,8 @@ export default function TmsRoutes() {
 
       {/* DTP Routes */}
       <Route element={<ProtectedRoute allowedRoles="dtp" />}>
-        <Route path="dtp/dashboard" element={<DTPDashboard />} />
+        {/* <Route path="dtp/dashboard" element={<DTPDashboard />} /> */}
+        <Route path="dtp/dashboard" element={<TpTmsSummary />} />
         <Route
           path="batch-creator"
           element={<AssemblerDashboardBatchCreator />}
@@ -229,7 +232,13 @@ export default function TmsRoutes() {
       </Route>
 
       {/* Engagement Checks */}
-      <Route element={<ProtectedRoute allowedRoles={["dmmu", "bmmu", "smmu", "pmu_admin", "dtp"]} />}>
+      <Route
+        element={
+          <ProtectedRoute
+            allowedRoles={["dmmu", "bmmu", "smmu", "pmu_admin", "dtp"]}
+          />
+        }
+      >
         <Route
           path="engagement-check/beneficiary"
           element={<BeneficiaryCheck />}

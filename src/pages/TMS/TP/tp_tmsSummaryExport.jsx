@@ -868,27 +868,36 @@ const addKpiMatrixSheet = (
   return sheet;
 };
 
-const districtKey = (district) =>
-  String(district?.district_name || "")
+const locationKey = (location, isBlockWise) =>
+  String(isBlockWise ? location?.block_name : location?.district_name || "")
     .trim()
     .toLocaleLowerCase();
 
-const districtSummaryMap = (report) => {
+const locationSummaryMap = (report) => {
   const result = new Map();
-  const districts = Array.isArray(report?.district_summaries)
-    ? report.district_summaries
-    : [];
+  const isBlockWise = Boolean(report?.block_wise);
+  const locations = isBlockWise
+    ? Array.isArray(report?.block_summaries)
+      ? report.block_summaries
+      : []
+    : Array.isArray(report?.district_summaries)
+      ? report.district_summaries
+      : [];
 
-  districts.forEach((district) => {
-    const key = districtKey(district);
-    if (key) result.set(key, district?.summary || {});
+  locations.forEach((loc) => {
+    const key = locationKey(loc, isBlockWise);
+    if (key) result.set(key, loc?.summary || {});
   });
 
   return result;
 };
 
 const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
-  const sheet = workbook.addWorksheet("District Comparison");
+  const isBlockWise = Boolean(themeReport?.block_wise);
+  const locationLabel = isBlockWise ? "Block" : "District";
+
+  const sheetName = isBlockWise ? "Block Comparison" : "District Comparison";
+  const sheet = workbook.addWorksheet(sheetName);
   sheet.properties.tabColor = { argb: "FF4F83B8" };
   sheet.views = [
     {
@@ -901,7 +910,7 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
   ];
 
   const headers = [
-    "District / State",
+    `${locationLabel} / State`,
     "Scope",
     "Training Plan",
     "Batches Created",
@@ -926,32 +935,39 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
 
   styleTitle(
     sheet,
-    "DISTRICT AND TRAINING PLAN COMPARISON",
-    "One row per district and report scope. Includes the theme total and every training-plan report.",
+    `${locationLabel.toUpperCase()} AND TRAINING PLAN COMPARISON`,
+    `One row per ${locationLabel.toLowerCase()} and report scope. Includes the theme total and every training-plan report.`,
     headers.length,
   );
   styleColumnHeaders(sheet, 4, 1, headers);
 
-  const allDistricts = new Map();
-  const collectDistricts = (report) => {
-    const districts = Array.isArray(report?.district_summaries)
-      ? report.district_summaries
-      : [];
-    districts.forEach((district) => {
-      const key = districtKey(district);
-      if (key && !allDistricts.has(key)) {
-        allDistricts.set(key, district.district_name || "—");
+  const allLocations = new Map();
+  const collectLocations = (report) => {
+    const isReportBlockWise = Boolean(report?.block_wise);
+    const locations = isReportBlockWise
+      ? Array.isArray(report?.block_summaries)
+        ? report.block_summaries
+        : []
+      : Array.isArray(report?.district_summaries)
+        ? report.district_summaries
+        : [];
+
+    locations.forEach((loc) => {
+      const key = locationKey(loc, isReportBlockWise);
+      const name = isReportBlockWise ? loc.block_name : loc.district_name;
+      if (key && !allLocations.has(key)) {
+        allLocations.set(key, name || "—");
       }
     });
   };
 
-  collectDistricts(themeReport);
-  planReports.forEach((entry) => collectDistricts(entry.report));
+  collectLocations(themeReport);
+  planReports.forEach((entry) => collectLocations(entry.report));
 
-  const themeDistricts = districtSummaryMap(themeReport);
-  const plansByDistrict = planReports.map((entry) => ({
+  const themeLocations = locationSummaryMap(themeReport);
+  const plansByLocation = planReports.map((entry) => ({
     entry,
-    districts: districtSummaryMap(entry.report),
+    locations: locationSummaryMap(entry.report),
   }));
 
   const comparisonKeys = [
@@ -981,16 +997,22 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       return 0;
     });
 
+  const overallSummaryName = isBlockWise
+    ? themeReport?.district_name
+      ? `${themeReport.district_name} TOTAL SUMMARY`
+      : "TOTAL SUMMARY"
+    : "STATE WIDE SUMMARY";
+
   const records = [
     {
-      district: "STATE WIDE SUMMARY",
+      locationName: overallSummaryName,
       scope: "All Theme",
       trainingPlan: "All training plans",
       values: makeValues(themeReport?.state_wide_summary),
       isTheme: true,
     },
     ...planReports.map((entry) => ({
-      district: "STATE WIDE SUMMARY",
+      locationName: overallSummaryName,
       scope: "Training Plan",
       trainingPlan: entry.name,
       values: makeValues(entry.report?.state_wide_summary),
@@ -998,11 +1020,11 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
     })),
   ];
 
-  [...allDistricts.entries()].forEach(([key, name]) => {
-    const themeSummary = themeDistricts.get(key);
+  [...allLocations.entries()].forEach(([key, name]) => {
+    const themeSummary = themeLocations.get(key);
     if (themeSummary) {
       records.push({
-        district: name,
+        locationName: name,
         scope: "All Theme",
         trainingPlan: "All training plans",
         values: makeValues(themeSummary),
@@ -1010,12 +1032,12 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       });
     }
 
-    plansByDistrict.forEach(({ entry, districts }) => {
+    plansByLocation.forEach(({ entry, locations }) => {
       records.push({
-        district: name,
+        locationName: name,
         scope: "Training Plan",
         trainingPlan: entry.name,
-        values: makeValues(districts.get(key) || {}),
+        values: makeValues(locations.get(key) || {}),
         isTheme: false,
       });
     });
@@ -1023,7 +1045,7 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
 
   records.forEach((record, index) => {
     const row = sheet.addRow([
-      record.district,
+      record.locationName,
       record.scope,
       record.trainingPlan,
       ...record.values,
@@ -1091,6 +1113,7 @@ const fetchPlanReports = async (
   financialYear,
   selectedTheme,
   setProgress,
+  extraParams = {}, // NEW: Pass the district_id and block_wise flags
 ) => {
   const reports = new Array(plans.length);
   const failures = [];
@@ -1112,6 +1135,7 @@ const fetchPlanReports = async (
             financial_year: financialYear,
             theme: selectedTheme,
             training_plan: plan.id,
+            ...extraParams, // Inject the extra params (district_id, block_wise)
           },
         });
 
@@ -1190,10 +1214,20 @@ export default function TpTmsSummaryExport({
 
   const handleExport = async () => {
     if (!reportData) return;
-    if (!selectedTheme) role = "training_partner";
 
+    // We infer the extra parameters straight from the reportData
+    // that the parent component ALREADY fetched successfully!
+    const extraParams = {};
+    if (reportData.district_id) {
+      extraParams.district_id = reportData.district_id;
+    }
+    if (reportData.block_wise) {
+      extraParams.block_wise = 1;
+    }
+
+    const effectiveRole = selectedTheme ? role : "training_partner";
     const isSmmuAllPlansExport =
-      String(role || "").toLowerCase() === "smmu" && !selectedPlan;
+      String(effectiveRole || "").toLowerCase() === "smmu" && !selectedPlan;
 
     if (isSmmuAllPlansExport && !selectedTheme) {
       alert(
@@ -1252,6 +1286,7 @@ export default function TpTmsSummaryExport({
           params: {
             financial_year: financialYear,
             theme: selectedTheme,
+            ...extraParams,
           },
         });
 
@@ -1273,6 +1308,7 @@ export default function TpTmsSummaryExport({
             financialYear,
             selectedTheme,
             setProgress,
+            extraParams,
           );
         }
 
@@ -1291,12 +1327,14 @@ export default function TpTmsSummaryExport({
           financialYear,
         });
 
+        const locLabel = themeReport.block_wise ? "block" : "district";
+
         addDetailedReportSheet(workbook, {
           sheetName: "All Theme Data",
           title: "PRAGATI SETU TMS — ALL THEME DATA",
           subtitle: `${resolvedThemeName}  •  FY ${financialYear}  •  Report date: ${
             themeReport.report_date || "—"
-          }  •  Includes state and district summaries`,
+          }  •  Includes overall and ${locLabel} summaries`,
           report: themeReport,
           tabColor: COLORS.navy,
         });
@@ -1356,8 +1394,14 @@ export default function TpTmsSummaryExport({
         /[^a-z0-9_-]/gi,
         "_",
       );
+
+      let locPrefix = "State";
+      if (reportData.district_id) {
+        locPrefix = reportData.block_wise ? "Block" : "District";
+      }
+
       const filename = isSmmuAllPlansExport
-        ? `TMS_Theme_Analysis_${safeYear}.xlsx`
+        ? `TMS_Theme_Analysis_${locPrefix}_${safeYear}.xlsx`
         : `TMS_Portal_Summary_Report_${safeYear}.xlsx`;
 
       await downloadWorkbook(workbook, filename);

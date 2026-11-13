@@ -1,5 +1,6 @@
 // src/pages/TMS/TRs/BatchDetailComponents/ParticipantsSummaryTable.jsx
-import React from "react";
+import React, { useState } from "react";
+import LokOSFetcher from "../../LokOSFetcher";
 
 function fmtDate(iso) {
   try {
@@ -16,6 +17,13 @@ export default function ParticipantsSummaryTable({
   isTrainerTraining,
   isStaffBatch = false, // SURGICAL ADDITION: Prop to identify STAFF batches
 }) {
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
+  const isBeneficiaryView = displayedParticipants.some(
+    (p) => p.lokos_member_code,
+  );
+
   return (
     <div>
       <h3 className="participants-title">
@@ -115,7 +123,16 @@ export default function ParticipantsSummaryTable({
                     style={{
                       borderBottom: "1px solid #e4ecf5",
                       transition: "background 0.2s",
+                      cursor: isBeneficiaryView ? "pointer" : "default",
                     }}
+                    onClick={
+                      isBeneficiaryView
+                        ? () => {
+                            setSelectedRow(p);
+                            setIsModalOpen(true);
+                          }
+                        : undefined
+                    }
                     onMouseEnter={(e) =>
                       (e.currentTarget.style.background = "#f4f8fd")
                     }
@@ -279,6 +296,14 @@ export default function ParticipantsSummaryTable({
           margin-top: 24px;
         }
       `}</style>
+
+      <LokOSFetcher
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        lokos_shg_code={selectedRow?.lokos_shg_code}
+        lokos_member_code={selectedRow?.lokos_member_code}
+        fallbackData={selectedRow}
+      />
     </div>
   );
 }

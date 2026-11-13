@@ -1047,6 +1047,7 @@ const AssemblerDashboardBatchCreator = () => {
                       borderBottom: "2px solid #e2e8f0",
                     }}
                   >
+                    <th style={{ padding: "10px" }}>SNo.</th>
                     <th style={{ padding: "10px" }}>Name</th>
                     <th style={{ padding: "10px" }}>Identifier</th>
                     <th style={{ padding: "10px" }}>Conflict Reason</th>
@@ -1056,6 +1057,9 @@ const AssemblerDashboardBatchCreator = () => {
                 <tbody>
                   {engagedParticipants.map((ep, idx) => (
                     <tr key={idx} style={{ borderBottom: "1px solid #f1f5f9" }}>
+                      <td style={{ padding: "10px", color: "#475569" }}>
+                        {idx + 1}
+                      </td>
                       <td style={{ padding: "10px", fontWeight: "600" }}>
                         {ep.name || "-"}
                       </td>

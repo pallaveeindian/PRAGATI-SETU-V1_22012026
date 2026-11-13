@@ -8,6 +8,7 @@ import Footer from "../layout/footer";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API, LOOKUP_API } from "../../../api/axios";
 import { getCanonicalRole } from "../../../utils/roleUtils";
+import LokOSFetcher from "../LokOSFetcher";
 
 const DETAIL_CACHE_PREFIX = "tms_tr_detail_cache_v1::";
 
@@ -97,7 +98,9 @@ export default function TrainingRequestDetail() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   // overall loading for "load ALL apis"
   const [loadingAll, setLoadingAll] = useState(false);
-
+  // LokOS Profile Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
   // training request object
   const [tr, setTr] = useState(() => {
     const c = loadCache(id);
@@ -932,6 +935,7 @@ export default function TrainingRequestDetail() {
                                 <th>Social Category</th>
                                 <th>PLD</th>
                                 <th>View</th>
+                                <th>LokOS Profile</th>
                               </tr>
                             </thead>
                             <tbody>
@@ -972,6 +976,17 @@ export default function TrainingRequestDetail() {
                                       onClick={() => onViewBeneficiary(p)}
                                     >
                                       View
+                                    </button>
+                                  </td>
+                                  <td>
+                                    <button
+                                      className="view-btn"
+                                      onClick={() => {
+                                        setSelectedRow(p);
+                                        setIsModalOpen(true);
+                                      }}
+                                    >
+                                      Open
                                     </button>
                                   </td>
                                 </tr>
@@ -1173,6 +1188,7 @@ export default function TrainingRequestDetail() {
                                 {(tr?.training_type || "").toUpperCase() ===
                                 "BENEFICIARY" ? (
                                   <>
+                                    <th>LokOS Profile</th>
                                     <th>SHG Code</th>
                                     <th>Member Code</th>
                                     <th>Name</th>
@@ -1202,6 +1218,18 @@ export default function TrainingRequestDetail() {
                                   {(tr?.training_type || "").toUpperCase() ===
                                   "BENEFICIARY" ? (
                                     <>
+                                      <td>
+                                        {" "}
+                                        <button
+                                          className="view-btn"
+                                          onClick={() => {
+                                            setSelectedRow(p);
+                                            setIsModalOpen(true);
+                                          }}
+                                        >
+                                          Open
+                                        </button>
+                                      </td>
                                       <td>{p.lokos_shg_code || "-"}</td>
                                       <td>{p.lokos_member_code || "-"}</td>
                                       <td>{p.member_name || "-"}</td>
@@ -1439,213 +1467,220 @@ export default function TrainingRequestDetail() {
 
       {/* STYLES */}
       <style>{`
-.content-area {
-  display: flex;
-  flex: 1;
-  width: 100%;
-}
+        .content-area {
+          display: flex;
+          flex: 1;
+          width: 100%;
+        }
 
-.card-ui{
-  background:#fff;
-  padding:16px;
-  border-radius:10px;
-  border:2px solid #3d6ba6;
-  box-shadow:0 4px 10px rgba(0,0,0,0.05);
-}
+        .card-ui{
+          background:#fff;
+          padding:16px;
+          border-radius:10px;
+          border:2px solid #3d6ba6;
+          box-shadow:0 4px 10px rgba(0,0,0,0.05);
+        }
 
-.summary-box{
-  display:flex;
-  flex-wrap:wrap;
-  gap:20px;
-  margin-bottom:12px;
-  color:#2b4e72;
-}
+        .summary-box{
+          display:flex;
+          flex-wrap:wrap;
+          gap:20px;
+          margin-bottom:12px;
+          color:#2b4e72;
+        }
 
-.status-badge{
-  background:#a7c6ed;
-  color:#2b4e72;
-  padding:4px 10px;
-  border-radius:6px;
-  font-weight:700;
-}
+        .status-badge{
+          background:#a7c6ed;
+          color:#2b4e72;
+          padding:4px 10px;
+          border-radius:6px;
+          font-weight:700;
+        }
 
-.status-panel{
-  padding:12px;
-  border-radius:6px;
-  background:#f4f8fd;
-  border-left:4px solid #3d6ba6;
-  margin-bottom:14px;
-}
+        .status-panel{
+          padding:12px;
+          border-radius:6px;
+          background:#f4f8fd;
+          border-left:4px solid #3d6ba6;
+          margin-bottom:14px;
+        }
 
-.participant-toolbar{
-  display:flex;
-  gap:8px;
-  align-items:center;
-  margin-bottom:10px;
-}
+        .participant-toolbar{
+          display:flex;
+          gap:8px;
+          align-items:center;
+          margin-bottom:10px;
+        }
 
-.input-filter{
-  border:1px solid #3d6ba6;
-  padding:6px 10px;
-  border-radius:6px;
-  outline:"none"
-}
+        .input-filter{
+          border:1px solid #3d6ba6;
+          padding:6px 10px;
+          border-radius:6px;
+          outline:"none"
+        }
 
-.table-container{
-  max-height:420px;
-  overflow:auto;
-  border:1px solid #e4ecf5;
-  border-radius:8px;
-}
+        .table-container{
+          max-height:420px;
+          overflow:auto;
+          border:1px solid #e4ecf5;
+          border-radius:8px;
+        }
 
-.training-table{
-  width:100%;
-  border-collapse:collapse;
-  font-size:14px;
-}
+        .training-table{
+          width:100%;
+          border-collapse:collapse;
+          font-size:14px;
+        }
 
-.training-table thead{
-  background:#3d6ba6;
-  color:white;
-  position:sticky;
-  top:0;
-}
+        .training-table thead{
+          background:#3d6ba6;
+          color:white;
+          position:sticky;
+          top:0;
+        }
 
-.training-table th{
-  padding:10px;
-  text-align:left;
-  border-right:1px solid rgba(255,255,255,0.2);
-}
+        .training-table th{
+          padding:10px;
+          text-align:left;
+          border-right:1px solid rgba(255,255,255,0.2);
+        }
 
-.training-table th:last-child{
-  border-right:none;
-}
+        .training-table th:last-child{
+          border-right:none;
+        }
 
-.training-table td{
-  padding:10px;
-  border-bottom:1px solid #e4ecf5;
-  border-right:1px solid #e4ecf5;
-}
+        .training-table td{
+          padding:10px;
+          border-bottom:1px solid #e4ecf5;
+          border-right:1px solid #e4ecf5;
+        }
 
-.training-table td:last-child{
-  border-right:none;
-}
+        .training-table td:last-child{
+          border-right:none;
+        }
 
-.training-table tbody tr{
-  transition:background 0.2s ease;
-}
+        .training-table tbody tr{
+          transition:background 0.2s ease;
+        }
 
-.training-table tbody tr:nth-child(even){
-  background:#f7fbff;
-}
+        .training-table tbody tr:nth-child(even){
+          background:#f7fbff;
+        }
 
-.training-table tbody tr:hover{
-  background:#e4ecf5;
-}
+        .training-table tbody tr:hover{
+          background:#e4ecf5;
+        }
 
-.view-btn{
-  background:#5a8cc2;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  padding:5px 12px;
-  cursor:pointer;
-  transition:all .25s ease;
-}
+        .view-btn{
+          background:#5a8cc2;
+          color:#fff;
+          border:none;
+          border-radius:6px;
+          padding:5px 12px;
+          cursor:pointer;
+          transition:all .25s ease;
+        }
 
-.view-btn:hover{
-  transform:translateY(-4px);
-  box-shadow:0 8px 14px rgba(0,0,0,0.15);
-}
+        .view-btn:hover{
+          transform:translateY(-4px);
+          box-shadow:0 8px 14px rgba(0,0,0,0.15);
+        }
 
-.btn-primary{
-  background:#3d6ba6;
-  color:#fff;
-  border:none;
-  border-radius:6px;
-  padding:6px 14px;
-  cursor:pointer;
-  transition:all .25s ease;
-}
+        .btn-primary{
+          background:#3d6ba6;
+          color:#fff;
+          border:none;
+          border-radius:6px;
+          padding:6px 14px;
+          cursor:pointer;
+          transition:all .25s ease;
+        }
 
-.btn-primary:hover{
-  transform:translateY(-3px);
-  box-shadow:0 6px 12px rgba(0,0,0,0.15);
-}
+        .btn-primary:hover{
+          transform:translateY(-3px);
+          box-shadow:0 6px 12px rgba(0,0,0,0.15);
+        }
 
-.btn-outline{
-  background:#5a8cc2;
-  color:#fff;
-  border:none;
-  padding:7px 16px;
-  border-radius:6px;
-  cursor:pointer;
-  transition:all .25s ease;
-}
+        .btn-outline{
+          background:#5a8cc2;
+          color:#fff;
+          border:none;
+          padding:7px 16px;
+          border-radius:6px;
+          cursor:pointer;
+          transition:all .25s ease;
+        }
 
-.btn-outline:hover{
-  transform:translateY(-4px);
-  box-shadow:0 8px 14px rgba(0,0,0,0.15);
-}
+        .btn-outline:hover{
+          transform:translateY(-4px);
+          box-shadow:0 8px 14px rgba(0,0,0,0.15);
+        }
 
-.action-box{
-  background:#f4f8fd;
-  border-left:4px solid #5a8cc2;
-  padding:10px;
-  margin-bottom:10px;
-}
+        .action-box{
+          background:#f4f8fd;
+          border-left:4px solid #5a8cc2;
+          padding:10px;
+          margin-bottom:10px;
+        }
 
-.modal-grid{
-  display:grid;
-  gap:10px;
-}
+        .modal-grid{
+          display:grid;
+          gap:10px;
+        }
 
-.modal-row{
-  display:flex;
-  gap:12px;
-  padding:6px 0;
-  border-bottom:1px solid #e4ecf5;
-}
+        .modal-row{
+          display:flex;
+          gap:12px;
+          padding:6px 0;
+          border-bottom:1px solid #e4ecf5;
+        }
 
-.modal-label{
-  min-width:160px;
-  font-weight:700;
-  color:#2b4e72;
-}
+        .modal-label{
+          min-width:160px;
+          font-weight:700;
+          color:#2b4e72;
+        }
 
-.modal-value{
-  color:#111;
-}
+        .modal-value{
+          color:#111;
+        }
 
-.table-message{
-  padding:20px;
-  text-align:center;
-  color:#2b4e72;
-}
+        .table-message{
+          padding:20px;
+          text-align:center;
+          color:#2b4e72;
+        }
 
-.btn-danger {
-  background: #ef4444;
-  color: #fff;
-  border: none;
-  padding: 7px 16px;
-  border-radius: 6px;
-  cursor: pointer;
-  transition: all .25s ease;
-  font-weight: 600;
-}
+        .btn-danger {
+          background: #ef4444;
+          color: #fff;
+          border: none;
+          padding: 7px 16px;
+          border-radius: 6px;
+          cursor: pointer;
+          transition: all .25s ease;
+          font-weight: 600;
+        }
 
-.btn-danger:hover:not(:disabled) {
-  background: #dc2626;
-  transform: translateY(-2px);
-  box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
-}
+        .btn-danger:hover:not(:disabled) {
+          background: #dc2626;
+          transform: translateY(-2px);
+          box-shadow: 0 4px 10px rgba(239, 68, 68, 0.2);
+        }
 
-.btn-danger:disabled {
-  opacity: 0.6;
-  cursor: not-allowed;
-}
+        .btn-danger:disabled {
+          opacity: 0.6;
+          cursor: not-allowed;
+        }
 
-`}</style>
+      `}</style>
+      <LokOSFetcher
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+        lokos_shg_code={selectedRow?.lokos_shg_code}
+        lokos_member_code={selectedRow?.lokos_member_code}
+        fallbackData={selectedRow}
+      />
     </div>
   );
 }

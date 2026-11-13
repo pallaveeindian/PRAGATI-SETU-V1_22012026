@@ -7,7 +7,7 @@ import axios from "axios";
 
 // Base URLs for the Lokos CDN
 const LOKOS_BASE_UP_URL =
-  "https://cdn.lokos.in/lokos-in/lakhpati_didi/prod/UP/LAKHPATI_DIDI_DATA.json";
+  "https://cdn.lokos.in/lokos-in/lakhpati_didi/prod/UP/LAKHPATI_DIDI_DATA.json?v=${new Date().getTime()}";
 const LOKOS_DISTRICT_BASE_URL =
   "https://cdn.lokos.in/lokos-in/lakhpati_didi/prod/UP/district";
 const LOKOS_RF_DISTRICT_BASE_URL = "https://cdn.lokos.in/lokos-in/fdm/prod/UP";
@@ -39,7 +39,7 @@ export const fetchRawDistrictData = async (districtId) => {
   if (!districtId) throw new Error("District ID is required");
 
   try {
-    const url = `${LOKOS_DISTRICT_BASE_URL}/${districtId}/LAKHPATI_DIDI_DATA.json`;
+    const url = `${LOKOS_DISTRICT_BASE_URL}/${districtId}/LAKHPATI_DIDI_DATA.json?v=${new Date().getTime()}`;
     const response = await axios.get(url);
     return response.data;
   } catch (error) {

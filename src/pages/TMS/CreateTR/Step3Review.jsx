@@ -1,5 +1,6 @@
 // src/pages/TMS/CreateTR/Step3Review.jsx
-import React from "react";
+import React, { useState } from "react";
+import LokOSFetcher from "../LokOSFetcher";
 
 export default function Step3Review({
   selectedPlan,
@@ -19,6 +20,10 @@ export default function Step3Review({
   targetDistrictId,
   districts = [],
 }) {
+  // LokOS Profile Modal state
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectedRow, setSelectedRow] = useState(null);
+
   const btnPrimary = {
     background: "linear-gradient(20deg, #e4ecf5, #5a8cc2)",
     border: "2px solid #3d6ba6",
@@ -170,9 +175,10 @@ export default function Step3Review({
               <table className="table table-compact">
                 <thead>
                   <tr>
-                    <th>SHG</th>
+                    <th>Sno.</th>
                     <th>Member</th>
                     <th>Member Code</th>
+                    <th>SHG Code</th>
                     <th>Age</th>
                     <th>PLD</th>
                     <th>District</th>
@@ -187,9 +193,18 @@ export default function Step3Review({
                     <tr
                       key={`${b.lokos_shg_code}|${b.lokos_member_code}|${idx}`}
                     >
-                      <td>{b.lokos_shg_code || "—"}</td>
+                      <td>{idx + 1}</td>
                       <td>{b.member_name || "—"}</td>
-                      <td>{b.lokos_member_code || "—"}</td>
+                      <td
+                        className="member-code-cell"
+                        onClick={() => {
+                          setSelectedRow(b);
+                          setIsModalOpen(true);
+                        }}
+                      >
+                        {b.lokos_member_code || "—"}
+                      </td>
+                      <td>{b.lokos_shg_code || "—"}</td>
                       <td>{b.age ?? "—"}</td>
                       <td>{b.pld_status || "—"}</td>
                       <td>{b.district_id || "—"}</td>
@@ -309,6 +324,54 @@ export default function Step3Review({
             </table>
           </div>
         )}
+        <style>
+          {`
+            .member-code-cell {
+              position: relative;
+              transition: all 0.2s ease;
+              cursor: pointer;
+            }
+
+            .member-code-cell:hover {
+              outline: 2px solid #2878d0;
+              outline-offset: -2px;
+              background: #edf5ff !important;
+            }
+
+            /* Tooltip Badge */
+            .member-code-cell::after {
+              content: "Click to view LokOS Profile";
+              position: absolute;
+              top: -28px;
+              left: 50%;
+              transform: translate(-50%, -3px);
+              background: #2878d0;
+              color: white;
+              font-size: 10px;
+              font-weight: 600;
+              padding: 4px 9px;
+              border-radius: 12px;
+              white-space: nowrap;
+              opacity: 0;
+              transition: all 0.2s ease;
+              pointer-events: none;
+              z-index: 10;
+            }
+
+            .member-code-cell:hover::after {
+              opacity: 1;
+              transform: translate(-50%, 0);
+            }
+          `}
+        </style>
+
+        <LokOSFetcher
+          isOpen={isModalOpen}
+          onClose={() => setIsModalOpen(false)}
+          lokos_shg_code={selectedRow?.lokos_shg_code}
+          lokos_member_code={selectedRow?.lokos_member_code}
+          fallbackData={selectedRow}
+        />
       </div>
     </>
   );

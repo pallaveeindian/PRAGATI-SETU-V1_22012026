@@ -38,6 +38,11 @@ const MENU = {
   bmmu: [
     { label: "Dashboard", to: "/tms/bmmu/dashboard", icon: FaTachometerAlt },
     {
+      label: "TMS portal Summary",
+      to: "/tms/bmmu/tms-portal-summary",
+      icon: FaClipboardCheck,
+    },
+    {
       label: "Master Trainer DB",
       icon: FaBuilding,
       children: [
@@ -80,22 +85,21 @@ const MENU = {
       ],
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         {
-          label: "Beneficiary Engagement",
+          label: "Beneficiary",
           to: "/tms/engagement-check/beneficiary",
           icon: FaAddressBook,
         },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
       ],
     },
-    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
     {
       label: "Grievances",
       to: "/admin/grievances",
@@ -104,6 +108,11 @@ const MENU = {
   ],
   dmmu: [
     { label: "Dashboard", to: "/tms/dmmu/dashboard", icon: FaTachometerAlt },
+    {
+      label: "TMS portal Summary",
+      to: "/tms/dmmu/tms-portal-summary",
+      icon: FaClipboardCheck,
+    },
     {
       label: "Master Trainer DB",
       icon: FaBuilding,
@@ -121,16 +130,16 @@ const MENU = {
       ],
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         {
-          label: "Beneficiary Engagement",
+          label: "Beneficiary",
           to: "/tms/engagement-check/beneficiary",
           icon: FaAddressBook,
         },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
@@ -162,7 +171,7 @@ const MENU = {
         },
       ],
     },
-    { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
+    // { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
     {
       label: "User Management",
       to: "/tms/dmmu/bmmu-users",
@@ -224,7 +233,7 @@ const MENU = {
       ],
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         // {
@@ -233,7 +242,7 @@ const MENU = {
         //   icon: FaAddressBook,
         // },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
@@ -278,7 +287,7 @@ const MENU = {
     },
     // { label: "Reports", to: "/tms/training-report", icon: FaClipboardCheck },
     {
-      label: "Reports",
+      label: "TMS portal Summary",
       to: "/tms/smmu/tms-portal-summary",
       icon: FaClipboardCheck,
     },
@@ -389,7 +398,7 @@ const MENU = {
       icon: FaBuilding,
     },
     {
-      label: "Engagement Checks",
+      label: "Status Tracking",
       icon: FaBuilding,
       children: [
         // {
@@ -398,7 +407,7 @@ const MENU = {
         //   icon: FaAddressBook,
         // },
         {
-          label: "Trainer Engagement",
+          label: "Trainer",
           to: "/tms/engagement-check/trainer",
           icon: FaBook,
         },
@@ -428,11 +437,11 @@ const MENU = {
           to: "/tms/batches-list/",
           icon: FaAddressBook,
         },
-        // {
-        //   label: "Backlog Batch Creator",
-        //   to: "/tms/backlog-batch-creator/",
-        //   icon: FaBackward,
-        // },
+        {
+          label: "Backlog Batch Creator",
+          to: "/tms/backlog-batch-creator/",
+          icon: FaBackward,
+        },
       ],
     },
     {
