@@ -68,6 +68,11 @@ const NAV_ITEMS = [
         },
         to: "/upsrlm-planning/login",
       },
+      // {
+      //   key: "PMU-dashboard",
+      //   label: { en: "PMU-Admin Dashboard", hi: "PMU डैशबोर्ड" },
+      //   to: "/module-login?module=pmuadmin",
+      // }
     ],
   },
   {

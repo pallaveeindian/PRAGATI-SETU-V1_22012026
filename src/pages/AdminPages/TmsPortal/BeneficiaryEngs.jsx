@@ -1,4 +1,4 @@
-// src\pages\AdminPages\TmsPortal\Beneficiary Engs.jsx
+// src\pages\AdminPages\TmsPortal\BeneficiaryEngs.jsx
 import React, { useEffect, useState, useCallback, useContext } from "react";
 
 import { TMS_API, EPSAKHI_API, LOOKUP_API } from "../../../api/axios";
@@ -129,7 +129,10 @@ export default function BeneficiaryCheck({ embedded = false }) {
   const [shgs, setShgs] = useState([]);
   const [rows, setRows] = useState([]); // Members
 
-  const [meta, setMeta] = useState({ page: 1, page_size: 20, total: 0 });
+  // UPDATED: Set default page size to 15
+  const PAGE_SIZE = 15;
+  const [meta, setMeta] = useState({ page: 1, page_size: PAGE_SIZE, total: 0 });
+  
   const [loadingTable, setLoadingTable] = useState(true);
   const [tableError, setTableError] = useState("");
 
@@ -145,6 +148,7 @@ export default function BeneficiaryCheck({ embedded = false }) {
     setActiveBlock(null);
     setActiveShg(null);
     setViewLevel("BLOCKS");
+    setMeta({ page: 1, page_size: PAGE_SIZE, total: 0 });
     setLoadingTable(true);
     setTableError("");
 
@@ -229,6 +233,7 @@ export default function BeneficiaryCheck({ embedded = false }) {
       setBlocks([]);
       setShgs([]);
       setRows([]);
+      setMeta({ page: 1, page_size: PAGE_SIZE, total: 0 });
       setLoadingTable(false);
       return undefined;
     }
@@ -257,7 +262,11 @@ export default function BeneficiaryCheck({ embedded = false }) {
             : Array.isArray(payload)
               ? payload
               : [];
-        if (!cancelled) setBlocks(data);
+        if (!cancelled) {
+          setBlocks(data);
+          // Update total meta for client-side blocks pagination
+          setMeta({ page: 1, page_size: PAGE_SIZE, total: data.length });
+        }
       } catch (e) {
         console.error("Failed to load blocks", e);
         if (!cancelled)
@@ -290,6 +299,8 @@ export default function BeneficiaryCheck({ embedded = false }) {
           ? payload.results
           : [];
       setShgs(data);
+      // Update total meta for client-side SHGs pagination
+      setMeta({ page: 1, page_size: PAGE_SIZE, total: data.length });
     } catch (e) {
       console.error("Failed to load SHGs", e);
       setTableError("Failed to load SHGs for the selected block.");
@@ -303,7 +314,7 @@ export default function BeneficiaryCheck({ embedded = false }) {
     async (shg, page = 1, { force = false } = {}) => {
       if (!shg || !districtId) return;
 
-      const pageSize = meta.page_size || 20;
+      const pageSize = meta.page_size || PAGE_SIZE;
       const cacheKey = JSON.stringify({
         district: districtId,
         shg: shg.code,
@@ -389,9 +400,19 @@ export default function BeneficiaryCheck({ embedded = false }) {
     if (level === "BLOCKS") {
       setActiveBlock(null);
       setActiveShg(null);
+      setMeta({ page: 1, page_size: PAGE_SIZE, total: blocks.length });
     } else if (level === "SHGS") {
       setActiveShg(null);
-      // Data is already in 'shgs' state
+      setMeta({ page: 1, page_size: PAGE_SIZE, total: shgs.length });
+    }
+  };
+
+  // Generic Pagination Handler for all Views
+  const handlePageChange = (newPage) => {
+    if (viewLevel === "MEMBERS") {
+      loadMembersData(activeShg, newPage);
+    } else {
+      setMeta((prev) => ({ ...prev, page: newPage }));
     }
   };
 
@@ -456,6 +477,7 @@ export default function BeneficiaryCheck({ embedded = false }) {
     setActiveBlock(null);
     setActiveShg(null);
     setViewLevel("BLOCKS");
+    setMeta({ page: 1, page_size: PAGE_SIZE, total: 0 });
     setLoadingTable(false);
     setTableError("");
     setSearchResults([]);
@@ -473,6 +495,11 @@ export default function BeneficiaryCheck({ embedded = false }) {
 
   const currentData =
     viewLevel === "BLOCKS" ? blocks : viewLevel === "SHGS" ? shgs : rows;
+
+  // Implement uniform client-side slice for Blocks and SHGs, Members uses API pagination (rows)
+  const paginatedData = viewLevel === "MEMBERS"
+    ? currentData
+    : currentData.slice((meta.page - 1) * meta.page_size, meta.page * meta.page_size);
 
   return (
     <div
@@ -809,10 +836,7 @@ export default function BeneficiaryCheck({ embedded = false }) {
                       </button>
                     )}
                     <span className="beneficiary-eligibility__count">
-                      {viewLevel === "MEMBERS"
-                        ? meta.total
-                        : currentData.length}{" "}
-                      records
+                      {meta.total} records
                     </span>
                   </div>
                 </div>
@@ -870,13 +894,11 @@ export default function BeneficiaryCheck({ embedded = false }) {
                           </tr>
                         </thead>
 
-                        {/* BODY: Dynamic based on viewLevel */}
+                        {/* BODY: Dynamic based on viewLevel, mapped over paginated array */}
                         <tbody>
-                          {currentData.map((row, index) => {
-                            const srNo =
-                              viewLevel === "MEMBERS"
-                                ? (meta.page - 1) * meta.page_size + index + 1
-                                : index + 1;
+                          {paginatedData.map((row, index) => {
+                            // Uniform srNo logic for all views based on pagination
+                            const srNo = (meta.page - 1) * meta.page_size + index + 1;
 
                             if (viewLevel === "BLOCKS") {
                               const blockId =
@@ -964,7 +986,7 @@ export default function BeneficiaryCheck({ embedded = false }) {
                             return null;
                           })}
 
-                          {currentData.length === 0 && !loadingTable && (
+                          {paginatedData.length === 0 && !loadingTable && (
                             <tr>
                               <td
                                 colSpan="6"
@@ -978,15 +1000,13 @@ export default function BeneficiaryCheck({ embedded = false }) {
                       </table>
                     </div>
 
-                    {/* Pagination only shown for Members (since API supports it) */}
-                    {viewLevel === "MEMBERS" && totalPages > 1 && (
+                    {/* Pagination explicitly mapped to all Views dynamically limit to 15 */}
+                    {totalPages > 1 && (
                       <div className="tms-pagination">
                         <button
                           className="beneficiary-eligibility__reset"
                           disabled={meta.page <= 1}
-                          onClick={() =>
-                            loadMembersData(activeShg, meta.page - 1)
-                          }
+                          onClick={() => handlePageChange(meta.page - 1)}
                         >
                           Prev
                         </button>
@@ -996,9 +1016,7 @@ export default function BeneficiaryCheck({ embedded = false }) {
                         <button
                           className="beneficiary-eligibility__reset"
                           disabled={meta.page >= totalPages}
-                          onClick={() =>
-                            loadMembersData(activeShg, meta.page + 1)
-                          }
+                          onClick={() => handlePageChange(meta.page + 1)}
                         >
                           Next
                         </button>
