@@ -10,7 +10,7 @@ export default function PDUFooter() {
   const t = {
     brandDesc:
       "Pragati Setu is a unified digital platform for monitoring, analytics, and governance, empowering Self Help Groups and rural institutions across Uttar Pradesh.",
-    lastUpdated: "Last Updated: 30 Apr, 2026",
+    lastUpdated: "Last Updated: 07 Nov, 2026",
     col1: "Pragati Setu",
     col1Links: [
       "About Pragati Setu",

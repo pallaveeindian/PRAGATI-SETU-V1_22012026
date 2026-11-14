@@ -11,7 +11,7 @@ export default function Footer() {
     en: {
       brandDesc:
         "Pragati Setu is a unified digital platform for monitoring, analytics, and governance, empowering Self Help Groups and rural institutions across Uttar Pradesh.",
-      lastUpdated: "Last Updated: 26 Jan, 2026",
+      lastUpdated: "Last Updated: 07 Nov, 2026",
 
       col1: "Pragati Setu",
       col1Links: [
@@ -57,7 +57,7 @@ export default function Footer() {
     hi: {
       brandDesc:
         "प्रगति सेतु एक एकीकृत डिजिटल प्लेटफ़ॉर्म है जो निगरानी, विश्लेषण और शासन को सशक्त बनाता है, तथा उत्तर प्रदेश में स्वयं सहायता समूहों और ग्रामीण संस्थाओं को मजबूत करता है।",
-      lastUpdated: "अंतिम अपडेट: 26 जनवरी, 2026",
+      lastUpdated: "अंतिम अपडेट: 07 नवंबर, 2026",
 
       col1: "प्रगति सेतु",
       col1Links: [

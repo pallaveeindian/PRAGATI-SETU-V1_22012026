@@ -595,9 +595,9 @@ export default function App() {
   return (
     <LanguageProvider>
       {/* SURGICAL ADDITION: Render Popup on Home Page Only */}
-      {/* {showNewsPopup && location.pathname === "/" && (
+      {showNewsPopup && location.pathname === "/" && (
         <NewsPopup onClose={() => setShowNewsPopup(false)} />
-      )} */}
+      )}
 
       <Routes>
         {/* ----- Public Routes ----- */}
