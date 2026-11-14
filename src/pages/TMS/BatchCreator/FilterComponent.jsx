@@ -184,7 +184,7 @@ const FilterComponent = ({ filters, handleChange }) => {
     const excludedIds = [
       // "100",
       // "101",
-      "103",
+      // "103",
       // "98",
       // "96",
       // "154",

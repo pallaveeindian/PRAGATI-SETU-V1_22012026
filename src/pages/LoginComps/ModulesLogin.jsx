@@ -1,4 +1,4 @@
-// src\pages\LoginComps\ModulesLogin.jsx
+// src/pages/LoginComps/ModulesLogin.jsx
 import React, { useState, useEffect, useMemo } from "react";
 import { Link, useNavigate } from "react-router-dom";
 import { MODULES_CONFIG } from "../../config/modulesConfig";
@@ -26,6 +26,38 @@ export default function ModulesLogin() {
     return () => clearInterval(timer);
   }, []);
 
+  // ---------- HIDDEN PMU ADMIN SHORTCUT ----------
+  useEffect(() => {
+    let keySequence = "";
+
+    const handleKeyDown = (e) => {
+      // if user is typing in an input or textarea, ignore the key sequence
+      if (e.target.tagName === "INPUT" || e.target.tagName === "TEXTAREA")
+        return;
+
+      // 1. SECRET CODE LOGIC: "pmu" typed in sequence
+      keySequence += e.key.toLowerCase();
+      if (keySequence.length > 3) {
+        keySequence = keySequence.substring(keySequence.length - 3);
+      }
+      if (keySequence === "pmu") {
+        navigate("/module-login?module=pmuadmin");
+      }
+
+      // 2. SHORTCUT KEY LOGIC: Ctrl + Alt + P
+      if (e.ctrlKey && e.altKey && e.key.toLowerCase() === "p") {
+        navigate("/module-login?module=pmuadmin");
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [navigate]);
+  // -----------------------------------------------
+
   // Helper function to format countdown time
   const formatTime = (ms) => {
     const totalSeconds = Math.floor(ms / 1000);
@@ -44,35 +76,37 @@ export default function ModulesLogin() {
     let aCount = 0;
     let iCount = 0;
 
-    const processed = MODULES_CONFIG.map((mod, index) => {
-      let isOperational = true;
-      let timeRemaining = 0;
-      let isPermanent = false;
+    const processed = MODULES_CONFIG.filter((mod) => !mod.isHidden).map(
+      (mod, index) => {
+        let isOperational = true;
+        let timeRemaining = 0;
+        let isPermanent = false;
 
-      if (mod.maintenanceUntil) {
-        if (mod.maintenanceUntil === "permanent") {
-          isOperational = false;
-          isPermanent = true;
-        } else {
-          timeRemaining =
-            new Date(mod.maintenanceUntil).getTime() - currentTime;
-          if (timeRemaining > 0) {
+        if (mod.maintenanceUntil) {
+          if (mod.maintenanceUntil === "permanent") {
             isOperational = false;
+            isPermanent = true;
+          } else {
+            timeRemaining =
+              new Date(mod.maintenanceUntil).getTime() - currentTime;
+            if (timeRemaining > 0) {
+              isOperational = false;
+            }
           }
         }
-      }
 
-      if (isOperational) aCount++;
-      else iCount++;
+        if (isOperational) aCount++;
+        else iCount++;
 
-      return {
-        ...mod,
-        isOperational,
-        timeRemaining,
-        isPermanent,
-        modCode: `MOD-${String(index + 1).padStart(2, "0")}`,
-      };
-    });
+        return {
+          ...mod,
+          isOperational,
+          timeRemaining,
+          isPermanent,
+          modCode: `MOD-${String(index + 1).padStart(2, "0")}`,
+        };
+      },
+    );
 
     return {
       processedModules: processed,
@@ -332,15 +366,14 @@ export default function ModulesLogin() {
         }
 
         .ws-container {
-          /* SURGICAL FIX: Make container transparent so internal BGs show */
           background-color: transparent; 
           width: 100%;
           max-width: 1300px;
           border-radius: 24px;
-          box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2); /* Darker shadow for depth against modal */
+          box-shadow: 0 20px 40px -10px rgba(0,0,0,0.2);
           border: 1px solid rgba(255, 255, 255, 0.2);
-          overflow: hidden; /* Ensures inner backgrounds respect border-radius */
-          opacity: 0; /* Handled by mounting animation */
+          overflow: hidden; 
+          opacity: 0; 
         }
 
         .ws-container.mounted {
@@ -352,14 +385,12 @@ export default function ModulesLogin() {
           100% { opacity: 1; transform: scale(1) translateY(0); }
         }
 
-        /* --- TOP BAR --- */
         .ws-bg {
-          /* SURGICAL FIX: Properly format the header background */
           background-image: url(${login_header});
           background-size: cover;
           background-position: center top;
           background-repeat: no-repeat;
-          padding: 40px 50px 20px 50px; /* Moves padding from container to here */
+          padding: 40px 50px 20px 50px; 
           border-bottom: 1px solid rgba(0, 0, 0, 0.05);
         }
 
@@ -412,7 +443,6 @@ export default function ModulesLogin() {
           transform: rotate(90deg);
         }
 
-        /* --- HEADER --- */
         .ws-header-area {
           display: flex;
           justify-content: space-between;
@@ -528,15 +558,13 @@ export default function ModulesLogin() {
           100% { box-shadow: 0 0 0 0 rgba(34, 197, 94, 0); }
         }
 
-        /* --- CONTROLS (SEARCH & FILTERS) --- */
         .ws-content-bg {
-          /* SURGICAL FIX: Properly format the main body background */
           background-image: url(${login_bg});
           background-size: cover;
           background-position: center bottom;
           background-repeat: no-repeat;
-          background-color: #f8fafc; /* Fallback */
-          padding: 20px 50px 40px 50px; /* Moves padding from container to here */
+          background-color: #f8fafc; 
+          padding: 20px 50px 40px 50px; 
           min-height: 500px;
         }
 
@@ -634,7 +662,6 @@ export default function ModulesLogin() {
           color: #334155;
         }
 
-        /* --- SECTIONS --- */
         .ws-section-title {
           font-size: 18px;
           font-weight: 700;
@@ -656,7 +683,6 @@ export default function ModulesLogin() {
           gap: 24px;
         }
 
-        /* --- CARDS --- */
         .ws-card {
           border: 1px solid #e2e8f0;
           border-radius: 16px;
@@ -665,7 +691,7 @@ export default function ModulesLogin() {
           flex-direction: column;
           transition: all 0.3s ease;
           overflow: hidden;
-          opacity: 0; /* Handled by animate-up */
+          opacity: 0; 
         }
 
         .ws-card.animate-up {
@@ -768,7 +794,7 @@ export default function ModulesLogin() {
 
         .ws-card-action {
           padding: 16px 24px;
-          background: #fafaf9; /* Extremely subtle warm gray */
+          background: #fafaf9; 
           border-top: 1px solid #f1f5f9;
         }
 
@@ -815,7 +841,6 @@ export default function ModulesLogin() {
           border: 1px solid #e2e8f0;
         }
 
-        /* --- RESPONSIVE DESIGN --- */
         @media (max-width: 900px) {
           .ws-header-area {
             flex-direction: column;
@@ -841,7 +866,6 @@ export default function ModulesLogin() {
         @media (max-width: 600px) {
           .ws-wrapper { padding: 20px 10px; }
           .ws-container { border-radius: 16px; }
-          /* SURGICAL FIX: Adjust inner padding for mobile */
           .ws-bg { padding: 30px 20px 15px 20px; }
           .ws-content-bg { padding: 15px 20px 30px 20px; }
           

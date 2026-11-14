@@ -30,6 +30,7 @@ const TMS_CHILD_NAMES = [
   "Training Target",
   "Learning Material",
   "Center Management",
+  "Hr Management",
   ...ENGAGEMENT_CHILD_NAMES,
   "Master Trainer DB",
   ...MASTER_TRAINER_CHILD_NAMES,
@@ -75,6 +76,7 @@ const AdminSidebar = ({
         { name: "Training Target", icon: <FaBullseye /> },
         { name: "Learning Material", icon: <FaBook /> },
         { name: "Center Management", icon: <FaClipboardList /> },
+        { name: "Hr Management", icon: <FaUsers /> },
         { name: "Trainer Check", icon: <FaClipboardList /> },
         { name: "Beneficiary Check", icon: <FaBullseye /> },
 

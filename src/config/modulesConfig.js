@@ -102,6 +102,7 @@ export const MODULES_CONFIG = [
     path: "/module-login?module=pmuadmin",
     level: "Block",
     maintenanceUntil: null,
+    isHidden: true,
   },
   {
     id: "masteradmin",
