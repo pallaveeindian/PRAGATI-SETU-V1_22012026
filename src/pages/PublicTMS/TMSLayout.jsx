@@ -14,6 +14,9 @@ import TMSBenefits from "./TMSBenefits.jsx";
 import HeaderTopMenu from "../HeaderTopMenu.jsx";
 import HeaderTopHeadline from "../HeaderTopHeadline.jsx";
 
+import BatchAttMatrix from "../../assets/TMS/batch_at_matrix.png";
+import BatchAttMatrixMob from "../../assets/TMS/batch_at_matrix_mob.png";
+
 export default function TMSLayout() {
   const setFontScale = (scale) => {
     document.documentElement.style.setProperty("--font-scale", scale);
@@ -63,6 +66,13 @@ export default function TMSLayout() {
         <section id="tms-benefits" className="tms-benefits-section">
           <TMSBenefits />
         </section>
+
+        <img src={BatchAttMatrix} alt="Batch Attendance Matrix" />
+        <img
+          src={BatchAttMatrixMob}
+          alt="Batch Attendance Matrix"
+          className="batch-att-matrix-mob"
+        />
       </main>
 
       <Footer />
@@ -119,6 +129,31 @@ export default function TMSLayout() {
         .tms-overview-section {
           width: 100%;
           background: #ffffff;
+        }
+
+        /* Desktop banner */
+        .tms-page img[alt="Batch Attendance Matrix"]:not(.batch-att-matrix-mob) {
+          display: block;
+          width: 100%;
+          height: auto;
+        }
+
+        /* Mobile banner hidden on desktop */
+        .tms-page img.batch-att-matrix-mob {
+          display: none;
+          width: 100%;
+          height: auto;
+        }
+
+        /* Swap banners on phone-sized screens */
+        @media (max-width: 767px) {
+          .tms-page img[alt="Batch Attendance Matrix"]:not(.batch-att-matrix-mob) {
+            display: none;
+          }
+
+          .tms-page img.batch-att-matrix-mob {
+            display: block;
+          }
         }
 
       `}</style>
