@@ -34,6 +34,8 @@ export default function CpBatchList() {
   const [blocks, setBlocks] = useState([]);
 
   const [currentPage, setCurrentPage] = useState(1);
+  const [batchCodeSearch, setBatchCodeSearch] = useState("");
+  const [appliedBatchCodeSearch, setAppliedBatchCodeSearch] = useState("");
   const rowsPerPage = 10;
 
   const [filters, setFilters] = useState({
@@ -156,10 +158,19 @@ export default function CpBatchList() {
   const visibleBatches = useMemo(() => {
     return (batches || []).filter((b) => {
       const status = String(b.status).toUpperCase();
+      const batchCode = String(b.code || "").toLowerCase();
 
-      return !["DRAFT", "PENDING", "REJECTED", "REVIEW"].includes(status);
+      return (
+        !["DRAFT", "PENDING", "REJECTED", "REVIEW"].includes(status) &&
+        batchCode.includes(appliedBatchCodeSearch.toLowerCase())
+      );
     });
-  }, [batches]);
+  }, [batches, appliedBatchCodeSearch]);
+
+  function applyBatchCodeSearch(searchValue = batchCodeSearch) {
+    setAppliedBatchCodeSearch(searchValue.trim());
+    setCurrentPage(1);
+  }
 
   const totalPages = Math.max(
     1,
@@ -205,6 +216,12 @@ export default function CpBatchList() {
             onClick={() => navigate(`/tms/batch-detail/${batch.id}`)}
           >
             View
+          </button>
+          <button
+            className="btnView"
+            onClick={() => navigate(`/tms/cp/batch-media/${batch.id}`)}
+          >
+            View Attached Media
           </button>
           <button
             className="btnView"
@@ -443,7 +460,54 @@ export default function CpBatchList() {
                 </h2>
                 <div
                   style={{ marginLeft: "auto", display: "flex", gap: "8px" }}
-                >
+                > 
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      applyBatchCodeSearch();
+                    }}
+                    style={{
+                      display: "flex",
+                      alignItems: "center",
+                      gap: 6,
+                    }}
+                    role="search"
+                    aria-label="Search training batches by code"
+                  >
+                    <input
+                      type="search"
+                      value={batchCodeSearch}
+                      onChange={(event) =>
+                        setBatchCodeSearch(event.target.value)
+                      }
+                      placeholder="Search by batch code"
+                      aria-label="Training batch code"
+                      style={{
+                        width: 190,
+                        maxWidth: "100%",
+                        padding: "8px 10px",
+                        border: "1px solid #a7c6ed",
+                        borderRadius: 6,
+                        color: "#2b4e72",
+                        outline: "none",
+                      }}
+                    />
+                    <button className="btnPrimary" type="submit">
+                      Search
+                    </button>
+                    {batchCodeSearch && (
+                      <button
+                        className="btnPage"
+                        type="button"
+                        onClick={() => {
+                          setBatchCodeSearch("");
+                          applyBatchCodeSearch("");
+                        }}
+                      >
+                        Clear
+                      </button>
+                    )}
+                  </form>
                   <button
                     className="btnPrimary"
                     onClick={() => fetchBatches()}

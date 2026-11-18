@@ -16,6 +16,7 @@ import MtDashboard from "../pages/TMS/MT/mt_dashboard";
 import CpDashboard from "../pages/TMS/TP_CP/cp_dashboard";
 import CpBatchList from "../pages/TMS/TP_CP/cp_batch_list";
 import CpBatchDetail from "../pages/TMS/TP_CP/cp_batch_detail";
+import CPBatchMedia from "../pages/TMS/TP_CP/cp_batch_media";
 import CpAdPerBatchEkyc from "../pages/TMS/TP_CP/attendance/cpad_per_batch_ekyc";
 import CpAdPerBatch from "../pages/TMS/TP_CP/attendance/cpad_per_batch";
 import CpBatchClosure from "../pages/TMS/TP_CP/cp_batch_closure";
@@ -215,6 +216,7 @@ export default function TmsRoutes() {
         <Route path="cp/batch-attendance/:id" element={<CpAdPerBatch />} />
         <Route path="cp/batch-list" element={<CpBatchList />} />
         <Route path="cp/batch-closure/:id" element={<CpBatchClosure />} />
+        <Route path="cp/batch-media/:id" element={<CPBatchMedia />} />
       </Route>
 
       {/* Master Trainer Routes */}

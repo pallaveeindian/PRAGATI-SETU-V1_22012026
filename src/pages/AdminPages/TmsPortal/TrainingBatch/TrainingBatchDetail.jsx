@@ -1,4 +1,4 @@
-// src/pages/TMS/TRs/training_batch_detail.jsx
+// src/pages/AdminPages/TmsPortal/TrainingBatch/TrainingBatchDetail.jsx
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -92,6 +92,24 @@ export default function TrainingBatchDetail({ batchId: batchIdProp, onBack }) {
         ),
     );
     handleRefresh();
+  }
+
+  async function handleDeleteAttendance(attendanceIds) {
+    const results = await Promise.allSettled(
+      attendanceIds.map((attendanceId) =>
+        TMS_API.participantAttendance.destroy(attendanceId),
+      ),
+    );
+    handleRefresh();
+
+    const failedCount = results.filter(
+      (result) => result.status === "rejected",
+    ).length;
+    if (failedCount > 0) {
+      throw new Error(
+        `${failedCount} of ${attendanceIds.length} participant attendance record(s) could not be deleted. The list has been refreshed.`,
+      );
+    }
   }
 
   const isTrainerTraining = batchData?.participant_type === "TRAINER";
@@ -250,6 +268,7 @@ export default function TrainingBatchDetail({ batchId: batchIdProp, onBack }) {
                     batchMedia={batchData.batch_pictures || []}
                     onOpenMedia={setMediaPreviewSrc}
                     onSaveAttendance={handleSaveAttendance}
+                    onDeleteAttendance={handleDeleteAttendance}
                   />
 
                   <MediaGallery
