@@ -140,29 +140,35 @@ export default function TrainingBatchList() {
 
   const didInitRef = useRef(false);
 
+  const [geoscopeError, setGeoscopeError] = useState(false);
+
   async function ensureUserGeoscope(userId) {
     if (!userId) return null;
 
-    // try {
-    //   const cached = JSON.parse(
-    //     localStorage.getItem("ps_user_geoscope") || "null",
-    //   );
-
-    //   if (cached) return cached;
-    // } catch {}
-
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(userId);
+      const geo = resp?.data;
 
-      if (resp?.data) {
-        localStorage.setItem("ps_user_geoscope", JSON.stringify(resp.data));
-        return resp.data;
+      const resolved =
+        role === "bmmu"
+          ? Boolean(geo?.block_id || geo?.blocks?.[0])
+          : ["dmmu", "dtp"].includes(role)
+            ? Boolean(geo?.district_id || geo?.district || geo?.districts?.[0])
+            : Boolean(geo);
+
+      if (!resolved) {
+        setGeoscopeError(true);
+        return null;
       }
+
+      localStorage.setItem(GEOSCOPE_KEY, JSON.stringify(geo));
+      setGeoscopeError(false);
+      return geo;
     } catch (error) {
       console.error("Failed to load user geoscope:", error);
+      setGeoscopeError(true);
+      return null;
     }
-
-    return null;
   }
 
   function safeFirst(arr) {
@@ -173,6 +179,10 @@ export default function TrainingBatchList() {
     if (requestId) return { request: requestId };
 
     const geo = (await ensureUserGeoscope(user?.id)) || {};
+
+    if (["bmmu", "dmmu", "dtp"].includes(role) && !geo) {
+      return null;
+    }
 
     const blockId = geo.block_id || safeFirst(geo.blocks);
 
@@ -381,6 +391,7 @@ export default function TrainingBatchList() {
         finalParams = { request_id: requestId, page_size: "MAX" };
       } else {
         const baseParams = await getDefaultScopeParams();
+        if (!baseParams) return;
         let effectiveFilters = filters;
 
         if (role === "bmmu") {
@@ -910,6 +921,7 @@ export default function TrainingBatchList() {
         };
       } else {
         const baseParams = await getDefaultScopeParams();
+        if (!baseParams) return;
         let effectiveFilters = filters;
 
         if (role === "bmmu") {
@@ -2368,6 +2380,66 @@ export default function TrainingBatchList() {
           <Footer />
         </div>
       </div>
+      {geoscopeError && (
+        <div
+          role="presentation"
+          style={{
+            position: "fixed",
+            inset: 0,
+            zIndex: 20000,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: 20,
+            background: "rgba(15, 23, 42, 0.55)",
+            backdropFilter: "blur(7px)",
+            WebkitBackdropFilter: "blur(7px)",
+          }}
+        >
+          <div
+            role="alertdialog"
+            aria-modal="true"
+            aria-labelledby="geoscope-error-title"
+            style={{
+              width: "100%",
+              maxWidth: 440,
+              padding: 24,
+              borderRadius: 12,
+              background: "#fff",
+              boxShadow: "0 20px 50px rgba(0, 0, 0, 0.25)",
+              textAlign: "center",
+            }}
+          >
+            <h2
+              id="geoscope-error-title"
+              style={{ margin: "0 0 10px", color: "#b91c1c" }}
+            >
+              Location data unavailable
+            </h2>
+            <p
+              style={{ margin: "0 0 20px", color: "#475569", lineHeight: 1.5 }}
+            >
+              Your assigned location could not be loaded. Check your connection
+              and refresh the page to try again.
+            </p>
+            <button
+              type="button"
+              onClick={() => window.location.reload()}
+              style={{
+                border: 0,
+                borderRadius: 8,
+                padding: "10px 20px",
+                background: "#2563eb",
+                color: "#fff",
+                fontWeight: 600,
+                cursor: "pointer",
+              }}
+            >
+              Refresh page
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
