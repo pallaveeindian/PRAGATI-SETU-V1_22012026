@@ -59,6 +59,11 @@ export default function TpTmsSummary() {
   const [selectedPlan, setSelectedPlan] = useState("");
   const [selectedDistrict, setSelectedDistrict] = useState("");
   const [blockWise, setBlockWise] = useState(role === "dmmu");
+
+  // Date Filter State (Exact Date & Date Range)
+  const [exactDate, setExactDate] = useState("");
+  const [fromDate, setFromDate] = useState("");
+  const [toDate, setToDate] = useState("");
   const reportRequestsInFlight = useRef(new Set());
 
   // DMMU Geoscope Lock Initializer
@@ -171,6 +176,9 @@ export default function TpTmsSummary() {
       financial_year: financialYear,
       theme: selectedTheme || undefined,
       training_plan: selectedPlan || undefined,
+      exact_date: exactDate || undefined,
+      from_date: !exactDate && fromDate ? fromDate : undefined,
+      to_date: !exactDate && toDate ? toDate : undefined,
     };
 
     if (selectedDistrict) {
@@ -213,6 +221,9 @@ export default function TpTmsSummary() {
     selectedPlan,
     selectedDistrict,
     blockWise,
+    exactDate,
+    fromDate,
+    toDate,
     role,
     trainingPlansLoading,
   ]);
@@ -394,6 +405,72 @@ export default function TpTmsSummary() {
                   <option value="2025-26">2025-26</option>
                   <option value="2026-27">2026-27</option>
                 </select>
+
+                {/* 1) Exact Date Filter */}
+                <div className="filter-group">
+                  <label>Exact Date:</label>
+                  <input
+                    type="date"
+                    value={exactDate}
+                    onChange={(e) => {
+                      setExactDate(e.target.value);
+                      if (e.target.value) {
+                        setFromDate("");
+                        setToDate("");
+                      }
+                    }}
+                    title="Filter by Exact Date"
+                  />
+                </div>
+
+                {/* 2) From & To Date Range Filter */}
+                <div className="filter-group">
+                  <label>From:</label>
+                  <input
+                    type="date"
+                    value={fromDate}
+                    max={toDate || undefined}
+                    onChange={(e) => {
+                      setFromDate(e.target.value);
+                      if (e.target.value) setExactDate("");
+                    }}
+                    title="From Date"
+                  />
+                  <label>To:</label>
+                  <input
+                    type="date"
+                    value={toDate}
+                    min={fromDate || undefined}
+                    onChange={(e) => {
+                      setToDate(e.target.value);
+                      if (e.target.value) setExactDate("");
+                    }}
+                    title="To Date"
+                  />
+                  {(exactDate || fromDate || toDate) && (
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setExactDate("");
+                        setFromDate("");
+                        setToDate("");
+                      }}
+                      style={{
+                        padding: "7px 10px",
+                        borderRadius: "6px",
+                        border: "1px solid #cbd5e1",
+                        background: "#f1f5f9",
+                        color: "#475569",
+                        fontWeight: 700,
+                        fontSize: "12px",
+                        cursor: "pointer",
+                      }}
+                      title="Clear Date Filters"
+                    >
+                      Clear
+                    </button>
+                  )}
+                </div>
 
                 <TpTmsSummaryExport
                   reportData={reportData}
@@ -869,12 +946,13 @@ export default function TpTmsSummary() {
         .st-right { display: flex; align-items: center; gap: 16px; flex-wrap: wrap; }
         
         .filter-group { display: flex; align-items: center; gap: 8px; }
-        .filter-group select {
-          padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1;
+        .filter-group label { font-size: 13px; font-weight: 700; color: #475569; text-transform: uppercase; }
+        .filter-group select, .filter-group input[type="date"] {
+          padding: 8px 12px; border-radius: 6px; border: 1px solid #cbd5e1;
           font-weight: 600; color: #0f172a; outline: none; background: #f8fafc; cursor: pointer;
         }
-        .filter-group select:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
-
+        .filter-group select:focus, .filter-group input[type="date"]:focus { border-color: #3b82f6; box-shadow: 0 0 0 2px rgba(59,130,246,0.1); }
+        
         .fy-select {
           padding: 8px 16px; border-radius: 6px; border: 1px solid #cbd5e1;
           font-weight: 600; color: #0f172a; outline: none; background: #f8fafc; cursor: pointer;
