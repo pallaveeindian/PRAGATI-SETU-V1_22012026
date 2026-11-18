@@ -68,6 +68,7 @@ export default function TrainingBatchList() {
   const roleKey = getCanonicalRole(user);
   const roleMessage = ROLE_WELCOME_MESSAGES[roleKey] || "Dashboard";
   const role = getCanonicalRole(user || {});
+  const canReverseBatches = ["smmu", "dmmu"].includes(role);
   const { id: requestId } = useParams();
   const isRequestScoped = Boolean(requestId);
   const navigate = useNavigate();
@@ -76,6 +77,20 @@ export default function TrainingBatchList() {
   const [navCollapsed, setNavCollapsed] = useState(false);
   const [loading, setLoading] = useState(false);
   const [batches, setBatches] = useState([]);
+  const [selectedBatchIds, setSelectedBatchIds] = useState([]);
+  const [reversing, setReversing] = useState(false);
+  const [reversalChoiceOpen, setReversalChoiceOpen] = useState(false);
+
+  const isReversibleBatch = (batch) =>
+    ["ONGOING", "SCHEDULED"].includes(String(batch.status || "").toUpperCase());
+
+  const toggleBatchSelection = (batchId, checked) => {
+    setSelectedBatchIds((prev) =>
+      checked
+        ? [...new Set([...prev, batchId])]
+        : prev.filter((id) => id !== batchId),
+    );
+  };
 
   // SURGICAL ADDITION: Reschedule Modal States
   const [rescheduleModalOpen, setRescheduleModalOpen] = useState(false);
@@ -953,12 +968,14 @@ export default function TrainingBatchList() {
       const resp = await api.get(`/tms/batches-list/?${qs}`);
       // SURGICAL FIX: Extract paginated DRF response (results + count)
       setBatches(resp?.data?.results || []);
+      setSelectedBatchIds([]);
       setTotalCount(resp?.data?.count || 0);
       setCurrentPage(pageToFetch);
 
       // Note: Client caching removed as it breaks server-side pagination synchronicity.
     } catch (e) {
       setBatches([]);
+      setSelectedBatchIds([]);
       setTotalCount(0);
     } finally {
       setLoading(false);
@@ -987,6 +1004,75 @@ export default function TrainingBatchList() {
           err?.response?.data?.message ||
           "Failed to delete batch.",
       );
+    }
+  };
+
+  const handleReverseBatches = () => {
+    if (!canReverseBatches || reversing || selectedBatchIds.length === 0) {
+      return;
+    }
+
+    const eligibleBatches = batches.filter(
+      (batch) =>
+        selectedBatchIds.includes(batch.id) && isReversibleBatch(batch),
+    );
+
+    if (eligibleBatches.length !== selectedBatchIds.length) {
+      alert("Only ONGOING or SCHEDULED batches can be reversed.");
+      return;
+    }
+
+    setReversalChoiceOpen(true);
+  };
+
+  const confirmReverseBatches = async (targetStatus) => {
+    if (
+      !canReverseBatches ||
+      reversing ||
+      !["PENDING", "REJECTED"].includes(targetStatus) ||
+      selectedBatchIds.length === 0
+    ) {
+      return;
+    }
+
+    const eligibleBatches = batches.filter(
+      (batch) =>
+        selectedBatchIds.includes(batch.id) && isReversibleBatch(batch),
+    );
+
+    if (eligibleBatches.length !== selectedBatchIds.length) {
+      alert("Only ONGOING or SCHEDULED batches can be reversed.");
+      setReversalChoiceOpen(false);
+      return;
+    }
+
+    const confirmed = window.confirm(
+      `Are you sure you want to reverse ${eligibleBatches.length} batch(es) to ${targetStatus}? Related master trainer assignments, eKYC and attendance records will be soft-deleted.`,
+    );
+
+    if (!confirmed) return;
+
+    setReversing(true);
+
+    try {
+      const response = await api.post("/tms/batch-reversal/", {
+        batch_ids: eligibleBatches.map((batch) => batch.id),
+        target_status: targetStatus,
+      });
+
+      alert(response.data?.message || "Batches reversed successfully.");
+      setReversalChoiceOpen(false);
+      setSelectedBatchIds([]);
+      await fetchBatches();
+    } catch (error) {
+      console.error("Batch reversal failed:", error);
+      alert(
+        error.response?.data?.message ||
+          error.response?.data?.detail ||
+          "Failed to reverse selected batches.",
+      );
+    } finally {
+      setReversing(false);
     }
   };
 
@@ -1437,6 +1523,35 @@ export default function TrainingBatchList() {
                     {isExporting ? "Exporting Data..." : "Export All (CSV)"}
                   </button>
                 </div>
+                {canReverseBatches && (
+                  <button
+                    type="button"
+                    onClick={handleReverseBatches}
+                    disabled={
+                      selectedBatchIds.length === 0 || reversing || loading
+                    }
+                    style={{
+                      background: "#dc2626",
+                      color: "#fff",
+                      border: "none",
+                      borderRadius: 6,
+                      padding: "8px 14px",
+                      cursor:
+                        selectedBatchIds.length === 0 || reversing || loading
+                          ? "not-allowed"
+                          : "pointer",
+                      opacity:
+                        selectedBatchIds.length === 0 || reversing || loading
+                          ? 0.6
+                          : 1,
+                      fontWeight: 600,
+                    }}
+                  >
+                    {reversing
+                      ? "Reversing..."
+                      : `Reverse Selected Batches (${selectedBatchIds.length})`}
+                  </button>
+                )}
               </div>
 
               {/* TABLE CARD */}
@@ -1453,6 +1568,7 @@ export default function TrainingBatchList() {
                   <table className="training-table">
                     <thead>
                       <tr>
+                        {canReverseBatches && <th>Select</th>}
                         <th>S.No.</th>
                         <th>FY</th>
                         <th>Batch Code</th>
@@ -1495,6 +1611,29 @@ export default function TrainingBatchList() {
                       ) : (
                         batches.map((b, i) => (
                           <tr key={b.id}>
+                            {canReverseBatches && (
+                              <td>
+                                <input
+                                  type="checkbox"
+                                  checked={selectedBatchIds.includes(b.id)}
+                                  disabled={
+                                    !isReversibleBatch(b) ||
+                                    reversing ||
+                                    loading
+                                  }
+                                  onChange={(e) =>
+                                    toggleBatchSelection(b.id, e.target.checked)
+                                  }
+                                  title={
+                                    isReversibleBatch(b)
+                                      ? "Select batch for reversal"
+                                      : "Only ONGOING or SCHEDULED batches can be reversed"
+                                  }
+                                  aria-label={`Select batch ${b.code} for reversal`}
+                                  style={{ width: 17, height: 17 }}
+                                />
+                              </td>
+                            )}
                             <td>{(currentPage - 1) * pageSize + i + 1}</td>
                             <td style={{ fontWeight: "600" }}>
                               {b.financial_year}
@@ -1842,6 +1981,97 @@ export default function TrainingBatchList() {
                 </div>
               </div>
             </div>
+
+            {canReverseBatches && reversalChoiceOpen && (
+              <div
+                style={{
+                  position: "fixed",
+                  inset: 0,
+                  zIndex: 10000,
+                  background: "rgba(15, 23, 42, 0.55)",
+                  display: "flex",
+                  justifyContent: "center",
+                  alignItems: "center",
+                  padding: 16,
+                }}
+              >
+                <div
+                  role="dialog"
+                  aria-modal="true"
+                  aria-labelledby="batch-reversal-choice-title"
+                  style={{
+                    background: "#fff",
+                    borderRadius: 12,
+                    padding: 24,
+                    width: "100%",
+                    maxWidth: 440,
+                    boxShadow: "0 14px 40px rgba(0, 0, 0, 0.2)",
+                  }}
+                >
+                  <h3
+                    id="batch-reversal-choice-title"
+                    style={{ margin: "0 0 12px", color: "#2b4e72" }}
+                  >
+                    Choose Reversal Status
+                  </h3>
+                  <p style={{ margin: "0 0 20px", color: "#475569" }}>
+                    Reverse {selectedBatchIds.length} selected batch(es) to
+                    PENDING or REJECTED? All other reversal operations remain
+                    the same.
+                  </p>
+                  <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
+                    <button
+                      type="button"
+                      disabled={reversing}
+                      onClick={() => confirmReverseBatches("PENDING")}
+                      style={{
+                        background: "#3d6ba6",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "9px 14px",
+                        cursor: reversing ? "not-allowed" : "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      PENDING
+                    </button>
+                    <button
+                      type="button"
+                      disabled={reversing}
+                      onClick={() => confirmReverseBatches("REJECTED")}
+                      style={{
+                        background: "#dc2626",
+                        color: "#fff",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "9px 14px",
+                        cursor: reversing ? "not-allowed" : "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      REJECTED
+                    </button>
+                    <button
+                      type="button"
+                      disabled={reversing}
+                      onClick={() => setReversalChoiceOpen(false)}
+                      style={{
+                        background: "#e2e8f0",
+                        color: "#334155",
+                        border: "none",
+                        borderRadius: 6,
+                        padding: "9px 14px",
+                        cursor: reversing ? "not-allowed" : "pointer",
+                        fontWeight: 600,
+                      }}
+                    >
+                      Cancel
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <BatchRescheduleModal
               isOpen={rescheduleModalOpen}
