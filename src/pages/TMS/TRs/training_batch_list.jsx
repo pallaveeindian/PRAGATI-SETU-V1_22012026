@@ -143,13 +143,13 @@ export default function TrainingBatchList() {
   async function ensureUserGeoscope(userId) {
     if (!userId) return null;
 
-    try {
-      const cached = JSON.parse(
-        localStorage.getItem("ps_user_geoscope") || "null",
-      );
+    // try {
+    //   const cached = JSON.parse(
+    //     localStorage.getItem("ps_user_geoscope") || "null",
+    //   );
 
-      if (cached) return cached;
-    } catch {}
+    //   if (cached) return cached;
+    // } catch {}
 
     try {
       const resp = await LOOKUP_API.userGeoscopeByUserId(userId);

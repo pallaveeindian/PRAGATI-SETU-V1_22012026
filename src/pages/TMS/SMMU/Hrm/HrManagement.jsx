@@ -792,7 +792,9 @@ export default function HrManagement() {
 
               <div className="form-grid">
                 <div className="filter-group">
-                  <label>Employee ID *</label>
+                  <label>
+                    Employee ID <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="employee_id"
@@ -803,7 +805,9 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Full Name *</label>
+                  <label>
+                    Full Name <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="full_name"
@@ -813,7 +817,9 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Mobile Number *</label>
+                  <label>
+                    Mobile Number <span className="required-star">*</span>
+                  </label>
                   <input
                     type="tel"
                     name="mobile"
@@ -824,7 +830,9 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>District</label>
+                  <label>
+                    District<span className="required-star">*</span>
+                  </label>
                   <select
                     name="district_id"
                     value={formData.district_id}
@@ -844,7 +852,9 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>Block</label>
+                  <label>
+                    Block<span className="required-star">*</span>
+                  </label>
                   <select
                     name="block_id"
                     value={formData.block_id}
@@ -865,7 +875,9 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>Designation *</label>
+                  <label>
+                    Designation <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="designation"
@@ -875,11 +887,14 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Employment Type</label>
+                  <label>
+                    Employment Type <span className="required-star">*</span>
+                  </label>
                   <select
                     name="employment_type"
                     value={formData.employment_type}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select Type</option>
                     {empTypeOptions.map((opt, i) => (
@@ -890,11 +905,14 @@ export default function HrManagement() {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>Theme</label>
+                  <label>
+                    Theme <span className="required-star">*</span>
+                  </label>
                   <select
                     name="theme_id"
                     value={formData.theme_id}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select Theme</option>
                     {themes.map((t) => (
@@ -905,11 +923,14 @@ export default function HrManagement() {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>Gender</label>
+                  <label>
+                    Gender <span className="required-star">*</span>
+                  </label>
                   <select
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select Gender</option>
                     <option value="MALE">Male</option>
@@ -918,11 +939,14 @@ export default function HrManagement() {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>Social Category</label>
+                  <label>
+                    Social Category <span className="required-star">*</span>
+                  </label>
                   <select
                     name="social_category"
                     value={formData.social_category}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select Category</option>
                     {socialCatOptions.map((opt, i) => (
@@ -934,35 +958,46 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>Email</label>
+                  <label>
+                    Email <span className="required-star">*</span>
+                  </label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email || ""}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div className="filter-group">
-                  <label>PAN</label>
+                  <label>
+                    PAN <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="pan"
                     value={formData.pan || ""}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
 
                 <div className="filter-group">
-                  <label>UAN</label>
+                  <label>
+                    UAN <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="uan"
                     value={formData.uan || ""}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div className="filter-group">
-                  <label>EPF</label>
+                  <label>
+                    EPF <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="epf"
@@ -971,7 +1006,9 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>ESIC</label>
+                  <label>
+                    ESIC <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="esic"
@@ -980,7 +1017,9 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Bank Account Number</label>
+                  <label>
+                    Bank Account Number <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="bank_account_no"
@@ -989,20 +1028,26 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Aadhaar</label>
+                  <label>
+                    Aadhaar <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="aadhar"
                     value={formData.aadhar || ""}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Marital Status</label>
+                  <label>
+                    Marital Status <span className="required-star">*</span>
+                  </label>
                   <select
                     name="marital_status"
                     value={formData.marital_status || ""}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select Status</option>
                     <option value="SINGLE">Single</option>
@@ -1013,12 +1058,15 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>Program</label>
+                  <label>
+                    Program <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="program"
                     value={formData.program || ""}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
               </div>
@@ -1217,6 +1265,7 @@ export default function HrManagement() {
         .staff-directory__filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 20px 24px; background: #f8fafc; }
         .filter-group { display: flex; flex-direction: column; gap: 8px; }
         .filter-group label { display: flex; align-items: center; gap: 6px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .required-star { color: #dc2626; }
         .filter-group input, .filter-group select { width: 100%; min-height: 44px; padding: 0 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #fff; color: #0f172a; font-size: 14px; outline: none; transition: all .2s; }
         .filter-group input:focus, .filter-group select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, .15); }
         

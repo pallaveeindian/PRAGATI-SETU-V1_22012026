@@ -77,6 +77,9 @@ import {
 import BeneficiaryCheck from "../pages/TMS/EligibilityCheck/BenificiaryCheck";
 import TrainerCheck from "../pages/TMS/EligibilityCheck/TrainerCheck";
 
+// TPCP Media Editor
+import CpBatchMedia from "../pages/TMS/TP_CP/cp_batch_media";
+
 export default function TmsRoutes() {
   return (
     <Routes>
@@ -217,6 +220,7 @@ export default function TmsRoutes() {
         <Route path="cp/batch-attendance/:id" element={<CpAdPerBatch />} />
         <Route path="cp/batch-list" element={<CpBatchList />} />
         <Route path="cp/batch-closure/:id" element={<CpBatchClosure />} />
+        <Route path="cp/batch-media/:id" element={<CpBatchMedia />} />
       </Route>
 
       {/* Master Trainer Routes */}
