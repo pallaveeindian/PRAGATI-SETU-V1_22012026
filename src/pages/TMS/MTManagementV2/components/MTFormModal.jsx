@@ -576,6 +576,7 @@ export default function MTFormModal({
                       {isCurrentDMMU && <option value="DRP">DRP</option>}
                       {!isCurrentBMMU && !isCurrentDMMU && (
                         <>
+                          <option value="Gender CRP">Gender CRP</option>
                           <option value="BRP">BRP</option>
                           <option value="DRP">DRP</option>
                           <option value="SRP">SRP</option>
