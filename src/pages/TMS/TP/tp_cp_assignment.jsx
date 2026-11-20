@@ -565,6 +565,31 @@ export default function TpCpAssignment() {
     loadAll();
   }, [user]);
 
+  function getApiErrorMessage(error) {
+    const data = error?.response?.data;
+
+    if (!data) {
+      return error?.message || "An unexpected error occurred.";
+    }
+
+    if (typeof data === "string") {
+      return data;
+    }
+
+    // Handles errors like:
+    // { contact_person: ["This contact person is already assigned to a centre."] }
+    // { detail: "Unauthorized access." }
+    // { error: "An unexpected error occurred.", detail: "..." }
+    return Object.entries(data)
+      .map(([key, value]) => {
+        const message = Array.isArray(value) ? value.join(", ") : String(value);
+        return key === "detail" || key === "error"
+          ? message
+          : `${key}: ${message}`;
+      })
+      .join("\n");
+  }
+
   async function handleSave(form) {
     try {
       if (editRow) {
@@ -584,7 +609,7 @@ export default function TpCpAssignment() {
       loadAll();
     } catch (e) {
       console.error("Failed to save assignment", e);
-      alert("Failed to save assignment. Please check your inputs.");
+      alert(`Failed to save assignment:\n${getApiErrorMessage(e)}`);
     }
   }
 
