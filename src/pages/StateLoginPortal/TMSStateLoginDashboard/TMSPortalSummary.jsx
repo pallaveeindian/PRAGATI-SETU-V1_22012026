@@ -274,7 +274,7 @@ export default function TMSPortalSummary({ financialYear }) {
 
                 {/* 1) Exact Date Filter */}
                 <div className="filter-group">
-                  <label>Exact Date:</label>
+                  <label>Upto Date:</label>
                   <input
                     type="date"
                     value={exactDate}

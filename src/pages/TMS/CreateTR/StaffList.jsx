@@ -57,7 +57,8 @@ export default React.memo(function StaffList({
   const role = getCanonicalRole(user || {});
 
   // Rule Checks
-  const isSmmuLocked = role === "smmu" && Number(user?.id) !== 11452;
+  // const isSmmuLocked = role === "smmu" && Number(user?.id) !== 11452;
+  const isSmmuLocked = role === "disabled" && Number(user?.id) !== 11452;
   const isDmmuLocked = role === "dmmu";
 
   // --- Data States ---
