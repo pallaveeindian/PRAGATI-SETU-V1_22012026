@@ -408,6 +408,13 @@ export default function HrManagement() {
         block: block_id ? Number(block_id) : null,
         theme: theme_id ? Number(theme_id) : null,
         designation: formData.designation || null,
+        pan: formData.pan?.trim() || "0",
+        uan: formData.uan?.trim() || "0",
+        epf: formData.epf?.trim() || "0",
+        esic: formData.esic?.trim() || "0",
+        marital_status: formData.marital_status?.trim() || "N/A",
+        program: formData.program?.trim() || "N/A",
+        bank_account_no: formData.bank_account_no?.trim() || "0",
       };
 
       if (editingStaff) {
@@ -798,7 +805,6 @@ export default function HrManagement() {
                   <input
                     type="text"
                     name="employee_id"
-                    required
                     value={formData.employee_id}
                     onChange={handleInputChange}
                     disabled={Boolean(editingStaff)}
@@ -823,6 +829,10 @@ export default function HrManagement() {
                   <input
                     type="tel"
                     name="mobile"
+                    pattern="[0-9]{10}"
+                    inputMode="numeric"
+                    maxLength={10}
+                    title="Please enter a valid 10-digit mobile number"
                     required
                     value={formData.mobile}
                     onChange={handleInputChange}
@@ -830,9 +840,7 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>
-                    District<span className="required-star">*</span>
-                  </label>
+                  <label>District</label>
                   <select
                     name="district_id"
                     value={formData.district_id}
@@ -852,9 +860,7 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>
-                    Block<span className="required-star">*</span>
-                  </label>
+                  <label>Block</label>
                   <select
                     name="block_id"
                     value={formData.block_id}
@@ -881,20 +887,17 @@ export default function HrManagement() {
                   <input
                     type="text"
                     name="designation"
-                    required
                     value={formData.designation}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div className="filter-group">
-                  <label>
-                    Employment Type <span className="required-star">*</span>
-                  </label>
+                  <label>Employment Type</label>
                   <select
                     name="employment_type"
                     value={formData.employment_type}
                     onChange={handleInputChange}
-                    required
                   >
                     <option value="">Select Type</option>
                     {empTypeOptions.map((opt, i) => (
@@ -905,14 +908,11 @@ export default function HrManagement() {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>
-                    Theme <span className="required-star">*</span>
-                  </label>
+                  <label>Theme</label>
                   <select
                     name="theme_id"
                     value={formData.theme_id}
                     onChange={handleInputChange}
-                    required
                   >
                     <option value="">Select Theme</option>
                     {themes.map((t) => (
@@ -939,14 +939,11 @@ export default function HrManagement() {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>
-                    Social Category <span className="required-star">*</span>
-                  </label>
+                  <label>Social Category</label>
                   <select
                     name="social_category"
                     value={formData.social_category}
                     onChange={handleInputChange}
-                    required
                   >
                     <option value="">Select Category</option>
                     {socialCatOptions.map((opt, i) => (
@@ -958,68 +955,57 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>
-                    Email <span className="required-star">*</span>
-                  </label>
+                  <label>Email</label>
                   <input
                     type="email"
                     name="email"
                     value={formData.email || ""}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
                 <div className="filter-group">
-                  <label>
-                    PAN <span className="required-star">*</span>
-                  </label>
+                  <label>PAN</label>
                   <input
                     type="text"
                     name="pan"
+                    placeholder="Default: 0"
                     value={formData.pan || ""}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
 
                 <div className="filter-group">
-                  <label>
-                    UAN <span className="required-star">*</span>
-                  </label>
+                  <label>UAN</label>
                   <input
                     type="text"
                     name="uan"
+                    placeholder="Default: 0"
                     value={formData.uan || ""}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
                 <div className="filter-group">
-                  <label>
-                    EPF <span className="required-star">*</span>
-                  </label>
+                  <label>EPF</label>
                   <input
                     type="text"
                     name="epf"
+                    placeholder="Default: 0"
                     value={formData.epf || ""}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div className="filter-group">
-                  <label>
-                    ESIC <span className="required-star">*</span>
-                  </label>
+                  <label>ESIC</label>
                   <input
                     type="text"
                     name="esic"
+                    placeholder="Default: 0"
                     value={formData.esic || ""}
                     onChange={handleInputChange}
                   />
                 </div>
                 <div className="filter-group">
-                  <label>
-                    Bank Account Number <span className="required-star">*</span>
-                  </label>
+                  <label>Bank Account Number</label>
                   <input
                     type="text"
                     name="bank_account_no"
@@ -1040,14 +1026,11 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>
-                    Marital Status <span className="required-star">*</span>
-                  </label>
+                  <label>Marital Status</label>
                   <select
                     name="marital_status"
                     value={formData.marital_status || ""}
                     onChange={handleInputChange}
-                    required
                   >
                     <option value="">Select Status</option>
                     <option value="SINGLE">Single</option>
@@ -1058,15 +1041,12 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>
-                    Program <span className="required-star">*</span>
-                  </label>
+                  <label>Program</label>
                   <input
                     type="text"
                     name="program"
                     value={formData.program || ""}
                     onChange={handleInputChange}
-                    required
                   />
                 </div>
               </div>
