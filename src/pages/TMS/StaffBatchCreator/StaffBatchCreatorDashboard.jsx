@@ -23,14 +23,32 @@ export default function StaffBatchCreatorDashboard() {
   const navigate = useNavigate();
   const { user } = useContext(AuthContext);
 
-  // Base Training Request ID
-  const baseTrId = Number(paramTrId || location.state?.trId);
+  // Resume Batch ID (via location.state.batchId or ?batchId= query param)
+  const queryParams = new URLSearchParams(location.search);
+  const resumeBatchId =
+    Number(location.state?.batchId || queryParams.get("batchId") || 0) || null;
+  const isResumeMode = Boolean(resumeBatchId);
 
-  // Core States
+  // Initial Training Request ID (create mode; derived from batch in resume mode)
+  const initialTrId = Number(paramTrId || location.state?.trId || 0) || null;
+  const [baseTrId, setBaseTrId] = useState(initialTrId);
+
+  // Core States & Full-Readiness Gate
   const [loadingBase, setLoadingBase] = useState(true);
+  const [participantsReady, setParticipantsReady] = useState(false);
+  const [targetsReady, setTargetsReady] = useState(false);
   const [loadingParticipants, setLoadingParticipants] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  // Resume Context States
+  const [rejectionReason, setRejectionReason] = useState("");
+  const [allowTodayStart, setAllowTodayStart] = useState(false);
+  const [resumeBatchCode, setResumeBatchCode] = useState("");
+  const [resumeDistrictId, setResumeDistrictId] = useState(null);
+  const [resumeTrList, setResumeTrList] = useState([]);
+  const resumeParticipantIdsRef = useRef([]);
+  const resumeParticipantsRef = useRef([]);
 
   // Navigation
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
@@ -70,59 +88,228 @@ export default function StaffBatchCreatorDashboard() {
   // ==========================================
 
   useEffect(() => {
-    if (!baseTrId) {
+    if (!isResumeMode && !initialTrId) {
       alert("No Training Request ID provided.");
       navigate(-1);
       return;
     }
 
+    let cancelled = false;
+
     const fetchBaseDashboardData = async () => {
       setLoadingBase(true);
+      setParticipantsReady(false);
+      setTargetsReady(false);
+      initialSelectDoneRef.current = false;
 
       try {
-        // A. Fetch Base Training Request
-        const trResp = await TMS_API.trainingRequests.retrieve(baseTrId);
+        if (isResumeMode && resumeBatchId) {
+          // A. Comprehensive Batch Detail Fetch
+          const batchResp = await TMS_API.batchDetailV2(resumeBatchId);
+          const batchData = batchResp?.data ?? batchResp;
+
+          if (cancelled) return;
+
+          // B. Strictly allow ONLY REJECTED batches to be resumed
+          if (String(batchData?.status || "").toUpperCase() !== "REJECTED") {
+            alert("Only REJECTED batches can be resumed.");
+            navigate(-1);
+            return;
+          }
+
+          // C. Resolve Rejection Reason (Immediate /history/ fallback if null)
+          let resolvedReason = String(batchData?.rejection_reason || "").trim();
+          let isReversal = false;
+
+          if (!resolvedReason) {
+            const historyResp = await api.get(
+              `/tms/batches/${resumeBatchId}/history/`,
+            );
+            const historyData =
+              historyResp?.data?.results || historyResp?.data || [];
+
+            const rejectedEntries = Array.isArray(historyData)
+              ? historyData.filter(
+                  (h) => String(h?.status || "").toUpperCase() === "REJECTED",
+                )
+              : [];
+
+            // Pick the most recent REJECTED history record
+            const latestRejected =
+              rejectedEntries.length > 0
+                ? [...rejectedEntries].sort(
+                    (a, b) =>
+                      new Date(b?.created_at || 0) -
+                      new Date(a?.created_at || 0),
+                  )[0]
+                : null;
+
+            const latestRemarks = String(latestRejected?.remarks || "").trim();
+
+            if (!latestRejected || !latestRemarks) {
+              alert(
+                "Cannot resume as there is no reason for rejection, please contact IT support.",
+              );
+              navigate(-1);
+              return;
+            }
+
+            resolvedReason = latestRemarks;
+            if (latestRemarks.toLowerCase().includes("reversal")) {
+              isReversal = true;
+            }
+          } else if (resolvedReason.toLowerCase().includes("reversal")) {
+            isReversal = true;
+          }
+
+          if (cancelled) return;
+
+          setRejectionReason(resolvedReason);
+          setAllowTodayStart(isReversal);
+          setResumeBatchCode(batchData?.code || `#${resumeBatchId}`);
+          setResumeDistrictId(batchData?.district ?? null);
+
+          // D. Extract Participant Type & Participations
+          const pType = String(
+            batchData?.participant_type || "STAFF",
+          ).toUpperCase();
+          setParticipantType(pType);
+
+          const rawParticipations =
+            pType === "TRAINER"
+              ? batchData?.trainer_participations || []
+              : batchData?.staff_participations || [];
+
+          const extractedParticipants = rawParticipations
+            .map((row) => {
+              const pObj = pType === "TRAINER" ? row?.trainer : row?.staff;
+              const trId =
+                Number(row?.training_request || pObj?.training || 0) || null;
+              if (!pObj?.id) return null;
+              return {
+                ...pObj,
+                source_tr_id: trId,
+              };
+            })
+            .filter(Boolean);
+
+          const extractedParticipantIds = extractedParticipants.length
+            ? extractedParticipants.map((p) => p.id)
+            : pType === "TRAINER"
+              ? batchData?.trainer || []
+              : batchData?.staff || [];
+
+          resumeParticipantsRef.current = extractedParticipants;
+          resumeParticipantIdsRef.current = extractedParticipantIds;
+
+          // E. Extract Unique Training Request IDs from participants
+          const uniqueTrIds = [
+            ...new Set(
+              [
+                ...extractedParticipants.map((p) => p.source_tr_id),
+                batchData?.batch_costing?.training,
+                initialTrId,
+              ]
+                .filter(Boolean)
+                .map(Number),
+            ),
+          ];
+
+          const derivedBaseTrId = uniqueTrIds[0] || initialTrId;
+          if (!derivedBaseTrId) {
+            alert(
+              "Could not determine Training Request for this batch. Please contact IT support.",
+            );
+            navigate(-1);
+            return;
+          }
+
+          setBaseTrId(derivedBaseTrId);
+
+          // F. Fetch all involved TR details so StaffTRSearch & Target cards have full context
+          const trResponses = await Promise.all(
+            uniqueTrIds.map((id) => TMS_API.trainingRequests.retrieve(id)),
+          );
+          const fetchedTrList = trResponses
+            .map((r) => r?.data ?? r)
+            .filter(Boolean);
+
+          if (cancelled) return;
+
+          const baseTr =
+            fetchedTrList.find(
+              (t) => Number(t.id) === Number(derivedBaseTrId),
+            ) || fetchedTrList[0];
+
+          setBaseTrDetails(baseTr);
+          setResumeTrList(fetchedTrList);
+
+          // G. Prefill Training Plan, Centre, and Dates
+          setTrainingPlanDays(batchData?.training_plan?.no_of_days || 1);
+          setTrainingPlanName(batchData?.training_plan?.training_name || "");
+          setSelectedCentre(batchData?.centre || null);
+          setStartDate(batchData?.start_date || "");
+          setEndDate(batchData?.end_date || "");
+
+          // H. Trigger Participant & Target Hydration for all pooled TRs
+          setSelectedTrIds(uniqueTrIds);
+          setLoadingBase(false);
+          return;
+        }
+
+        // ==========================================
+        // STANDARD CREATE MODE
+        // ==========================================
+        const trResp = await TMS_API.trainingRequests.retrieve(initialTrId);
         const trData = trResp?.data ?? trResp;
 
-        setBaseTrDetails(trData);
+        if (cancelled) return;
 
-        // Extract Participant Type
+        setBaseTrId(initialTrId);
+        setBaseTrDetails(trData);
         setParticipantType(trData?.training_type || "STAFF");
 
-        // B. Fetch Training Plan Details
         if (trData?.training_plan) {
           const planResp = await TMS_API.trainingPlans.retrieve(
             trData.training_plan,
           );
-
           const planData = planResp?.data ?? planResp;
+
+          if (cancelled) return;
 
           setTrainingPlanDays(planData?.no_of_days || 1);
           setTrainingPlanName(planData?.training_name || "");
         }
 
-        // C. Initialize Selected TR Pool
-        setSelectedTrIds([baseTrId]);
-      } catch (error) {
-        console.error("Failed to load Base TR context:", error);
-        alert("Failed to load required data. Returning to previous page.");
-        navigate(-1);
-      } finally {
+        setSelectedTrIds([initialTrId]);
         setLoadingBase(false);
+      } catch (error) {
+        console.error("Failed to load Base / Resume context:", error);
+        if (!cancelled) {
+          alert("Failed to load required data. Returning to previous page.");
+          navigate(-1);
+        }
       }
     };
 
     fetchBaseDashboardData();
-  }, [baseTrId, navigate]);
+
+    return () => {
+      cancelled = true;
+    };
+  }, [isResumeMode, resumeBatchId, initialTrId, navigate]);
 
   // ==========================================
   // 2. GLOBAL PARTICIPANT AGGREGATOR
   // ==========================================
 
   useEffect(() => {
+    if (loadingBase) return;
+
     if (selectedTrIds.length === 0) {
       setUnallocatedStaff([]);
       setSelectedStaffIds([]);
+      setParticipantsReady(true);
       return;
     }
 
@@ -136,15 +323,25 @@ export default function StaffBatchCreatorDashboard() {
           selectedTrIds.map((id) => api.get(`/tms/tr/${id}/participants/`)),
         );
 
-        let mergedPool = [];
+        const resumeIdSet = new Set(
+          (resumeParticipantIdsRef.current || []).map(Number),
+        );
+        const mergedPool = [];
+        const seenIds = new Set();
 
         responses.forEach((resp, index) => {
           const sourceTrId = selectedTrIds[index];
-
           const participants = resp?.data?.results || resp?.data || [];
 
           participants.forEach((p) => {
-            if (!p.CB_selected) {
+            const belongsToResumedBatch =
+              isResumeMode && resumeIdSet.has(Number(p.id));
+
+            if (
+              (!p.CB_selected || belongsToResumedBatch) &&
+              !seenIds.has(Number(p.id))
+            ) {
+              seenIds.add(Number(p.id));
               mergedPool.push({
                 ...p,
                 source_tr_id: sourceTrId,
@@ -153,20 +350,45 @@ export default function StaffBatchCreatorDashboard() {
           });
         });
 
+        // Fallback: keep resumed batch participants whose TR is still selected
+        if (isResumeMode && resumeParticipantsRef.current.length > 0) {
+          const activeTrSet = new Set(selectedTrIds.map(Number));
+          resumeParticipantsRef.current.forEach((rp) => {
+            if (
+              !seenIds.has(Number(rp.id)) &&
+              (!rp.source_tr_id || activeTrSet.has(Number(rp.source_tr_id)))
+            ) {
+              seenIds.add(Number(rp.id));
+              mergedPool.push(rp);
+            }
+          });
+        }
+
         if (!active) return;
 
         setUnallocatedStaff(mergedPool);
 
-        // Initial selection: Base TR participants only
+        // Initial selection: prefill resumed batch participants OR Base TR participants
         if (!initialSelectDoneRef.current && mergedPool.length > 0) {
-          const baseTrParticipants = mergedPool
-            .filter((p) => p.source_tr_id === baseTrId)
-            .map((p) => p.id);
+          if (isResumeMode && resumeParticipantIdsRef.current.length > 0) {
+            const validPoolIds = new Set(mergedPool.map((p) => Number(p.id)));
+            const preselected = resumeParticipantIdsRef.current.filter((id) =>
+              validPoolIds.has(Number(id)),
+            );
+            setSelectedStaffIds(preselected);
+          } else {
+            const baseTrParticipants = mergedPool
+              .filter((p) => p.source_tr_id === baseTrId)
+              .map((p) => p.id);
 
-          const safeInitialSelection = baseTrParticipants.slice(0, maxAllowed);
+            const safeInitialSelection = baseTrParticipants.slice(
+              0,
+              maxAllowed,
+            );
 
-          if (safeInitialSelection.length > 0) {
-            setSelectedStaffIds(safeInitialSelection);
+            if (safeInitialSelection.length > 0) {
+              setSelectedStaffIds(safeInitialSelection);
+            }
           }
 
           initialSelectDoneRef.current = true;
@@ -181,7 +403,10 @@ export default function StaffBatchCreatorDashboard() {
       } catch (error) {
         console.error("Failed to aggregate participants:", error);
       } finally {
-        if (active) setLoadingParticipants(false);
+        if (active) {
+          setLoadingParticipants(false);
+          setParticipantsReady(true);
+        }
       }
     };
 
@@ -190,7 +415,7 @@ export default function StaffBatchCreatorDashboard() {
     return () => {
       active = false;
     };
-  }, [selectedTrIds, baseTrId]);
+  }, [selectedTrIds, baseTrId, loadingBase, isResumeMode]);
 
   // ==========================================
   // 3. FETCH TARGET AND ACHIEVEMENT
@@ -198,11 +423,14 @@ export default function StaffBatchCreatorDashboard() {
   // ==========================================
 
   useEffect(() => {
+    if (loadingBase) return;
+
     let active = true;
 
     if (!baseTrDetails || !selectedTrIds.length) {
       setTrDetails({});
       setTargetsLoading(false);
+      setTargetsReady(true);
       return;
     }
 
@@ -345,13 +573,16 @@ export default function StaffBatchCreatorDashboard() {
     };
 
     fetchTargets().finally(() => {
-      if (active) setTargetsLoading(false);
+      if (active) {
+        setTargetsLoading(false);
+        setTargetsReady(true);
+      }
     });
 
     return () => {
       active = false;
     };
-  }, [selectedTrIds, baseTrId, baseTrDetails]);
+  }, [selectedTrIds, baseTrId, baseTrDetails, loadingBase]);
 
   // ==========================================
   // 4. VALIDATION AND TARGET CALCULATIONS
@@ -444,7 +675,7 @@ export default function StaffBatchCreatorDashboard() {
         block_id: null,
         training_plan_id: baseTrDetails.training_plan,
         centre_id: selectedCentre.id,
-        district_id: null,
+        district_id: isResumeMode ? (resumeDistrictId ?? null) : null,
         level: "STATE",
         status: "PENDING",
         financial_year: baseTrDetails.financial_year,
@@ -452,13 +683,17 @@ export default function StaffBatchCreatorDashboard() {
         end_date: endDate,
       };
 
-      await TMS_API.batchCreator.create(payload);
-
-      alert(`Aggregated ${participantType} Batch created successfully!`);
-
-      setIsPreviewOpen(false);
-
-      navigate(`/tms/tr-detail/${baseTrId}`);
+      if (isResumeMode && resumeBatchId) {
+        await TMS_API.batchCreator.update(resumeBatchId, payload);
+        alert(`Aggregated ${participantType} Batch updated successfully!`);
+        setIsPreviewOpen(false);
+        navigate("/tms/batches-list/");
+      } else {
+        await TMS_API.batchCreator.create(payload);
+        alert(`Aggregated ${participantType} Batch created successfully!`);
+        setIsPreviewOpen(false);
+        navigate(`/tms/tr-detail/${baseTrId}`);
+      }
     } catch (error) {
       console.error("Batch Creation Failed:", error);
 
@@ -486,7 +721,9 @@ export default function StaffBatchCreatorDashboard() {
   // 6. RENDER
   // ==========================================
 
-  if (loadingBase) return <ScreenLoader />;
+  // Strict Lock: Do NOT open the dashboard until base, participants, and targets are all ready
+  const isDashboardReady = !loadingBase && participantsReady && targetsReady;
+  if (!isDashboardReady) return <ScreenLoader />;
 
   return (
     <div className="app-shell">
@@ -546,6 +783,57 @@ export default function StaffBatchCreatorDashboard() {
               flex: 1,
             }}
           >
+            {/* REJECTION REASON BANNER (RESUME MODE) */}
+            {isResumeMode && rejectionReason && (
+              <div
+                style={{
+                  backgroundColor: "#fef2f2",
+                  border: "1px solid #fecaca",
+                  borderLeft: "4px solid #ef4444",
+                  borderRadius: "8px",
+                  padding: "16px 20px",
+                  marginBottom: "20px",
+                  color: "#991b1b",
+                  display: "flex",
+                  flexDirection: "column",
+                  gap: "6px",
+                }}
+              >
+                <div
+                  style={{
+                    fontWeight: "700",
+                    fontSize: "14px",
+                    textTransform: "uppercase",
+                    letterSpacing: "0.5px",
+                    display: "flex",
+                    justifyContent: "space-between",
+                    alignItems: "center",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                  }}
+                >
+                  <span>⚠️ Resuming Rejected Batch ({resumeBatchCode})</span>
+                  {allowTodayStart && (
+                    <span
+                      style={{
+                        backgroundColor: "#fee2e2",
+                        border: "1px solid #fca5a5",
+                        color: "#b91c1c",
+                        fontSize: "11px",
+                        padding: "3px 8px",
+                        borderRadius: "4px",
+                      }}
+                    >
+                      Reversal Detected — Today's Date Enabled
+                    </span>
+                  )}
+                </div>
+                <div style={{ fontSize: "14px", fontWeight: "500" }}>
+                  <strong>Rejection Reason:</strong> {rejectionReason}
+                </div>
+              </div>
+            )}
+
             {/* CONTEXT BANNER */}
             <TRSummaryHeader
               trDetails={baseTrDetails}
@@ -568,6 +856,7 @@ export default function StaffBatchCreatorDashboard() {
                 selectedTrIds={selectedTrIds}
                 onTrSelectionChange={setSelectedTrIds}
                 participantType={participantType}
+                resumeTrList={resumeTrList}
               />
 
               {/* PARTICIPANT TABLE */}
@@ -604,6 +893,7 @@ export default function StaffBatchCreatorDashboard() {
                 trainingDays={trainingPlanDays}
                 startDate={startDate}
                 endDate={endDate}
+                allowTodayStart={allowTodayStart}
                 onDateChange={(start, end) => {
                   setStartDate(start);
                   setEndDate(end);
@@ -708,6 +998,7 @@ export default function StaffBatchCreatorDashboard() {
           onConfirm={handleConfirmAndSave}
           isSubmitting={isSubmitting}
           participantType={participantType}
+          isResumeMode={isResumeMode}
         />
       )}
 

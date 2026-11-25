@@ -257,6 +257,18 @@ const CentreSelectionTable = ({
 
   const totalPages = Math.ceil(filteredCentres.length / rowsPerPage);
 
+  // Auto-navigate to the page containing the pre-selected centre (e.g., on Resume)
+  useEffect(() => {
+    if (!selectedCentre?.id || filteredCentres.length === 0) return;
+    const idx = filteredCentres.findIndex(
+      (c) => Number(c.id) === Number(selectedCentre.id),
+    );
+    if (idx !== -1) {
+      const targetPage = Math.floor(idx / rowsPerPage) + 1;
+      setCurrentPage(targetPage);
+    }
+  }, [selectedCentre?.id, centres]);
+
   const paginatedCentres = useMemo(() => {
     const start = (currentPage - 1) * rowsPerPage;
     const end = start + rowsPerPage;
@@ -409,7 +421,8 @@ const CentreSelectionTable = ({
               </tr>
             ) : (
               paginatedCentres.map((centre) => {
-                const isSelected = selectedCentre?.id === centre.id;
+                const isSelected =
+                  Number(selectedCentre?.id) === Number(centre.id);
 
                 const locParts = [
                   getDistrictName(centre),

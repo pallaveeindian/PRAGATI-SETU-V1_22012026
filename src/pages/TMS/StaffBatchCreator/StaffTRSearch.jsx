@@ -6,7 +6,8 @@ export default function StaffTRSearch({
   baseTrDetails,
   selectedTrIds,
   onTrSelectionChange,
-  participantType, // SURGICAL ADDITION: Passed down from parent
+  participantType,
+  resumeTrList = [],
 }) {
   const [availableTrs, setAvailableTrs] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -36,12 +37,17 @@ export default function StaffTRSearch({
         const resp = await TMS_API.trainingRequestsList.list(params);
         const results = resp?.data?.results || resp?.data || [];
 
-        // Ensure the base TR is always in the list and selected
-        const safeResults = results.some((r) => r.id === baseTrId)
-          ? results
-          : [baseTrDetails, ...results].filter(Boolean);
+        // Ensure base TR and all TRs from a resumed batch are always present in the list
+        const mergedMap = new Map();
+        [baseTrDetails, ...resumeTrList, ...results]
+          .filter(Boolean)
+          .forEach((tr) => {
+            if (tr?.id && !mergedMap.has(Number(tr.id))) {
+              mergedMap.set(Number(tr.id), tr);
+            }
+          });
 
-        setAvailableTrs(safeResults);
+        setAvailableTrs(Array.from(mergedMap.values()));
 
         // Auto-select the base TR if not already selected
         if (!selectedTrIds.includes(baseTrId)) {

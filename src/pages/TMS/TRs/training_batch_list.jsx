@@ -1754,6 +1754,22 @@ export default function TrainingBatchList() {
                                       Resume
                                     </button>
                                   )}
+                                {/* State Batch Resume */}
+                                {role === "training_partner" &&
+                                  String(b.level).toUpperCase() === "STATE" &&
+                                  String(b.status).toUpperCase() ===
+                                    "REJECTED" && (
+                                    <button
+                                      className="btnView"
+                                      onClick={() =>
+                                        navigate("/tms/tp/resume-staff-batch", {
+                                          state: { batchId: b.id },
+                                        })
+                                      }
+                                    >
+                                      Resume
+                                    </button>
+                                  )}
                                 {((role === "dmmu" &&
                                   String(b.level).toUpperCase() !== "STATE") ||
                                   (role === "smmu" &&

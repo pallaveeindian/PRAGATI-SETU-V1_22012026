@@ -11,7 +11,8 @@ const StaffPreviewModal = ({
   onClose,
   onConfirm,
   isSubmitting,
-  participantType, // SURGICAL ADDITION: Passed from parent
+  participantType,
+  isResumeMode = false,
 }) => {
   // Safe fallbacks for display
   const planName =
@@ -264,7 +265,11 @@ const StaffPreviewModal = ({
                 : "0 4px 12px rgba(22, 163, 74, 0.2)",
             }}
           >
-            {isSubmitting ? "Processing Request..." : "Confirm & Create Batch"}
+            {isSubmitting
+              ? "Processing Request..."
+              : isResumeMode
+                ? "Confirm & Update Batch"
+                : "Confirm & Create Batch"}
           </button>
         </div>
       </div>

@@ -7,6 +7,7 @@ const BatchDateConfig = ({
   startDate,
   endDate,
   onDateChange,
+  allowTodayStart = false,
 }) => {
   // =====================================================================
   // SURGICAL ADDITION: STRICT SYSTEM TIME VERIFICATION (ANTI-TAMPERING)
@@ -62,8 +63,12 @@ const BatchDateConfig = ({
   // 1. Min/Max Date Constraints
   const getMinStartDate = () => {
     const minDate = new Date();
-    minDate.setDate(minDate.getDate()+1); // Earliest start is tomorrow
-    return minDate.toISOString().split("T")[0];
+    if (!allowTodayStart) {
+      minDate.setDate(minDate.getDate() + 1); // Earliest start is tomorrow
+    }
+    return minDate.toLocaleDateString("en-CA", {
+      timeZone: "Asia/Kolkata",
+    });
   };
 
   const getMaxStartDate = () => {

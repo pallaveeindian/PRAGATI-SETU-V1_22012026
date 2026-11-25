@@ -172,6 +172,10 @@ export default function TmsRoutes() {
           path="tp/staff-batch-creator/:paramTrId"
           element={<StaffBatchCreatorDashboard />}
         />
+        <Route
+          path="tp/resume-staff-batch"
+          element={<StaffBatchCreatorDashboard />}
+        />
         <Route path="tp/tms-portal-summary" element={<TpTmsSummary />} />
       </Route>
       <Route
