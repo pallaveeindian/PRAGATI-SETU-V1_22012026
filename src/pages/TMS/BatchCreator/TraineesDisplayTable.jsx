@@ -145,7 +145,7 @@ const ParticipantTable = ({
     } finally {
       setIsLoading(false);
     }
-  }, [filters]);
+  }, [filters, batchId, onTraineesLoaded]);
 
   // Initial Load Security Check
   useEffect(() => {
@@ -194,18 +194,30 @@ const ParticipantTable = ({
   );
   const ageRanges = ["18-35", "36-50", "50+"];
 
-  // Selection Counters Update
+  // Selection Counters Update (passes each participant's true block_id & tr_id for Combined Batches)
   useEffect(() => {
     if (onSelectionChange) {
-      // onSelectionChange(selectedRows.length);
-      onSelectionChange(selectedRows);
+      const selectedObjects = selectedRows.map((id) => {
+        const matched = traineesData.find((r) => Number(r.id) === Number(id));
+        if (matched) {
+          return {
+            id: matched.id,
+            block_id: matched.block || matched.block_id,
+            tr_id: matched.training || matched.training_request,
+          };
+        }
+        return id;
+      });
+      onSelectionChange(selectedObjects);
     }
-  }, [selectedRows, onSelectionChange]);
+  }, [selectedRows, traineesData, onSelectionChange]);
 
-  // Reset Table Selection on Layout Changes
+  // Reset Table Selection on Layout Changes (do not wipe pre-selected rows when resuming a batch)
   useEffect(() => {
-    setSelectedRows([]);
-  }, [filters.participantType, filters.block]);
+    if (!batchId) {
+      setSelectedRows([]);
+    }
+  }, [filters.participantType, filters.block, batchId]);
 
   const visibleTrainees = useMemo(() => {
     const isTrainer = filters.participantType?.toUpperCase() === "TRAINER";
@@ -244,15 +256,13 @@ const ParticipantTable = ({
 
   useEffect(() => {
     if (!batchId) return;
-    if (!traineesData.length) return;
+    if (!traineesData.length || !resumeSelectedIds.length) return;
 
     setSelectedRows((prev) => {
-      if (JSON.stringify(prev) === JSON.stringify(resumeSelectedIds)) {
-        return prev;
-      }
+      if (prev.length > 0) return prev;
       return resumeSelectedIds;
     });
-  }, [batchId, traineesData]); //
+  }, [batchId, traineesData, resumeSelectedIds]);
 
   // SURGICAL ADDITION: Helper to check if a row is engaged
   const getEngagementData = (row) => {

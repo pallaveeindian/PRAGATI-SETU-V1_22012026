@@ -483,7 +483,7 @@ export default function CadreSelectionCountPage({ financialYear }) {
 
         {/* SURGICAL ADDITION: Date Filters */}
         <div className="filter-group">
-          <label>Exact Date</label>
+          <label>Upto Date</label>
           <input
             type="date"
             value={exactDate}

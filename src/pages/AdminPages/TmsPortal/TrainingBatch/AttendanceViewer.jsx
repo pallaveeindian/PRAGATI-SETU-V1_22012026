@@ -1,4 +1,4 @@
-// src/pages/TMS/TRs/BatchDetailComponents/DailyAttendanceViewer.jsx
+// src/pages/AdminPages/TmsPortal/TrainingBatch/AttendanceViewer.jsx
 import React, { useState, useMemo, useEffect } from "react";
 
 function fmtDate(iso) {
@@ -34,16 +34,27 @@ export default function AttendanceViewer({
   batchMedia = [],
   onOpenMedia,
   onSaveAttendance,
+  onDeleteAttendance,
 }) {
   const [selectedDate, setSelectedDate] = useState(null);
   const [editableRecords, setEditableRecords] = useState([]);
   const [isSaving, setIsSaving] = useState(false);
+  const [selectedRecordIds, setSelectedRecordIds] = useState(() => new Set());
+  const [hiddenAttendanceIds, setHiddenAttendanceIds] = useState(
+    () => new Set(),
+  );
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const sortedAttendances = useMemo(() => {
-    return [...attendanceList].sort((a, b) =>
-      (a.date || "").localeCompare(b.date || ""),
-    );
-  }, [attendanceList]);
+    return [...attendanceList]
+      .filter(
+        (attendance) =>
+          !hiddenAttendanceIds.has(attendance.id) &&
+          (!Array.isArray(attendance.participant_records) ||
+            attendance.participant_records.length > 0),
+      )
+      .sort((a, b) => (a.date || "").localeCompare(b.date || ""));
+  }, [attendanceList, hiddenAttendanceIds]);
 
   const selectedAttendance = useMemo(() => {
     if (!selectedDate) return null;
@@ -51,6 +62,7 @@ export default function AttendanceViewer({
   }, [selectedDate, sortedAttendances]);
 
   useEffect(() => {
+    setSelectedRecordIds(new Set());
     if (selectedAttendance && selectedAttendance.participant_records) {
       setEditableRecords(
         selectedAttendance.participant_records.map((r) => ({ ...r })),
@@ -101,6 +113,62 @@ export default function AttendanceViewer({
       alert("Attendance changes save nahi ho sake. Please try again.");
     } finally {
       setIsSaving(false);
+    }
+  };
+
+  const handleToggleRecordSelection = (recordId) => {
+    setSelectedRecordIds((previous) => {
+      const next = new Set(previous);
+      if (next.has(recordId)) {
+        next.delete(recordId);
+      } else {
+        next.add(recordId);
+      }
+      return next;
+    });
+  };
+
+  const handleToggleAllRecords = (checked) => {
+    setSelectedRecordIds(
+      checked ? new Set(editableRecords.map((record) => record.id)) : new Set(),
+    );
+  };
+
+  const handleDeleteRecords = async (recordIds) => {
+    if (!onDeleteAttendance || isDeleting || recordIds.length === 0) return;
+
+    const confirmation =
+      recordIds.length === 1
+        ? "Are you sure you want to delete this participant attendance record?"
+        : `Are you sure you want to delete all ${recordIds.length} selected participant attendance records?`;
+    if (!window.confirm(confirmation)) return;
+
+    setIsDeleting(true);
+    try {
+      await onDeleteAttendance(recordIds);
+      const remainingRecords = editableRecords.filter(
+        (record) => !recordIds.includes(record.id),
+      );
+      setEditableRecords(remainingRecords);
+      setSelectedRecordIds(new Set());
+      if (remainingRecords.length === 0 && selectedAttendance?.id != null) {
+        setHiddenAttendanceIds((previous) =>
+          new Set(previous).add(selectedAttendance.id),
+        );
+      }
+      alert(
+        recordIds.length === 1
+          ? "Participant attendance record deleted successfully."
+          : "Selected participant attendance records deleted successfully.",
+      );
+    } catch (error) {
+      console.error("Attendance deletion failed:", error);
+      alert(
+        error?.message ||
+          "Participant attendance record deletion failed. Please try again.",
+      );
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -236,21 +304,80 @@ export default function AttendanceViewer({
               </div>
             ) : (
               <div className="attendance-participant-wrapper custom-scrollbar">
+                {onDeleteAttendance && (
+                  <div className="attendance-bulk-actions">
+                    <label className="attendance-select-all">
+                      <input
+                        type="checkbox"
+                        aria-label="Select all participant attendance records"
+                        checked={
+                          editableRecords.length > 0 &&
+                          selectedRecordIds.size === editableRecords.length
+                        }
+                        onChange={(event) =>
+                          handleToggleAllRecords(event.target.checked)
+                        }
+                        disabled={isDeleting}
+                      />
+                      Select all
+                    </label>
+                    <span>{selectedRecordIds.size} selected</span>
+                    <button
+                      type="button"
+                      className="attendance-delete-btn"
+                      onClick={() =>
+                        handleDeleteRecords(
+                          editableRecords
+                            .filter((record) =>
+                              selectedRecordIds.has(record.id),
+                            )
+                            .map((record) => record.id),
+                        )
+                      }
+                      disabled={isDeleting || selectedRecordIds.size === 0}
+                    >
+                      {isDeleting ? "Deleting..." : "Delete Selected"}
+                    </button>
+                  </div>
+                )}
                 <table className="table participant-table">
+                  <colgroup>
+                    {onDeleteAttendance && <col style={{ width: 42 }} />}
+                    <col style={{ width: 58 }} />
+                    <col />
+                    <col style={{ width: 100 }} />
+                    <col style={{ width: 132 }} />
+                    {onDeleteAttendance && <col style={{ width: 90 }} />}
+                  </colgroup>
                   <thead>
                     <tr>
-                      <th width="8%">S.No.</th>
-                      <th width="45%">Participant Name</th>
-                      <th width="20%">Role</th>
-                      <th width="27%" style={{ textAlign: "right" }}>
-                        Status
-                      </th>
+                      {onDeleteAttendance && <th aria-label="Selection"></th>}
+                      <th>S.No.</th>
+                      <th>Participant Name</th>
+                      <th>Role</th>
+                      <th className="participant-status-heading">Status</th>
+                      {onDeleteAttendance && (
+                        <th className="participant-action-heading">Action</th>
+                      )}
                     </tr>
                   </thead>
                   <tbody>
                     {editableRecords.map((r, index) => {
                       return (
                         <tr key={r.id}>
+                          {onDeleteAttendance && (
+                            <td>
+                              <input
+                                type="checkbox"
+                                aria-label={`Select ${r.participant_name} attendance`}
+                                checked={selectedRecordIds.has(r.id)}
+                                onChange={() =>
+                                  handleToggleRecordSelection(r.id)
+                                }
+                                disabled={isDeleting}
+                              />
+                            </td>
+                          )}
                           <td style={{ color: "#64748b", fontWeight: 500 }}>
                             {String(index + 1).padStart(2, "0")}
                           </td>
@@ -264,7 +391,7 @@ export default function AttendanceViewer({
                                 : "Trainee"}
                             </span>
                           </td>
-                          <td style={{ textAlign: "right" }}>
+                          <td className="participant-status-cell">
                             <button
                               type="button"
                               className={`toggle-status-btn ${
@@ -275,6 +402,19 @@ export default function AttendanceViewer({
                               {r.present ? "✓ Present" : "✕ Absent"}
                             </button>
                           </td>
+                          {onDeleteAttendance && (
+                            <td>
+                              <button
+                                type="button"
+                                className="attendance-delete-btn"
+                                onClick={() => handleDeleteRecords([r.id])}
+                                disabled={isDeleting}
+                                aria-label={`Delete ${r.participant_name} attendance`}
+                              >
+                                Delete
+                              </button>
+                            </td>
+                          )}
                         </tr>
                       );
                     })}
@@ -367,6 +507,57 @@ export default function AttendanceViewer({
           padding: 12px 16px;
           border-bottom: 1px solid #f1f5f9;
           vertical-align: middle;
+        }
+        .attendance-select-all {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+          color: #334155;
+          cursor: pointer;
+        }
+        .attendance-select-all input,
+        .participant-table input[type="checkbox"] {
+          width: 16px;
+          height: 16px;
+          accent-color: #2563eb;
+          cursor: pointer;
+        }
+        .attendance-bulk-actions {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          gap: 16px;
+          padding: 10px 12px;
+          margin-bottom: 12px;
+          border: 1px solid #e2e8f0;
+          border-radius: 10px;
+          background: #f8fafc;
+          color: #475569;
+          font-size: 13px;
+          font-weight: 600;
+        }
+        .attendance-bulk-actions > span {
+          margin-left: auto;
+        }
+        .attendance-delete-btn {
+          border: 1px solid #fecaca;
+          border-radius: 7px;
+          padding: 7px 12px;
+          background: #fff;
+          color: #991b1b;
+          font-size: 12px;
+          font-weight: 600;
+          white-space: nowrap;
+          cursor: pointer;
+        }
+        .attendance-delete-btn:hover:not(:disabled) {
+          background: #fee2e2;
+        }
+        .attendance-delete-btn:disabled {
+          border-color: #fee2e2;
+          background: #fff7f7;
+          color: #c97b7b;
+          cursor: not-allowed;
         }
         .attendance-table tbody tr:hover {
           background: #f8fafc;
@@ -530,6 +721,10 @@ export default function AttendanceViewer({
           margin-top: 16px;
           margin-bottom: 16px;
         }
+        .participant-table {
+          table-layout: fixed;
+          min-width: 650px;
+        }
         .participant-table th {
           position: sticky;
           top: 0;
@@ -538,13 +733,27 @@ export default function AttendanceViewer({
           font-size: 12px;
           text-transform: uppercase;
           letter-spacing: 0.05em;
-          padding: 12px 0;
+          padding: 12px 10px;
           border-bottom: 2px solid #f1f5f9;
           z-index: 1;
+          white-space: nowrap;
         }
         .participant-table td {
-          padding: 14px 0;
+          padding: 14px 10px;
           border-bottom: 1px solid #f1f5f9;
+        }
+        .participant-table th:first-child,
+        .participant-table td:first-child,
+        .participant-action-heading,
+        .participant-table td:last-child {
+          text-align: center;
+        }
+        .participant-status-heading,
+        .participant-status-cell {
+          text-align: center;
+        }
+        .participant-table tbody tr:hover {
+          background: #f8fafc;
         }
         .role-pill {
           background: #f1f5f9;

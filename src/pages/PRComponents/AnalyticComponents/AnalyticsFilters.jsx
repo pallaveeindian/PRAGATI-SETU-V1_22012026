@@ -236,7 +236,7 @@ export default function AnalyticsFilters({
 
           {/* Exact Date */}
           <div className="filter-group">
-            <label>Exact Date</label>
+            <label>Upto Date</label>
             <input
               type="date"
               className="date-input"

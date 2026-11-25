@@ -141,7 +141,8 @@ const AssemblerDashboardBatchCreator = () => {
             item.trId ||
             item.training_request_id ||
             item.training_request ||
-            40;
+            item.training ||
+            1000000;
 
           const fallbackBlock = Array.isArray(filters.block)
             ? filters.block[0]
@@ -347,19 +348,50 @@ const AssemblerDashboardBatchCreator = () => {
         return; // Stop execution here
       }
       // ----------------------------------------------------------------
+      const isCombinedBatch =
+        String(data?.batch_type || "").toUpperCase() === "COMBINED";
+
       const selectedIds =
         data?.participant_type === "TRAINER"
-          ? data?.trainer || []
-          : data?.beneficiary || [];
+          ? data?.trainer?.length
+            ? data.trainer
+            : (data?.trainer_participations || [])
+                .map((tp) => tp?.trainer?.id)
+                .filter(Boolean)
+          : data?.beneficiary?.length
+            ? data.beneficiary
+            : (data?.beneficiary_participations || [])
+                .map((bp) => bp?.beneficiary?.id)
+                .filter(Boolean);
+
+      // Extract unique block IDs from the batch's participants / combined_batch_details
+      const uniqueParticipantBlocks = [
+        ...new Set(
+          [
+            ...(data?.combined_batch_details || []).map(
+              (cbd) => cbd?.block?.block_id ?? cbd?.block?.id,
+            ),
+            ...(data?.beneficiary_participations || []).map(
+              (bp) => bp?.beneficiary?.block,
+            ),
+            ...(data?.trainer_participations || []).map(
+              (tp) => tp?.trainer?.block,
+            ),
+            ...(data?.staff_participations || []).map((sp) => sp?.staff?.block),
+          ]
+            .filter(Boolean)
+            .map(String),
+        ),
+      ];
 
       setResumeBeneficiary(selectedIds);
-      setBatchType("SEPARATE");
+      setBatchType(isCombinedBatch ? "COMBINED" : "SEPARATE");
       setRejectionReason(data?.rejection_reason || "");
       setFilters((prev) => ({
         ...prev,
 
-        batchType: "Separate",
-        level: data?.level || "BLOCK", // <-- SURGICAL ADDITION
+        batchType: isCombinedBatch ? "Combined" : "Separate",
+        level: data?.level || "BLOCK",
 
         financialYear: data?.financial_year || "",
 
@@ -386,7 +418,9 @@ const AssemblerDashboardBatchCreator = () => {
 
         districtId: String(data?.district || ""),
 
-        block: String(data?.block || ""),
+        block: isCombinedBatch
+          ? uniqueParticipantBlocks
+          : String(data?.block || uniqueParticipantBlocks[0] || ""),
       }));
     } catch (error) {
       console.error("Failed to load resume batch:", error);
@@ -401,15 +435,14 @@ const AssemblerDashboardBatchCreator = () => {
         return;
       }
 
+      const resumeIdSet = new Set(resumeBeneficiary.map(Number));
+
       const trainees = traineesResp
-        .filter(
-          (item) =>
-            item?.CB_selected === true && resumeBeneficiary.includes(item?.id),
-        )
+        .filter((item) => resumeIdSet.has(Number(item?.id)))
         .map((item) => ({
           id: item.id,
-          block_id: item.block,
-          tr_id: item.training_request,
+          block_id: item.block || item.block_id,
+          tr_id: item.training_request || item.training,
         }));
 
       setSelectedTrainees(trainees);
@@ -432,6 +465,30 @@ const AssemblerDashboardBatchCreator = () => {
     achievementData.target > 0 &&
     achievementData.achievement >= achievementData.target;
 
+  // Track which blocks have at least 1 selected participant
+  const selectedParticipantBlockIds = React.useMemo(
+    () =>
+      new Set(
+        selectedTrainees
+          .map((t) => (t?.block_id ? String(t.block_id) : null))
+          .filter(Boolean),
+      ),
+    [selectedTrainees],
+  );
+
+  // In Combined Batch, every selected block in filters.block must have >= 1 selected participant
+  const hasUncoveredSelectedBlock =
+    filters.participantType !== "Trainer" &&
+    batchType === "COMBINED" &&
+    Array.isArray(filters.block) &&
+    filters.block.length >= 2 &&
+    filters.block.some(
+      (blkId) => !selectedParticipantBlockIds.has(String(blkId)),
+    );
+
+  const selectionAvailable =
+    achievementData.target - achievementData.achievement;
+
   const isBtnDisabled =
     isTargetMet ||
     !filters.financialYear ||
@@ -441,6 +498,7 @@ const AssemblerDashboardBatchCreator = () => {
     !filters.trainingCenter ||
     !filters.startDate ||
     !filters.endDate ||
+    participantData.selectedParticipants.length > selectionAvailable ||
     participantData.selectedParticipants.length < 20 ||
     participantData.selectedParticipants.length > 60 ||
     (filters.participantType !== "Trainer" &&
@@ -448,12 +506,15 @@ const AssemblerDashboardBatchCreator = () => {
       (!filters.block || filters.block.length === 0)) ||
     (filters.participantType !== "Trainer" &&
       batchType === "COMBINED" &&
-      (!Array.isArray(filters.block) || filters.block.length < 2));
+      (!Array.isArray(filters.block) || filters.block.length < 2)) ||
+    hasUncoveredSelectedBlock;
 
   // Helper function to render exact missing criteria dynamically
   const getValidationMessage = () => {
     if (isTargetMet)
       return "⚠ Target for this Training Plan has already been achieved.";
+    if (participantData.selectedParticipants.length > selectionAvailable)
+      return `⚠ A batch must have 20–60 participants, but only ${selectionAvailable} remain before the target is met.`;
     if (!filters.financialYear) return "⚠ Financial Year is required.";
     if (!filters.trainingTheme) return "⚠ Training Theme is required.";
     if (!filters.trainingPlan) return "⚠ Training Plan is required.";
@@ -461,7 +522,6 @@ const AssemblerDashboardBatchCreator = () => {
     if (!filters.trainingCenter) return "⚠ Training Centre is required.";
     if (!filters.startDate) return "⚠ Start Date is required.";
     if (!filters.endDate) return "⚠ End Date is required.";
-
     if (filters.participantType !== "Trainer") {
       if (
         batchType === "SEPARATE" &&
@@ -473,6 +533,8 @@ const AssemblerDashboardBatchCreator = () => {
         (!Array.isArray(filters.block) || filters.block.length < 2)
       )
         return "⚠ Minimum 2 Blocks must be selected for a Combined Batch.";
+      if (hasUncoveredSelectedBlock)
+        return "⚠ Minimum 1 participant must be selected from each selected Block for a Combined Batch.";
     }
 
     const count = participantData.selectedParticipants.length;

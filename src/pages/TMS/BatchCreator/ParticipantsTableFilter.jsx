@@ -433,9 +433,7 @@ const ParticipantTableFilters = ({
             <div>
               <label style={labelStyle}>Batch Type</label>
               <select
-                value={
-                  isResumeMode ? "Separate" : filters.batchType || "Separate"
-                }
+                value={filters.batchType || "Separate"}
                 disabled={isResumeMode}
                 style={{
                   ...selectStyle,
@@ -454,11 +452,9 @@ const ParticipantTableFilters = ({
                 }}
               >
                 <option value="Separate">Separate Batch (Single Block)</option>
-                {!isResumeMode && (
-                  <option value="Combined">
-                    Combined Batch (Multiple Blocks)
-                  </option>
-                )}
+                <option value="Combined">
+                  Combined Batch (Multiple Blocks)
+                </option>
               </select>
             </div>
           </>
@@ -517,13 +513,17 @@ const ParticipantTableFilters = ({
                 <select
                   multiple
                   style={{ ...selectStyle, height: "80px", padding: "4px" }}
-                  value={Array.isArray(filters.block) ? filters.block : []}
+                  value={
+                    Array.isArray(filters.block)
+                      ? filters.block.map(String)
+                      : []
+                  }
                   onChange={(e) =>
                     handleMultipleSelectChange("block", e.target.options)
                   }
                 >
                   {verifiedBlocks.map((b, idx) => (
-                    <option key={idx} value={getBlockValue(b)}>
+                    <option key={idx} value={String(getBlockValue(b))}>
                       {getBlockLabel(b)}
                     </option>
                   ))}

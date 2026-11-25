@@ -530,6 +530,11 @@ const MENU = {
       icon: FaTachometerAlt,
     },
     {
+      label: "HR Management",
+      to: "/tms/smmu/hrm",
+      icon: FaUsers,
+    },
+    {
       label: "Grievances",
       to: "/admin/grievances",
       icon: FaHandsHelping,

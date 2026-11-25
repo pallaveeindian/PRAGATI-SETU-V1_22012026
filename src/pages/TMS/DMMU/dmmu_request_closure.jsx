@@ -4,6 +4,7 @@ import { useNavigate, useParams } from "react-router-dom";
 import LeftNav from "../layout/tms_LeftNav";
 import { AuthContext } from "../../../contexts/AuthContext";
 import api, { TMS_API } from "../../../api/axios";
+import LateralEntryAcknowledgementModal from "./LateralEntryAcknowledgementModal";
 import {
   getCanonicalRole,
   ROLE_WELCOME_MESSAGES,
@@ -78,6 +79,9 @@ export default function DmmuBatchClosureReview() {
   const [rejectionReason, setRejectionReason] = useState("");
 
   const inFlightRef = useRef(false);
+  const [lateralModalOpen, setLateralModalOpen] = useState(false);
+  const [lateralAcknowledged, setLateralAcknowledged] = useState(false);
+  const [checkingLateralEntries, setCheckingLateralEntries] = useState(false);
 
   /* ═══════════════════════════════════════════════════════════
      FETCH
@@ -108,6 +112,82 @@ export default function DmmuBatchClosureReview() {
       setLoading(false);
     }
   }
+  /* ═══════════════════════════════════════════════════════════
+   LATERAL ENTRY ACKNOWLEDGEMENT
+═══════════════════════════════════════════════════════════ */
+  useEffect(() => {
+    if (!batch?.id) return;
+
+    let cancelled = false;
+
+    const checkLateralEntries = async () => {
+      setCheckingLateralEntries(true);
+
+      try {
+        const includesLateral =
+          batch?.includes_lateral_entries === true ||
+          batch?.includes_lateral_entries === 1 ||
+          String(batch?.includes_lateral_entries).toLowerCase() === "true";
+
+        // No lateral entries: do not show the modal.
+        if (!includesLateral) {
+          if (!cancelled) {
+            setLateralModalOpen(false);
+            setLateralAcknowledged(true);
+          }
+          return;
+        }
+
+        // Check whether acknowledgement has already been recorded.
+        try {
+          const historyResponse = await api.get("/tms/list-batch-history/", {
+            params: { batch_id: batch.id },
+          });
+
+          const historyData = historyResponse?.data;
+          const historyRows = Array.isArray(historyData)
+            ? historyData
+            : Array.isArray(historyData?.results)
+              ? historyData.results
+              : Array.isArray(historyData?.data)
+                ? historyData.data
+                : [];
+
+          const alreadyAcknowledged = historyRows.some((item) =>
+            String(item?.remarks || "")
+              .toLowerCase()
+              .includes("acknowledge and approved by"),
+          );
+
+          if (!cancelled) {
+            setLateralAcknowledged(alreadyAcknowledged);
+            setLateralModalOpen(!alreadyAcknowledged);
+          }
+        } catch (historyError) {
+          // If history lookup fails, show the modal rather than
+          // allowing approval without acknowledgement.
+          console.error("Lateral entry history lookup failed:", historyError);
+
+          if (!cancelled) {
+            setLateralAcknowledged(false);
+            setLateralModalOpen(true);
+          }
+        }
+      } catch (error) {
+        console.error("Lateral entry check failed:", error);
+      } finally {
+        if (!cancelled) {
+          setCheckingLateralEntries(false);
+        }
+      }
+    };
+
+    checkLateralEntries();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [batch]);
 
   useEffect(() => {
     fetchBatch(true);
@@ -252,6 +332,18 @@ export default function DmmuBatchClosureReview() {
     if (!batch?.batch_closing?.id) {
       alert(
         "Error: Batch Closure Request object missing. The TP might not have submitted properly.",
+      );
+      return;
+    }
+    if (checkingLateralEntries) {
+      alert("Please wait while lateral entry details are being checked.");
+      return;
+    }
+
+    if (batch?.includes_lateral_entries === true && !lateralAcknowledged) {
+      setLateralModalOpen(true);
+      alert(
+        "Please acknowledge the lateral entries before approving this batch.",
       );
       return;
     }
@@ -1032,7 +1124,12 @@ export default function DmmuBatchClosureReview() {
                       color: "#b91c1c",
                       fontWeight: "bold",
                     }}
-                    disabled={actionLoading}
+                    disabled={
+                      actionLoading ||
+                      checkingLateralEntries ||
+                      (batch?.includes_lateral_entries === true &&
+                        !lateralAcknowledged)
+                    }
                     onClick={() => setRejectModalOpen(true)}
                   >
                     Reject Batch
@@ -1074,6 +1171,21 @@ export default function DmmuBatchClosureReview() {
             />
           </div>
         )}
+
+        {/* Reject Modal */}
+        {/* Lateral Entry Acknowledgement Modal */}
+        <LateralEntryAcknowledgementModal
+          key={batch?.id || "batch-lateral-entry"}
+          open={lateralModalOpen}
+          batchId={batch?.id || batchId}
+          batchDetail={batch}
+          batchStatus={batch?.status || ""}
+          createdBy={user?.id}
+          onAcknowledged={() => {
+            setLateralAcknowledged(true);
+            setLateralModalOpen(false);
+          }}
+        />
 
         {/* Reject Modal */}
         {rejectModalOpen && (

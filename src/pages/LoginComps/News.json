@@ -229,7 +229,7 @@
         "description": "A new Attendance Module is now available. No eKYC verification is required, and attendance can be uploaded directly, with an optional CSV upload option.",
         "description_hi": "नया उपस्थिति मॉड्यूल अब उपलब्ध है। इसमें ई-केवाईसी सत्यापन की आवश्यकता नहीं है और उपस्थिति सीधे अपलोड की जा सकती है, साथ ही वैकल्पिक CSV अपलोड की सुविधा भी उपलब्ध है।"
       },
-       {
+      {
         "id": 20,
         "title": "Immediate Update to Training Request Engagement Check",
         "title_hi": "प्रशिक्षण अनुरोध सहभागिता जाँच में तत्काल अपडेट",
@@ -238,8 +238,7 @@
         "description": "Previously, participant eligibility for a training request was checked based on the Training Request status BATCHING and Batch status ONGOING/SCHEDULED.With the new        update, participant eligibility will now be checked based on the participant’s previous training history within the same financial year and the same training module.For stepper modules such as Samuh Sakhi M1, M2, M3, etc., participants can now be selected together as applicable.",
         "description_hi": "पहले प्रशिक्षण अनुरोध के लिए प्रतिभागियों की पात्रता की जाँच प्रशिक्षण अनुरोध की स्थिति – BATCHING तथा बैच की स्थिति – ONGOING/SCHEDULED के आधार पर की जाती थी।नए अपडेट के अनुसार, अब प्रतिभागियों की पात्रता की जाँच उसी वित्तीय वर्ष और उसी प्रशिक्षण मॉड्यूल में उनके पूर्व प्रशिक्षण इतिहास के आधार पर की जाएगी।समूह सखी M1, M2, M3... आदि जैसे क्रमिक प्रशिक्षण मॉड्यूलों में अब पात्र प्रतिभागियों का चयन एक साथ किया जा सकेगा।"
       },
-      
-{
+      {
         "id": 21,
         "title": "Immediate Update to Batch Creation and Updation Module",
         "title_hi": "बैच निर्माण एवं अद्यतन मॉड्यूल में तत्काल अपडेट",
@@ -247,8 +246,61 @@
         "time": "12:00 PM",
         "description": "Due to the removal of the training request limit, Training Partners may see duplicate candidates in their selection pool while creating a batch. Kindly coordinate with the respective BMM/DMM to ensure that the appropriate candidate is selected during batch creation.During batch creation or updation, participants with conflicting dates will now be clearly highlighted. The Batch Code in which the participant is already engaged will be displayed as a red badge above the participant’s name.A conflicting date means that the participant is already engaged in another batch whose start date or end date falls within the selected start date and end date of the batch being created or updated.",
         "description_hi": "प्रशिक्षण अनुरोध की सीमा हटाए जाने के कारण, बैच बनाते समय प्रशिक्षण भागीदारों को प्रतिभागी चयन सूची में एक ही अभ्यर्थी एक से अधिक बार दिखाई दे सकता है। बैच निर्माण के दौरान उपयुक्त अभ्यर्थी का चयन सुनिश्चित करने के लिए कृपया संबंधित BMM/DMM से समन्वय करें।अब बैच निर्माण या अद्यतन के दौरान तिथियों में टकराव वाले प्रतिभागियों को स्पष्ट रूप से दर्शाया जाएगा। जिस बैच कोड में प्रतिभागी पहले से शामिल है, वह उसके नाम के ऊपर लाल रंग के बैज के रूप में दिखाई देगा।तिथि में टकराव का अर्थ है कि प्रतिभागी पहले से किसी ऐसे बैच में शामिल है, जिसकी प्रारंभ तिथि या समाप्ति तिथि नए बैच के लिए चयनित प्रारंभ तिथि और समाप्ति तिथि के बीच आती है।"
+      },
+      {
+        "id": 22,
+        "title": "Duplicate Batch Code Generation Issue Resolved",
+        "title_hi": "डुप्लीकेट बैच कोड जनरेट होने की समस्या का समाधान",
+        "date": "07 Nov 2026",
+        "time": "10:00 AM",
+        "description": "The batch code generation process has been improved to prevent duplicate batch codes. Each newly created batch will now have a unique batch code, ensuring better batch identification, tracking, and management across the TMS portal.",
+        "description_hi": "डुप्लीकेट बैच कोड जनरेट होने से रोकने के लिए बैच कोड जनरेशन प्रक्रिया में सुधार किया गया है। अब प्रत्येक नए बैच को एक यूनिक बैच कोड प्रदान किया जाएगा, जिससे TMS पोर्टल पर बैच की पहचान, ट्रैकिंग और प्रबंधन अधिक प्रभावी होगा।"
+      },
+      {
+        "id": 23,
+        "title": "Lateral Batch Creation with DMM Acknowledgement",
+        "title_hi": "DMM की स्वीकृति के साथ लेटरल बैच निर्माण की सुविधा",
+        "date": "07 Nov 2026",
+        "time": "10:00 AM",
+        "description": "A new Lateral Batch Creation feature has been introduced in TMS. Beneficiaries who need to be directly enrolled in a batch without following the regular Training Request process can now be added through this facility. DMM acknowledgement is required as part of the process to ensure proper review, verification, and authorization of lateral entries.",
+        "description_hi": "TMS में नई लेटरल बैच निर्माण सुविधा शुरू की गई है। ऐसे लाभार्थियों को, जिन्हें सामान्य प्रशिक्षण अनुरोध प्रक्रिया के बिना सीधे किसी बैच में शामिल करना आवश्यक है, अब इस सुविधा के माध्यम से जोड़ा जा सकता है। लेटरल एंट्री की उचित समीक्षा, सत्यापन और अनुमति सुनिश्चित करने के लिए इस प्रक्रिया में DMM की स्वीकृति अनिवार्य होगी।"
+      },
+      {
+        "id": 24,
+        "title": "TMS Portal Summary Now Available Across District and Block Logins",
+        "title_hi": "जिला एवं ब्लॉक लॉगिन पर TMS पोर्टल सारांश उपलब्ध",
+        "date": "07 Nov 2026",
+        "time": "10:00 AM",
+        "description": "The TMS Portal Summary is now accessible from all District and Block-level logins under the menu name 'TMS Portal Summary'. It is also available on the District Training Partner (TP) Dashboard, enabling users to conveniently view training-related summaries and performance information at their respective levels.",
+        "description_hi": "अब TMS पोर्टल सारांश सभी जिला एवं ब्लॉक स्तर के लॉगिन पर 'TMS Portal Summary' नाम से उपलब्ध है। यह सुविधा District Training Partner (TP) Dashboard पर भी उपलब्ध कराई गई है, जिससे उपयोगकर्ता अपने संबंधित स्तर पर प्रशिक्षण से जुड़ी जानकारी और प्रदर्शन सारांश आसानी से देख सकते हैं।"
+      },
+      {
+        "id": 25,
+        "title": "New Beneficiary Engagement Rule During Training Request Creation",
+        "title_hi": "प्रशिक्षण अनुरोध निर्माण के दौरान लाभार्थी सहभागिता का नया नियम",
+        "date": "07 Nov 2026",
+        "time": "10:00 AM",
+        "description": "A new beneficiary engagement validation rule has been introduced during Training Request creation. If a beneficiary is already associated with another Training Request having the same Financial Year, District, and Training Plan, and that Training Request is in BATCHING status, the beneficiary will be treated as already engaged and will not be available for selection in another Training Request under the same criteria. This validation helps prevent duplicate beneficiary engagement.",
+        "description_hi": "प्रशिक्षण अनुरोध बनाते समय लाभार्थी की सहभागिता जाँच के लिए नया नियम लागू किया गया है। यदि कोई लाभार्थी उसी वित्तीय वर्ष, जिले और प्रशिक्षण योजना वाले किसी अन्य प्रशिक्षण अनुरोध से पहले से जुड़ा हुआ है और उस प्रशिक्षण अनुरोध की स्थिति BATCHING है, तो उस लाभार्थी को पहले से ही सहभागी माना जाएगा और समान मानदंडों वाले दूसरे प्रशिक्षण अनुरोध में चयन के लिए उपलब्ध नहीं कराया जाएगा। इस सत्यापन से लाभार्थियों की डुप्लीकेट सहभागिता को रोका जा सकेगा।"
+      },
+      {
+        "id": 26,
+        "title": "LokOS Profile Fetching Now Available Across All Beneficiary Lists",
+        "title_hi": "सभी लाभार्थी सूचियों में अब LokOS प्रोफाइल प्राप्त करने की सुविधा",
+        "date": "07 Nov 2026",
+        "time": "10:00 AM",
+        "description": "The LokOS Profile Fetching feature is now available across all beneficiary lists throughout the TMS portal. Users can simply click on a beneficiary's Member Code to fetch and view their corresponding LokOS profile details. This enhancement makes beneficiary verification and profile access easier and more convenient across different TMS modules.",
+        "description_hi": "अब TMS पोर्टल के सभी मॉड्यूल में उपलब्ध लाभार्थी सूचियों में LokOS प्रोफाइल प्राप्त करने की सुविधा उपलब्ध है। उपयोगकर्ता किसी भी लाभार्थी के Member Code पर क्लिक करके उसकी संबंधित LokOS प्रोफाइल की जानकारी प्राप्त और देख सकते हैं। इस सुविधा से विभिन्न TMS मॉड्यूल में लाभार्थियों का सत्यापन और उनकी प्रोफाइल तक पहुँच अधिक आसान और सुविधाजनक हो गई है।"
+      },
+      {
+        "id": 27,
+        "title": "Training Partner Visibility Added to the First Step of Training Request Creation",
+        "title_hi": "प्रशिक्षण अनुरोध निर्माण के पहले चरण में Training Partner देखने की सुविधा",
+        "date": "07 Nov 2026",
+        "time": "10:00 AM",
+        "description": "The Training Request creation process has been enhanced to display Training Partner details in the first step itself. Users can now view and identify the available Training Partners using the Theme filter before proceeding with Training Request creation. This improvement makes Training Partner selection more transparent and convenient.",
+        "description_hi": "प्रशिक्षण अनुरोध निर्माण प्रक्रिया को बेहतर बनाया गया है। अब पहले चरण में ही Training Partner की जानकारी दिखाई देगी। उपयोगकर्ता प्रशिक्षण अनुरोध बनाने की प्रक्रिया आगे बढ़ाने से पहले Theme Filter के माध्यम से उपलब्ध Training Partners को देख और पहचान सकते हैं। इस सुधार से Training Partner का चयन अधिक पारदर्शी और सुविधाजनक हो गया है।"
       }
-
     ]
   }
 }

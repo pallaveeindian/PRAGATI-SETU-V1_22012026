@@ -6,6 +6,7 @@ import LeftNav from "../../layout/tms_LeftNav";
 
 import api, { TMS_API, LOOKUP_API } from "../../../../api/axios";
 import { useAuth } from "../../../../contexts/AuthContext";
+import { getCanonicalRole } from "../../../../utils/roleUtils";
 import {
   FaIdCard,
   FaSearch,
@@ -116,7 +117,10 @@ function getApiErrorMessage(err, fallback) {
 export default function HrManagement() {
   const { user } = useAuth();
   const userName = user?.username || "";
-  const hasHrAccess = userName === "SMM_HR";
+  const hasHrAccess =
+    userName === "SMM_HR" ||
+    userName === "pmu_admin" ||
+    getCanonicalRole(user) === "pmu_admin";
 
   useEffect(() => {
     window.scrollTo(0, 0);
@@ -404,6 +408,13 @@ export default function HrManagement() {
         block: block_id ? Number(block_id) : null,
         theme: theme_id ? Number(theme_id) : null,
         designation: formData.designation || null,
+        pan: formData.pan?.trim() || "0",
+        uan: formData.uan?.trim() || "0",
+        epf: formData.epf?.trim() || "0",
+        esic: formData.esic?.trim() || "0",
+        marital_status: formData.marital_status?.trim() || "N/A",
+        program: formData.program?.trim() || "N/A",
+        bank_account_no: formData.bank_account_no?.trim() || "0",
       };
 
       if (editingStaff) {
@@ -788,18 +799,21 @@ export default function HrManagement() {
 
               <div className="form-grid">
                 <div className="filter-group">
-                  <label>Employee ID *</label>
+                  <label>
+                    Employee ID <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="employee_id"
-                    required
                     value={formData.employee_id}
                     onChange={handleInputChange}
                     disabled={Boolean(editingStaff)}
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Full Name *</label>
+                  <label>
+                    Full Name <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="full_name"
@@ -809,10 +823,16 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Mobile Number *</label>
+                  <label>
+                    Mobile Number <span className="required-star">*</span>
+                  </label>
                   <input
                     type="tel"
                     name="mobile"
+                    pattern="[0-9]{10}"
+                    inputMode="numeric"
+                    maxLength={10}
+                    title="Please enter a valid 10-digit mobile number"
                     required
                     value={formData.mobile}
                     onChange={handleInputChange}
@@ -861,13 +881,15 @@ export default function HrManagement() {
                 </div>
 
                 <div className="filter-group">
-                  <label>Designation *</label>
+                  <label>
+                    Designation <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="designation"
-                    required
                     value={formData.designation}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div className="filter-group">
@@ -901,11 +923,14 @@ export default function HrManagement() {
                   </select>
                 </div>
                 <div className="filter-group">
-                  <label>Gender</label>
+                  <label>
+                    Gender <span className="required-star">*</span>
+                  </label>
                   <select
                     name="gender"
                     value={formData.gender}
                     onChange={handleInputChange}
+                    required
                   >
                     <option value="">Select Gender</option>
                     <option value="MALE">Male</option>
@@ -943,6 +968,7 @@ export default function HrManagement() {
                   <input
                     type="text"
                     name="pan"
+                    placeholder="Default: 0"
                     value={formData.pan || ""}
                     onChange={handleInputChange}
                   />
@@ -953,6 +979,7 @@ export default function HrManagement() {
                   <input
                     type="text"
                     name="uan"
+                    placeholder="Default: 0"
                     value={formData.uan || ""}
                     onChange={handleInputChange}
                   />
@@ -962,6 +989,7 @@ export default function HrManagement() {
                   <input
                     type="text"
                     name="epf"
+                    placeholder="Default: 0"
                     value={formData.epf || ""}
                     onChange={handleInputChange}
                   />
@@ -971,6 +999,7 @@ export default function HrManagement() {
                   <input
                     type="text"
                     name="esic"
+                    placeholder="Default: 0"
                     value={formData.esic || ""}
                     onChange={handleInputChange}
                   />
@@ -985,12 +1014,15 @@ export default function HrManagement() {
                   />
                 </div>
                 <div className="filter-group">
-                  <label>Aadhaar</label>
+                  <label>
+                    Aadhaar <span className="required-star">*</span>
+                  </label>
                   <input
                     type="text"
                     name="aadhar"
                     value={formData.aadhar || ""}
                     onChange={handleInputChange}
+                    required
                   />
                 </div>
                 <div className="filter-group">
@@ -1213,6 +1245,7 @@ export default function HrManagement() {
         .staff-directory__filters-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; padding: 20px 24px; background: #f8fafc; }
         .filter-group { display: flex; flex-direction: column; gap: 8px; }
         .filter-group label { display: flex; align-items: center; gap: 6px; color: #475569; font-size: 12px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.05em; }
+        .required-star { color: #dc2626; }
         .filter-group input, .filter-group select { width: 100%; min-height: 44px; padding: 0 14px; border: 1.5px solid #cbd5e1; border-radius: 8px; background: #fff; color: #0f172a; font-size: 14px; outline: none; transition: all .2s; }
         .filter-group input:focus, .filter-group select:focus { border-color: #3b82f6; box-shadow: 0 0 0 3px rgba(59, 130, 246, .15); }
         

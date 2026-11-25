@@ -4,7 +4,6 @@ import { createPortal } from "react-dom";
 import ExcelJS from "exceljs";
 import { FaFileExcel } from "react-icons/fa";
 import api from "../../../api/axios";
-
 const COLORS = {
   navy: "FF17365D",
   blue: "FF2563A6",
@@ -19,7 +18,6 @@ const COLORS = {
   red: "FFFCE9E9",
   orange: "FFFFF2DB",
 };
-
 const METRICS = [
   { key: "1_total_batches_created", label: "1 — Total batches created" },
   { key: "2_scheduled_batches", label: "2 — Scheduled batches" },
@@ -32,7 +30,10 @@ const METRICS = [
   },
   { key: "7_completed_batch_closed", label: "7 — Completed batches closed" },
   { key: "8_batches_rejected_by_dmm", label: "8 — Batches rejected by DMM" },
-  { key: "9_total_batches_completed", label: "9 — Total batches completed" },
+  {
+    key: "9_total_batches_completed",
+    label: "9 — Total batches completed(5+6+7)",
+  },
   { key: "9a_participants_trained", label: "9A — Participants trained" },
   { key: "9b_participants_dropout", label: "9B — Participants dropped out" },
   { key: "10_total_target", label: "10 — Total target" },
@@ -48,24 +49,61 @@ const METRICS = [
   { key: "14_achievement_percentage", label: "14 — Achievement %" },
 ];
 
+const FIRST_PARTICIPANT_ONLY_METRIC_INDEX = 9;
+
+const getMetricColumn = (index) =>
+  index < FIRST_PARTICIPANT_ONLY_METRIC_INDEX
+    ? 3 + index * 2
+    : 3 +
+      FIRST_PARTICIPANT_ONLY_METRIC_INDEX * 2 +
+      (index - FIRST_PARTICIPANT_ONLY_METRIC_INDEX);
+
+const TOTAL_REPORT_COLUMNS =
+  2 +
+  FIRST_PARTICIPANT_ONLY_METRIC_INDEX * 2 +
+  (METRICS.length - FIRST_PARTICIPANT_ONLY_METRIC_INDEX);
 const numberValue = (value) => {
   if (value === null || value === undefined || value === "") return 0;
   const number = Number(value);
   return Number.isFinite(number) ? number : 0;
 };
+const percentageValue = (value) => {
+  if (value === null || value === undefined || value === "") return 0;
 
-const metricValue = (report, group, key) =>
-  numberValue(report?.state_wide_summary?.[group]?.[key]);
+  const normalized =
+    typeof value === "string" ? value.replace("%", "").trim() : value;
+
+  const number = Number(normalized);
+  return Number.isFinite(number) ? number : 0;
+};
+const metricValue = (report, group, key) => {
+  const value = report?.state_wide_summary?.[group]?.[key];
+
+  return key === "14_achievement_percentage"
+    ? percentageValue(value)
+    : numberValue(value);
+};
 
 const comparisonMetricValue = (report, key) => {
   const batchValue = report?.state_wide_summary?.batch_counts?.[key];
+
+  const participantValue =
+    report?.state_wide_summary?.participant_counts?.[key];
+
+  if (key === "14_achievement_percentage") {
+    return percentageValue(
+      batchValue !== null && batchValue !== undefined && batchValue !== ""
+        ? batchValue
+        : participantValue,
+    );
+  }
 
   if (batchValue !== null && batchValue !== undefined && batchValue !== "") {
     return numberValue(batchValue);
   }
 
   if (key.includes("participants")) {
-    return numberValue(report?.state_wide_summary?.participant_counts?.[key]);
+    return numberValue(participantValue);
   }
 
   return 0;
@@ -75,7 +113,6 @@ const planName = (plan) =>
   String(
     plan?.training_name || plan?.name || `Training Plan ${plan?.id ?? ""}`,
   ).trim();
-
 const yieldToBrowser = () =>
   new Promise((resolve) => {
     if (typeof window !== "undefined" && window.requestAnimationFrame) {
@@ -84,7 +121,6 @@ const yieldToBrowser = () =>
       setTimeout(resolve, 0);
     }
   });
-
 const styleTitle = (sheet, title, subtitle, columnCount) => {
   sheet.mergeCells(1, 1, 1, columnCount);
   const titleCell = sheet.getCell(1, 1);
@@ -102,7 +138,6 @@ const styleTitle = (sheet, title, subtitle, columnCount) => {
     fgColor: { argb: COLORS.navy },
   };
   sheet.getRow(1).height = 38;
-
   sheet.mergeCells(2, 1, 2, columnCount);
   const subtitleCell = sheet.getCell(2, 1);
   subtitleCell.value = subtitle;
@@ -120,7 +155,6 @@ const styleTitle = (sheet, title, subtitle, columnCount) => {
   sheet.getRow(2).height = 24;
   sheet.getRow(3).height = 9;
 };
-
 const styleSectionTitle = (sheet, rowNumber, title, columnCount) => {
   sheet.mergeCells(rowNumber, 1, rowNumber, columnCount);
   const cell = sheet.getCell(rowNumber, 1);
@@ -139,7 +173,6 @@ const styleSectionTitle = (sheet, rowNumber, title, columnCount) => {
   };
   sheet.getRow(rowNumber).height = 27;
 };
-
 const styleColumnHeaders = (sheet, rowNumber, startColumn, labels) => {
   labels.forEach((label, index) => {
     const cell = sheet.getCell(rowNumber, startColumn + index);
@@ -164,16 +197,12 @@ const styleColumnHeaders = (sheet, rowNumber, startColumn, labels) => {
       bottom: { style: "medium", color: { argb: COLORS.navy } },
     };
   });
-
   sheet.getRow(rowNumber).height = 34;
 };
-
 const styleDataRow = (row, rowIndex, options = {}) => {
   const background =
     options.background || (rowIndex % 2 === 0 ? COLORS.white : COLORS.paleBlue);
-
   row.height = options.height || 23;
-
   row.eachCell({ includeEmpty: true }, (cell, columnNumber) => {
     cell.font = {
       name: "Aptos",
@@ -196,7 +225,6 @@ const styleDataRow = (row, rowIndex, options = {}) => {
     };
   });
 };
-
 const addDetailedReportSheet = (
   workbook,
   { sheetName, title, subtitle, report, tabColor = COLORS.blue },
@@ -212,18 +240,18 @@ const addDetailedReportSheet = (
       showGridLines: false,
     },
   ];
-
-  const finalColumn = 2 + METRICS.length * 2;
+  const finalColumn = TOTAL_REPORT_COLUMNS;
   const finalColumnLetter = sheet.getColumn(finalColumn).letter;
-
   sheet.columns = [
     { width: 9 },
     { width: 30 },
-    ...METRICS.flatMap(() => [{ width: 16 }, { width: 18 }]),
+    ...METRICS.flatMap((metric, index) =>
+      index < FIRST_PARTICIPANT_ONLY_METRIC_INDEX
+        ? [{ width: 16 }, { width: 18 }]
+        : [{ width: 18 }],
+    ),
   ];
-
   styleTitle(sheet, title, subtitle, finalColumn);
-
   sheet.mergeCells(4, 1, 4, 2);
   const locationGroup = sheet.getCell(4, 1);
   locationGroup.value = "LOCATION";
@@ -239,12 +267,13 @@ const addDetailedReportSheet = (
     pattern: "solid",
     fgColor: { argb: COLORS.navy },
   };
-
   METRICS.forEach((metric, index) => {
-    const firstColumn = 3 + index * 2;
-    const lastColumn = firstColumn + 1;
-
-    sheet.mergeCells(4, firstColumn, 4, lastColumn);
+    const firstColumn = getMetricColumn(index);
+    const isParticipantOnly = index >= FIRST_PARTICIPANT_ONLY_METRIC_INDEX;
+    const lastColumn = isParticipantOnly ? firstColumn : firstColumn + 1;
+    if (!isParticipantOnly) {
+      sheet.mergeCells(4, firstColumn, 4, lastColumn);
+    }
     const groupCell = sheet.getCell(4, firstColumn);
     groupCell.value = metric.label;
     groupCell.font = {
@@ -263,33 +292,39 @@ const addDetailedReportSheet = (
       pattern: "solid",
       fgColor: { argb: COLORS.navy },
     };
-
-    [firstColumn, lastColumn].forEach((column) => {
-      sheet.getCell(5, column).font = {
+    const headerColumns = isParticipantOnly
+      ? [firstColumn]
+      : [firstColumn, lastColumn];
+    headerColumns.forEach((column) => {
+      const cell = sheet.getCell(5, column);
+      cell.font = {
         name: "Aptos",
         size: 9,
         bold: true,
         color: { argb: COLORS.white },
       };
-      sheet.getCell(5, column).alignment = {
+      cell.alignment = {
         horizontal: "center",
         vertical: "middle",
         wrapText: true,
       };
-      sheet.getCell(5, column).fill = {
+      cell.fill = {
         type: "pattern",
         pattern: "solid",
         fgColor: { argb: COLORS.mediumBlue },
       };
+      cell.value =
+        metric.key === "14_achievement_percentage"
+          ? "%age"
+          : isParticipantOnly
+            ? "Participant count"
+            : column === firstColumn
+              ? "Batch count"
+              : "Participant count";
     });
-
-    sheet.getCell(5, firstColumn).value = "Batch count";
-    sheet.getCell(5, lastColumn).value = "Participant count";
   });
-
   sheet.getCell(5, 1).value = "S. No.";
   sheet.getCell(5, 2).value = "District / State Name";
-
   [1, 2].forEach((column) => {
     const cell = sheet.getCell(5, column);
     cell.font = {
@@ -309,10 +344,8 @@ const addDetailedReportSheet = (
       fgColor: { argb: COLORS.mediumBlue },
     };
   });
-
   sheet.getRow(4).height = 42;
   sheet.getRow(5).height = 36;
-
   const records = [
     {
       serial: "—",
@@ -329,24 +362,38 @@ const addDetailedReportSheet = (
         }))
       : []),
   ];
-
   records.forEach((record, rowIndex) => {
     const values = [record.serial, record.name];
+    METRICS.forEach((metric, index) => {
+      const batchValue = record.summary?.batch_counts?.[metric.key];
+      const participantValue = record.summary?.participant_counts?.[metric.key];
 
-    METRICS.forEach((metric) => {
-      values.push(
-        numberValue(record.summary?.batch_counts?.[metric.key]),
-        numberValue(record.summary?.participant_counts?.[metric.key]),
-      );
+      const selectedBatchValue =
+        metric.key === "14_achievement_percentage" &&
+        (batchValue === null || batchValue === undefined || batchValue === "")
+          ? participantValue
+          : batchValue;
+
+      const batchCount =
+        metric.key === "14_achievement_percentage"
+          ? percentageValue(selectedBatchValue)
+          : numberValue(selectedBatchValue);
+      if (index < FIRST_PARTICIPANT_ONLY_METRIC_INDEX) {
+        const participantCount = numberValue(
+          record.summary?.participant_counts?.[metric.key],
+        );
+        values.push(batchCount, participantCount);
+      } else {
+        // From 9A onwards, batch_counts data is displayed under Participant count.
+        values.push(batchCount);
+      }
     });
-
     const row = sheet.addRow(values);
     styleDataRow(row, rowIndex, {
       background: record.isState ? COLORS.lightBlue : undefined,
       bold: record.isState,
       height: record.isState ? 28 : 24,
     });
-
     row.getCell(1).alignment = {
       horizontal: "center",
       vertical: "middle",
@@ -356,16 +403,16 @@ const addDetailedReportSheet = (
       vertical: "middle",
       wrapText: true,
     };
-
     METRICS.forEach((metric, index) => {
-      const firstColumn = 3 + index * 2;
-      row.getCell(firstColumn).numFmt =
+      const firstColumn = getMetricColumn(index);
+      const numberFormat =
         metric.key === "14_achievement_percentage" ? "0.00" : "#,##0.##";
-      row.getCell(firstColumn + 1).numFmt =
-        metric.key === "14_achievement_percentage" ? "0.00" : "#,##0.##";
+      row.getCell(firstColumn).numFmt = numberFormat;
+      if (index < FIRST_PARTICIPANT_ONLY_METRIC_INDEX) {
+        row.getCell(firstColumn + 1).numFmt = numberFormat;
+      }
     });
   });
-
   sheet.autoFilter = {
     from: { row: 5, column: 1 },
     to: { row: Math.max(5, sheet.rowCount), column: finalColumn },
@@ -386,10 +433,8 @@ const addDetailedReportSheet = (
     },
   };
   sheet.headerFooter.oddFooter = `&LPragati Setu TMS&CPage &P of &N&R${finalColumnLetter}`;
-
   return sheet;
 };
-
 const addExecutiveSummarySheet = (
   workbook,
   themeReport,
@@ -400,7 +445,6 @@ const addExecutiveSummarySheet = (
   sheet.properties.tabColor = { argb: COLORS.navy };
   sheet.views = [{ showGridLines: false }];
   sheet.columns = Array.from({ length: 10 }, () => ({ width: 18 }));
-
   styleTitle(
     sheet,
     "TMS PORTAL SUMMARY — THEME ANALYSIS",
@@ -409,7 +453,6 @@ const addExecutiveSummarySheet = (
     }`,
     10,
   );
-
   const cards = [
     {
       label: "TOTAL BATCHES CREATED",
@@ -437,14 +480,11 @@ const addExecutiveSummarySheet = (
     },
     { label: "TRAINING PLANS ANALYSED", value: planReports.length },
   ];
-
   cards.forEach((card, index) => {
     const startColumn = index * 2 + 1;
     const endColumn = startColumn + 1;
-
     sheet.mergeCells(4, startColumn, 4, endColumn);
     sheet.mergeCells(5, startColumn, 6, endColumn);
-
     const labelCell = sheet.getCell(4, startColumn);
     labelCell.value = card.label;
     labelCell.font = {
@@ -463,7 +503,6 @@ const addExecutiveSummarySheet = (
       pattern: "solid",
       fgColor: { argb: COLORS.lightBlue },
     };
-
     const valueCell = sheet.getCell(5, startColumn);
     valueCell.value = card.value;
     valueCell.font = {
@@ -480,13 +519,10 @@ const addExecutiveSummarySheet = (
     };
     valueCell.numFmt = "#,##0.##";
   });
-
   sheet.getRow(4).height = 30;
   sheet.getRow(5).height = 30;
   sheet.getRow(6).height = 12;
-
   styleSectionTitle(sheet, 8, "TOP TRAINING PLANS", 10);
-
   const planHeaders = [
     "Training Plan",
     "Batches Created",
@@ -500,14 +536,12 @@ const addExecutiveSummarySheet = (
     "Share of Theme Trained",
   ];
   styleColumnHeaders(sheet, 9, 1, planHeaders);
-
   const rankedPlans = [...planReports].sort(
     (a, b) =>
       comparisonMetricValue(b.report, "9a_participants_trained") -
       comparisonMetricValue(a.report, "9a_participants_trained"),
   );
   const topPlans = rankedPlans.slice(0, 10);
-
   if (!topPlans.length) {
     sheet.mergeCells(10, 1, 10, 10);
     sheet.getCell(10, 1).value = "No training plans were found for this theme.";
@@ -521,11 +555,9 @@ const addExecutiveSummarySheet = (
       themeReport,
       "9a_participants_trained",
     );
-
     topPlans.forEach((entry, index) => {
       const report = entry.report;
       const trained = comparisonMetricValue(report, "9a_participants_trained");
-
       const row = sheet.addRow([
         entry.name,
         comparisonMetricValue(report, "1_total_batches_created"),
@@ -538,7 +570,6 @@ const addExecutiveSummarySheet = (
         comparisonMetricValue(report, "14_achievement_percentage"),
         themeTrained ? trained / themeTrained : 0,
       ]);
-
       styleDataRow(row, index);
       row.getCell(1).alignment = {
         horizontal: "left",
@@ -551,7 +582,6 @@ const addExecutiveSummarySheet = (
       row.getCell(10).numFmt = "0.0%";
     });
   }
-
   const reconciliationTitleRow = 12 + Math.max(topPlans.length, 1);
   styleSectionTitle(
     sheet,
@@ -559,7 +589,6 @@ const addExecutiveSummarySheet = (
     "THEME TOTAL VS SUM OF TRAINING PLAN REPORTS",
     10,
   );
-
   const reconciliationHeaderRow = reconciliationTitleRow + 1;
   styleColumnHeaders(sheet, reconciliationHeaderRow, 1, [
     "Metric",
@@ -567,7 +596,6 @@ const addExecutiveSummarySheet = (
     "Sum of Plan Reports",
     "Theme Minus Plans",
   ]);
-
   const reconciliationMetrics = [
     { key: "1_total_batches_created", label: "Total batches created" },
     { key: "9_total_batches_completed", label: "Total batches completed" },
@@ -579,7 +607,6 @@ const addExecutiveSummarySheet = (
       label: "Participants enrolled in batches",
     },
   ];
-
   reconciliationMetrics.forEach((metric, index) => {
     const themeValue = comparisonMetricValue(themeReport, metric.key);
     const plansValue = planReports.reduce(
@@ -592,7 +619,6 @@ const addExecutiveSummarySheet = (
       plansValue,
       themeValue - plansValue,
     ]);
-
     styleDataRow(row, index);
     row.getCell(1).alignment = {
       horizontal: "left",
@@ -601,7 +627,6 @@ const addExecutiveSummarySheet = (
     for (let column = 2; column <= 4; column += 1) {
       row.getCell(column).numFmt = "#,##0.##";
     }
-
     const differenceCell = row.getCell(4);
     differenceCell.font = {
       name: "Aptos",
@@ -620,7 +645,6 @@ const addExecutiveSummarySheet = (
           : { argb: COLORS.orange },
     };
   });
-
   const noteRow = reconciliationHeaderRow + reconciliationMetrics.length + 2;
   sheet.mergeCells(noteRow, 1, noteRow, 10);
   sheet.getCell(noteRow, 1).value =
@@ -636,10 +660,8 @@ const addExecutiveSummarySheet = (
     wrapText: true,
   };
   sheet.getRow(noteRow).height = 34;
-
   return sheet;
 };
-
 const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
   const sheet = workbook.addWorksheet("Plan Comparison");
   sheet.properties.tabColor = { argb: COLORS.mediumBlue };
@@ -651,7 +673,6 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
       showGridLines: false,
     },
   ];
-
   const headers = [
     "Rank",
     "Training Plan",
@@ -676,7 +697,6 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
     9, 30, 12, 17, 15, 17, 14, 18, 13, 21, 14, 16, 16, 16, 23, 15, 20, 20,
   ];
   sheet.columns = widths.map((width) => ({ width }));
-
   styleTitle(
     sheet,
     "TRAINING PLAN COMPARISON",
@@ -684,7 +704,6 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
     headers.length,
   );
   styleColumnHeaders(sheet, 4, 1, headers);
-
   const themeCreated = comparisonMetricValue(
     themeReport,
     "1_total_batches_created",
@@ -693,13 +712,11 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
     themeReport,
     "9a_participants_trained",
   );
-
   const sortedPlans = [...planReports].sort(
     (a, b) =>
       comparisonMetricValue(b.report, "9a_participants_trained") -
       comparisonMetricValue(a.report, "9a_participants_trained"),
   );
-
   if (!sortedPlans.length) {
     sheet.mergeCells(5, 1, 5, headers.length);
     sheet.getCell(5, 1).value = "No training plans were found for this theme.";
@@ -713,7 +730,6 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
       const report = entry.report;
       const created = comparisonMetricValue(report, "1_total_batches_created");
       const trained = comparisonMetricValue(report, "9a_participants_trained");
-
       const row = sheet.addRow([
         index + 1,
         entry.name,
@@ -737,7 +753,6 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
         themeCreated ? created / themeCreated : 0,
         themeTrained ? trained / themeTrained : 0,
       ]);
-
       styleDataRow(row, index);
       row.getCell(2).alignment = {
         horizontal: "left",
@@ -751,7 +766,6 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
       row.getCell(18).numFmt = "0.0%";
     });
   }
-
   sheet.autoFilter = {
     from: { row: 4, column: 1 },
     to: { row: Math.max(4, sheet.rowCount), column: headers.length },
@@ -762,10 +776,8 @@ const addPlanComparisonSheet = (workbook, themeReport, planReports) => {
     fitToWidth: 1,
     fitToHeight: 0,
   };
-
   return sheet;
 };
-
 const addKpiMatrixSheet = (
   workbook,
   planReports,
@@ -784,7 +796,6 @@ const addKpiMatrixSheet = (
       showGridLines: false,
     },
   ];
-
   const headers = [
     "Metric",
     "All Theme",
@@ -799,7 +810,6 @@ const addKpiMatrixSheet = (
     { width: 20 },
     ...planReports.map(() => ({ width: 20 })),
   ];
-
   styleTitle(
     sheet,
     config.title,
@@ -807,7 +817,6 @@ const addKpiMatrixSheet = (
     headers.length,
   );
   styleColumnHeaders(sheet, 4, 1, headers);
-
   METRICS.forEach((metric, index) => {
     const themeValue = metricValue(themeReport, group, metric.key);
     const planValues = planReports.map((entry) =>
@@ -818,7 +827,6 @@ const addKpiMatrixSheet = (
       ? planValues.reduce((sum, value) => sum + value, 0)
       : "—";
     const variance = isAdditive ? themeValue - planSum : "—";
-
     const row = sheet.addRow([
       metric.label,
       themeValue,
@@ -832,12 +840,10 @@ const addKpiMatrixSheet = (
       vertical: "middle",
       wrapText: true,
     };
-
     for (let column = 2; column <= row.cellCount; column += 1) {
       row.getCell(column).numFmt =
         metric.key === "14_achievement_percentage" ? "0.00" : "#,##0.##";
     }
-
     if (isAdditive && typeof variance === "number") {
       const varianceCell = row.getCell(4);
       varianceCell.fill = {
@@ -853,7 +859,6 @@ const addKpiMatrixSheet = (
       };
     }
   });
-
   sheet.autoFilter = {
     from: { row: 4, column: 1 },
     to: { row: Math.max(4, sheet.rowCount), column: headers.length },
@@ -864,15 +869,12 @@ const addKpiMatrixSheet = (
     fitToWidth: 1,
     fitToHeight: 0,
   };
-
   return sheet;
 };
-
 const locationKey = (location, isBlockWise) =>
   String(isBlockWise ? location?.block_name : location?.district_name || "")
     .trim()
     .toLocaleLowerCase();
-
 const locationSummaryMap = (report) => {
   const result = new Map();
   const isBlockWise = Boolean(report?.block_wise);
@@ -883,19 +885,15 @@ const locationSummaryMap = (report) => {
     : Array.isArray(report?.district_summaries)
       ? report.district_summaries
       : [];
-
   locations.forEach((loc) => {
     const key = locationKey(loc, isBlockWise);
     if (key) result.set(key, loc?.summary || {});
   });
-
   return result;
 };
-
 const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
   const isBlockWise = Boolean(themeReport?.block_wise);
   const locationLabel = isBlockWise ? "Block" : "District";
-
   const sheetName = isBlockWise ? "Block Comparison" : "District Comparison";
   const sheet = workbook.addWorksheet(sheetName);
   sheet.properties.tabColor = { argb: "FF4F83B8" };
@@ -908,7 +906,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       showGridLines: false,
     },
   ];
-
   const headers = [
     `${locationLabel} / State`,
     "Scope",
@@ -932,7 +929,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
     { width: 30 },
     ...Array.from({ length: 12 }, () => ({ width: 19 })),
   ];
-
   styleTitle(
     sheet,
     `${locationLabel.toUpperCase()} AND TRAINING PLAN COMPARISON`,
@@ -940,7 +936,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
     headers.length,
   );
   styleColumnHeaders(sheet, 4, 1, headers);
-
   const allLocations = new Map();
   const collectLocations = (report) => {
     const isReportBlockWise = Boolean(report?.block_wise);
@@ -951,7 +946,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       : Array.isArray(report?.district_summaries)
         ? report.district_summaries
         : [];
-
     locations.forEach((loc) => {
       const key = locationKey(loc, isReportBlockWise);
       const name = isReportBlockWise ? loc.block_name : loc.district_name;
@@ -960,16 +954,13 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       }
     });
   };
-
   collectLocations(themeReport);
   planReports.forEach((entry) => collectLocations(entry.report));
-
   const themeLocations = locationSummaryMap(themeReport);
   const plansByLocation = planReports.map((entry) => ({
     entry,
     locations: locationSummaryMap(entry.report),
   }));
-
   const comparisonKeys = [
     "1_total_batches_created",
     "2_scheduled_batches",
@@ -987,13 +978,29 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
 
   const makeValues = (summary) =>
     comparisonKeys.map((key) => {
-      const value = summary?.batch_counts?.[key];
-      if (value !== null && value !== undefined && value !== "") {
-        return numberValue(value);
+      const batchValue = summary?.batch_counts?.[key];
+      const participantValue = summary?.participant_counts?.[key];
+
+      if (key === "14_achievement_percentage") {
+        return percentageValue(
+          batchValue !== null && batchValue !== undefined && batchValue !== ""
+            ? batchValue
+            : participantValue,
+        );
       }
+
+      if (
+        batchValue !== null &&
+        batchValue !== undefined &&
+        batchValue !== ""
+      ) {
+        return numberValue(batchValue);
+      }
+
       if (key.includes("participants")) {
-        return numberValue(summary?.participant_counts?.[key]);
+        return numberValue(participantValue);
       }
+
       return 0;
     });
 
@@ -1002,7 +1009,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       ? `${themeReport.district_name} TOTAL SUMMARY`
       : "TOTAL SUMMARY"
     : "STATE WIDE SUMMARY";
-
   const records = [
     {
       locationName: overallSummaryName,
@@ -1019,7 +1025,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       isTheme: false,
     })),
   ];
-
   [...allLocations.entries()].forEach(([key, name]) => {
     const themeSummary = themeLocations.get(key);
     if (themeSummary) {
@@ -1031,7 +1036,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
         isTheme: true,
       });
     }
-
     plansByLocation.forEach(({ entry, locations }) => {
       records.push({
         locationName: name,
@@ -1042,7 +1046,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
       });
     });
   });
-
   records.forEach((record, index) => {
     const row = sheet.addRow([
       record.locationName,
@@ -1069,7 +1072,6 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
         column === headers.length ? "0.00" : "#,##0.##";
     }
   });
-
   sheet.autoFilter = {
     from: { row: 4, column: 1 },
     to: { row: Math.max(4, sheet.rowCount), column: headers.length },
@@ -1080,10 +1082,8 @@ const addDistrictComparisonSheet = (workbook, themeReport, planReports) => {
     fitToWidth: 1,
     fitToHeight: 0,
   };
-
   return sheet;
 };
-
 const createUniqueSheetName = (workbook, candidate) => {
   const base =
     String(candidate || "Plan Details")
@@ -1091,23 +1091,19 @@ const createUniqueSheetName = (workbook, candidate) => {
       .replace(/\s+/g, " ")
       .trim()
       .slice(0, 31) || "Plan Details";
-
   let name = base;
   let suffix = 2;
   const existing = () =>
     workbook.worksheets.some(
       (sheet) => sheet.name.toLocaleLowerCase() === name.toLocaleLowerCase(),
     );
-
   while (existing()) {
     const ending = ` (${suffix})`;
     name = `${base.slice(0, 31 - ending.length)}${ending}`;
     suffix += 1;
   }
-
   return name;
 };
-
 const fetchPlanReports = async (
   plans,
   financialYear,
@@ -1119,16 +1115,13 @@ const fetchPlanReports = async (
   const failures = [];
   let nextIndex = 0;
   let completed = 0;
-
   const workerCount = Math.min(4, plans.length);
   const workers = Array.from({ length: workerCount }, async () => {
     while (true) {
       const index = nextIndex;
       nextIndex += 1;
       if (index >= plans.length) return;
-
       const plan = plans[index];
-
       try {
         const response = await api.get("/tms/reports/portal-summary/", {
           params: {
@@ -1138,14 +1131,12 @@ const fetchPlanReports = async (
             ...extraParams, // Inject the extra params (district_id, block_wise)
           },
         });
-
         if (response.data?.status !== "success") {
           throw new Error(
             response.data?.error ||
               "The report API returned an unsuccessful response.",
           );
         }
-
         reports[index] = response.data;
       } catch (error) {
         failures.push({
@@ -1164,9 +1155,7 @@ const fetchPlanReports = async (
       }
     }
   });
-
   await Promise.all(workers);
-
   if (failures.length) {
     const firstFailure = failures[0];
     const remaining =
@@ -1175,10 +1164,8 @@ const fetchPlanReports = async (
       `Could not load every training-plan report. ${firstFailure.name}: ${firstFailure.message}${remaining}. No workbook was generated so the analysis is not incomplete.`,
     );
   }
-
   return reports;
 };
-
 const downloadWorkbook = (workbook, filename) =>
   workbook.xlsx.writeBuffer().then((buffer) => {
     const blob = new Blob([buffer], {
@@ -1186,16 +1173,13 @@ const downloadWorkbook = (workbook, filename) =>
     });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
-
     link.href = url;
     link.download = filename;
     document.body.appendChild(link);
     link.click();
     link.remove();
-
     window.setTimeout(() => URL.revokeObjectURL(url), 1000);
   });
-
 export default function TpTmsSummaryExport({
   reportData,
   financialYear,
@@ -1211,10 +1195,8 @@ export default function TpTmsSummaryExport({
   const [isExporting, setIsExporting] = useState(false);
   const [progress, setProgress] = useState(0);
   const [phase, setPhase] = useState("");
-
   const handleExport = async () => {
     if (!reportData) return;
-
     // We infer the extra parameters straight from the reportData
     // that the parent component ALREADY fetched successfully!
     const extraParams = {};
@@ -1224,45 +1206,37 @@ export default function TpTmsSummaryExport({
     if (reportData.block_wise) {
       extraParams.block_wise = 1;
     }
-
     const effectiveRole = selectedTheme ? role : "training_partner";
     const isSmmuAllPlansExport =
       String(effectiveRole || "").toLowerCase() === "smmu" && !selectedPlan;
-
     if (isSmmuAllPlansExport && !selectedTheme) {
       alert(
         "The SMMU theme could not be identified. Please refresh the page and try again.",
       );
       return;
     }
-
     if (isSmmuAllPlansExport && trainingPlansLoading) {
       alert("Training plans are still loading. Please try again in a moment.");
       return;
     }
-
     if (isSmmuAllPlansExport && trainingPlansLoadError) {
       alert(
         "Training plans could not be loaded. Please refresh the page and try again.",
       );
       return;
     }
-
     setIsExporting(true);
     setProgress(2);
     setPhase("Preparing the export…");
-
     try {
       const workbook = new ExcelJS.Workbook();
       workbook.creator = "Pragati Setu TMS";
       workbook.subject = "TMS Portal Summary";
       workbook.created = new Date();
-
       if (!isSmmuAllPlansExport) {
         setPhase("Formatting the summary workbook…");
         setProgress(20);
         await yieldToBrowser();
-
         addDetailedReportSheet(workbook, {
           sheetName: "TMS Summary",
           title: "PRAGATI SETU TMS PORTAL SUMMARY REPORT",
@@ -1277,11 +1251,9 @@ export default function TpTmsSummaryExport({
           (plan) => plan?.id !== null && plan?.id !== undefined,
         );
         const resolvedThemeName = themeName || `Theme ${selectedTheme}`;
-
         setPhase("Refreshing all-theme data…");
         setProgress(5);
         await yieldToBrowser();
-
         const themeResponse = await api.get("/tms/reports/portal-summary/", {
           params: {
             financial_year: financialYear,
@@ -1289,17 +1261,30 @@ export default function TpTmsSummaryExport({
             ...extraParams,
           },
         });
-
         if (themeResponse.data?.status !== "success") {
           throw new Error(
             themeResponse.data?.error ||
               "The all-theme summary could not be loaded.",
           );
         }
-
         const themeReport = themeResponse.data;
-        setProgress(8);
+        console.log("ACHIEVEMENT API CHECK:", {
+          stateBatchAchievement:
+            themeReport?.state_wide_summary?.batch_counts?.[
+              "14_achievement_percentage"
+            ],
 
+          stateParticipantAchievement:
+            themeReport?.state_wide_summary?.participant_counts?.[
+              "14_achievement_percentage"
+            ],
+
+          stateSummary: themeReport?.state_wide_summary,
+
+          firstDistrictSummary: themeReport?.district_summaries?.[0]?.summary,
+          firstBlockSummary: themeReport?.block_summaries?.[0]?.summary,
+        });
+        setProgress(8);
         let planData = [];
         if (plans.length) {
           setPhase(`Loading reports for ${plans.length} training plans…`);
@@ -1311,24 +1296,19 @@ export default function TpTmsSummaryExport({
             extraParams,
           );
         }
-
         const planReports = plans.map((plan, index) => ({
           plan,
           name: planName(plan),
           report: planData[index],
         }));
-
         setPhase("Building theme-wide analysis sheets…");
         setProgress(70);
         await yieldToBrowser();
-
         addExecutiveSummarySheet(workbook, themeReport, planReports, {
           themeName: resolvedThemeName,
           financialYear,
         });
-
         const locLabel = themeReport.block_wise ? "block" : "district";
-
         addDetailedReportSheet(workbook, {
           sheetName: "All Theme Data",
           title: "PRAGATI SETU TMS — ALL THEME DATA",
@@ -1338,15 +1318,12 @@ export default function TpTmsSummaryExport({
           report: themeReport,
           tabColor: COLORS.navy,
         });
-
         addPlanComparisonSheet(workbook, themeReport, planReports);
-
         addKpiMatrixSheet(workbook, planReports, themeReport, "batch_counts", {
           sheetName: "Batch KPI Matrix",
           title: "BATCH KPI COMPARISON",
           tabColor: COLORS.blue,
         });
-
         addKpiMatrixSheet(
           workbook,
           planReports,
@@ -1358,22 +1335,18 @@ export default function TpTmsSummaryExport({
             tabColor: "FF4F83B8",
           },
         );
-
         addDistrictComparisonSheet(workbook, themeReport, planReports);
-
         for (let index = 0; index < planReports.length; index += 1) {
           const entry = planReports[index];
           const sheetName = createUniqueSheetName(
             workbook,
             `Plan ${entry.plan?.id} ${entry.name}`,
           );
-
           setPhase(
             `Formatting training plan ${index + 1} of ${planReports.length}…`,
           );
           setProgress(78 + Math.round(((index + 1) / planReports.length) * 16));
           await yieldToBrowser();
-
           addDetailedReportSheet(workbook, {
             sheetName,
             title: `TRAINING PLAN — ${entry.name}`,
@@ -1385,25 +1358,20 @@ export default function TpTmsSummaryExport({
           });
         }
       }
-
       setPhase("Preparing your Excel download…");
       setProgress(97);
       await yieldToBrowser();
-
       const safeYear = String(financialYear || "export").replace(
-        /[^a-z0-9_-]/gi,
-        "_",
+        /[^a-z0-9\_-]/gi,
+        "\_",
       );
-
       let locPrefix = "State";
       if (reportData.district_id) {
         locPrefix = reportData.block_wise ? "Block" : "District";
       }
-
       const filename = isSmmuAllPlansExport
-        ? `TMS_Theme_Analysis_${locPrefix}_${safeYear}.xlsx`
-        : `TMS_Portal_Summary_Report_${safeYear}.xlsx`;
-
+        ? `TMS_Theme_Analysis\_${locPrefix}\_${safeYear}.xlsx`
+        : `TMS_Portal_Summary_Report\_${safeYear}.xlsx`;
       await downloadWorkbook(workbook, filename);
       setPhase("Excel workbook ready");
       setProgress(100);
@@ -1418,7 +1386,6 @@ export default function TpTmsSummaryExport({
       setIsExporting(false);
     }
   };
-
   return (
     <>
       <button
@@ -1444,7 +1411,6 @@ export default function TpTmsSummaryExport({
         <FaFileExcel />
         {isExporting ? "Preparing Excel…" : "Export Excel"}
       </button>
-
       {isExporting &&
         typeof document !== "undefined" &&
         createPortal(
@@ -1543,7 +1509,6 @@ export default function TpTmsSummaryExport({
                 }
               }
             `}</style>
-
             <div
               className="tms-export-backdrop"
               role="presentation"
@@ -1559,9 +1524,7 @@ export default function TpTmsSummaryExport({
                 <div className="tms-export-icon">
                   <FaFileExcel />
                 </div>
-
                 <div className="tms-export-spinner" aria-hidden="true" />
-
                 <h2
                   id="tms-export-title"
                   style={{
@@ -1573,7 +1536,6 @@ export default function TpTmsSummaryExport({
                 >
                   Preparing your Excel workbook
                 </h2>
-
                 <p
                   id="tms-export-phase"
                   style={{
@@ -1585,7 +1547,6 @@ export default function TpTmsSummaryExport({
                 >
                   {phase}
                 </p>
-
                 <div
                   className="tms-export-progress-track"
                   role="progressbar"
@@ -1599,7 +1560,6 @@ export default function TpTmsSummaryExport({
                     style={{ width: `${progress}%` }}
                   />
                 </div>
-
                 <div className="tms-export-meta">
                   <span>Keep this window open</span>
                   <span>{progress}%</span>

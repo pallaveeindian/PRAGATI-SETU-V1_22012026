@@ -1,4 +1,4 @@
-// src/pages/AdminPages/Layout/AdminLayout.jsx
+// src\pages\AdminPages\AdminLayout.jsx
 import React, { useEffect, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import homeDashboardImage from "../../assets/PMU/pmuu.png";
@@ -15,6 +15,7 @@ import CenterDetail from "./TmsPortal/CenterDetail";
 import HomeDashboard from "./HomeDashboard";
 import TrainerCheck from "../TMS/EligibilityCheck/TrainerCheck";
 import BeneficiaryCheck from "./TmsPortal/BeneficiaryEngs";
+import HrManagement from "../TMS/SMMU/Hrm/HrManagement";
 import {
   MTDirectoryConductor,
   MTProfileRegistrationsConductor,
@@ -93,6 +94,41 @@ export default function AdminLayout({
       }
     >
       <style>{`
+        .admin-hr-management-embed {
+          display: flex;
+          flex: 1;
+          min-width: 0;
+          min-height: 0;
+          overflow: hidden;
+          background: #fff;
+        }
+        .admin-hr-management-embed > .app-container.staff-directory {
+          display: flex;
+          flex: 1;
+          flex-direction: column;
+          width: 100%;
+          min-width: 0;
+          min-height: 0;
+          height: 100%;
+          overflow: hidden;
+        }
+        .admin-hr-management-embed .header,
+        .admin-hr-management-embed .tms-leftnav,
+        .admin-hr-management-embed .footer {
+          display: none !important;
+        }
+        .admin-hr-management-embed .staff-directory__layout {
+          flex: 1;
+          min-width: 0;
+          min-height: 0;
+          overflow: hidden;
+          align-items: stretch;
+        }
+        .admin-hr-management-embed .staff-directory__main {
+          min-width: 0;
+          min-height: 0;
+          overflow: auto;
+        }
         .admin-master-trainer-embed {
           display: flex;
           flex: 1;
@@ -271,6 +307,17 @@ export default function AdminLayout({
               }}
             >
               <CenterDetail />
+            </div>
+          ) : activeMenu === "Hr Management" ? (
+            <div
+              className="admin-hr-management-embed"
+              style={{
+                flex: 1,
+                minHeight: 0,
+                overflow: "hidden",
+              }}
+            >
+              <HrManagement />
             </div>
           ) : activeMenu === "Trainer Check" ? (
             <div

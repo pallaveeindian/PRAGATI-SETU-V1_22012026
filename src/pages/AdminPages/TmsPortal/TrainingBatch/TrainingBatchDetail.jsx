@@ -1,4 +1,4 @@
-// src/pages/TMS/TRs/training_batch_detail.jsx
+// src/pages/AdminPages/TmsPortal/TrainingBatch/TrainingBatchDetail.jsx
 import React, { useEffect, useRef, useState, useMemo } from "react";
 import { useNavigate, useParams } from "react-router-dom";
 
@@ -94,6 +94,24 @@ export default function TrainingBatchDetail({ batchId: batchIdProp, onBack }) {
     handleRefresh();
   }
 
+  async function handleDeleteAttendance(attendanceIds) {
+    const results = await Promise.allSettled(
+      attendanceIds.map((attendanceId) =>
+        TMS_API.participantAttendance.destroy(attendanceId),
+      ),
+    );
+    handleRefresh();
+
+    const failedCount = results.filter(
+      (result) => result.status === "rejected",
+    ).length;
+    if (failedCount > 0) {
+      throw new Error(
+        `${failedCount} of ${attendanceIds.length} participant attendance record(s) could not be deleted. The list has been refreshed.`,
+      );
+    }
+  }
+
   const isTrainerTraining = batchData?.participant_type === "TRAINER";
 
   // Consolidate participants flat list from the nested comprehensive API response
@@ -153,9 +171,7 @@ export default function TrainingBatchDetail({ batchId: batchIdProp, onBack }) {
   if (loadingAll && !batchData) {
     return (
       <div className="app-shell">
-        
         <div className="content-area">
-         
           <div className="main-area">
             <main style={{ padding: 18 }}>
               <div style={{ maxWidth: 1200, margin: "20px auto" }}>
@@ -172,10 +188,7 @@ export default function TrainingBatchDetail({ batchId: batchIdProp, onBack }) {
 
   return (
     <div className="app-shell">
-     
       <div className="content-area">
-       
-
         <div className="main-area">
           <main style={{ padding: 18 }}>
             <div style={{ maxWidth: 1200, margin: "20px auto" }}>
@@ -250,6 +263,7 @@ export default function TrainingBatchDetail({ batchId: batchIdProp, onBack }) {
                     batchMedia={batchData.batch_pictures || []}
                     onOpenMedia={setMediaPreviewSrc}
                     onSaveAttendance={handleSaveAttendance}
+                    onDeleteAttendance={handleDeleteAttendance}
                   />
 
                   <MediaGallery
@@ -274,8 +288,6 @@ export default function TrainingBatchDetail({ batchId: batchIdProp, onBack }) {
               )}
             </div>
           </main>
-
-         
 
           <SharedMediaLightbox
             mediaPreviewSrc={mediaPreviewSrc}
