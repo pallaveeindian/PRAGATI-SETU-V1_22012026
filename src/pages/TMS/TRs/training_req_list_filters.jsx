@@ -209,7 +209,7 @@ export default function TrainingReqListFilter({ user, onApply }) {
     }
 
     TMS_API.trainingPlans
-      .list({ theme: filters.theme_id })
+      .list({ theme: filters.theme_id, limit: 500 })
       .then((r) => setTrainingPlans(r?.data?.results || []))
       .catch(() => setTrainingPlans([]));
   }, [filters.theme_id]);
